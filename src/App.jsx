@@ -1,3 +1,5 @@
+import ErrorForm from './components/ErrorForm.jsx'
+
 export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -8,6 +10,7 @@ export default function App() {
             Paste the error. Understand why. Practice so it never happens again.
           </p>
         </header>
+        <ErrorForm onSubmit={() => {}} loading={false} />
       </main>
     </div>
   )

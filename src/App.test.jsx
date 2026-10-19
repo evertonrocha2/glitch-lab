@@ -9,3 +9,9 @@ it('shows the app name and tagline', () => {
     screen.getByText('Paste the error. Understand why. Practice so it never happens again.'),
   ).toBeInTheDocument()
 })
+
+it('shows the error form', () => {
+  render(<App />)
+  expect(screen.getByLabelText('Error message')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Investigate' })).toBeInTheDocument()
+})
