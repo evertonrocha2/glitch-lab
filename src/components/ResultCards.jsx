@@ -1,12 +1,20 @@
 import Reveal from './Reveal.jsx'
+import Squiggle from './Squiggle.jsx'
 
-const codeClass = 'whitespace-pre-wrap rounded-lg bg-zinc-950 p-3 font-mono text-sm text-zinc-200'
+const codeClass =
+  'whitespace-pre-wrap break-words rounded-xl border border-line bg-white p-4 font-mono text-[13px] leading-relaxed text-ink'
 
-function Card({ title, children }) {
+const cardClass = {
+  plain: 'border-line bg-white',
+  why: 'border-primary/20 bg-primary-soft',
+  practice: 'border-secondary/20 bg-secondary-soft',
+}
+
+function Card({ title, tone, children }) {
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <h2 className="text-lg font-semibold text-amber-400">{title}</h2>
-      <div className="mt-2 text-zinc-300">{children}</div>
+    <section className={`rounded-2xl border p-6 sm:p-7 ${cardClass[tone]}`}>
+      {title}
+      <div className="mt-3 leading-relaxed text-ink">{children}</div>
     </section>
   )
 }
@@ -15,19 +23,29 @@ export default function ResultCards({ analysis }) {
   const { explicacao, causa, correcao, exercicio } = analysis
 
   return (
-    <div className="mt-10 space-y-4">
-      <Card title="What happened">
+    <div className="mt-8 space-y-4">
+      <Card tone="plain" title={<h2 className="font-display text-xl font-bold text-ink">What happened</h2>}>
         <p>{explicacao}</p>
       </Card>
-      <Card title="Why it broke">
+      <Card
+        tone="why"
+        title={
+          <h2 className="font-display text-xl font-bold text-primary">
+            <span className="relative inline-block">
+              Why it broke
+              <Squiggle animated className="absolute -bottom-1.5 left-0 h-2.5 w-full" />
+            </span>
+          </h2>
+        }
+      >
         <p>{causa}</p>
-        <Reveal label="fix">
+        <Reveal label="fix" className="text-primary">
           <pre className={codeClass}>{correcao}</pre>
         </Reveal>
       </Card>
-      <Card title="Practice">
+      <Card tone="practice" title={<h2 className="font-display text-xl font-bold text-secondary">Practice</h2>}>
         <pre className={codeClass}>{exercicio.enunciado}</pre>
-        <Reveal label="answer">
+        <Reveal label="answer" className="text-secondary">
           <pre className={codeClass}>{exercicio.resposta}</pre>
         </Reveal>
       </Card>

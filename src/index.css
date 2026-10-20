@@ -1,1 +1,67 @@
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fragment Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Purple marks the "why" (understanding). Blue marks practice (doing). */
+  --color-ink: #1c1d26;
+  --color-muted: #5b5f70;
+  --color-line: #e3e5ec;
+  --color-mist: #f4f5f8;
+  --color-primary: #6a3df0;
+  --color-primary-strong: #5a2fd9;
+  --color-primary-soft: #efeafe;
+  --color-secondary: #1a4fe0;
+  --color-secondary-soft: #e8eeff;
+
+  --animate-draw: draw 900ms cubic-bezier(0.65, 0, 0.35, 1) 300ms both;
+  --animate-rise: rise 500ms ease-out 1000ms both;
+
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
