@@ -6,8 +6,6 @@
   --font-label: "Silkscreen", ui-monospace, monospace;
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  /* Old landing headings until the Pixel Lab landing replaces them. */
-  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-pixel: 4px 4px 0 var(--color-primary);
   --shadow-pixel-secondary: 4px 4px 0 var(--color-secondary);
@@ -76,29 +74,6 @@
   --color-primary-soft: #efeafe;
   --color-secondary: #1a4fe0;
   --color-secondary-soft: #e8eeff;
-
-  --animate-draw: draw 900ms cubic-bezier(0.65, 0, 0.35, 1) 300ms both;
-  --animate-rise: rise 500ms ease-out 1000ms both;
-
-  @keyframes draw {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
 }
 
 /* 1-bit dither: a 6px pixel checkerboard that fades out across the panel. */
