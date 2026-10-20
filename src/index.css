@@ -12,6 +12,29 @@
   --shadow-pixel: 4px 4px 0 var(--color-primary);
   --shadow-pixel-secondary: 4px 4px 0 var(--color-secondary);
   --shadow-pixel-ink: 4px 4px 0 var(--color-ink);
+  --shadow-pixel-muted: 4px 4px 0 #b9bdc9;
+
+  --animate-walk: walk 0.6s steps(2, jump-none) infinite alternate;
+  --animate-blink: blink 1.2s steps(2, jump-none) infinite;
+
+  @keyframes walk {
+    from {
+      translate: 0 0;
+    }
+    to {
+      translate: 6px 0;
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 0.2;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 
   /* Purple marks the "why" (understanding). Blue marks practice (doing). */
   --color-ink: #1c1d26;
