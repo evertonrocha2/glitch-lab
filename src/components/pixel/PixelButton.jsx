@@ -1,5 +1,5 @@
 const BASE =
-  'inline-flex items-center justify-center gap-2 border-2 border-ink px-4 py-2.5 font-label text-xs tracking-wide transition-[translate,box-shadow] duration-100 active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-0 disabled:shadow-none'
+  'inline-flex items-center justify-center gap-2 border-2 border-ink px-4 py-2.5 font-label text-xs tracking-wide transition-[translate,box-shadow] duration-100 active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:translate-0 disabled:border-ink/30 disabled:bg-mist disabled:text-muted disabled:shadow-none'
 
 // Colored buttons sit on a hard ink shadow that shrinks when pressed.
 const VARIANTS = {
