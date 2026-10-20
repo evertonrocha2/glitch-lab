@@ -38,10 +38,10 @@ it('points every Try it link at the error form', () => {
   expect(within(document.getElementById('try')).getByLabelText('Error message')).toBeInTheDocument()
 })
 
-it('explains the three steps in order', () => {
+it('explains the three parts in order', () => {
   render(<App />)
   const steps = within(screen.getByRole('list', { name: 'How it works' })).getAllByRole('heading', { level: 3 })
-  expect(steps.map((step) => step.textContent)).toEqual(['Paste the error', 'Read the why', 'Practice on a tiny bug'])
+  expect(steps.map((step) => step.textContent)).toEqual(['Investigate an error', 'Study your board', 'Train in the gym'])
 })
 
 it('shows the error form', () => {
