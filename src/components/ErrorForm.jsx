@@ -1,17 +1,11 @@
 import { useState } from 'react'
 import { LIMITS } from '../../shared/limits.js'
+import PixelButton from './pixel/PixelButton.jsx'
 
 const fieldClass =
-  'mt-2 w-full rounded-xl border border-line bg-white px-4 py-3 font-mono text-sm leading-relaxed text-ink placeholder:text-muted/60 transition-[border-color,box-shadow] duration-200 focus:border-primary focus:shadow-[0_0_0_4px_rgba(106,61,240,0.14)] focus-visible:outline-none'
+  'mt-2 w-full border-2 border-ink bg-white px-4 py-3 font-mono text-sm leading-relaxed text-ink placeholder:text-muted/60 transition-shadow duration-150 focus:shadow-pixel focus-visible:outline-none'
 
-function Spinner() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-4 motion-safe:animate-spin">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  )
-}
+const labelClass = 'font-label text-[11px] text-ink'
 
 export default function ErrorForm({ onSubmit, loading }) {
   const [error, setError] = useState('')
@@ -29,7 +23,7 @@ export default function ErrorForm({ onSubmit, loading }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="error-input" className="text-sm font-semibold text-ink">
+        <label htmlFor="error-input" className={labelClass}>
           Error message
         </label>
         <textarea
@@ -45,7 +39,7 @@ export default function ErrorForm({ onSubmit, loading }) {
       </div>
 
       <div>
-        <label htmlFor="code-input" className="text-sm font-semibold text-ink">
+        <label htmlFor="code-input" className={labelClass}>
           Code (optional)
         </label>
         <textarea
@@ -61,14 +55,9 @@ export default function ErrorForm({ onSubmit, loading }) {
         <p className="mt-2 text-xs text-muted">Don't paste passwords or API keys.</p>
       </div>
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-white transition-colors duration-200 hover:bg-primary-strong disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
-      >
-        {loading && <Spinner />}
+      <PixelButton type="submit" disabled={!canSubmit} className="px-5 py-3">
         {loading ? 'Investigating...' : 'Investigate'}
-      </button>
+      </PixelButton>
     </form>
   )
 }
