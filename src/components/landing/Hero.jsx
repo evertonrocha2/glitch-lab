@@ -13,7 +13,7 @@ export default function Hero() {
           <p className="font-label text-[11px] text-secondary">
             &gt; debugging gym for students<span className="motion-safe:animate-caret">_</span>
           </p>
-          <h1 className="mt-5 font-pixel text-[2.5rem] font-bold leading-[1.05] text-ink sm:text-6xl lg:text-[4rem]">
+          <h1 className="mt-5 font-pixel text-[2.1rem] font-bold leading-[1.08] text-ink sm:text-5xl lg:text-[3.3rem]">
             {/* Spaces sit between the blocks so screen readers don't run the sentences together. */}
             <span className="block">Paste the error.</span>{' '}
             <span className="block">
