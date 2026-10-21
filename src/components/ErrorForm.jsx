@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { LIMITS } from '../../shared/limits.js'
 import { EXAMPLES } from '../lib/examples.js'
+import CodeEditor from './CodeEditor.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 
-const MIN_CODE_LINES = 8
 const labelClass = 'font-label text-xs text-ink'
 // Each box shows focus on its frame, so the textarea itself drops the outline.
 const textareaClass = 'block w-full resize-none bg-transparent font-mono text-sm leading-relaxed focus-visible:outline-none'
@@ -13,8 +13,6 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
   const [code, setCode] = useState(initialCode)
 
   const canSubmit = error.trim() !== '' && !loading
-  // The editor grows with the code, so the gutter numbers always line up.
-  const codeLines = Math.max(MIN_CODE_LINES, code.split('\n').length)
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -72,25 +70,13 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
         <label htmlFor="code-input" className={labelClass}>
           Code (optional)
         </label>
-        <div className="mt-2 flex border-2 border-ink bg-white transition-shadow duration-150 focus-within:shadow-pixel">
-          <div
-            aria-hidden="true"
-            className="select-none border-r-2 border-ink bg-mist px-2.5 py-3 text-right font-mono text-sm leading-relaxed text-muted"
-          >
-            {Array.from({ length: codeLines }, (_, index) => (
-              <div key={index}>{index + 1}</div>
-            ))}
-          </div>
-          <textarea
+        <div className="mt-2">
+          <CodeEditor
             id="code-input"
             value={code}
-            onChange={(event) => setCode(event.target.value)}
+            onChange={setCode}
             maxLength={LIMITS.code}
-            rows={codeLines}
-            wrap="off"
-            spellCheck={false}
             placeholder="Paste the code around the error"
-            className={`${textareaClass} overflow-x-auto overflow-y-hidden px-3 py-3 text-ink placeholder:text-muted/60`}
           />
         </div>
         <p className="mt-2 text-xs text-muted">Don't paste passwords or API keys.</p>
