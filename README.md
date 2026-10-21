@@ -39,9 +39,11 @@ Open the app and press **Use demo account**. Each visitor gets their own board, 
 ```
 React + Tailwind (Vite)  ──>  /api/* (Vercel Functions)  ──>  Gemini
                                    │
-                         auth: Supabase JWT ─ store: Supabase Postgres
-                         (dev: "Dev login" + a local JSON file)
+                         auth: email + password, signed sessions
+                         store: Supabase Postgres (dev: a local JSON file)
 ```
+
+- Accounts: passwords hashed with scrypt, sessions signed with HMAC and valid for 7 days. Emails are unique and case-insensitive. After 10 wrong passwords an email is locked for the day.
 
 - `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`: one function per route, each checking the signed-in user first.
 - `api/_lib/ai`, `api/_lib/store`, `api/_lib/auth`: swappable layers. The same contract tests run against the local store and Supabase.
@@ -55,9 +57,9 @@ cp .env.example .env      # add your GEMINI_API_KEY
 bun run dev               # http://localhost:5173
 ```
 
-Without Supabase variables the app runs in **dev mode**: "Dev login" and "Use demo account" work offline, and data lives in `.data/db.json`. `bun scripts/seed-demo.js` fills a demo board.
+Without Supabase variables, accounts and data live in `.data/db.json`. Create an account on the login screen, or press **Use demo account**.
 
-For production, create a Supabase project, run `supabase/schema.sql`, enable **Anonymous sign-ins** (for the demo button) and the **GitHub** provider, then set the variables listed in `.env.example` on Vercel.
+For production, create a Supabase project, run `supabase/schema.sql`, then set the variables listed in `.env.example` on Vercel (`AUTH_SECRET` included).
 
 ## Tests
 
@@ -65,7 +67,7 @@ For production, create a Supabase project, run `supabase/schema.sql`, enable **A
 bun run test
 ```
 
-150+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, and every page.
+170+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, and every page.
 
 ## Built with
 
