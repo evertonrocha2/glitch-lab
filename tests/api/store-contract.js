@@ -19,7 +19,7 @@ export const challengeFor = (caseId) => ({
 
 export const SECRET = { solution: 'console.log(a.b?.c)', bugExplanation: 'a.b is undefined' }
 
-export function storeContract(label, makeStore) {
+export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bob' }) {
   describe(`${label} store`, () => {
     let store
 
@@ -28,59 +28,59 @@ export function storeContract(label, makeStore) {
     })
 
     it('creates a case as new with zero passes', async () => {
-      const created = await store.createCase('alice', CASE)
-      expect(created).toMatchObject({ ...CASE, userId: 'alice', status: 'new', passedCount: 0 })
+      const created = await store.createCase(ids.alice, CASE)
+      expect(created).toMatchObject({ ...CASE, userId: ids.alice, status: 'new', passedCount: 0 })
       expect(created.id).toEqual(expect.any(String))
       expect(created.createdAt).toEqual(expect.any(String))
     })
 
     it("lists only the owner's cases, newest first", async () => {
-      const first = await store.createCase('alice', CASE)
-      await store.createCase('bob', CASE)
-      const second = await store.createCase('alice', { ...CASE, error: 'ReferenceError: y is not defined' })
-      expect((await store.listCases('alice')).map((item) => item.id)).toEqual([second.id, first.id])
+      const first = await store.createCase(ids.alice, CASE)
+      await store.createCase(ids.bob, CASE)
+      const second = await store.createCase(ids.alice, { ...CASE, error: 'ReferenceError: y is not defined' })
+      expect((await store.listCases(ids.alice)).map((item) => item.id)).toEqual([second.id, first.id])
     })
 
     it("hides another user's case", async () => {
-      const created = await store.createCase('alice', CASE)
-      expect(await store.getCase('bob', created.id)).toBeNull()
-      expect(await store.updateCase('bob', created.id, { status: 'solved' })).toBeNull()
-      expect((await store.getCase('alice', created.id)).status).toBe('new')
+      const created = await store.createCase(ids.alice, CASE)
+      expect(await store.getCase(ids.bob, created.id)).toBeNull()
+      expect(await store.updateCase(ids.bob, created.id, { status: 'solved' })).toBeNull()
+      expect((await store.getCase(ids.alice, created.id)).status).toBe('new')
     })
 
     it('updates status and pass count', async () => {
-      const created = await store.createCase('alice', CASE)
-      const updated = await store.updateCase('alice', created.id, { status: 'training', passedCount: 1 })
+      const created = await store.createCase(ids.alice, CASE)
+      const updated = await store.updateCase(ids.alice, created.id, { status: 'training', passedCount: 1 })
       expect(updated).toMatchObject({ id: created.id, status: 'training', passedCount: 1 })
-      expect(await store.getCase('alice', created.id)).toMatchObject({ status: 'training', passedCount: 1 })
+      expect(await store.getCase(ids.alice, created.id)).toMatchObject({ status: 'training', passedCount: 1 })
     })
 
     it('keeps the challenge secret apart', async () => {
-      const kase = await store.createCase('alice', CASE)
-      const challenge = await store.createChallenge('alice', challengeFor(kase.id), SECRET)
-      expect(challenge).toMatchObject({ ...challengeFor(kase.id), userId: 'alice', hintsRevealed: 0, status: 'open', attempts: 0 })
+      const kase = await store.createCase(ids.alice, CASE)
+      const challenge = await store.createChallenge(ids.alice, challengeFor(kase.id), SECRET)
+      expect(challenge).toMatchObject({ ...challengeFor(kase.id), userId: ids.alice, hintsRevealed: 0, status: 'open', attempts: 0 })
       expect(challenge).not.toHaveProperty('solution')
-      expect(await store.getChallenge('alice', challenge.id)).toEqual(challenge)
-      expect(await store.getChallenge('bob', challenge.id)).toBeNull()
+      expect(await store.getChallenge(ids.alice, challenge.id)).toEqual(challenge)
+      expect(await store.getChallenge(ids.bob, challenge.id)).toBeNull()
       expect(await store.getChallengeSecret(challenge.id)).toEqual(SECRET)
     })
 
     it('finds the open challenge for a case', async () => {
-      const kase = await store.createCase('alice', CASE)
-      const challenge = await store.createChallenge('alice', challengeFor(kase.id), SECRET)
-      expect((await store.findOpenChallenge('alice', kase.id)).id).toBe(challenge.id)
-      expect(await store.findOpenChallenge('bob', kase.id)).toBeNull()
-      await store.updateChallenge('alice', challenge.id, { status: 'passed', attempts: 1, hintsRevealed: 2 })
-      expect(await store.getChallenge('alice', challenge.id)).toMatchObject({ status: 'passed', attempts: 1, hintsRevealed: 2 })
-      expect(await store.findOpenChallenge('alice', kase.id)).toBeNull()
+      const kase = await store.createCase(ids.alice, CASE)
+      const challenge = await store.createChallenge(ids.alice, challengeFor(kase.id), SECRET)
+      expect((await store.findOpenChallenge(ids.alice, kase.id)).id).toBe(challenge.id)
+      expect(await store.findOpenChallenge(ids.bob, kase.id)).toBeNull()
+      await store.updateChallenge(ids.alice, challenge.id, { status: 'passed', attempts: 1, hintsRevealed: 2 })
+      expect(await store.getChallenge(ids.alice, challenge.id)).toMatchObject({ status: 'passed', attempts: 1, hintsRevealed: 2 })
+      expect(await store.findOpenChallenge(ids.alice, kase.id)).toBeNull()
     })
 
     it('counts usage per key per day', async () => {
-      expect(await store.countUsage('alice', '2026-10-21')).toBe(0)
-      expect(await store.addUsage('alice', '2026-10-21')).toBe(1)
-      expect(await store.addUsage('alice', '2026-10-21')).toBe(2)
-      expect(await store.countUsage('alice', '2026-10-22')).toBe(0)
-      expect(await store.countUsage('bob', '2026-10-21')).toBe(0)
+      expect(await store.countUsage(ids.alice, '2026-10-21')).toBe(0)
+      expect(await store.addUsage(ids.alice, '2026-10-21')).toBe(1)
+      expect(await store.addUsage(ids.alice, '2026-10-21')).toBe(2)
+      expect(await store.countUsage(ids.alice, '2026-10-22')).toBe(0)
+      expect(await store.countUsage(ids.bob, '2026-10-21')).toBe(0)
     })
   })
 }
