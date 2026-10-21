@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { currentLocation, renderAt } from './test/render.jsx'
 
-vi.mock('./lib/api.js', () => ({ AuthError: class extends Error {}, listCases: vi.fn().mockResolvedValue([]) }))
+vi.mock('./lib/api.js', () => ({
+  AuthError: class extends Error {},
+  listCases: vi.fn().mockResolvedValue([]),
+  startDemo: vi.fn().mockResolvedValue({ token: 't', user: { id: 'd1', email: 'demo-1@demo.glitch', isDemo: true } }),
+}))
 
 it('sends signed-out visitors to login and remembers where they were going', async () => {
   renderAt('/board')

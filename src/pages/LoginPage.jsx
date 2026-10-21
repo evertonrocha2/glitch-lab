@@ -40,12 +40,18 @@ function PasswordForm({ auth, run, busy }) {
           id="login-password"
           type="password"
           required
-          minLength={6}
+          minLength={8}
           autoComplete={creating ? 'new-password' : 'current-password'}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          aria-describedby={creating ? 'login-password-rule' : undefined}
           className={fieldClass}
         />
+        {creating && (
+          <p id="login-password-rule" className="mt-1.5 text-xs text-muted">
+            At least 8 characters.
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <PixelButton type="submit" disabled={busy}>
@@ -113,36 +119,15 @@ export default function LoginPage() {
         </div>
 
         <PixelCard className="p-6 sm:p-8">
-          {auth.mode === 'dev' ? (
-            <div className="space-y-5">
-              <p className="font-label text-[11px] text-primary">Dev mode</p>
-              <p className="text-muted">No real accounts on this machine yet. Pick one to try the app.</p>
-              <div className="flex flex-wrap gap-3">
-                <PixelButton onClick={() => run(auth.signInDev)} disabled={busy}>
-                  Dev login
-                </PixelButton>
-                <PixelButton variant="secondary" onClick={() => run(auth.signInDemo)} disabled={busy}>
-                  Use demo account
-                </PixelButton>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <PixelButton onClick={() => run(() => auth.signInWithGitHub(next))} disabled={busy} className="w-full py-3">
-                Continue with GitHub
+          <div className="space-y-6">
+            <PasswordForm auth={auth} run={run} busy={busy} />
+            <div className="border-t-2 border-dashed border-line pt-5">
+              <p className="mb-3 text-sm text-muted">Judging or just curious? Skip the sign up.</p>
+              <PixelButton variant="secondary" onClick={() => run(auth.signInDemo)} disabled={busy}>
+                Use demo account
               </PixelButton>
-              <p className="flex items-center gap-3 font-label text-[10px] text-muted">
-                <span className="h-0.5 flex-1 bg-line" /> or <span className="h-0.5 flex-1 bg-line" />
-              </p>
-              <PasswordForm auth={auth} run={run} busy={busy} />
-              <div className="border-t-2 border-dashed border-line pt-5">
-                <p className="mb-3 text-sm text-muted">Judging or just curious? Skip the sign up.</p>
-                <PixelButton variant="secondary" onClick={() => run(auth.signInDemo)} disabled={busy}>
-                  Use demo account
-                </PixelButton>
-              </div>
             </div>
-          )}
+          </div>
           {message && (
             <p role="alert" className="mt-5 border-2 border-ink bg-primary-soft p-3 text-sm text-ink">
               {message}
