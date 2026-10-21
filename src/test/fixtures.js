@@ -1,3 +1,20 @@
+// A gym challenge shaped like the API returns it (no solution, only revealed hints).
+export function makeChallenge(overrides = {}) {
+  return {
+    id: 'ch1',
+    caseId: 'c1',
+    brokenCode: 'const order = {}\nconsole.log(order.items.length)',
+    symptom: "TypeError: Cannot read properties of undefined (reading 'length')",
+    language: 'javascript',
+    hints: [],
+    hintsRevealed: 0,
+    hintsTotal: 3,
+    status: 'open',
+    attempts: 0,
+    ...overrides,
+  }
+}
+
 // Cases shaped like the API returns them, for UI tests.
 export function makeCase(overrides = {}) {
   return {
