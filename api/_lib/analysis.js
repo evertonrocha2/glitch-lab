@@ -23,8 +23,7 @@ export function validateInput(body) {
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 
-export function parseAnalysis(text) {
-  const data = JSON.parse(text)
+export function parseAnalysis(data) {
   const { explicacao, causa, correcao, exercicio } = data ?? {}
   if (![explicacao, causa, correcao, exercicio?.enunciado, exercicio?.resposta].every(filled)) {
     throw new Error('AI response is missing fields')

@@ -1,13 +1,24 @@
+import { AiError, generateJson } from './_lib/ai/index.js'
 import { parseAnalysis, validateInput } from './_lib/analysis.js'
-import { callGemini, GeminiError } from './_lib/gemini.js'
-import { buildPrompt } from './_lib/prompt.js'
+import { buildPrompt, RESPONSE_SCHEMA, SYSTEM_INSTRUCTION } from './_lib/prompt.js'
 
-// gemini-2.5-flash is closed to new API keys; Google points to this one instead.
-const DEFAULT_MODEL = 'gemini-3.8-flash'
+const fail = (status, message) => Response.json({ message }, { status })
+
 // Rate limited (429) or overloaded (503): both mean "try again soon".
 const BUSY_STATUSES = [429, 503]
 
-const fail = (status, message) => Response.json({ message }, { status })
+function aiFailure(err) {
+  if (err instanceof AiError && BUSY_STATUSES.includes(err.status)) {
+    return fail(err.status, 'The AI is busy right now. Try again in a minute.')
+  }
+  if (err instanceof AiError && err.status === 504) return fail(504, 'The AI took too long. Try again.')
+  if (err instanceof AiError && err.status === 500) {
+    console.error(err.message)
+    return fail(500, 'Server is not configured.')
+  }
+  console.error('analyze failed:', err)
+  return fail(502, 'Something went wrong talking to the AI. Please try again.')
+}
 
 export async function POST(request) {
   let body
@@ -20,22 +31,14 @@ export async function POST(request) {
   const input = validateInput(body)
   if (!input.ok) return fail(input.status, input.message)
 
-  // Read env per request (not at import) so config changes apply without a cold start.
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    console.error('GEMINI_API_KEY is not set')
-    return fail(500, 'Server is not configured.')
-  }
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL
-
   try {
-    const text = await callGemini({ prompt: buildPrompt(input.value), apiKey, model })
-    return Response.json(parseAnalysis(text))
+    const answer = await generateJson({
+      system: SYSTEM_INSTRUCTION,
+      prompt: buildPrompt(input.value),
+      schema: RESPONSE_SCHEMA,
+    })
+    return Response.json(parseAnalysis(answer))
   } catch (err) {
-    if (err instanceof GeminiError && BUSY_STATUSES.includes(err.status)) {
-      return fail(err.status, 'The AI is busy right now. Try again in a minute.')
-    }
-    console.error('analyze failed:', err)
-    return fail(502, 'Something went wrong talking to the AI. Please try again.')
+    return aiFailure(err)
   }
 }

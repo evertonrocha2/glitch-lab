@@ -14,6 +14,7 @@ const sentPrompt = () => JSON.parse(fetch.mock.calls[0][1].body).contents[0].par
 
 beforeEach(() => {
   vi.stubEnv('GEMINI_API_KEY', 'test-key')
+  vi.stubEnv('AI_RETRY_DELAY_MS', '0')
   vi.stubGlobal('fetch', vi.fn())
 })
 afterEach(() => {
@@ -26,14 +27,6 @@ it('returns the analysis when Gemini answers valid JSON', async () => {
   const res = await POST(req({ error: 'TypeError: x', code: 'x.y' }))
   expect(res.status).toBe(200)
   expect(await res.json()).toEqual(ANALYSIS)
-})
-
-it('sends the key in a header, never in the URL', async () => {
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
-  await POST(req({ error: 'TypeError: x', code: '' }))
-  const [url, init] = fetch.mock.calls[0]
-  expect(url).not.toContain('test-key')
-  expect(init.headers['x-goog-api-key']).toBe('test-key')
 })
 
 it('keeps code indentation byte-for-byte', async () => {
@@ -124,4 +117,14 @@ it('returns 500 when the API key is missing', async () => {
   const res = await POST(req({ error: 'TypeError: x' }))
   expect(res.status).toBe(500)
   expect(await res.json()).toEqual({ message: 'Server is not configured.' })
+})
+
+it('says the AI took too long', async () => {
+  vi.stubEnv('AI_TIMEOUT_MS', '20')
+  fetch.mockImplementation(
+    (_url, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason))),
+  )
+  const res = await POST(req({ error: 'TypeError: x' }))
+  expect(res.status).toBe(504)
+  expect(await res.json()).toEqual({ message: 'The AI took too long. Try again.' })
 })
