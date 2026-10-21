@@ -62,9 +62,26 @@ it('matches the demo email without caring about case', async () => {
 
 it('returns null when Supabase rejects the token', async () => {
   useSupabase()
-  supabaseGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid JWT' } })
+  supabaseGetUser.mockResolvedValue({ data: { user: null }, error: { status: 401, message: 'invalid JWT' } })
   expect(await getUser(withToken('jwt-123'))).toBeNull()
   expect(await getUser(withToken('dev:alice'))).toBeNull()
+})
+
+it('refuses dev tokens in a production build', async () => {
+  vi.stubEnv('NODE_ENV', 'production')
+  expect(await getUser(withToken('dev:alice'))).toBeNull()
+})
+
+it('reports a Supabase outage as 503 instead of signing people out', async () => {
+  useSupabase()
+  supabaseGetUser.mockRejectedValue(new TypeError('fetch failed'))
+  let result = await requireUser(withToken('jwt-123'))
+  expect(result.response.status).toBe(503)
+  expect(await result.response.json()).toEqual({ message: 'Sign-in is unavailable right now. Try again in a minute.' })
+
+  supabaseGetUser.mockResolvedValue({ data: { user: null }, error: { status: 500, message: 'db down' } })
+  result = await requireUser(withToken('jwt-123'))
+  expect(result.response.status).toBe(503)
 })
 
 it('requireUser answers 401 without a user', async () => {
