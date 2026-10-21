@@ -73,7 +73,12 @@ export function createSupabaseStore({ url, serviceKey }) {
           .select()
           .single(),
       )
-      unwrap(await db.from('challenge_secrets').insert({ challenge_id: row.id, solution, bug_explanation: bugExplanation }))
+      const secret = await db.from('challenge_secrets').insert({ challenge_id: row.id, solution, bug_explanation: bugExplanation })
+      if (secret.error) {
+        // Without its secret the challenge could never be judged; don't leave it behind to be resumed.
+        await db.from('challenges').delete().eq('id', row.id)
+        unwrap(secret)
+      }
       return toChallenge(row)
     },
 
@@ -107,8 +112,8 @@ export function createSupabaseStore({ url, serviceKey }) {
     },
 
     async countUsage(key, day) {
-      const row = unwrap(await db.from('usage').select('count').eq('key', key).eq('day', day).maybeSingle())
-      return row?.count ?? 0
+      const row = unwrap(await db.from('usage').select('calls').eq('key', key).eq('day', day).maybeSingle())
+      return row?.calls ?? 0
     },
 
     async addUsage(key, day) {

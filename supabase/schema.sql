@@ -1,6 +1,6 @@
 -- Glitch Detective database. Run once in the Supabase SQL editor.
--- Only the server (service role key) writes. Signed-in users may read their own cases and challenges;
--- challenge solutions and usage counters are never readable from the browser.
+-- Only the server (service role key) reads and writes. RLS is on with no policies, so the public
+-- anon key in the browser can't see any row: not cases, not hints, not solutions, not usage.
 
 create table public.cases (
   id uuid primary key default gen_random_uuid(),
@@ -41,7 +41,7 @@ create table public.challenge_secrets (
 create table public.usage (
   key text not null,
   day date not null,
-  count int not null default 0,
+  calls int not null default 0,
   primary key (key, day)
 );
 
@@ -50,9 +50,9 @@ alter table public.challenges enable row level security;
 alter table public.challenge_secrets enable row level security;
 alter table public.usage enable row level security;
 
-create policy "Read own cases" on public.cases for select using (auth.uid() = user_id);
-create policy "Read own challenges" on public.challenges for select using (auth.uid() = user_id);
--- No policies on challenge_secrets or usage: only the service role can touch them.
+-- No policies at all: the browser never queries these tables (everything goes through /api),
+-- and a select policy on challenges would expose hints the student hasn't unlocked yet.
+-- Only the service role, used by the API, can read or write.
 
 -- Atomic +1 for the daily AI limit.
 create or replace function public.increment_usage(p_key text, p_day date)
@@ -61,8 +61,8 @@ language sql
 security definer
 set search_path = public
 as $$
-  insert into public.usage (key, day, count) values (p_key, p_day, 1)
-  on conflict (key, day) do update set count = public.usage.count + 1
-  returning count;
+  insert into public.usage (key, day, calls) values (p_key, p_day, 1)
+  on conflict (key, day) do update set calls = public.usage.calls + 1
+  returning calls;
 $$;
 revoke execute on function public.increment_usage(text, date) from public, anon, authenticated;
