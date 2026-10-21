@@ -1,3 +1,5 @@
+import { CONCEPTS } from '../../../shared/concepts.js'
+
 export const SYSTEM_INSTRUCTION = `You are a patient programming teacher helping a beginner student.
 Explain bugs in plain, simple English. Avoid jargon; if you must use a technical term, explain it in the same sentence.
 Focus on WHY the error happened (the concept behind it), not only how to fix it.
@@ -18,8 +20,10 @@ export const RESPONSE_SCHEMA = {
       },
       required: ['enunciado', 'resposta'],
     },
+    concept: { type: 'STRING', enum: CONCEPTS.map((concept) => concept.id) },
+    language: { type: 'STRING' },
   },
-  required: ['explicacao', 'causa', 'correcao', 'exercicio'],
+  required: ['explicacao', 'causa', 'correcao', 'exercicio', 'concept', 'language'],
 }
 
 export function buildPrompt({ error, code }) {
@@ -36,5 +40,7 @@ Fill every field:
 - causa: the concept behind the error and why it happens.
 - correcao: how to fix it, with a short code snippet.
 - exercicio.enunciado: a tiny challenge (at most 8 lines of code) with the same kind of bug, in the same programming language, asking the student to find and fix it.
-- exercicio.resposta: the solution to the challenge and one sentence on why it works.`
+- exercicio.resposta: the solution to the challenge and one sentence on why it works.
+- concept: the kind of bug, one of the allowed values. Use "other" if none fits.
+- language: the programming language, lowercase (javascript, python, java, ...).`
 }

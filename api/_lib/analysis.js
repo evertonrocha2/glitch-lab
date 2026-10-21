@@ -1,3 +1,4 @@
+import { CONCEPTS } from '../../shared/concepts.js'
 import { LIMITS } from '../../shared/limits.js'
 
 export function validateInput(body) {
@@ -23,15 +24,21 @@ export function validateInput(body) {
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 
+const CONCEPT_IDS = new Set(CONCEPTS.map((concept) => concept.id))
+
 export function parseAnalysis(data) {
-  const { explicacao, causa, correcao, exercicio } = data ?? {}
+  const { explicacao, causa, correcao, exercicio, concept, language } = data ?? {}
   if (![explicacao, causa, correcao, exercicio?.enunciado, exercicio?.resposta].every(filled)) {
     throw new Error('AI response is missing fields')
   }
   return {
-    explicacao,
-    causa,
-    correcao,
-    exercicio: { enunciado: exercicio.enunciado, resposta: exercicio.resposta },
+    analysis: {
+      explicacao,
+      causa,
+      correcao,
+      exercicio: { enunciado: exercicio.enunciado, resposta: exercicio.resposta },
+    },
+    concept: CONCEPT_IDS.has(concept) ? concept : 'other',
+    language: filled(language) ? language.trim().toLowerCase() : 'unknown',
   }
 }

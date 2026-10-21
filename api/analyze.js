@@ -1,6 +1,6 @@
 import { AiError, generateJson } from './_lib/ai/index.js'
 import { parseAnalysis, validateInput } from './_lib/analysis.js'
-import { buildPrompt, RESPONSE_SCHEMA, SYSTEM_INSTRUCTION } from './_lib/prompt.js'
+import { buildPrompt, RESPONSE_SCHEMA, SYSTEM_INSTRUCTION } from './_lib/prompts/analyze.js'
 
 const fail = (status, message) => Response.json({ message }, { status })
 
@@ -37,7 +37,8 @@ export async function POST(request) {
       prompt: buildPrompt(input.value),
       schema: RESPONSE_SCHEMA,
     })
-    return Response.json(parseAnalysis(answer))
+    // Until the case store exists, keep answering with just the analysis the page renders.
+    return Response.json(parseAnalysis(answer).analysis)
   } catch (err) {
     return aiFailure(err)
   }
