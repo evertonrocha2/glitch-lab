@@ -8,9 +8,12 @@ function LocationProbe() {
   return <output data-testid="location">{location.pathname + location.search}</output>
 }
 
-// Renders the whole app at `path`, already signed in (dev auth) as `user` when given.
+// Renders the whole app at `path`, already signed in as `user` (token "token-<user>") when given.
 export function renderAt(path, { user } = {}) {
-  if (user) localStorage.setItem('gd:dev-user', JSON.stringify({ id: user, email: `${user}@dev.local` }))
+  if (user) {
+    const session = { token: `token-${user}`, user: { id: user, email: `${user}@test.dev`, isDemo: false } }
+    localStorage.setItem('gd:session', JSON.stringify(session))
+  }
   return render(
     <AuthProvider>
       <MemoryRouter initialEntries={[path]}>

@@ -28,7 +28,7 @@ it('shows the symptom and the broken code', async () => {
   renderAt('/gym/ch1', { user: 'alice' })
   expect(await editor()).toHaveValue('const order = {}\nconsole.log(order.items.length)')
   expect(screen.getByText("TypeError: Cannot read properties of undefined (reading 'length')")).toBeInTheDocument()
-  expect(getChallenge).toHaveBeenCalledWith('ch1', 'dev:alice')
+  expect(getChallenge).toHaveBeenCalledWith('ch1', 'token-alice')
 })
 
 it('reveals hints one by one and stops at three', async () => {

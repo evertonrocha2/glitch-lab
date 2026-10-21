@@ -1,30 +1,20 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { createDevAuth } from './devAuth.js'
-import { createSupabaseAuth } from './supabaseAuth.js'
+import { createSessionAuth } from './session.js'
 
 const AuthContext = createContext(null)
 
-// Supabase when the project is configured; otherwise the local dev login.
-const auth = import.meta.env.VITE_SUPABASE_URL ? createSupabaseAuth() : createDevAuth()
+const auth = createSessionAuth()
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => auth.currentUser())
-  const [ready, setReady] = useState(auth.mode === 'dev')
 
-  useEffect(
-    () =>
-      auth.subscribe((next) => {
-        setUser(next)
-        setReady(true)
-      }),
-    [],
-  )
+  useEffect(() => auth.subscribe(setUser), [])
 
-  const value = useMemo(() => ({ ...auth, user, ready }), [user, ready])
+  const value = useMemo(() => ({ ...auth, user }), [user])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// { user, ready, mode, getToken, signInDev?, signInDemo, signInWithGitHub?, signInWithPassword?, signUp?, signOut }
+// { user, getToken, signInWithPassword, signUp, signInDemo, signOut }
 export function useAuth() {
   const value = useContext(AuthContext)
   if (!value) throw new Error('useAuth must be used inside <AuthProvider>')

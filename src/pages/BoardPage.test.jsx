@@ -30,7 +30,7 @@ it('loads my cases', async () => {
   vi.mocked(listCases).mockResolvedValue([makeCase({ status: 'training', passedCount: 1 })])
   renderAt('/board', { user: 'alice' })
   expect(await screen.findByText('1/2 challenges')).toBeInTheDocument()
-  expect(listCases).toHaveBeenCalledWith('dev:alice')
+  expect(listCases).toHaveBeenCalledWith('token-alice')
 })
 
 it('folds the form behind New investigation once I have cases', async () => {
@@ -47,7 +47,7 @@ it('Train this opens the gym', async () => {
   await userEvent.click(await screen.findByRole('button', { name: /TypeError/ }))
   await userEvent.click(screen.getByRole('button', { name: 'Train this' }))
   await waitFor(() => expect(currentLocation()).toBe('/gym/ch9'))
-  expect(startChallenge).toHaveBeenCalledWith('c1', 'dev:alice')
+  expect(startChallenge).toHaveBeenCalledWith('c1', 'token-alice')
 })
 
 it('Train this cannot be clicked twice', async () => {
@@ -73,7 +73,7 @@ it('investigating adds a card to New and opens it', async () => {
   await investigate('TypeError: x')
   expect(await screen.findByRole('dialog')).toBeInTheDocument()
   expect(within(newColumn()).getByText('01')).toBeInTheDocument()
-  expect(analyzeError).toHaveBeenCalledWith({ error: 'TypeError: x', code: '' }, 'dev:alice')
+  expect(analyzeError).toHaveBeenCalledWith({ error: 'TypeError: x', code: '' }, 'token-alice')
 })
 
 it('investigates the draft from the landing right away', async () => {
@@ -81,7 +81,7 @@ it('investigates the draft from the landing right away', async () => {
   saveDraft({ error: 'ReferenceError: y is not defined', code: 'print(y)' })
   renderAt('/board', { user: 'alice' })
   await waitFor(() =>
-    expect(analyzeError).toHaveBeenCalledWith({ error: 'ReferenceError: y is not defined', code: 'print(y)' }, 'dev:alice'),
+    expect(analyzeError).toHaveBeenCalledWith({ error: 'ReferenceError: y is not defined', code: 'print(y)' }, 'token-alice'),
   )
 })
 

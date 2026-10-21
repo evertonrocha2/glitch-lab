@@ -6,15 +6,8 @@ import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 
 export function RequireAuth({ children }) {
-  const { user, ready } = useAuth()
+  const { user } = useAuth()
   const location = useLocation()
-  if (!ready) {
-    return (
-      <p role="status" className="p-8 font-label text-xs text-muted">
-        Loading...
-      </p>
-    )
-  }
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
   return children
 }
