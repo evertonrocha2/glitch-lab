@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-const emptyDb = () => ({ cases: [], challenges: [], secrets: {}, usage: {} })
+const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {} })
 const now = () => new Date().toISOString()
 // Hand out copies so callers can't edit the store by accident.
 const copy = (value) => (value == null ? null : structuredClone(value))
@@ -31,6 +31,24 @@ export function createLocalStore({ file }) {
   const ownChallenge = (data, userId, id) => data.challenges.find((item) => item.id === id && item.userId === userId)
 
   return {
+    // Emails are stored lowercase, so "Ada@X.com" and "ada@x.com" are the same account. null when taken.
+    async createUser({ email, passwordHash, isDemo }) {
+      const data = await load()
+      data.users ??= []
+      const normalized = email.trim().toLowerCase()
+      if (data.users.some((user) => user.email === normalized)) return null
+      const created = { id: randomUUID(), email: normalized, passwordHash, isDemo: Boolean(isDemo), createdAt: now() }
+      data.users.push(created)
+      await save()
+      return copy(created)
+    },
+
+    async findUserByEmail(email) {
+      const data = await load()
+      const normalized = email.trim().toLowerCase()
+      return copy((data.users ?? []).find((user) => user.email === normalized))
+    },
+
     async createCase(userId, { error, code, analysis, concept, language }) {
       const data = await load()
       const stamp = now()

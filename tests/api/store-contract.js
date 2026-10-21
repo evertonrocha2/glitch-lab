@@ -75,6 +75,21 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.findOpenChallenge(ids.alice, kase.id)).toBeNull()
     })
 
+    it('creates a user and finds them by email in any case', async () => {
+      const email = `Ada.${crypto.randomUUID()}@Example.com`
+      const user = await store.createUser({ email, passwordHash: 'scrypt$aa$bb', isDemo: false })
+      expect(user).toMatchObject({ email: email.toLowerCase(), passwordHash: 'scrypt$aa$bb', isDemo: false })
+      expect(user.id).toEqual(expect.any(String))
+      expect(await store.findUserByEmail(email.toUpperCase())).toEqual(user)
+      expect(await store.findUserByEmail('nobody@example.com')).toBeNull()
+    })
+
+    it('refuses a second account with the same email', async () => {
+      const email = `twice.${crypto.randomUUID()}@example.com`
+      await store.createUser({ email, passwordHash: 'scrypt$aa$bb', isDemo: false })
+      expect(await store.createUser({ email: email.toUpperCase(), passwordHash: 'scrypt$cc$dd', isDemo: false })).toBeNull()
+    })
+
     it('counts usage per key per day', async () => {
       expect(await store.countUsage(ids.alice, '2026-10-21')).toBe(0)
       expect(await store.addUsage(ids.alice, '2026-10-21')).toBe(1)

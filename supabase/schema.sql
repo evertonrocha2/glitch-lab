@@ -2,9 +2,18 @@
 -- Only the server (service role key) reads and writes. RLS is on with no policies, so the public
 -- anon key in the browser can't see any row: not cases, not hints, not solutions, not usage.
 
+-- Accounts live here (the app does its own email + password auth; Supabase is only the database).
+create table public.users (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  password_hash text,
+  is_demo boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 create table public.cases (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
   error text not null,
   code text not null default '',
   analysis jsonb not null,
@@ -20,7 +29,7 @@ create index cases_user_created on public.cases (user_id, created_at desc);
 create table public.challenges (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references public.cases (id) on delete cascade,
-  user_id uuid not null references auth.users (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
   broken_code text not null,
   symptom text not null,
   language text not null,
@@ -45,6 +54,7 @@ create table public.usage (
   primary key (key, day)
 );
 
+alter table public.users enable row level security;
 alter table public.cases enable row level security;
 alter table public.challenges enable row level security;
 alter table public.challenge_secrets enable row level security;

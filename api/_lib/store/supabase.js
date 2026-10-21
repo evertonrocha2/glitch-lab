@@ -2,6 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
+// Postgres unique_violation: the email already has an account.
+const UNIQUE_VIOLATION = '23505'
+
+const toUser = (row) =>
+  row && { id: row.id, email: row.email, passwordHash: row.password_hash, isDemo: row.is_demo, createdAt: row.created_at }
 
 const toCase = (row) =>
   row && {
@@ -47,6 +52,20 @@ export function createSupabaseStore({ url, serviceKey }) {
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
 
   return {
+    async createUser({ email, passwordHash, isDemo }) {
+      const result = await db
+        .from('users')
+        .insert({ email: email.trim().toLowerCase(), password_hash: passwordHash, is_demo: Boolean(isDemo) })
+        .select()
+        .single()
+      if (result.error?.code === UNIQUE_VIOLATION) return null
+      return toUser(unwrap(result))
+    },
+
+    async findUserByEmail(email) {
+      return toUser(unwrap(await db.from('users').select('*').eq('email', email.trim().toLowerCase()).maybeSingle()))
+    },
+
     async createCase(userId, { error, code, analysis, concept, language }) {
       return toCase(unwrap(await db.from('cases').insert({ user_id: userId, error, code, analysis, concept, language }).select().single()))
     },
