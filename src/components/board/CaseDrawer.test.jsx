@@ -29,6 +29,16 @@ it('offers more practice on a solved case without overcounting', () => {
   expect(screen.getByText('2/2 challenges passed')).toBeInTheDocument()
 })
 
+it('gives focus back to what was focused before it opened', () => {
+  render(<button type="button">The card</button>)
+  const card = screen.getByRole('button', { name: 'The card' })
+  card.focus()
+  const { unmount } = render(<CaseDrawer item={makeCase()} onClose={vi.fn()} onTrain={vi.fn()} training={false} />)
+  expect(card).not.toHaveFocus()
+  unmount()
+  expect(card).toHaveFocus()
+})
+
 it('blocks Train this while a challenge is being prepared', () => {
   render(<CaseDrawer item={makeCase()} onClose={vi.fn()} onTrain={vi.fn()} training />)
   expect(screen.getByRole('button', { name: 'Preparing your challenge...' })).toBeDisabled()

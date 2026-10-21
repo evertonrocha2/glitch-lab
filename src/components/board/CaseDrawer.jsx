@@ -19,8 +19,14 @@ export default function CaseDrawer({ item, onClose, onTrain, training }) {
   const solved = item.status === 'solved'
   const passed = Math.min(item.passedCount, 2)
 
+  // Focus moves into the panel and comes back to whatever opened it (usually the card).
   useEffect(() => {
+    const opener = document.activeElement
     panel.current?.focus()
+    return () => opener?.focus?.()
+  }, [])
+
+  useEffect(() => {
     const onKey = (event) => {
       if (event.key === 'Escape') onClose()
     }
