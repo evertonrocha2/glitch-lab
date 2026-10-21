@@ -30,8 +30,11 @@ export function createSupabaseAuth() {
     async signInWithPassword(email, password) {
       orThrow(await supabase.auth.signInWithPassword({ email, password }))
     },
+    // If email confirmation is on in Supabase there is no session yet: say so instead of doing nothing.
     async signUp(email, password) {
-      orThrow(await supabase.auth.signUp({ email, password }))
+      const result = await supabase.auth.signUp({ email, password })
+      orThrow(result)
+      if (!result.data.session) throw new Error('Check your email to confirm your account, then sign in.')
     },
     // Each visitor gets their own anonymous account; the API seeds its sample board on first load.
     // No shared password means nobody can lock judges out of the demo.

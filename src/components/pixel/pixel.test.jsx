@@ -23,5 +23,5 @@ it('Working announces progress', () => {
   render(<Working label="Investigating your error" />)
   const status = screen.getByRole('status')
   expect(status).toHaveTextContent('Investigating your error')
-  expect(status).toHaveTextContent('This can take up to a minute.')
+  expect(status).toHaveTextContent('The free AI can take a minute or two.')
 })

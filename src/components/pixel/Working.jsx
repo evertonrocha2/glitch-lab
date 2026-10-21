@@ -9,7 +9,7 @@ export default function Working({ label }) {
       <PixelBug className="h-8 w-auto shrink-0 motion-safe:animate-walk" />
       <div className="min-w-0 flex-1">
         <p className="font-label text-xs text-ink">{label}</p>
-        <p className="mt-1 text-sm text-muted">This can take up to a minute.</p>
+        <p className="mt-1 text-sm text-muted">The free AI can take a minute or two.</p>
         <div aria-hidden="true" className="mt-3 flex gap-1">
           {Array.from({ length: BLOCKS }, (_, index) => (
             <span
