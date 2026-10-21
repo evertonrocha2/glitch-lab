@@ -21,15 +21,22 @@ beforeEach(() => {
 const newColumn = () => screen.getByRole('region', { name: 'New' })
 
 async function investigate(error) {
-  await userEvent.type(screen.getByLabelText('Error message'), error)
+  await userEvent.type(await screen.findByLabelText('Error message'), error)
   await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
 }
 
 it('loads my cases', async () => {
   vi.mocked(listCases).mockResolvedValue([makeCase({ status: 'training', passedCount: 1 })])
   renderAt('/board', { user: 'alice' })
-  expect(await screen.findByText('1 of 2 passed')).toBeInTheDocument()
+  expect(await screen.findByText('1/2 challenges')).toBeInTheDocument()
   expect(listCases).toHaveBeenCalledWith('dev:alice')
+})
+
+it('folds the form behind New investigation once I have cases', async () => {
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'New investigation' }))
+  expect(screen.getByLabelText('Error message')).toBeInTheDocument()
 })
 
 it('says the board is empty at first', async () => {
@@ -73,7 +80,7 @@ it('sends me to login when my session expired, keeping what I pasted', async () 
 it('Investigate cannot be sent twice while waiting', async () => {
   vi.mocked(analyzeError).mockReturnValue(new Promise(() => {}))
   renderAt('/board', { user: 'alice' })
-  await userEvent.type(screen.getByLabelText('Error message'), 'TypeError: x')
+  await userEvent.type(await screen.findByLabelText('Error message'), 'TypeError: x')
   const button = screen.getByRole('button', { name: 'Investigate' })
   await userEvent.click(button)
   await userEvent.click(button)

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AppShell from '../components/AppShell.jsx'
 import Board from '../components/board/Board.jsx'
+import BoardStats from '../components/board/BoardStats.jsx'
 import CaseDrawer from '../components/board/CaseDrawer.jsx'
 import ErrorForm from '../components/ErrorForm.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
 import { AuthError, analyzeError, listCases } from '../lib/api.js'
@@ -18,6 +20,7 @@ export default function BoardPage() {
   const [message, setMessage] = useState('')
   const [openId, setOpenId] = useState(null)
   const [formKey, setFormKey] = useState(0)
+  const [formOpen, setFormOpen] = useState(Boolean(draft))
   // Guards against double submits even before the disabled button re-renders.
   const busy = useRef(false)
 
@@ -43,6 +46,7 @@ export default function BoardPage() {
         setCases((current) => [saved, ...(current ?? [])])
         setOpenId(saved.id)
         setFormKey((key) => key + 1)
+        setFormOpen(false)
       } catch (err) {
         if (!(await recoverFromAuth(err, input))) setMessage(err.message)
       } finally {
@@ -76,25 +80,39 @@ export default function BoardPage() {
 
   const closeDrawer = useCallback(() => setOpenId(null), [])
   const openCase = cases?.find((item) => item.id === openId)
+  const hasCases = (cases?.length ?? 0) > 0
+  // With an empty board the form is the whole point; once there are cards it folds away.
+  const showForm = formOpen || investigating || cases?.length === 0
 
   return (
     <AppShell>
-      <p className="font-label text-[11px] text-secondary">
-        &gt; case board<span className="motion-safe:animate-caret">_</span>
-      </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your case board</h1>
-      <p className="mt-2 text-muted">Pick a card and press Train this to enter the gym.</p>
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="font-label text-xs text-secondary">
+            &gt; case board<span className="motion-safe:animate-caret">_</span>
+          </p>
+          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your case board</h1>
+          <p className="mt-2 text-muted">Open a card to study it. Press Train this to practice it in the gym.</p>
+        </div>
+        {hasCases && !investigating && (
+          <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+            {formOpen ? 'Hide the form' : 'New investigation'}
+          </PixelButton>
+        )}
+      </div>
 
-      <PixelCard className="mt-8 p-5 sm:p-6">
-        <h2 className="mb-5 font-label text-xs text-primary">Investigate a new error</h2>
-        <ErrorForm
-          key={formKey}
-          onSubmit={investigate}
-          loading={investigating}
-          initialError={formKey === 0 ? draft?.error : ''}
-          initialCode={formKey === 0 ? draft?.code : ''}
-        />
-      </PixelCard>
+      {showForm && (
+        <PixelCard className="mt-8 p-5 sm:p-6">
+          <h2 className="mb-5 font-label text-sm text-primary">Investigate a new error</h2>
+          <ErrorForm
+            key={formKey}
+            onSubmit={investigate}
+            loading={investigating}
+            initialError={formKey === 0 ? draft?.error : ''}
+            initialCode={formKey === 0 ? draft?.code : ''}
+          />
+        </PixelCard>
+      )}
 
       {investigating && (
         <div className="mt-6">
@@ -115,6 +133,11 @@ export default function BoardPage() {
         )}
         {cases?.length === 0 && !investigating && (
           <p className="mb-5 font-pixel text-lg text-ink">No cases yet. Paste your first error above.</p>
+        )}
+        {hasCases && (
+          <div className="mb-8">
+            <BoardStats cases={cases} />
+          </div>
         )}
         <Board cases={cases ?? []} onOpen={(item) => setOpenId(item.id)} />
       </div>
