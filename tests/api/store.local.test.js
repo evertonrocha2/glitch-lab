@@ -10,6 +10,13 @@ const tempFile = async () => join(await mkdtemp(join(tmpdir(), 'gd-store-')), 'd
 
 storeContract('local', async () => createLocalStore({ file: await tempFile() }))
 
+it('keeps both writes when two requests hit a fresh store at once', async () => {
+  const file = await tempFile()
+  const store = createLocalStore({ file })
+  await Promise.all([store.createCase('alice', CASE), store.createCase('alice', CASE)])
+  expect(await createLocalStore({ file }).listCases('alice')).toHaveLength(2)
+})
+
 it('keeps data after a restart', async () => {
   const file = await tempFile()
   const created = await createLocalStore({ file }).createCase('alice', CASE)

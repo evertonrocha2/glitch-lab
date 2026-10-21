@@ -9,19 +9,20 @@ const copy = (value) => (value == null ? null : structuredClone(value))
 
 // Development only: the whole database is one JSON file (default .data/db.json).
 export function createLocalStore({ file }) {
-  let db
+  let loading
   let writing = Promise.resolve()
 
-  async function load() {
-    db ??= await readFile(file, 'utf8').then(JSON.parse, () => emptyDb())
-    return db
+  // One shared load: two first requests must end up with the same db object, or one write is lost.
+  function load() {
+    loading ??= readFile(file, 'utf8').then(JSON.parse, () => emptyDb())
+    return loading
   }
 
   // Writes queue up so two requests never write the file at the same time.
   function save() {
     writing = writing.then(async () => {
       await mkdir(dirname(file), { recursive: true })
-      await writeFile(file, JSON.stringify(db, null, 2))
+      await writeFile(file, JSON.stringify(await loading, null, 2))
     })
     return writing
   }
