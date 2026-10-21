@@ -21,6 +21,19 @@ async function request(path, { method = 'GET', body, token } = {}) {
   return data
 }
 
+// Each returns the signed session: { token, user }.
+export function signIn({ email, password }) {
+  return request('/api/login', { method: 'POST', body: { email, password } })
+}
+
+export function signUp({ email, password }) {
+  return request('/api/register', { method: 'POST', body: { email, password } })
+}
+
+export function startDemo() {
+  return request('/api/demo', { method: 'POST', body: {} })
+}
+
 export async function analyzeError({ error, code }, token) {
   return (await request('/api/analyze', { method: 'POST', body: { error, code }, token })).case
 }
