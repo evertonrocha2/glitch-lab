@@ -3,10 +3,12 @@ export const HINTS_PER_CHALLENGE = 3
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 
 // What the browser may see: never the solution, and only the hints already asked for.
-export function toPublicChallenge(record) {
+// `concept` comes from the case, so the gym can say which kind of bug is being trained.
+export function toPublicChallenge(record, concept) {
   return {
     id: record.id,
     caseId: record.caseId,
+    concept,
     brokenCode: record.brokenCode,
     symptom: record.symptom,
     language: record.language,

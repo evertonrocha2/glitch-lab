@@ -126,3 +126,10 @@ it('GET returns the challenge with the hints revealed so far', async () => {
   expect(res.status).toBe(200)
   expect((await res.json()).challenge).toMatchObject({ id: challenge.id, hints: [AI_CHALLENGE.hints[0]], hintsRevealed: 1 })
 })
+
+it('tells the gym which bug type the challenge trains', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_CHALLENGE))
+  const created = await (await start(kase.id)).json()
+  expect(created.challenge.concept).toBe('undefined-access')
+  expect((await (await read(created.challenge.id)).json()).challenge.concept).toBe('undefined-access')
+})

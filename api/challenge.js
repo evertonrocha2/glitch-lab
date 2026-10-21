@@ -20,7 +20,7 @@ export async function POST(request) {
   if (!kase) return fail(404, 'Case not found.')
 
   const open = await store.findOpenChallenge(auth.user.id, kase.id)
-  if (open) return ok({ challenge: toPublicChallenge(open) })
+  if (open) return ok({ challenge: toPublicChallenge(open, kase.concept) })
 
   if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
 
@@ -43,7 +43,7 @@ export async function POST(request) {
 
   const record = await store.createChallenge(auth.user.id, { caseId: kase.id, language: kase.language, ...parsed.challenge }, parsed.secret)
   if (kase.status === 'new') await store.updateCase(auth.user.id, kase.id, { status: 'training' })
-  return ok({ challenge: toPublicChallenge(record) }, 201)
+  return ok({ challenge: toPublicChallenge(record, kase.concept) }, 201)
 }
 
 export async function GET(request) {
@@ -51,7 +51,9 @@ export async function GET(request) {
   if (auth.response) return auth.response
 
   const id = new URL(request.url).searchParams.get('id') ?? ''
-  const record = await getStore().getChallenge(auth.user.id, id)
+  const store = getStore()
+  const record = await store.getChallenge(auth.user.id, id)
   if (!record) return fail(404, 'Challenge not found.')
-  return ok({ challenge: toPublicChallenge(record) })
+  const kase = await store.getCase(auth.user.id, record.caseId)
+  return ok({ challenge: toPublicChallenge(record, kase?.concept ?? 'other') })
 }
