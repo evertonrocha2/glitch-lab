@@ -1,37 +1,21 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, expect, it, vi } from 'vitest'
-import App from './App.jsx'
-import { analyzeError } from './lib/analyzeError.js'
+import { expect, it, vi } from 'vitest'
+import { takeDraft } from './lib/draft.js'
+import { currentLocation, renderAt } from './test/render.jsx'
 
-vi.mock('./lib/analyzeError.js', () => ({ analyzeError: vi.fn() }))
-
-const analysis = {
-  explicacao: 'x was used before it existed.',
-  causa: 'Variables must be declared before use.',
-  correcao: 'let x = 1',
-  exercicio: { enunciado: 'console.log(y)', resposta: 'Declare y first.' },
-}
-
-beforeEach(() => {
-  analyzeError.mockReset()
-})
-
-async function investigate(error) {
-  await userEvent.type(screen.getByLabelText('Error message'), error)
-  await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
-}
+vi.mock('./lib/api.js', () => ({ AuthError: class extends Error {}, listCases: vi.fn().mockResolvedValue([]) }))
 
 const TAGLINE = 'Paste the error. Understand why. Practice so it never happens again.'
 
 it('shows the brand and the tagline as the main heading', () => {
-  render(<App />)
+  renderAt('/')
   expect(within(screen.getByRole('banner')).getByText('Glitch Detective')).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: TAGLINE })).toBeInTheDocument()
 })
 
 it('points every Try it link at the error form', () => {
-  render(<App />)
+  renderAt('/')
   const links = screen.getAllByRole('link', { name: /try it/i })
   expect(links.length).toBeGreaterThan(0)
   for (const link of links) expect(link).toHaveAttribute('href', '#try')
@@ -39,40 +23,23 @@ it('points every Try it link at the error form', () => {
 })
 
 it('explains the three parts in order', () => {
-  render(<App />)
+  renderAt('/')
   const steps = within(screen.getByRole('list', { name: 'How it works' })).getAllByRole('heading', { level: 3 })
   expect(steps.map((step) => step.textContent)).toEqual(['Investigate an error', 'Study your board', 'Train in the gym'])
 })
 
-it('shows the error form', () => {
-  render(<App />)
-  expect(screen.getByLabelText('Error message')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Investigate' })).toBeInTheDocument()
+it('offers sign in when signed out and the board when signed in', () => {
+  const { unmount } = renderAt('/')
+  expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
+  unmount()
+  renderAt('/', { user: 'alice' })
+  expect(screen.getByRole('link', { name: 'My board' })).toHaveAttribute('href', '/board')
 })
 
-it('shows the cards after a successful investigation', async () => {
-  analyzeError.mockResolvedValue(analysis)
-  render(<App />)
-  await investigate('ReferenceError: x is not defined')
-  expect(await screen.findByRole('heading', { name: 'What happened' })).toBeInTheDocument()
-  expect(analyzeError).toHaveBeenCalledWith({ error: 'ReferenceError: x is not defined', code: '' })
-})
-
-it('shows the server message when it fails', async () => {
-  analyzeError.mockRejectedValue(new Error('The AI is busy right now. Try again in a minute.'))
-  render(<App />)
-  await investigate('ReferenceError: x is not defined')
-  expect(await screen.findByRole('alert')).toHaveTextContent('The AI is busy right now. Try again in a minute.')
-})
-
-it('closes the answer again for a new analysis', async () => {
-  analyzeError.mockResolvedValue(analysis)
-  render(<App />)
-  await investigate('ReferenceError: x is not defined')
-  await userEvent.click(await screen.findByRole('button', { name: 'Show answer' }))
-  expect(screen.getByText(analysis.exercicio.resposta)).toBeInTheDocument()
-
+it('keeps the pasted error and goes to the board', async () => {
+  renderAt('/')
+  await userEvent.type(screen.getByLabelText('Error message'), 'ReferenceError: x is not defined')
   await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
-  expect(await screen.findByRole('button', { name: 'Show answer' })).toBeInTheDocument()
-  expect(screen.queryByText(analysis.exercicio.resposta)).not.toBeInTheDocument()
+  expect(currentLocation()).toBe('/login?next=%2Fboard')
+  expect(takeDraft()).toEqual({ error: 'ReferenceError: x is not defined', code: '' })
 })
