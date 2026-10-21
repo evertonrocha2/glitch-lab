@@ -3,7 +3,7 @@ import { useAuth } from '../../lib/auth/AuthProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 
-const navLinkClass = 'font-label text-[11px] text-ink transition-colors hover:text-primary'
+const navLinkClass = 'font-label text-xs text-ink transition-colors hover:text-primary'
 
 export default function SiteHeader() {
   const { user } = useAuth()

@@ -15,7 +15,7 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <nav aria-label="Account" className="flex items-center gap-5">
-            <Link to="/board" className="font-label text-[11px] text-ink transition-colors hover:text-primary">
+            <Link to="/board" className="font-label text-xs text-ink transition-colors hover:text-primary">
               Board
             </Link>
             <span className="hidden max-w-48 truncate text-sm text-muted sm:inline">{user?.email}</span>
