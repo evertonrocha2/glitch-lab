@@ -1,63 +1,96 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { POST } from '../../api/analyze.js'
+import { apiRequest, geminiAnswer, neverAnswers, useTempStore } from './helpers.js'
 
 const ANALYSIS = { explicacao: 'a', causa: 'b', correcao: 'c', exercicio: { enunciado: 'd', resposta: 'e' } }
-const gemini = (text) => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }))
-const req = (body) =>
-  new Request('http://localhost/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: typeof body === 'string' ? body : JSON.stringify(body),
-  })
+const AI_ANSWER = { ...ANALYSIS, concept: 'undefined-access', language: 'javascript' }
+const BUSY = 'The AI is busy right now. Try again in a minute.'
+const AI_FAILED = 'Something went wrong talking to the AI. Please try again.'
+
+const analyze = (body, options) => POST(apiRequest('/api/analyze', { body, ...options }))
 const sentPrompt = () => JSON.parse(fetch.mock.calls[0][1].body).contents[0].parts[0].text
 
-beforeEach(() => {
+let store
+
+beforeEach(async () => {
   vi.stubEnv('GEMINI_API_KEY', 'test-key')
   vi.stubEnv('AI_RETRY_DELAY_MS', '0')
   vi.stubGlobal('fetch', vi.fn())
+  store = await useTempStore()
 })
 afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
 })
 
-it('returns the analysis when Gemini answers valid JSON', async () => {
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
-  const res = await POST(req({ error: 'TypeError: x', code: 'x.y' }))
-  expect(res.status).toBe(200)
-  expect(await res.json()).toEqual(ANALYSIS)
+it('asks for sign in without a user', async () => {
+  const res = await analyze({ error: 'TypeError: x' }, { token: null })
+  expect(res.status).toBe(401)
+  expect(await res.json()).toEqual({ message: 'Sign in to continue.' })
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('saves the investigation as a new case', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  const res = await analyze({ error: 'TypeError: x', code: 'x.y' })
+  expect(res.status).toBe(201)
+  const { case: saved } = await res.json()
+  expect(saved).toMatchObject({
+    userId: 'alice',
+    error: 'TypeError: x',
+    code: 'x.y',
+    analysis: ANALYSIS,
+    concept: 'undefined-access',
+    language: 'javascript',
+    status: 'new',
+    passedCount: 0,
+  })
+  expect(await store.listCases('alice')).toHaveLength(1)
+})
+
+it('stops at the daily limit', async () => {
+  for (let i = 0; i < 30; i++) await store.addUsage('alice', new Date().toISOString().slice(0, 10))
+  const res = await analyze({ error: 'TypeError: x' })
+  expect(res.status).toBe(429)
+  expect(await res.json()).toEqual({ message: 'Daily limit reached. Come back tomorrow.' })
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('does not count a request that failed validation', async () => {
+  await analyze({ error: '   ' })
+  expect(await store.countUsage('alice', new Date().toISOString().slice(0, 10))).toBe(0)
 })
 
 it('keeps code indentation byte-for-byte', async () => {
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
   const code = 'def f():\n    return 1\n'
-  await POST(req({ error: 'IndentationError', code }))
+  await analyze({ error: 'IndentationError', code })
   expect(sentPrompt()).toContain(code)
 })
 
 it('works with an error and no code', async () => {
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
-  const res = await POST(req({ error: 'IndexError: list index out of range' }))
-  expect(res.status).toBe(200)
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  const res = await analyze({ error: 'IndexError: list index out of range' })
+  expect(res.status).toBe(201)
   expect(sentPrompt()).toContain('(no code provided)')
 })
 
 it('rejects an empty error', async () => {
-  const res = await POST(req({ error: '   ' }))
+  const res = await analyze({ error: '   ' })
   expect(res.status).toBe(400)
   expect(await res.json()).toEqual({ message: 'Paste an error message first.' })
   expect(fetch).not.toHaveBeenCalled()
 })
 
 it('rejects a body that is not JSON', async () => {
-  const res = await POST(req('oops'))
+  const res = await analyze('oops')
   expect(res.status).toBe(400)
   expect(await res.json()).toEqual({ message: 'Invalid request.' })
 })
 
 it('rejects oversized input', async () => {
-  const res = await POST(req({ error: 'TypeError: x', code: 'x'.repeat(6001) }))
+  const res = await analyze({ error: 'TypeError: x', code: 'x'.repeat(6001) })
   expect(res.status).toBe(413)
   expect(await res.json()).toEqual({
     message: 'Too long. Keep the error under 2000 characters and the code under 6000.',
@@ -67,64 +100,63 @@ it('rejects oversized input', async () => {
 
 it('says the AI is busy when Gemini rate limits', async () => {
   fetch.mockResolvedValue(new Response('{}', { status: 429 }))
-  const res = await POST(req({ error: 'TypeError: x' }))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(429)
-  expect(await res.json()).toEqual({ message: 'The AI is busy right now. Try again in a minute.' })
+  expect(await res.json()).toEqual({ message: BUSY })
 })
 
 it('says the AI is busy when Gemini is overloaded', async () => {
   fetch.mockResolvedValue(new Response('{}', { status: 503 }))
-  const res = await POST(req({ error: 'TypeError: x' }))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(503)
-  expect(await res.json()).toEqual({ message: 'The AI is busy right now. Try again in a minute.' })
+  expect(await res.json()).toEqual({ message: BUSY })
+})
+
+it('says the AI took too long', async () => {
+  vi.stubEnv('AI_TIMEOUT_MS', '20')
+  fetch.mockImplementation(neverAnswers())
+  const res = await analyze({ error: 'TypeError: x' })
+  expect(res.status).toBe(504)
+  expect(await res.json()).toEqual({ message: 'The AI took too long. Try again.' })
 })
 
 it('uses gemini-3.8-flash when GEMINI_MODEL is not set', async () => {
   vi.stubEnv('GEMINI_MODEL', '')
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
-  await POST(req({ error: 'TypeError: x' }))
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  await analyze({ error: 'TypeError: x' })
   expect(fetch.mock.calls[0][0]).toContain('/models/gemini-3.8-flash:generateContent')
 })
 
 it('uses GEMINI_MODEL when it is set', async () => {
   vi.stubEnv('GEMINI_MODEL', 'some-model')
-  fetch.mockResolvedValue(gemini(JSON.stringify(ANALYSIS)))
-  await POST(req({ error: 'TypeError: x' }))
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  await analyze({ error: 'TypeError: x' })
   expect(fetch.mock.calls[0][0]).toContain('/models/some-model:generateContent')
 })
 
-it('returns 502 when Gemini answers broken JSON', async () => {
-  fetch.mockResolvedValue(gemini('not json'))
-  const res = await POST(req({ error: 'TypeError: x' }))
+it('returns 502 and saves nothing when Gemini answers broken JSON', async () => {
+  fetch.mockResolvedValue(geminiAnswer('not json'))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(502)
-  expect(await res.json()).toEqual({ message: 'Something went wrong talking to the AI. Please try again.' })
+  expect(await res.json()).toEqual({ message: AI_FAILED })
+  expect(await store.listCases('alice')).toHaveLength(0)
 })
 
 it('returns 502 when a field is missing', async () => {
-  fetch.mockResolvedValue(gemini(JSON.stringify({ ...ANALYSIS, exercicio: { enunciado: 'd' } })))
-  const res = await POST(req({ error: 'TypeError: x' }))
+  fetch.mockResolvedValue(geminiAnswer({ ...AI_ANSWER, exercicio: { enunciado: 'd' } }))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(502)
 })
 
 it('returns 502 when the network fails', async () => {
   fetch.mockRejectedValue(new Error('down'))
-  const res = await POST(req({ error: 'TypeError: x' }))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(502)
 })
 
 it('returns 500 when the API key is missing', async () => {
   vi.stubEnv('GEMINI_API_KEY', '')
-  const res = await POST(req({ error: 'TypeError: x' }))
+  const res = await analyze({ error: 'TypeError: x' })
   expect(res.status).toBe(500)
   expect(await res.json()).toEqual({ message: 'Server is not configured.' })
-})
-
-it('says the AI took too long', async () => {
-  vi.stubEnv('AI_TIMEOUT_MS', '20')
-  fetch.mockImplementation(
-    (_url, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason))),
-  )
-  const res = await POST(req({ error: 'TypeError: x' }))
-  expect(res.status).toBe(504)
-  expect(await res.json()).toEqual({ message: 'The AI took too long. Try again.' })
 })
