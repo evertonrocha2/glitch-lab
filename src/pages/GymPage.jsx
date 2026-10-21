@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { conceptLabel } from '../../shared/concepts.js'
 import { LIMITS } from '../../shared/limits.js'
 import AppShell from '../components/AppShell.jsx'
 import CodeEditor from '../components/CodeEditor.jsx'
@@ -26,6 +27,7 @@ export default function GymPage() {
   const [savedFix] = useState(() => takeGymDraft(id))
   // Blocks a second submit before the disabled button re-renders.
   const busy = useRef(false)
+  const hintBusy = useRef(false)
   const codeRef = useRef(code)
   codeRef.current = code
 
@@ -59,6 +61,8 @@ export default function GymPage() {
   }, [id, getToken, handleError, savedFix])
 
   async function nextHint() {
+    if (hintBusy.current) return
+    hintBusy.current = true
     setHintLoading(true)
     try {
       const { hint } = await revealHint(id, await getToken())
@@ -66,6 +70,7 @@ export default function GymPage() {
     } catch (err) {
       await handleError(err)
     } finally {
+      hintBusy.current = false
       setHintLoading(false)
     }
   }
@@ -98,6 +103,12 @@ export default function GymPage() {
         &gt; gym<span className="motion-safe:animate-caret">_</span>
       </p>
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Fix the bug</h1>
+      {challenge?.concept && (
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
+          Training
+          <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{conceptLabel(challenge.concept)}</span>
+        </p>
+      )}
       <p className="mt-2 max-w-2xl text-muted">
         This code has one bug of the same kind as your case. Edit it until it works, then submit. The AI checks your fix.
       </p>
@@ -105,6 +116,21 @@ export default function GymPage() {
       {message && (
         <div className="mt-6">
           <ErrorNotice message={message} />
+        </div>
+      )}
+
+      {!challenge && !message && (
+        <p role="status" className="mt-8 font-label text-xs text-muted">
+          Loading your challenge...
+        </p>
+      )}
+
+      {challenge?.status === 'passed' && !result && (
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
+          <p className="text-ink">You already fixed this one. Head back to the board to train again.</p>
+          <PixelButton as={Link} to="/board" variant="secondary">
+            Back to board
+          </PixelButton>
         </div>
       )}
 

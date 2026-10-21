@@ -23,7 +23,8 @@ export default function HintList({ hints, total, onReveal, loading }) {
       ) : (
         <ol className="mt-4 space-y-2">
           {hints.map((hint, index) => (
-            <li key={hint} className="flex gap-3 border-2 border-ink bg-white p-3 text-ink">
+            // biome-ignore lint/suspicious/noArrayIndexKey: hints only grow at the end; the AI may repeat a text.
+            <li key={index} className="flex gap-3 border-2 border-ink bg-white p-3 text-ink">
               <span className="font-label text-xs text-primary">{index + 1}</span>
               <span>{hint}</span>
             </li>

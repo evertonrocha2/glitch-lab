@@ -100,6 +100,35 @@ it('brings my saved fix back after signing in again', async () => {
   expect(await editor()).toHaveValue('const order = { items: 1 }')
 })
 
+it('names the bug type being trained', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(makeChallenge({ concept: 'undefined-access' }))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByText('Reading undefined')).toBeInTheDocument()
+})
+
+it('Get a hint cannot be sent twice while waiting', async () => {
+  vi.mocked(revealHint).mockReturnValue(new Promise(() => {}))
+  renderAt('/gym/ch1', { user: 'alice' })
+  await editor()
+  const button = screen.getByRole('button', { name: 'Get a hint (0/3)' })
+  await userEvent.click(button)
+  await userEvent.click(button)
+  expect(revealHint).toHaveBeenCalledTimes(1)
+})
+
+it('shows a loading state while the challenge loads', async () => {
+  vi.mocked(getChallenge).mockReturnValue(new Promise(() => {}))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByText('Loading your challenge...')).toBeInTheDocument()
+})
+
+it('says when the challenge is already fixed', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(makeChallenge({ status: 'passed' }))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByText('You already fixed this one. Head back to the board to train again.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Submit fix' })).not.toBeInTheDocument()
+})
+
 it('says when the challenge does not exist', async () => {
   vi.mocked(getChallenge).mockRejectedValue(new Error('Challenge not found.'))
   renderAt('/gym/nope', { user: 'alice' })
