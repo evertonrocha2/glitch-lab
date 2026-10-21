@@ -6,3 +6,4 @@ dist/
 docs/superpowers/
 .superpowers/
 .data/
+.claude/settings.local.json
