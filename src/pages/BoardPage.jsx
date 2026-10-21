@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 import AppShell from '../components/AppShell.jsx'
 import Board from '../components/board/Board.jsx'
 import BoardStats from '../components/board/BoardStats.jsx'
@@ -8,7 +9,7 @@ import ErrorNotice from '../components/ErrorNotice.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
-import { AuthError, analyzeError, listCases } from '../lib/api.js'
+import { AuthError, analyzeError, listCases, startChallenge } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { saveDraft, takeDraft } from '../lib/draft.js'
 
@@ -21,8 +22,11 @@ export default function BoardPage() {
   const [openId, setOpenId] = useState(null)
   const [formKey, setFormKey] = useState(0)
   const [formOpen, setFormOpen] = useState(Boolean(draft))
-  // Guards against double submits even before the disabled button re-renders.
+  const [training, setTraining] = useState(false)
+  const navigate = useNavigate()
+  // Guard against double clicks even before the disabled buttons re-render.
   const busy = useRef(false)
+  const trainBusy = useRef(false)
 
   // An expired session signs out; the route guard then sends the person to login and back here.
   const recoverFromAuth = useCallback(
@@ -77,6 +81,29 @@ export default function BoardPage() {
   useEffect(() => {
     if (draft) investigate(draft)
   }, [draft, investigate])
+
+  const train = useCallback(
+    async (item) => {
+      if (trainBusy.current) return
+      trainBusy.current = true
+      setTraining(true)
+      setMessage('')
+      try {
+        const challenge = await startChallenge(item.id, await getToken())
+        navigate(`/gym/${challenge.id}`)
+      } catch (err) {
+        if (!(await recoverFromAuth(err))) {
+          // Close the panel so the message underneath is visible.
+          setOpenId(null)
+          setMessage(err.message)
+        }
+      } finally {
+        trainBusy.current = false
+        setTraining(false)
+      }
+    },
+    [getToken, navigate, recoverFromAuth],
+  )
 
   const closeDrawer = useCallback(() => setOpenId(null), [])
   const openCase = cases?.find((item) => item.id === openId)
@@ -142,7 +169,7 @@ export default function BoardPage() {
         <Board cases={cases ?? []} onOpen={(item) => setOpenId(item.id)} />
       </div>
 
-      {openCase && <CaseDrawer item={openCase} onClose={closeDrawer} training={false} />}
+      {openCase && <CaseDrawer item={openCase} onClose={closeDrawer} onTrain={train} training={training} />}
     </AppShell>
   )
 }

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { AuthError, analyzeError, listCases } from '../lib/api.js'
+import { AuthError, analyzeError, listCases, startChallenge } from '../lib/api.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
 import { makeCase } from '../test/fixtures.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
@@ -16,6 +16,7 @@ vi.mock('../lib/api.js', () => ({
 beforeEach(() => {
   vi.mocked(listCases).mockReset().mockResolvedValue([])
   vi.mocked(analyzeError).mockReset()
+  vi.mocked(startChallenge).mockReset()
 })
 
 const newColumn = () => screen.getByRole('region', { name: 'New' })
@@ -37,6 +38,28 @@ it('folds the form behind New investigation once I have cases', async () => {
   renderAt('/board', { user: 'alice' })
   await userEvent.click(await screen.findByRole('button', { name: 'New investigation' }))
   expect(screen.getByLabelText('Error message')).toBeInTheDocument()
+})
+
+it('Train this opens the gym', async () => {
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  vi.mocked(startChallenge).mockResolvedValue({ id: 'ch9' })
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: /TypeError/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Train this' }))
+  await waitFor(() => expect(currentLocation()).toBe('/gym/ch9'))
+  expect(startChallenge).toHaveBeenCalledWith('c1', 'dev:alice')
+})
+
+it('Train this cannot be clicked twice', async () => {
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  vi.mocked(startChallenge).mockReturnValue(new Promise(() => {}))
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: /TypeError/ }))
+  const train = screen.getByRole('button', { name: 'Train this' })
+  await userEvent.click(train)
+  await userEvent.click(train)
+  expect(await screen.findByRole('button', { name: 'Preparing your challenge...' })).toBeDisabled()
+  expect(startChallenge).toHaveBeenCalledTimes(1)
 })
 
 it('says the board is empty at first', async () => {
