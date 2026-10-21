@@ -2,7 +2,7 @@
 export const DAILY_AI_LIMIT = { user: 30, demo: 80 }
 
 // Counts one AI call and returns true, or returns false (counting nothing) once today's limit is used up.
-export async function useAiCall(store, user, now = new Date()) {
+export async function takeAiCall(store, user, now = new Date()) {
   const day = now.toISOString().slice(0, 10)
   const limit = user.isDemo ? DAILY_AI_LIMIT.demo : DAILY_AI_LIMIT.user
   if ((await store.countUsage(user.id, day)) >= limit) return false
