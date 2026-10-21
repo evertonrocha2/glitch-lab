@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { makeCase } from '../../test/fixtures.js'
 import Board from './Board.jsx'
+import BoardStats from './BoardStats.jsx'
 
 const CASES = [
   makeCase({ id: 'a', status: 'new' }),
@@ -20,10 +21,22 @@ it('puts each case in its status column', () => {
   }
 })
 
-it('shows the bug type and progress on each card', () => {
+it('explains what each column means', () => {
   render(<Board cases={CASES} onOpen={vi.fn()} />)
-  expect(screen.getByText('Index out of range')).toBeInTheDocument()
-  expect(within(screen.getByRole('region', { name: 'Training' })).getByText('1 of 2 passed')).toBeInTheDocument()
+  expect(screen.getByText('Just investigated')).toBeInTheDocument()
+  expect(screen.getByText('Practicing in the gym')).toBeInTheDocument()
+  expect(screen.getByText('Passed 2 challenges')).toBeInTheDocument()
+})
+
+it('shows the error type, bug type and progress on each card', () => {
+  render(<Board cases={CASES} onOpen={vi.fn()} />)
+  const card = screen.getByRole('button', { name: /IndexError: list index out of range/ })
+  expect(within(card).getByText('IndexError')).toBeInTheDocument()
+  expect(within(card).getByText('list index out of range')).toBeInTheDocument()
+  expect(within(card).getByText('Index out of range')).toBeInTheDocument()
+  expect(within(card).getByText('python')).toBeInTheDocument()
+  const training = screen.getByRole('button', { name: /ReferenceError/ })
+  expect(within(training).getByText('1/2 challenges')).toBeInTheDocument()
 })
 
 it('opens a case when clicked', async () => {
@@ -31,4 +44,18 @@ it('opens a case when clicked', async () => {
   render(<Board cases={CASES} onOpen={onOpen} />)
   await userEvent.click(screen.getByRole('button', { name: /IndexError: list index out of range/ }))
   expect(onOpen).toHaveBeenCalledWith(CASES[1])
+})
+
+it('sums up the board and names the weak spot', () => {
+  render(<BoardStats cases={CASES} />)
+  const items = within(screen.getByRole('list', { name: 'Board summary' })).getAllByRole('listitem')
+  expect(items[0]).toHaveTextContent(/Cases\s*04/)
+  expect(items[1]).toHaveTextContent(/Training\s*01/)
+  expect(items[2]).toHaveTextContent(/Solved\s*01/)
+  expect(items[3]).toHaveTextContent(/Weak spot\s*Reading undefined/)
+})
+
+it('has no weak spot when everything is solved', () => {
+  render(<BoardStats cases={[makeCase({ status: 'solved', passedCount: 2 })]} />)
+  expect(screen.getByText('None yet')).toBeInTheDocument()
 })

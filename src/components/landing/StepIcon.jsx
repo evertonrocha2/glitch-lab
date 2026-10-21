@@ -11,6 +11,10 @@ const SHAPES = {
   gym: [
     [0, 2, 1, 5], [1, 1, 2, 7], [3, 4, 5, 1], [8, 1, 2, 7], [10, 2, 1, 5],
   ],
+  // A checkmark: solved.
+  solved: [
+    [0, 4, 2, 2], [2, 6, 2, 2], [4, 4, 2, 2], [6, 2, 2, 2], [8, 0, 2, 2],
+  ],
 }
 
 export default function StepIcon({ kind, className = '' }) {
