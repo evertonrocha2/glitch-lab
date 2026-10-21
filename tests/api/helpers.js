@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { vi } from 'vitest'
+import { createToken } from '../../api/_lib/auth/session.js'
 import { getStore, resetStore } from '../../api/_lib/store/index.js'
 
 // Points the API at a fresh JSON store in a temp folder and returns it.
@@ -11,10 +12,13 @@ export async function useTempStore() {
   return getStore()
 }
 
-// token: 'dev:<id>' to sign in, null to send no Authorization header.
+// A real signed session for a test user; "demo" is a demo account.
+export const sessionFor = (id) => createToken({ id, email: `${id}@test.dev`, isDemo: id === 'demo' })
+
+// token: 'dev:<id>' signs in as that test user, null sends no Authorization header, anything else is sent as is.
 export function apiRequest(url, { method = 'POST', body, token = 'dev:alice' } = {}) {
   const headers = { 'Content-Type': 'application/json' }
-  if (token) headers.Authorization = `Bearer ${token}`
+  if (token) headers.Authorization = `Bearer ${token.startsWith('dev:') ? sessionFor(token.slice(4)) : token}`
   const payload = body === undefined || typeof body === 'string' ? body : JSON.stringify(body)
   return new Request(`http://localhost${url}`, { method, headers, body: payload })
 }

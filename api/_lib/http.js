@@ -1,4 +1,4 @@
-import { AuthUnavailableError, getUser } from './auth.js'
+import { getUser } from './auth.js'
 
 export const ok = (body, status = 200) => Response.json(body, { status })
 
@@ -14,15 +14,8 @@ export async function readJson(request) {
   }
 }
 
-// Either { user } or { response }: 401 when signed out, 503 when the sign-in service itself is down.
+// Either { user } or { response } with the 401 to send back.
 export async function requireUser(request) {
-  let user
-  try {
-    user = await getUser(request)
-  } catch (err) {
-    if (!(err instanceof AuthUnavailableError)) throw err
-    console.error('auth unavailable:', err.message)
-    return { response: fail(503, 'Sign-in is unavailable right now. Try again in a minute.') }
-  }
+  const user = await getUser(request)
   return user ? { user } : { response: fail(401, 'Sign in to continue.') }
 }
