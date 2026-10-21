@@ -19,9 +19,11 @@ export function toPublicChallenge(record) {
 }
 
 // Splits the AI answer into the public part and the secret part; throws if anything is missing.
+// Extra hints are trimmed rather than wasting a slow AI call on a 502.
 export function parseChallenge(data) {
-  const { brokenCode, symptom, hints, solution, bugExplanation } = data ?? {}
-  const hintsOk = Array.isArray(hints) && hints.length === HINTS_PER_CHALLENGE && hints.every(filled)
+  const { brokenCode, symptom, solution, bugExplanation } = data ?? {}
+  const hints = Array.isArray(data?.hints) ? data.hints.slice(0, HINTS_PER_CHALLENGE) : []
+  const hintsOk = hints.length === HINTS_PER_CHALLENGE && hints.every(filled)
   if (!hintsOk || ![brokenCode, symptom, solution, bugExplanation].every(filled)) {
     throw new Error('AI challenge is incomplete')
   }

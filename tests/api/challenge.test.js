@@ -79,6 +79,14 @@ it('returns 502 and saves nothing when the AI challenge is incomplete', async ()
   expect((await store.getCase('alice', kase.id)).status).toBe('new')
 })
 
+it('keeps the first three hints when the AI sends more', async () => {
+  fetch.mockResolvedValue(geminiAnswer({ ...AI_CHALLENGE, hints: [...AI_CHALLENGE.hints, 'a fourth hint'] }))
+  const res = await start(kase.id)
+  expect(res.status).toBe(201)
+  const { challenge } = await res.json()
+  expect(challenge.hintsTotal).toBe(3)
+})
+
 it('stops at the daily limit', async () => {
   for (let i = 0; i < 30; i++) await store.addUsage('alice', new Date().toISOString().slice(0, 10))
   const res = await start(kase.id)
