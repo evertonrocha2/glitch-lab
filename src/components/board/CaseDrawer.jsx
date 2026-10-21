@@ -16,6 +16,8 @@ export default function CaseDrawer({ item, onClose, onTrain, training }) {
   const panel = useRef(null)
   const { type, message } = splitError(item.error)
   const status = STATUS[item.status]
+  const solved = item.status === 'solved'
+  const passed = Math.min(item.passedCount, 2)
 
   useEffect(() => {
     panel.current?.focus()
@@ -76,15 +78,17 @@ export default function CaseDrawer({ item, onClose, onTrain, training }) {
             <div className="flex items-center justify-between gap-3">
               <p className="font-label text-xs text-secondary">Gym</p>
               <span className="flex items-center gap-2 text-sm text-ink">
-                <ProgressBlocks passed={item.passedCount} />
-                {item.passedCount}/2 challenges passed
+                <ProgressBlocks passed={passed} />
+                {passed}/2 challenges passed
               </span>
             </div>
             <p className="mt-3 text-ink">
-              The AI writes new code with this same kind of bug. You fix it. Pass 2 challenges to solve this case.
+              {solved
+                ? 'You solved this case. Practice again any time to keep it sharp.'
+                : 'The AI writes new code with this same kind of bug. You fix it. Pass 2 challenges to solve this case.'}
             </p>
             <PixelButton variant="secondary" onClick={() => onTrain(item)} disabled={training || !onTrain} className="mt-4">
-              {training ? 'Preparing your challenge...' : 'Train this'}
+              {training ? 'Preparing your challenge...' : solved ? 'Practice again' : 'Train this'}
             </PixelButton>
           </div>
         </div>

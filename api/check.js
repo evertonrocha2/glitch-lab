@@ -58,7 +58,8 @@ export async function POST(request) {
   })
 
   let updatedCase = kase
-  if (verdict.passed) {
+  // Extra practice on a solved case is welcome, but the case can't go past 2/2.
+  if (verdict.passed && kase.status !== 'solved') {
     const passedCount = kase.passedCount + 1
     updatedCase = await store.updateCase(userId, kase.id, {
       passedCount,

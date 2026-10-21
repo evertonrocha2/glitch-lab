@@ -47,6 +47,13 @@ it('solves the case after two passed challenges', async () => {
   expect(body.case).toMatchObject({ passedCount: 2, status: 'solved' })
 })
 
+it('does not count past a solved case', async () => {
+  await store.updateCase('alice', kase.id, { status: 'solved', passedCount: 2 })
+  fetch.mockResolvedValue(geminiAnswer({ passed: true, feedback: 'Still sharp.' }))
+  const body = await (await check(challenge.id, FIX)).json()
+  expect(body.case).toMatchObject({ passedCount: 2, status: 'solved' })
+})
+
 it('keeps the challenge open when the fix fails', async () => {
   fetch.mockResolvedValue(geminiAnswer({ passed: false, feedback: 'a.b is still undefined.' }))
   const body = await (await check(challenge.id, 'console.log(a.c)')).json()

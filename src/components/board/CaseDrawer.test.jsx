@@ -23,6 +23,12 @@ it('closes on Escape and on Close', async () => {
   expect(onClose).toHaveBeenCalledTimes(2)
 })
 
+it('offers more practice on a solved case without overcounting', () => {
+  render(<CaseDrawer item={makeCase({ status: 'solved', passedCount: 2 })} onClose={vi.fn()} onTrain={vi.fn()} training={false} />)
+  expect(screen.getByRole('button', { name: 'Practice again' })).toBeEnabled()
+  expect(screen.getByText('2/2 challenges passed')).toBeInTheDocument()
+})
+
 it('blocks Train this while a challenge is being prepared', () => {
   render(<CaseDrawer item={makeCase()} onClose={vi.fn()} onTrain={vi.fn()} training />)
   expect(screen.getByRole('button', { name: 'Preparing your challenge...' })).toBeDisabled()
