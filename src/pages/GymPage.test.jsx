@@ -1,7 +1,8 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { checkFix, getChallenge, revealHint } from '../lib/api.js'
+import { AuthError, checkFix, getChallenge, revealHint } from '../lib/api.js'
+import { saveGymDraft, takeGymDraft } from '../lib/draft.js'
 import { makeCase, makeChallenge } from '../test/fixtures.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
@@ -81,6 +82,22 @@ it('Submit fix cannot be sent twice while waiting', async () => {
   await userEvent.click(submit)
   expect(await screen.findByText('Checking your fix')).toBeInTheDocument()
   expect(checkFix).toHaveBeenCalledTimes(1)
+})
+
+it('keeps my fix when the session expires', async () => {
+  vi.mocked(checkFix).mockRejectedValue(new AuthError('Sign in to continue.'))
+  renderAt('/gym/ch1', { user: 'alice' })
+  const box = await editor()
+  await userEvent.type(box, '\n// my fix')
+  await userEvent.click(screen.getByRole('button', { name: 'Submit fix' }))
+  await waitFor(() => expect(currentLocation()).toBe('/login?next=%2Fgym%2Fch1'))
+  expect(takeGymDraft('ch1')).toBe('const order = {}\nconsole.log(order.items.length)\n// my fix')
+})
+
+it('brings my saved fix back after signing in again', async () => {
+  saveGymDraft('ch1', 'const order = { items: 1 }')
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await editor()).toHaveValue('const order = { items: 1 }')
 })
 
 it('says when the challenge does not exist', async () => {

@@ -10,6 +10,7 @@ import PixelButton from '../components/pixel/PixelButton.jsx'
 import Working from '../components/pixel/Working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { saveGymDraft, takeGymDraft } from '../lib/draft.js'
 
 export default function GymPage() {
   const { id } = useParams()
@@ -21,16 +22,24 @@ export default function GymPage() {
   const [checking, setChecking] = useState(false)
   const [result, setResult] = useState(null)
   const [message, setMessage] = useState('')
+  // A fix saved before a session expired, read once on mount.
+  const [savedFix] = useState(() => takeGymDraft(id))
   // Blocks a second submit before the disabled button re-renders.
   const busy = useRef(false)
+  const codeRef = useRef(code)
+  codeRef.current = code
 
-  // An expired session signs out; the route guard brings the person back here after login.
+  // An expired session signs out (keeping the fix); the route guard brings the person back here after login.
   const handleError = useCallback(
     async (err) => {
-      if (err instanceof AuthError) await signOut()
-      else setMessage(err.message)
+      if (err instanceof AuthError) {
+        if (codeRef.current) saveGymDraft(id, codeRef.current)
+        await signOut()
+      } else {
+        setMessage(err.message)
+      }
     },
-    [signOut],
+    [id, signOut],
   )
 
   useEffect(() => {
@@ -40,14 +49,14 @@ export default function GymPage() {
       .then((loaded) => {
         if (!alive) return
         setChallenge(loaded)
-        setCode(loaded.brokenCode)
+        setCode(savedFix ?? loaded.brokenCode)
         setHints(loaded.hints)
       })
       .catch((err) => alive && handleError(err))
     return () => {
       alive = false
     }
-  }, [id, getToken, handleError])
+  }, [id, getToken, handleError, savedFix])
 
   async function nextHint() {
     setHintLoading(true)

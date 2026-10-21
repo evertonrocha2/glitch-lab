@@ -9,6 +9,27 @@ export function saveDraft({ error, code }) {
   }
 }
 
+// The gym keeps a half-written fix per challenge if the session expires mid-edit.
+const gymKey = (challengeId) => `gd:gym-draft:${challengeId}`
+
+export function saveGymDraft(challengeId, code) {
+  try {
+    sessionStorage.setItem(gymKey(challengeId), code)
+  } catch {
+    // Storage blocked: nothing to restore later.
+  }
+}
+
+export function takeGymDraft(challengeId) {
+  try {
+    const code = sessionStorage.getItem(gymKey(challengeId))
+    sessionStorage.removeItem(gymKey(challengeId))
+    return code
+  } catch {
+    return null
+  }
+}
+
 export function takeDraft() {
   try {
     const raw = sessionStorage.getItem(KEY)
