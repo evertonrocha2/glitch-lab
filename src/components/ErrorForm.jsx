@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LIMITS } from '../../shared/limits.js'
+import { EXAMPLES } from '../lib/examples.js'
 import PixelButton from './pixel/PixelButton.jsx'
 
 const MIN_CODE_LINES = 8
@@ -7,9 +8,9 @@ const labelClass = 'font-label text-xs text-ink'
 // Each box shows focus on its frame, so the textarea itself drops the outline.
 const textareaClass = 'block w-full resize-none bg-transparent font-mono text-sm leading-relaxed focus-visible:outline-none'
 
-export default function ErrorForm({ onSubmit, loading }) {
-  const [error, setError] = useState('')
-  const [code, setCode] = useState('')
+export default function ErrorForm({ onSubmit, loading, initialError = '', initialCode = '' }) {
+  const [error, setError] = useState(initialError)
+  const [code, setCode] = useState(initialCode)
 
   const canSubmit = error.trim() !== '' && !loading
   // The editor grows with the code, so the gutter numbers always line up.
@@ -24,6 +25,23 @@ export default function ErrorForm({ onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-sm text-muted">Try an example:</span>
+        {EXAMPLES.map((example) => (
+          <PixelButton
+            key={example.label}
+            variant="ghost"
+            onClick={() => {
+              setError(example.error)
+              setCode(example.code)
+            }}
+            className="px-2.5 py-1.5 text-[10px]"
+          >
+            {example.label}
+          </PixelButton>
+        ))}
+      </div>
+
       <div>
         <label htmlFor="error-input" className={labelClass}>
           Error message

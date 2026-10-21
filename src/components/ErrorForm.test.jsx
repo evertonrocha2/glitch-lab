@@ -30,3 +30,16 @@ it('caps both fields at the shared limits', () => {
   expect(screen.getByLabelText('Error message')).toHaveAttribute('maxlength', '2000')
   expect(screen.getByLabelText('Code (optional)')).toHaveAttribute('maxlength', '6000')
 })
+
+it('fills both fields when an example is picked', async () => {
+  render(<ErrorForm onSubmit={vi.fn()} loading={false} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Python: IndexError' }))
+  expect(screen.getByLabelText('Error message')).toHaveValue('IndexError: list index out of range')
+  expect(screen.getByLabelText('Code (optional)')).toHaveValue('nums = [10, 20, 30]\nprint(nums[3])')
+})
+
+it('starts with the initial values', () => {
+  render(<ErrorForm onSubmit={vi.fn()} loading={false} initialError="KeyError: 'email'" initialCode="user['email']" />)
+  expect(screen.getByLabelText('Error message')).toHaveValue("KeyError: 'email'")
+  expect(screen.getByLabelText('Code (optional)')).toHaveValue("user['email']")
+})
