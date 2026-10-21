@@ -1,9 +1,13 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
-// Dev only: serve api/analyze.js the way Vercel does, so `bun run dev` works without `vercel dev`.
+const ROUTE_NAME = /^[a-z-]+$/
+
+// Dev only: serve every api/<name>.js the way Vercel does, so `bun run dev` works without `vercel dev`.
 // The env (with the API key) stays in this Node process; the browser never sees it.
 function localApi() {
   return {
@@ -13,25 +17,46 @@ function localApi() {
       for (const [key, value] of Object.entries(loadEnv(server.config.mode, process.cwd(), ''))) {
         process.env[key] ??= value
       }
-      server.middlewares.use('/api/analyze', async (req, res) => {
-        if (req.method !== 'POST') {
-          res.statusCode = 405
-          res.end()
-          return
+      server.middlewares.use('/api', async (req, res) => {
+        try {
+          // Mounted at /api, so req.url is "/<name>?query".
+          const url = new URL(req.url, 'http://localhost')
+          const name = url.pathname.replace(/^\/+|\/+$/g, '')
+          if (!ROUTE_NAME.test(name) || !existsSync(resolve(server.config.root, 'api', `${name}.js`))) {
+            res.statusCode = 404
+            res.end()
+            return
+          }
+          const handler = (await server.ssrLoadModule(`/api/${name}.js`))[req.method]
+          if (typeof handler !== 'function') {
+            res.statusCode = 405
+            res.end()
+            return
+          }
+
+          const chunks = []
+          for await (const chunk of req) chunks.push(chunk)
+          const headers = {}
+          if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type']
+          if (req.headers.authorization) headers.Authorization = req.headers.authorization
+          const hasBody = !['GET', 'HEAD'].includes(req.method)
+
+          const response = await handler(
+            new Request(`http://localhost/api/${name}${url.search}`, {
+              method: req.method,
+              headers,
+              body: hasBody ? Buffer.concat(chunks) : undefined,
+            }),
+          )
+          res.statusCode = response.status
+          res.setHeader('Content-Type', response.headers.get('Content-Type') ?? 'application/json')
+          res.end(await response.text())
+        } catch (err) {
+          console.error(err)
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ message: 'Server error.' }))
         }
-        const chunks = []
-        for await (const chunk of req) chunks.push(chunk)
-        const { POST } = await server.ssrLoadModule('/api/analyze.js')
-        const response = await POST(
-          new Request('http://localhost/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': req.headers['content-type'] ?? 'application/json' },
-            body: Buffer.concat(chunks),
-          }),
-        )
-        res.statusCode = response.status
-        res.setHeader('Content-Type', response.headers.get('Content-Type') ?? 'application/json')
-        res.end(await response.text())
       })
     },
   }
