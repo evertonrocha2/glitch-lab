@@ -10,16 +10,16 @@ export default function AppShell({ children }) {
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-          <Link to="/" className="flex items-center gap-2.5 font-pixel text-xl font-bold text-ink">
-            <PixelLogo className="size-7" />
+          <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
+            <PixelLogo className="size-6 sm:size-7" />
             <span>Glitch Detective</span>
           </Link>
-          <nav aria-label="Account" className="flex items-center gap-5">
+          <nav aria-label="Account" className="flex items-center gap-3 whitespace-nowrap sm:gap-5">
             <Link to="/board" className="font-label text-xs text-ink transition-colors hover:text-primary">
               Board
             </Link>
             <span className="hidden max-w-48 truncate text-sm text-muted sm:inline">{user?.email}</span>
-            <PixelButton variant="ghost" onClick={signOut} className="px-3 py-2">
+            <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>
           </nav>
