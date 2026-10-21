@@ -2,7 +2,7 @@ import PixelCard from './pixel/PixelCard.jsx'
 import Reveal from './Reveal.jsx'
 
 const codeClass =
-  'whitespace-pre-wrap break-words border-2 border-ink bg-mist p-4 font-mono text-[13px] leading-relaxed text-ink'
+  'whitespace-pre-wrap wrap-break-word border-2 border-ink bg-mist p-4 font-mono text-[13px] leading-relaxed text-ink'
 
 export default function ResultCards({ analysis }) {
   const { explicacao, causa, correcao, exercicio } = analysis
