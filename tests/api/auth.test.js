@@ -47,6 +47,19 @@ it('verifies a Supabase token', async () => {
   expect(supabaseGetUser).toHaveBeenCalledWith('jwt-123')
 })
 
+it('treats anonymous Supabase visitors as demo users', async () => {
+  useSupabase()
+  supabaseGetUser.mockResolvedValue({ data: { user: { id: 'anon1', email: '', is_anonymous: true } }, error: null })
+  expect(await getUser(withToken('jwt-anon'))).toEqual({ id: 'anon1', email: '', isDemo: true })
+})
+
+it('matches the demo email without caring about case', async () => {
+  useSupabase()
+  vi.stubEnv('DEMO_EMAIL', 'Demo@Glitch.dev')
+  supabaseGetUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'demo@glitch.dev' } }, error: null })
+  expect((await getUser(withToken('jwt-123'))).isDemo).toBe(true)
+})
+
 it('returns null when Supabase rejects the token', async () => {
   useSupabase()
   supabaseGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid JWT' } })

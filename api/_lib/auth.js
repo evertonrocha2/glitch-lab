@@ -26,7 +26,10 @@ export async function getUser(request) {
       const { data, error } = await supabaseAdmin().auth.getUser(token)
       if (error || !data?.user) return null
       const email = data.user.email ?? ''
-      return { id: data.user.id, email, isDemo: Boolean(process.env.DEMO_EMAIL) && email === process.env.DEMO_EMAIL }
+      // Demo visitors sign in anonymously (each gets their own seeded board); DEMO_EMAIL covers a fixed demo login too.
+      const demoEmail = process.env.DEMO_EMAIL?.toLowerCase()
+      const isDemo = data.user.is_anonymous === true || (Boolean(demoEmail) && email.toLowerCase() === demoEmail)
+      return { id: data.user.id, email, isDemo }
     } catch {
       return null
     }

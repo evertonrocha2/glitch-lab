@@ -33,13 +33,10 @@ export function createSupabaseAuth() {
     async signUp(email, password) {
       orThrow(await supabase.auth.signUp({ email, password }))
     },
+    // Each visitor gets their own anonymous account; the API seeds its sample board on first load.
+    // No shared password means nobody can lock judges out of the demo.
     async signInDemo() {
-      orThrow(
-        await supabase.auth.signInWithPassword({
-          email: import.meta.env.VITE_DEMO_EMAIL,
-          password: import.meta.env.VITE_DEMO_PASSWORD,
-        }),
-      )
+      orThrow(await supabase.auth.signInAnonymously())
     },
     async signOut() {
       await supabase.auth.signOut()

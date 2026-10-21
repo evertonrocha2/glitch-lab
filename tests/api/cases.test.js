@@ -21,6 +21,17 @@ it('lists only my cases', async () => {
   expect((await res.json()).cases.map((item) => item.id)).toEqual([mine.id])
 })
 
+it('gives a fresh demo account its sample board', async () => {
+  const res = await GET(apiRequest('/api/cases', { method: 'GET', token: 'dev:demo' }))
+  const { cases } = await res.json()
+  expect(cases.map((item) => item.status).sort()).toEqual(['new', 'new', 'solved', 'training'])
+})
+
+it('does not seed a normal account', async () => {
+  const res = await GET(apiRequest('/api/cases', { method: 'GET', token: 'dev:carol' }))
+  expect((await res.json()).cases).toEqual([])
+})
+
 it('asks for sign in without a user', async () => {
   const res = await GET(apiRequest('/api/cases', { method: 'GET', token: null }))
   expect(res.status).toBe(401)
