@@ -85,3 +85,33 @@ it('earns marathon at five hours in total', () => {
   const study = Array.from({ length: 5 }, (_, index) => ({ day: `2026-09-0${index + 1}`, seconds: 3600 }))
   expect(earned(computeProgress({ ...empty, study }))).toContain('marathon')
 })
+
+// Daily and global challenges.
+const solvedDaily = (day, difficulty = 'easy') => ({ kind: 'daily', day, difficulty })
+const daysFrom = (start, length) => Array.from({ length }, (_, index) => solvedDaily(`2026-10-${String(start + index).padStart(2, '0')}`))
+
+it('adds daily and global xp and reports the daily streak', () => {
+  const daily = { solved: [solvedDaily('2026-10-21', 'medium'), solvedDaily('2026-10-22', 'hard'), { kind: 'global', day: '2026-10-19', difficulty: 'hard' }] }
+  const progress = computeProgress({ ...empty, daily })
+  expect(progress.xp).toBe(35 + 50 + 100)
+  expect(progress.dailyStreak).toBe(2)
+  expect(earned(progress)).toEqual(['global-ace'])
+})
+
+it('pays a puzzle only its daily xp, not gym xp on top', () => {
+  const challenges = [passed({ hintsRevealed: 0, puzzleId: 'p1' })]
+  const progress = computeProgress({ ...empty, challenges, daily: { solved: [solvedDaily('2026-10-22')] } })
+  expect(progress.xp).toBe(20)
+  expect(earned(progress)).not.toContain('fixed-it')
+})
+
+it('earns daily grinder for a 7-day daily streak, and keeps it', () => {
+  expect(earned(computeProgress({ ...empty, daily: { solved: daysFrom(10, 6) } }))).not.toContain('daily-grinder')
+  const progress = computeProgress({ ...empty, daily: { solved: daysFrom(10, 7) } })
+  expect(progress.dailyStreak).toBe(0)
+  expect(earned(progress)).toContain('daily-grinder')
+})
+
+it('works without any daily input', () => {
+  expect(computeProgress(empty)).toMatchObject({ xp: 0, dailyStreak: 0 })
+})

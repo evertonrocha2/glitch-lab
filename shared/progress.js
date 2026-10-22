@@ -1,4 +1,5 @@
 import { BADGES } from './badges.js'
+import { dailySummary } from './daily.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -35,8 +36,11 @@ function streaks(study, today) {
 }
 
 // Everything is derived from what's already stored, so there's nothing to keep in sync.
-export function computeProgress({ cases, challenges, notes, study, today }) {
-  const passes = challenges.filter((item) => item.status === 'passed')
+// daily (optional): { solved: [{ kind, day, difficulty }] }, the daily and global puzzles passed.
+export function computeProgress({ cases, challenges, notes, study, today, daily }) {
+  // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
+  const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
+  const puzzles = dailySummary(daily?.solved, today)
   const cleanPasses = passes.filter((item) => item.hintsRevealed === 0).length
   const solved = cases.filter((item) => item.status === 'solved').length
   const totalSeconds = study.reduce((sum, entry) => sum + entry.seconds, 0)
@@ -48,7 +52,8 @@ export function computeProgress({ cases, challenges, notes, study, today }) {
     cleanPasses * XP.cleanPass +
     solved * XP.solved +
     Math.min(notes.length, MAX_NOTES_FOR_XP) * XP.note +
-    Math.floor(totalSeconds / 60) * XP.studyMinute
+    Math.floor(totalSeconds / 60) * XP.studyMinute +
+    puzzles.xp
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -61,6 +66,8 @@ export function computeProgress({ cases, challenges, notes, study, today }) {
     bestDaySeconds: Math.max(0, ...study.map((entry) => entry.seconds)),
     totalSeconds,
     longestStreak: longest,
+    dailyLongestStreak: puzzles.longestStreak,
+    globalSolved: puzzles.globalSolved,
   }
 
   return {
@@ -70,6 +77,7 @@ export function computeProgress({ cases, challenges, notes, study, today }) {
     levelXp: LEVELS[index].min,
     nextLevelXp: LEVELS[index + 1]?.min ?? null,
     streak: current,
+    dailyStreak: puzzles.streak,
     todaySeconds: study.find((entry) => entry.day === today)?.seconds ?? 0,
     totalSeconds,
     badges: BADGES.map((badge) => ({ id: badge.id, earned: badge.earned(stats) })),

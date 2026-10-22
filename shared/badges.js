@@ -12,6 +12,8 @@ export const BADGES = [
   { id: 'on-a-roll', name: 'On a roll', how: 'Study 3 days in a row.', earned: (s) => s.longestStreak >= 3 },
   { id: 'unstoppable', name: 'Unstoppable', how: 'Study 7 days in a row.', earned: (s) => s.longestStreak >= 7 },
   { id: 'marathon', name: 'Marathon', how: 'Study 5 hours in total.', earned: (s) => s.totalSeconds >= 5 * 3600 },
+  { id: 'daily-grinder', name: 'Daily grinder', how: 'Solve a daily challenge 7 days in a row.', earned: (s) => s.dailyLongestStreak >= 7 },
+  { id: 'global-ace', name: 'Global ace', how: 'Solve a weekly global challenge.', earned: (s) => s.globalSolved >= 1 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)
