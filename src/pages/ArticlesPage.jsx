@@ -76,7 +76,7 @@ export default function ArticlesPage() {
           type="search"
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
-          placeholder="Search titles, text, tags or authors"
+          placeholder="Search titles, tags, authors"
           maxLength={80}
           className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel"
         />

@@ -69,8 +69,9 @@ export default function NotificationBell() {
         )}
       </button>
 
+      {/* Phones: pinned under the top row, full width. Wider screens: hangs from the bell. */}
       {open && (
-        <div className="absolute top-full right-0 z-40 mt-3 w-[min(22rem,calc(100vw-2.5rem))] border-2 border-ink bg-white shadow-pixel">
+        <div className="fixed inset-x-4 top-16 z-40 border-2 border-ink bg-white shadow-pixel sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-3 sm:w-[22rem]">
           <div className="flex items-center justify-between gap-3 border-b-2 border-ink px-3 py-2">
             <span className="font-label text-xs text-ink">Notifications</span>
             {unread > 0 && (

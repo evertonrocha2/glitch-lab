@@ -59,7 +59,7 @@ export default function ArticleCard({ article, onTag }) {
       </h2>
       {article.excerpt && <p className="mt-2 line-clamp-3 break-words text-sm text-ink/80">{article.excerpt}</p>}
       <span aria-hidden="true" className="min-h-4 flex-1" />
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-line pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-line pt-3">
         <AuthorChip author={article.author} meta={timeAgo(article.createdAt)} size="size-7" />
         <CountRow counts={article.counts} />
       </div>

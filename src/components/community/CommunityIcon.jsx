@@ -1,10 +1,11 @@
-// 7x7 pixel icons for the community pages, drawn in the current text color ("#" is filled).
+// 7x7 pixel icons for the community pages and the app header, drawn in the current text color ("#" is filled).
 const ICONS = {
   heart: ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...', '.......'],
   check: ['......#', '.....##', '#...##.', '##.##..', '.###...', '..#....', '.......'],
   cross: ['##...##', '.##.##.', '..###..', '...#...', '..###..', '.##.##.', '##...##'],
   comment: ['#######', '#.....#', '#.#.#.#', '#.....#', '#######', '.##....', '.#.....'],
   bell: ['...#...', '..###..', '.#####.', '.#####.', '.#####.', '#######', '...#...'],
+  exit: ['####...', '#..#...', '#..#.#.', '#..####', '#..#.#.', '#..#...', '####...'],
 }
 
 export default function CommunityIcon({ name, className = 'size-3.5' }) {

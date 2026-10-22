@@ -19,7 +19,7 @@ export default function CommunityShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <nav aria-label="Main" className="flex items-center gap-4">
-            <Link to="/articles" className="font-label text-xs text-ink hover:text-primary">
+            <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
               Articles
             </Link>
             <PixelButton as={Link} to={`/login?next=${next}`} className="px-3 py-2">
