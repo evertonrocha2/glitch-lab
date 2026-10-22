@@ -175,11 +175,13 @@ export function createSupabaseStore({ url, serviceKey }) {
 
     async updateChallenge(userId, id, { hintsRevealed, status, attempts }) {
       const patch = defined({ hints_revealed: hintsRevealed, status, attempts })
-      const row = unwrap(await db.from('challenges').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle())
-      // The first pass is the one the leaderboard times.
-      if (!row || status !== 'passed' || row.passed_at) return toChallenge(row)
-      const stamped = await db.from('challenges').update({ passed_at: new Date().toISOString() }).eq('id', id).is('passed_at', null).select().maybeSingle()
-      return toChallenge(unwrap(stamped) ?? row)
+      const mine = () => db.from('challenges').update(patch).eq('id', id).eq('user_id', userId)
+      // The first pass is the one the leaderboard times: stamped in the same write as the status.
+      if (status === 'passed') {
+        const stamped = unwrap(await mine().update({ ...patch, passed_at: new Date().toISOString() }).is('passed_at', null).select().maybeSingle())
+        if (stamped) return toChallenge(stamped)
+      }
+      return toChallenge(unwrap(await mine().select().maybeSingle()))
     },
 
     async listChallenges(userId) {
@@ -240,9 +242,12 @@ export function createSupabaseStore({ url, serviceKey }) {
       const rows = unwrap(
         await db
           .from('challenges')
-          .select('user_id, attempts, created_at, passed_at')
+          .select('user_id, attempts, created_at, passed_at, users!inner(is_demo)')
           .eq('puzzle_id', puzzleId)
           .eq('status', 'passed')
+          // Demo accounts are free and unlimited: they play, but never rank.
+          .eq('users.is_demo', false)
+          .not('passed_at', 'is', null)
           .order('passed_at', { ascending: true }),
       )
       return (rows ?? []).map((row) => ({ userId: row.user_id, attempts: row.attempts, startedAt: row.created_at, passedAt: row.passed_at }))

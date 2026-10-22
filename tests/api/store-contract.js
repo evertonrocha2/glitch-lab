@@ -385,6 +385,14 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(Date.parse(solves[0].passedAt)).toBeGreaterThanOrEqual(Date.parse(solves[0].startedAt))
     })
 
+    it('leaves demo accounts out of who passed a puzzle', async () => {
+      const puzzle = await store.createPuzzle(puzzleFor(randomDay()), PUZZLE_SECRET)
+      const demo = await store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })
+      const played = await store.createChallenge(demo.id, { caseId: null, puzzleId: puzzle.id, brokenCode: 'x', symptom: 'y', language: 'python', hints: ['a', 'b', 'c'] }, PUZZLE_SECRET)
+      await store.updateChallenge(demo.id, played.id, { status: 'passed', attempts: 1 })
+      expect(await store.puzzleSolves(puzzle.id)).toEqual([])
+    })
+
     // Community articles are shared by everyone and outlive each test on Supabase,
     // so every search here narrows itself with a tag or word made up for that test.
     const marker = () => `m${crypto.randomUUID().slice(0, 8)}`

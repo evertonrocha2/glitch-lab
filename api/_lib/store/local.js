@@ -173,8 +173,11 @@ export function createLocalStore({ file }) {
 
     // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt }], first pass first.
     async puzzleSolves(puzzleId) {
-      return (await load()).challenges
-        .filter((item) => item.puzzleId === puzzleId && item.status === 'passed')
+      const data = await load()
+      // Demo accounts are free and unlimited: they play, but never rank.
+      const demos = new Set((data.users ?? []).filter((user) => user.isDemo).map((user) => user.id))
+      return data.challenges
+        .filter((item) => item.puzzleId === puzzleId && item.status === 'passed' && item.passedAt && !demos.has(item.userId))
         .map((item) => ({ userId: item.userId, attempts: item.attempts, startedAt: item.createdAt, passedAt: item.passedAt }))
         .sort((a, b) => a.passedAt.localeCompare(b.passedAt))
     },
