@@ -86,17 +86,56 @@ const DEMO_CASES = [
   },
 ]
 
+// Minutes studied 3, 2 and 1 days ago: a 3-day streak, and one day long enough for Deep focus.
+const DEMO_STUDY_MINUTES = [20, 35, 15]
+
+// A challenge the demo already beat, built from the case's own practice exercise.
+async function seedPassedChallenge(store, userId, kase, hintsRevealed) {
+  const { enunciado, resposta } = kase.analysis.exercicio
+  const challenge = await store.createChallenge(
+    userId,
+    { caseId: kase.id, brokenCode: enunciado, symptom: kase.error, language: kase.language, hints: ['Read the error again.', 'Look at the line it names.', 'Compare with the fix on the card.'] },
+    { solution: resposta, bugExplanation: kase.analysis.causa },
+  )
+  await store.updateChallenge(userId, challenge.id, { status: 'passed', attempts: 1, hintsRevealed })
+}
+
+function demoNote(byConcept) {
+  return {
+    title: 'My debugging notebook',
+    blocks: [
+      { id: 'demo-1', type: 'heading', text: 'Things I keep getting wrong' },
+      { id: 'demo-2', type: 'text', text: 'Reading a property of something that is not there yet. Check the object exists before going deeper.' },
+      { id: 'demo-3', type: 'case', caseId: byConcept['undefined-access'].id },
+      { id: 'demo-4', type: 'todo', text: 'Try optional chaining (?.) in my own project', done: true },
+      { id: 'demo-5', type: 'text', text: 'Lists start at 0. The last index is length - 1.' },
+      { id: 'demo-6', type: 'case', caseId: byConcept['index-out-of-range'].id },
+      { id: 'demo-7', type: 'todo', text: 'Pass the second gym challenge for this one', done: false },
+    ],
+  }
+}
+
 // Returns false (and changes nothing) when the account already has cases.
-export async function seedDemo(store, userId) {
+export async function seedDemo(store, userId, now = new Date()) {
   if ((await store.listCases(userId)).length > 0) return false
 
+  const byConcept = {}
   for (const { status, passedCount, challenge, ...fields } of DEMO_CASES) {
     const created = await store.createCase(userId, fields)
     await store.updateCase(userId, created.id, { status, passedCount })
+    byConcept[fields.concept] = created
+    // One passed challenge per pass already on the card; the first one without hints.
+    for (let pass = 0; pass < passedCount; pass++) await seedPassedChallenge(store, userId, created, pass === 0 ? 0 : 2)
     if (challenge) {
       const { solution, bugExplanation, ...publicPart } = challenge
       await store.createChallenge(userId, { caseId: created.id, language: fields.language, ...publicPart }, { solution, bugExplanation })
     }
+  }
+
+  await store.createNote(userId, demoNote(byConcept))
+  for (const [index, minutes] of DEMO_STUDY_MINUTES.entries()) {
+    const day = new Date(now.getTime() - (DEMO_STUDY_MINUTES.length - index) * 24 * 3_600_000).toISOString().slice(0, 10)
+    await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
   return true
 }
