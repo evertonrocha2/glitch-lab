@@ -1,16 +1,27 @@
 import { handleProblem, normalizeHandle } from '../shared/profile.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { earnedIds, ownProfile, parseProfile, publicProfile, summarize } from './_lib/profile.js'
+import { earnedIds, ownProfile, parseProfile, parseSearch, profileCard, publicProfile, SEARCH_MAX, summarize } from './_lib/profile.js'
 import { getStore } from './_lib/store/index.js'
 
 const NOT_FOUND = 'No public profile here.'
+const SEARCH_RESULTS = 20
 
 // GET ?handle=xyz: anyone can see a public profile. GET with no handle: your own, for the editor.
 export async function GET(request) {
   const params = new URL(request.url).searchParams
   const today = clientDay(params.get('today')) ?? serverDay()
   const store = getStore()
+
+  // GET ?search=q: anyone can look for public profiles by handle or name ("Find detectives").
+  if (params.has('search')) {
+    const query = parseSearch(params.get('search'))
+    if (query === null) return fail(400, `Search with letters, numbers, spaces, _ . and -, up to ${SEARCH_MAX} characters.`)
+    const found = await store.searchPublicProfiles(query, SEARCH_RESULTS)
+    const response = ok({ profiles: found.map(({ userId, profile }) => profileCard(profile, userId)) })
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+    return response
+  }
 
   if (params.has('handle')) {
     const handle = normalizeHandle(params.get('handle'))
