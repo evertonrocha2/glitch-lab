@@ -15,6 +15,7 @@
   --animate-walk: walk 0.6s steps(2, jump-none) infinite alternate;
   --animate-blink: blink 1.2s steps(2, jump-none) infinite;
   --animate-caret: caret 1s steps(1, end) infinite;
+  --animate-toast-in: toast-in 240ms steps(4, end) both;
   /* Mostly still, then a short RGB-split jitter: the "glitch" in the name. */
   --animate-glitch: glitch 3.2s steps(1, end) infinite;
 
@@ -51,6 +52,13 @@
     }
     to {
       translate: 6px 0;
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      translate: 0 16px;
+      opacity: 0;
     }
   }
 
