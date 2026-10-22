@@ -4,6 +4,8 @@ import { useMyProfile } from '../lib/profile/myProfile.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
+import CommunityIcon from './community/CommunityIcon.jsx'
+import NotificationBell from './community/NotificationBell.jsx'
 import PixelAvatar from './pixel/PixelAvatar.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 import PixelLogo from './pixel/PixelLogo.jsx'
@@ -28,6 +30,7 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-2 sm:order-last sm:gap-4">
+            <NotificationBell />
             <Link to="/profile" aria-label="Your profile" className="block transition-transform hover:-translate-y-0.5">
               {avatar ? (
                 <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-8 sm:size-9" />
@@ -35,11 +38,13 @@ export default function AppShell({ children }) {
                 <span aria-hidden="true" className="block size-8 border-2 border-ink bg-mist sm:size-9" />
               )}
             </Link>
-            <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
-              Sign out
+            {/* Phones show just an exit icon so the bell fits the top row; the name stays "Sign out". */}
+            <PixelButton variant="ghost" onClick={signOut} aria-label="Sign out" className="px-2.5 py-2 sm:px-3">
+              <CommunityIcon name="exit" className="size-4 sm:hidden" />
+              <span className="hidden sm:inline">Sign out</span>
             </PixelButton>
           </div>
-          <nav aria-label="Main" className="flex flex-auto items-center gap-3 sm:ml-auto sm:flex-none sm:gap-5">
+          <nav aria-label="Main" className="flex min-w-0 max-w-[calc(100%-5rem)] flex-auto flex-wrap items-center gap-x-5 gap-y-1 sm:ml-auto sm:max-w-none sm:flex-none">
             <NavLink to="/board" className={navClass}>
               Board
             </NavLink>
@@ -51,6 +56,9 @@ export default function AppShell({ children }) {
             </NavLink>
             <NavLink to="/trail" className={navClass}>
               Trail
+            </NavLink>
+            <NavLink to="/articles" className={navClass}>
+              Articles
             </NavLink>
             <NavLink to="/progress" className={navClass}>
               Progress{' '}

@@ -192,3 +192,82 @@ create index if not exists challenges_puzzle_status on public.challenges (puzzle
 
 alter table public.puzzles enable row level security;
 alter table public.puzzle_secrets enable row level security;
+
+-- Community articles: anyone can read them through /api/community; only the server writes.
+-- Like everything else, RLS is on with no policies, so the browser can't touch these tables directly.
+-- "if not exists" so this block also upgrades a database made before the community existed.
+create table if not exists public.articles (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid not null references public.users (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 120),
+  body text not null check (char_length(body) between 1 and 12000),
+  tags text[] not null default '{}' check (cardinality(tags) <= 5),
+  -- Optional link to one of the author's cases: only its error type, bug type and language are shown.
+  case_id uuid references public.cases (id) on delete set null,
+  -- Kept up to date by refresh_article_counts, so lists can sort by them.
+  like_count int not null default 0,
+  valid_count int not null default 0,
+  bad_count int not null default 0,
+  comment_count int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists articles_created on public.articles (created_at desc);
+create index if not exists articles_author on public.articles (author_id, created_at desc);
+create index if not exists articles_tags on public.articles using gin (tags);
+
+create table if not exists public.article_comments (
+  id uuid primary key default gen_random_uuid(),
+  article_id uuid not null references public.articles (id) on delete cascade,
+  author_id uuid not null references public.users (id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists article_comments_article on public.article_comments (article_id, created_at);
+create index if not exists article_comments_author on public.article_comments (author_id);
+
+-- One row per person and article: a like and/or a rating. author_id is the article's author, copied
+-- here so "what did my articles receive" is a single count. Demo reactions show but earn no XP.
+create table if not exists public.article_reactions (
+  article_id uuid not null references public.articles (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  author_id uuid not null references public.users (id) on delete cascade,
+  liked boolean not null default false,
+  rating text check (rating in ('valid', 'bad')),
+  from_demo boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (article_id, user_id)
+);
+create index if not exists article_reactions_author on public.article_reactions (author_id);
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  type text not null check (type in ('comment', 'like', 'rating_valid', 'rating_bad')),
+  actor_id uuid not null references public.users (id) on delete cascade,
+  article_id uuid not null references public.articles (id) on delete cascade,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_user on public.notifications (user_id, created_at desc);
+
+alter table public.articles enable row level security;
+alter table public.article_comments enable row level security;
+alter table public.article_reactions enable row level security;
+alter table public.notifications enable row level security;
+
+-- Recounts likes, ratings and comments on one article after any change to them.
+create or replace function public.refresh_article_counts(p_article uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.articles a set
+    like_count = (select count(*) from public.article_reactions r where r.article_id = a.id and r.liked),
+    valid_count = (select count(*) from public.article_reactions r where r.article_id = a.id and r.rating = 'valid'),
+    bad_count = (select count(*) from public.article_reactions r where r.article_id = a.id and r.rating = 'bad'),
+    comment_count = (select count(*) from public.article_comments c where c.article_id = a.id)
+  where a.id = p_article;
+$$;
+revoke execute on function public.refresh_article_counts(uuid) from public, anon, authenticated;

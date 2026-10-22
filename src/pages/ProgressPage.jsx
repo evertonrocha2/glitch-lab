@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import { DAILY_XP } from '../../shared/daily.js'
-import { XP } from '../../shared/progress.js'
+import { COMMUNITY_XP, XP } from '../../shared/progress.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
@@ -44,6 +44,10 @@ const EARN = [
   ['...and the whole trail', `+${TRAIL_BONUS_XP}`],
   ['Solve a daily: easy, medium, hard', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
   ['Solve the weekly global challenge', DAILY_XP.global],
+  ['Publish an article', COMMUNITY_XP.article],
+  ['Get a valid rating', COMMUNITY_XP.validReceived],
+  ['Get a like', COMMUNITY_XP.likeReceived],
+  ['Comment on an article', COMMUNITY_XP.comment],
 ]
 
 export default function ProgressPage() {

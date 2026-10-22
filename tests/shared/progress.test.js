@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { BADGES } from '../../shared/badges.js'
-import { computeProgress, STUDY_DAY_SECONDS } from '../../shared/progress.js'
+import { COMMUNITY_XP, COMMUNITY_XP_CAPS, computeProgress, STUDY_DAY_SECONDS } from '../../shared/progress.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 
 const kase = (fields = {}) => ({ id: crypto.randomUUID(), status: 'new', language: 'javascript', ...fields })
@@ -140,4 +140,27 @@ it('earns daily grinder for a 7-day daily streak, and keeps it', () => {
 
 it('works without any daily input', () => {
   expect(computeProgress(empty)).toMatchObject({ xp: 0, dailyStreak: 0 })
+})
+
+const community = (fields = {}) => ({ articles: 0, likesReceived: 0, validReceived: 0, comments: 0, ...fields })
+
+it('adds xp for community articles, likes, valid ratings and comments', () => {
+  const progress = computeProgress({ ...empty, community: community({ articles: 2, likesReceived: 3, validReceived: 1, comments: 4 }) })
+  expect(progress.xp).toBe(2 * COMMUNITY_XP.article + 3 * COMMUNITY_XP.likeReceived + COMMUNITY_XP.validReceived + 4 * COMMUNITY_XP.comment)
+})
+
+it('caps community xp so nobody can farm it', () => {
+  const lots = community({ articles: 500, likesReceived: 5000, validReceived: 5000, comments: 5000 })
+  const max = COMMUNITY_XP_CAPS
+  expect(computeProgress({ ...empty, community: lots }).xp).toBe(
+    max.articles * COMMUNITY_XP.article + max.likes * COMMUNITY_XP.likeReceived + max.valid * COMMUNITY_XP.validReceived + max.comments * COMMUNITY_XP.comment,
+  )
+})
+
+it('earns author for an article and trusted for 5 valid ratings', () => {
+  expect(earned(computeProgress({ ...empty, community: community({ articles: 1 }) }))).toEqual(['author'])
+  expect(earned(computeProgress({ ...empty, community: community({ articles: 1, validReceived: 4 }) }))).toEqual(['author'])
+  expect(earned(computeProgress({ ...empty, community: community({ articles: 1, validReceived: 5 }) }))).toEqual(['author', 'trusted'])
+  // Without community numbers nothing changes.
+  expect(computeProgress(empty).xp).toBe(0)
 })

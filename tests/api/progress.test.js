@@ -78,3 +78,13 @@ it('adds daily and global puzzles to my progress, without counting them as gym p
   expect(progress).toMatchObject({ xp: 35 + 50 + 100, dailyStreak: 2 })
   expect(earned(progress)).toEqual(['global-ace'])
 })
+
+it('adds xp and badges from my community articles', async () => {
+  const article = await store.createArticle('alice', { title: 'Undefined', body: 'Check first.', tags: [], caseId: null })
+  await store.setReaction(article.id, 'bob', { liked: true, rating: 'valid' })
+  await store.createComment('alice', article.id, 'Thanks for reading.')
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  // article 20 + like 2 + valid rating 5 + comment 2
+  expect(progress.xp).toBe(29)
+  expect(earned(progress)).toEqual(['author'])
+})

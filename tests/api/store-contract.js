@@ -384,6 +384,177 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(solves).toEqual([{ userId: ids.alice, attempts: 3, startedAt: mine.createdAt, passedAt: expect.any(String) }])
       expect(Date.parse(solves[0].passedAt)).toBeGreaterThanOrEqual(Date.parse(solves[0].startedAt))
     })
+
+    // Community articles are shared by everyone and outlive each test on Supabase,
+    // so every search here narrows itself with a tag or word made up for that test.
+    const marker = () => `m${crypto.randomUUID().slice(0, 8)}`
+    const article = (fields = {}) => ({ title: 'Undefined everywhere', body: 'Check before reading.', tags: ['javascript'], caseId: null, ...fields })
+    const idsOf = (list) => list.map((item) => item.id)
+
+    it('creates, reads, updates and deletes an article for its author only', async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const created = await store.createArticle(ids.alice, article({ caseId: kase.id }))
+      expect(created).toMatchObject({
+        ...article({ caseId: kase.id }),
+        authorId: ids.alice,
+        likeCount: 0,
+        validCount: 0,
+        badCount: 0,
+        commentCount: 0,
+      })
+      expect(created.id).toEqual(expect.any(String))
+      expect(created.updatedAt).toEqual(expect.any(String))
+      expect(await store.getArticle(created.id)).toEqual(created)
+      expect(await store.getArticle(crypto.randomUUID())).toBeNull()
+
+      expect(await store.updateArticle(ids.bob, created.id, { title: 'Mine now' })).toBeNull()
+      const updated = await store.updateArticle(ids.alice, created.id, { title: 'Reading undefined', tags: ['js', 'bugs'], caseId: null })
+      expect(updated).toMatchObject({ id: created.id, title: 'Reading undefined', body: 'Check before reading.', tags: ['js', 'bugs'], caseId: null })
+      expect(await store.getArticle(created.id)).toEqual(updated)
+
+      expect(await store.deleteArticle(ids.bob, created.id)).toBe(false)
+      expect(await store.deleteArticle(ids.alice, created.id)).toBe(true)
+      expect(await store.getArticle(created.id)).toBeNull()
+    })
+
+    it('keeps comments in order and counts them on the article', async () => {
+      const created = await store.createArticle(ids.alice, article())
+      const first = await store.createComment(ids.bob, created.id, 'Great tip.')
+      const second = await store.createComment(ids.alice, created.id, 'Thanks!')
+      expect(first).toMatchObject({ articleId: created.id, authorId: ids.bob, body: 'Great tip.' })
+      expect(first.createdAt).toEqual(expect.any(String))
+      expect(idsOf(await store.listComments(created.id))).toEqual([first.id, second.id])
+      expect(await store.getComment(first.id)).toEqual(first)
+      expect((await store.getArticle(created.id)).commentCount).toBe(2)
+
+      expect(await store.deleteComment(first.id)).toBe(true)
+      expect(await store.deleteComment(first.id)).toBe(false)
+      expect(await store.getComment(first.id)).toBeNull()
+      expect((await store.getArticle(created.id)).commentCount).toBe(1)
+    })
+
+    it('keeps one like and one rating per person, with counts', async () => {
+      const created = await store.createArticle(ids.alice, article())
+      expect(await store.getReaction(created.id, ids.bob)).toEqual({ liked: false, rating: null })
+
+      expect(await store.setReaction(created.id, ids.bob, { liked: true })).toEqual({ liked: true, rating: null })
+      expect(await store.setReaction(created.id, ids.bob, { rating: 'valid' })).toEqual({ liked: true, rating: 'valid' })
+      expect(await store.getArticle(created.id)).toMatchObject({ likeCount: 1, validCount: 1, badCount: 0 })
+
+      // Changing the rating moves it; it never counts twice.
+      await store.setReaction(created.id, ids.bob, { rating: 'bad' })
+      expect(await store.getArticle(created.id)).toMatchObject({ likeCount: 1, validCount: 0, badCount: 1 })
+
+      expect(await store.setReaction(created.id, ids.bob, { liked: false, rating: null })).toEqual({ liked: false, rating: null })
+      expect(await store.getReaction(created.id, ids.bob)).toEqual({ liked: false, rating: null })
+      expect(await store.getArticle(created.id)).toMatchObject({ likeCount: 0, validCount: 0, badCount: 0 })
+    })
+
+    it("sums what an author's articles received, leaving out demo reactions", async () => {
+      const writer = await newUser()
+      const before = await store.communityStats(writer.id)
+      expect(before).toEqual({ articles: 0, likesReceived: 0, validReceived: 0, comments: 0 })
+
+      const one = await store.createArticle(writer.id, article())
+      const two = await store.createArticle(writer.id, article({ title: 'Second' }))
+      await store.setReaction(one.id, ids.alice, { liked: true, rating: 'valid' })
+      await store.setReaction(two.id, ids.alice, { liked: true, rating: 'bad' })
+      await store.setReaction(two.id, ids.bob, { liked: true, rating: 'valid', fromDemo: true })
+      await store.createComment(writer.id, one.id, 'Edit: fixed a typo.')
+      await store.createComment(ids.alice, one.id, 'Nice.')
+
+      expect(await store.communityStats(writer.id)).toEqual({ articles: 2, likesReceived: 2, validReceived: 1, comments: 1 })
+      // The demo reaction still shows on the article itself.
+      expect(await store.getArticle(two.id)).toMatchObject({ likeCount: 2, validCount: 1, badCount: 1 })
+    })
+
+    it('searches articles by words, tag and author, newest first, a page at a time', async () => {
+      const tag = marker()
+      const word = marker()
+      const writer = await newUser()
+      const handle = uniqueHandle('writer')
+      await store.updateProfile(writer.id, { handle, displayName: `Writer ${word}` })
+
+      const old = await store.createArticle(ids.alice, article({ title: `Old ${word} post`, tags: [tag] }))
+      const inBody = await store.createArticle(ids.alice, article({ title: 'Plain', body: `The ${word.toUpperCase()} trick`, tags: [tag] }))
+      const byWriter = await store.createArticle(writer.id, article({ title: 'By the writer', tags: [tag, 'python'] }))
+      const tagged = await store.createArticle(ids.bob, article({ title: 'Tag only', tags: [word] }))
+
+      const search = (params) => store.searchArticles({ sort: 'new', offset: 0, limit: 10, ...params })
+      expect(idsOf((await search({ tag })).articles)).toEqual([byWriter.id, inBody.id, old.id])
+      // Words match the title, body, an exact tag, or the author's name.
+      expect(idsOf((await search({ q: word })).articles)).toEqual([tagged.id, byWriter.id, inBody.id, old.id])
+      expect(idsOf((await search({ q: handle.toUpperCase(), tag })).articles)).toEqual([byWriter.id])
+      expect(idsOf((await search({ authorHandle: handle })).articles)).toEqual([byWriter.id])
+      expect((await search({ authorHandle: uniqueHandle('nobody') })).articles).toEqual([])
+      expect((await search({ q: marker() })).articles).toEqual([])
+
+      const first = await search({ tag, limit: 2 })
+      expect(first).toEqual({ articles: expect.any(Array), hasMore: true })
+      expect(idsOf(first.articles)).toEqual([byWriter.id, inBody.id])
+      const second = await search({ tag, offset: 2, limit: 2 })
+      expect(second.hasMore).toBe(false)
+      expect(idsOf(second.articles)).toEqual([old.id])
+    })
+
+    it('sorts by likes or valid ratings', async () => {
+      const tag = marker()
+      const quiet = await store.createArticle(ids.alice, article({ tags: [tag] }))
+      const liked = await store.createArticle(ids.alice, article({ tags: [tag] }))
+      const trusted = await store.createArticle(ids.alice, article({ tags: [tag] }))
+      await store.setReaction(liked.id, ids.bob, { liked: true })
+      await store.setReaction(trusted.id, ids.bob, { rating: 'valid' })
+
+      const sorted = async (sort) => idsOf((await store.searchArticles({ tag, sort, offset: 0, limit: 10 })).articles)
+      expect(await sorted('top')).toEqual([liked.id, trusted.id, quiet.id])
+      expect(await sorted('valid')).toEqual([trusted.id, liked.id, quiet.id])
+    })
+
+    it('loads many profiles at once by id', async () => {
+      const ada = await newUser()
+      const bo = await newUser()
+      await store.updateProfile(ada.id, { displayName: 'Ada' })
+      const profiles = await store.getProfiles([ada.id, bo.id, ada.id, crypto.randomUUID()])
+      expect(Object.keys(profiles).sort()).toEqual([ada.id, bo.id].sort())
+      expect(profiles[ada.id]).toEqual(await store.getProfile(ada.id))
+      expect(await store.getProfiles([])).toEqual({})
+    })
+
+    it('keeps notifications per person, without repeats of the same like or rating', async () => {
+      const created = await store.createArticle(ids.alice, article({ title: 'Undefined everywhere' }))
+      const note = { userId: ids.alice, actorId: ids.bob, articleId: created.id }
+      const liked = await store.addNotification({ ...note, type: 'like' })
+      expect(liked).toMatchObject({ ...note, type: 'like', read: false })
+      expect(await store.addNotification({ ...note, type: 'like' })).toBeNull()
+      const commented = await store.addNotification({ ...note, type: 'comment' })
+      const again = await store.addNotification({ ...note, type: 'comment' })
+      expect(again).not.toBeNull()
+
+      const listed = await store.listNotifications(ids.alice)
+      expect(idsOf(listed)).toEqual([again.id, commented.id, liked.id])
+      expect(listed[0].articleTitle).toBe('Undefined everywhere')
+      expect(await store.listNotifications(ids.bob)).toEqual([])
+      expect(await store.countUnreadNotifications(ids.alice)).toBe(3)
+
+      // Nobody else can mark mine.
+      expect(await store.markNotificationsRead(ids.bob, liked.id)).toBe(0)
+      expect(await store.markNotificationsRead(ids.alice, liked.id)).toBe(1)
+      expect(await store.countUnreadNotifications(ids.alice)).toBe(2)
+      expect(await store.markNotificationsRead(ids.alice)).toBe(2)
+      expect(await store.countUnreadNotifications(ids.alice)).toBe(0)
+    })
+
+    it('removes comments, reactions and notifications with their article', async () => {
+      const created = await store.createArticle(ids.alice, article())
+      const comment = await store.createComment(ids.bob, created.id, 'Hi')
+      await store.setReaction(created.id, ids.bob, { liked: true })
+      await store.addNotification({ userId: ids.alice, actorId: ids.bob, articleId: created.id, type: 'comment' })
+      await store.deleteArticle(ids.alice, created.id)
+      expect(await store.getComment(comment.id)).toBeNull()
+      expect(await store.listComments(created.id)).toEqual([])
+      expect(await store.getReaction(created.id, ids.bob)).toEqual({ liked: false, rating: null })
+      expect(await store.listNotifications(ids.alice)).toEqual([])
+    })
   })
 }
 

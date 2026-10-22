@@ -15,15 +15,17 @@ export async function GET(request) {
 
   const store = getStore()
   const userId = auth.user.id
-  const [cases, challenges, notes, study, trails] = await Promise.all([
+  const [cases, challenges, notes, study, trails, community] = await Promise.all([
     store.listCases(userId),
     store.listChallenges(userId),
     store.listNotes(userId),
     store.listStudyTime(userId),
     store.listTrails(userId),
+    // Articles written, likes and valid ratings received, comments written.
+    store.communityStats(userId),
   ])
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
   // Daily and global puzzles passed, for their XP, the daily streak and their badges.
   const daily = await loadDaily(store, userId, challenges)
-  return ok({ progress: computeProgress({ cases, challenges, notes, study, today, trails, daily }) })
+  return ok({ progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community }) })
 }

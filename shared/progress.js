@@ -7,6 +7,16 @@ export const MAX_NOTES_FOR_XP = 20
 // A day only counts toward the streak with at least five minutes of study.
 export const STUDY_DAY_SECONDS = 5 * 60
 
+// Community articles: what each thing is worth, and how many of each count at most (so nobody farms XP).
+export const COMMUNITY_XP = { article: 20, likeReceived: 2, validReceived: 5, comment: 2 }
+export const COMMUNITY_XP_CAPS = { articles: 10, likes: 50, valid: 20, comments: 25 }
+const NO_COMMUNITY = { articles: 0, likesReceived: 0, validReceived: 0, comments: 0 }
+const communityXp = ({ articles, likesReceived, validReceived, comments }) =>
+  Math.min(articles, COMMUNITY_XP_CAPS.articles) * COMMUNITY_XP.article +
+  Math.min(likesReceived, COMMUNITY_XP_CAPS.likes) * COMMUNITY_XP.likeReceived +
+  Math.min(validReceived, COMMUNITY_XP_CAPS.valid) * COMMUNITY_XP.validReceived +
+  Math.min(comments, COMMUNITY_XP_CAPS.comments) * COMMUNITY_XP.comment
+
 export const LEVELS = [
   { min: 0, title: 'Rookie' },
   { min: 100, title: 'Junior Detective' },
@@ -39,7 +49,8 @@ function streaks(study, today) {
 // Everything is derived from what's already stored, so there's nothing to keep in sync.
 // trails: study trails, whose missions and finished-trail bonus add XP (see shared/trails.js).
 // daily (optional): { solved: [{ kind, day, difficulty }] }, the daily and global puzzles passed.
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily }) {
+// community (optional): articles written, likes and valid ratings received, comments written.
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY }) {
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
@@ -57,7 +68,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     Math.min(notes.length, MAX_NOTES_FOR_XP) * XP.note +
     Math.floor(totalSeconds / 60) * XP.studyMinute +
     trailViews.reduce((sum, view) => sum + view.xp, 0) +
-    puzzles.xp
+    puzzles.xp +
+    communityXp(community)
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -73,6 +85,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     trailsDone: trailViews.filter((view) => view.complete).length,
     dailyLongestStreak: puzzles.longestStreak,
     globalSolved: puzzles.globalSolved,
+    articles: community.articles,
+    validReceived: community.validReceived,
   }
 
   return {

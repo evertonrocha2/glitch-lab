@@ -24,6 +24,9 @@ export default function SiteHeader() {
           <a href="#faq" className={`hidden md:inline ${navLinkClass}`}>
             FAQ
           </a>
+          <Link to="/articles" className={`hidden sm:inline ${navLinkClass}`}>
+            Articles
+          </Link>
           {user ? (
             <Link to="/board" className={navLinkClass}>
               My board
