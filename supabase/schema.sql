@@ -47,6 +47,25 @@ create table public.challenge_secrets (
   bug_explanation text not null
 );
 
+-- A note is a list of blocks: text, heading, todo, or a case from the board.
+create table public.notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  title text not null default '',
+  blocks jsonb not null default '[]',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index notes_user_updated on public.notes (user_id, updated_at desc);
+
+-- Seconds studied per day, from the timer. The day is the student's local date.
+create table public.study_time (
+  user_id uuid not null references public.users (id) on delete cascade,
+  day date not null,
+  seconds int not null default 0,
+  primary key (user_id, day)
+);
+
 create table public.usage (
   key text not null,
   day date not null,
@@ -59,6 +78,8 @@ alter table public.cases enable row level security;
 alter table public.challenges enable row level security;
 alter table public.challenge_secrets enable row level security;
 alter table public.usage enable row level security;
+alter table public.notes enable row level security;
+alter table public.study_time enable row level security;
 
 -- No policies at all: the browser never queries these tables (everything goes through /api),
 -- and a select policy on challenges would expose hints the student hasn't unlocked yet.
@@ -76,3 +97,16 @@ as $$
   returning calls;
 $$;
 revoke execute on function public.increment_usage(text, date) from public, anon, authenticated;
+
+-- Atomic add for the study timer, never past the daily cap.
+create or replace function public.add_study_time(p_user uuid, p_day date, p_seconds int, p_max int)
+returns int
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.study_time (user_id, day, seconds) values (p_user, p_day, least(p_seconds, p_max))
+  on conflict (user_id, day) do update set seconds = least(public.study_time.seconds + p_seconds, p_max)
+  returning seconds;
+$$;
+revoke execute on function public.add_study_time(uuid, date, int, int) from public, anon, authenticated;

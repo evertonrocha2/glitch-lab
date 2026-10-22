@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {} })
+const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
 const now = () => new Date().toISOString()
 // Hand out copies so callers can't edit the store by accident.
 const copy = (value) => (value == null ? null : structuredClone(value))
@@ -29,6 +29,9 @@ export function createLocalStore({ file }) {
 
   const ownCase = (data, userId, id) => data.cases.find((item) => item.id === id && item.userId === userId)
   const ownChallenge = (data, userId, id) => data.challenges.find((item) => item.id === id && item.userId === userId)
+  // Files saved before notes and study time existed don't have these lists yet.
+  const notesOf = (data) => (data.notes ??= [])
+  const studyOf = (data) => (data.study ??= {})
 
   return {
     // Emails are stored lowercase, so "Ada@X.com" and "ada@x.com" are the same account. null when taken.
@@ -105,8 +108,74 @@ export function createLocalStore({ file }) {
       return copy(found)
     },
 
+    async listChallenges(userId) {
+      const data = await load()
+      return copy(data.challenges.filter((item) => item.userId === userId))
+    },
+
     async getChallengeSecret(challengeId) {
       return copy((await load()).secrets[challengeId])
+    },
+
+    async createNote(userId, { title, blocks }) {
+      const data = await load()
+      const stamp = now()
+      const created = { id: randomUUID(), userId, title, blocks, createdAt: stamp, updatedAt: stamp }
+      notesOf(data).push(created)
+      await save()
+      return copy(created)
+    },
+
+    // Most recently edited first.
+    async listNotes(userId) {
+      const data = await load()
+      return copy(notesOf(data).filter((note) => note.userId === userId).reverse())
+    },
+
+    async getNote(userId, id) {
+      const data = await load()
+      return copy(notesOf(data).find((note) => note.id === id && note.userId === userId))
+    },
+
+    async updateNote(userId, id, { title, blocks }) {
+      const notes = notesOf(await load())
+      const index = notes.findIndex((note) => note.id === id && note.userId === userId)
+      if (index === -1) return null
+      const [found] = notes.splice(index, 1)
+      if (title !== undefined) found.title = title
+      if (blocks !== undefined) found.blocks = blocks
+      found.updatedAt = now()
+      // Kept in edit order, so the list stays "last edited first".
+      notes.push(found)
+      await save()
+      return copy(found)
+    },
+
+    async deleteNote(userId, id) {
+      const notes = notesOf(await load())
+      const index = notes.findIndex((note) => note.id === id && note.userId === userId)
+      if (index === -1) return false
+      notes.splice(index, 1)
+      await save()
+      return true
+    },
+
+    // Returns the new total for that day, never above maxPerDay.
+    async addStudyTime(userId, day, seconds, maxPerDay) {
+      const study = studyOf(await load())
+      const slot = `${userId}:${day}`
+      study[slot] = Math.min((study[slot] ?? 0) + seconds, maxPerDay)
+      await save()
+      return study[slot]
+    },
+
+    async listStudyTime(userId) {
+      const study = studyOf(await load())
+      const prefix = `${userId}:`
+      return Object.entries(study)
+        .filter(([slot]) => slot.startsWith(prefix))
+        .map(([slot, seconds]) => ({ day: slot.slice(prefix.length), seconds }))
+        .sort((a, b) => a.day.localeCompare(b.day))
     },
 
     async countUsage(key, day) {

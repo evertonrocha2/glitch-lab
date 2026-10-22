@@ -90,6 +90,53 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.createUser({ email: email.toUpperCase(), passwordHash: 'scrypt$cc$dd', isDemo: false })).toBeNull()
     })
 
+    it("lists the owner's challenges", async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const challenge = await store.createChallenge(ids.alice, challengeFor(kase.id), SECRET)
+      expect((await store.listChallenges(ids.alice)).map((item) => item.id)).toEqual([challenge.id])
+      expect(await store.listChallenges(ids.bob)).toEqual([])
+      expect((await store.listChallenges(ids.alice))[0]).not.toHaveProperty('solution')
+    })
+
+    it('creates, lists, updates and deletes notes for their owner only', async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const blocks = [
+        { type: 'text', text: 'Why did this happen?' },
+        { type: 'case', caseId: kase.id },
+      ]
+      const note = await store.createNote(ids.alice, { title: 'Undefined', blocks })
+      expect(note).toMatchObject({ userId: ids.alice, title: 'Undefined', blocks })
+      expect(note.id).toEqual(expect.any(String))
+      expect(note.updatedAt).toEqual(expect.any(String))
+
+      const other = await store.createNote(ids.alice, { title: 'Second', blocks: [] })
+      expect((await store.listNotes(ids.alice)).map((item) => item.id)).toEqual([other.id, note.id])
+      expect(await store.listNotes(ids.bob)).toEqual([])
+      expect(await store.getNote(ids.bob, note.id)).toBeNull()
+      expect(await store.updateNote(ids.bob, note.id, { title: 'Mine now' })).toBeNull()
+
+      const updated = await store.updateNote(ids.alice, note.id, { title: 'Reading undefined', blocks: [] })
+      expect(updated).toMatchObject({ id: note.id, title: 'Reading undefined', blocks: [] })
+      expect(await store.getNote(ids.alice, note.id)).toMatchObject({ title: 'Reading undefined' })
+      // The note just edited moves to the top.
+      expect((await store.listNotes(ids.alice))[0].id).toBe(note.id)
+
+      expect(await store.deleteNote(ids.bob, note.id)).toBe(false)
+      expect(await store.deleteNote(ids.alice, note.id)).toBe(true)
+      expect(await store.getNote(ids.alice, note.id)).toBeNull()
+    })
+
+    it('adds study time per day up to a daily cap', async () => {
+      expect(await store.addStudyTime(ids.alice, '2026-10-21', 60, 100)).toBe(60)
+      expect(await store.addStudyTime(ids.alice, '2026-10-21', 60, 100)).toBe(100)
+      expect(await store.addStudyTime(ids.alice, '2026-10-22', 30, 100)).toBe(30)
+      expect(await store.addStudyTime(ids.bob, '2026-10-22', 5, 100)).toBe(5)
+      expect(await store.listStudyTime(ids.alice)).toEqual([
+        { day: '2026-10-21', seconds: 100 },
+        { day: '2026-10-22', seconds: 30 },
+      ])
+    })
+
     it('counts usage per key per day', async () => {
       expect(await store.countUsage(ids.alice, '2026-10-21')).toBe(0)
       expect(await store.addUsage(ids.alice, '2026-10-21')).toBe(1)
