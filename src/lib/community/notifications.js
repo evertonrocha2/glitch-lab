@@ -6,7 +6,10 @@ import { useAuth } from '../auth/AuthProvider.jsx'
 // so without this the badge would blink empty on each page change.
 const EMPTY = { notifications: [], unread: 0 }
 const cache = new Map()
+const checkedAt = new Map()
 const listeners = new Set()
+// A page change within this long reuses what the last page loaded instead of asking again.
+const FRESH_MS = 15_000
 // The last "mark read" on its way: a check waits for it, so it never brings back an old unread count.
 let marking = Promise.resolve()
 
@@ -23,6 +26,7 @@ function update(userId, change) {
 // Tests start each case with nothing cached.
 export function forgetNotifications() {
   cache.clear()
+  checkedAt.clear()
   marking = Promise.resolve()
   for (const listener of listeners) listener()
 }
@@ -37,6 +41,7 @@ export function useNotifications() {
     if (!userId || document.hidden) return
     try {
       await marking
+      checkedAt.set(userId, Date.now())
       const next = await listNotifications(await getToken())
       update(userId, () => next)
     } catch {
@@ -70,8 +75,8 @@ export function useNotifications() {
   )
 
   useEffect(() => {
-    refresh()
-  }, [refresh])
+    if (Date.now() - (checkedAt.get(userId) ?? 0) > FRESH_MS) refresh()
+  }, [refresh, userId])
 
   return { data, refresh, markRead }
 }
