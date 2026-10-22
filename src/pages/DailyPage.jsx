@@ -35,7 +35,7 @@ function GlobalChallenge({ data, now, onStart, starting }) {
       </div>
       <p className="mt-2 max-w-2xl text-muted">One harder puzzle a week for every detective, with more than one bug inside. The clock runs from the moment you start.</p>
 
-      <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="relative overflow-hidden border-2 border-ink bg-white shadow-pixel-secondary">
           <span aria-hidden="true" className="dither-secondary absolute inset-y-0 right-0 w-1/2 opacity-25" />
           <div className="relative flex items-center justify-between gap-3 border-b-2 border-ink bg-secondary px-5 py-2 font-label text-xs text-white">
@@ -170,7 +170,7 @@ export default function DailyPage() {
             ))}
           </ul>
 
-          <ul aria-label="Today's challenges" className="mt-8 grid gap-6 md:grid-cols-3">
+          <ul aria-label="Today's challenges" className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3">
             {daily.puzzles.map((puzzle) => (
               <li key={puzzle.id}>
                 <PuzzleCard puzzle={puzzle} onStart={start} busy={starting !== null} />
