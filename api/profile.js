@@ -1,5 +1,6 @@
 import { handleProblem, normalizeHandle } from '../shared/profile.js'
 import { clientDay, serverDay } from './_lib/days.js'
+import { getUser } from './_lib/auth.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
 import { earnedIds, ownProfile, parseProfile, parseSearch, profileCard, publicProfile, SEARCH_MAX, summarize } from './_lib/profile.js'
 import { getStore } from './_lib/store/index.js'
@@ -28,7 +29,15 @@ export async function GET(request) {
     const handle = normalizeHandle(params.get('handle'))
     if (handleProblem(handle)) return fail(404, NOT_FOUND)
     const found = await store.findPublicProfile(handle)
-    if (!found) return fail(404, NOT_FOUND)
+    if (!found) {
+      // Your own page while it's still private: you see it (marked as a preview), nobody else does.
+      const viewer = await getUser(request)
+      const own = viewer && (await store.getProfile(viewer.id))
+      if (own?.handle !== handle) return fail(404, NOT_FOUND)
+      const response = ok({ profile: publicProfile(own, viewer.id, await summarize(store, viewer.id, today)), preview: true })
+      response.headers.set('Cache-Control', 'private, no-store')
+      return response
+    }
     const response = ok({ profile: publicProfile(found.profile, found.userId, await summarize(store, found.userId, today)) })
     // A shared link can get a lot of hits: let the CDN answer repeats for a minute.
     response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')

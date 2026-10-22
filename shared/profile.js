@@ -27,7 +27,8 @@ export const AVATAR_COLORS = [
 
 const HANDLE_CHARS = /^[a-z0-9_-]+$/
 
-export const normalizeHandle = (value) => value.trim().toLowerCase()
+// Handles are shown as @handle, so a leading @ (typed or pasted from a link) is dropped.
+export const normalizeHandle = (value) => value.trim().replace(/^@+/, '').toLowerCase()
 
 // A message saying what's wrong with the handle, or null when it's fine.
 export function handleProblem(handle) {

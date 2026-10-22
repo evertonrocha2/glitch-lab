@@ -339,3 +339,22 @@ it('finds a handle typed with its @', async () => {
   expect(res.status).toBe(200)
   expect((await res.json()).profiles.map((item) => item.handle)).toEqual(['ada_at'])
 })
+
+it('takes the handle with or without its @', async () => {
+  await save({ handle: 'ada_at2', isPublic: true })
+  for (const handle of ['ada_at2', '@ada_at2', '%40ADA_AT2']) {
+    const res = await GET(apiRequest(`/api/profile?handle=${handle}`, { method: 'GET', token: null }))
+    expect(res.status, handle).toBe(200)
+  }
+})
+
+it('shows owners their own private profile as a preview, and nobody else', async () => {
+  await save({ handle: 'ada_private', displayName: 'Ada' })
+  const mine = await GET(apiRequest('/api/profile?handle=@ada_private', { method: 'GET', token: `dev:${ada.id}` }))
+  expect(mine.status).toBe(200)
+  const body = await mine.json()
+  expect(body).toMatchObject({ preview: true, profile: { handle: 'ada_private', displayName: 'Ada' } })
+  expect(mine.headers.get('Cache-Control')).toBe('private, no-store')
+  expect((await GET(apiRequest('/api/profile?handle=ada_private', { method: 'GET', token: `dev:${bob.id}` }))).status).toBe(404)
+  expect((await GET(apiRequest('/api/profile?handle=ada_private', { method: 'GET', token: null }))).status).toBe(404)
+})
