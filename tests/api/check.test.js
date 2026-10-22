@@ -115,3 +115,16 @@ it('returns 502 when the judge answers without a verdict', async () => {
   expect(res.status).toBe(502)
   expect(await store.getChallenge('alice', challenge.id)).toMatchObject({ status: 'open', attempts: 0 })
 })
+
+it('asks for the feedback in Portuguese for a pt-BR reader', async () => {
+  fetch.mockResolvedValue(geminiAnswer({ passed: true, feedback: 'Boa: a.b existe agora.' }))
+  await POST(apiRequest('/api/check', { body: { challengeId: challenge.id, code: FIX }, locale: 'pt-BR' }))
+  expect(JSON.parse(fetch.mock.calls[0][1].body).systemInstruction.parts[0].text).toMatch(/Brazilian Portuguese/)
+  expect(sentPrompt()).toMatch(/Brazilian Portuguese/)
+})
+
+it('says nothing changed in Portuguese too', async () => {
+  const code = challengeFor(kase.id).brokenCode
+  const res = await POST(apiRequest('/api/check', { body: { challengeId: challenge.id, code }, locale: 'pt-BR' }))
+  expect(await res.json()).toMatchObject({ passed: false, feedback: 'Você ainda não mudou nada.' })
+})

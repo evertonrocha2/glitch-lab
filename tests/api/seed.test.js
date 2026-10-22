@@ -117,3 +117,42 @@ it('keeps the demo note and the demo profile private (demos can never share)', a
   expect(note.isPublic).toBe(false)
   expect((await store.getProfile(user.id)).isPublic).toBe(false)
 })
+
+it('seeds the sample texts in Portuguese for a pt-BR visitor, with errors and code left as printed', async () => {
+  const store = await freshStore()
+  const user = await store.createUser({ email: 'demo-pt@demo.glitch', passwordHash: null, isDemo: true })
+  await seedDemo(store, user.id, '2026-10-22', 'pt-BR')
+  const english = await freshStore()
+  await seedDemo(english, 'demo', '2026-10-22')
+
+  const cases = await store.listCases(user.id)
+  const undefinedCase = cases.find((item) => item.concept === 'undefined-access')
+  expect(undefinedCase.analysis.explicacao).toMatch(/^Seu código pediu o tamanho de user.name/)
+  expect(undefinedCase.error).toBe("TypeError: Cannot read properties of undefined (reading 'length')")
+  expect(cases.map((item) => item.code).sort()).toEqual((await english.listCases('demo')).map((item) => item.code).sort())
+
+  const training = cases.find((item) => item.status === 'training')
+  const open = await store.findOpenChallenge(user.id, training.id)
+  expect(open.hints[0]).toBe('Olhe os números que o range() entrega para o loop.')
+  expect(open.symptom).toBe('IndexError: list index out of range')
+
+  const [note] = await store.listNotes(user.id)
+  expect(note.title).toBe('Meu caderno de debugging')
+  const [trail] = await store.listTrails(user.id)
+  expect(trail.title).toBe('Bootcamp de índice e undefined')
+  expect(trail.missions.map((mission) => mission.kind)).toEqual((await english.listTrails('demo'))[0].missions.map((mission) => mission.kind))
+  expect(trail.missions[0].title).toBe('Vença um desafio de índice de lista')
+
+  const profile = await store.getProfile(user.id)
+  expect(profile).toMatchObject({ displayName: 'Detetive Demo', headline: 'Estudando JavaScript e Python à noite', isPublic: false })
+  const about = { headline: profile.headline, course: profile.course, work: profile.work, bio: profile.bio, displayName: profile.displayName }
+  expect(parseProfile(about)).toEqual({ value: about })
+})
+
+it('keeps the English sample texts for anyone else', async () => {
+  const store = await freshStore()
+  await seedDemo(store, 'demo', '2026-10-22', 'en')
+  const [note] = await store.listNotes('demo')
+  expect(note.title).toBe('My debugging notebook')
+  expect((await store.listTrails('demo'))[0].title).toBe('Index and undefined bootcamp')
+})

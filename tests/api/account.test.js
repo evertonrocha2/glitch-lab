@@ -117,3 +117,11 @@ it('routes sign in, sign up and demo through one auth function', async () => {
   expect((await call('demo', {})).status).toBe(201)
   expect((await call('nope', {})).status).toBe(404)
 })
+
+it("seeds the demo in the visitor's language", async () => {
+  const { token } = await (await demo(apiRequest('/api/demo', { token: null, body: {}, locale: 'pt-BR' }))).json()
+  const { cases } = await (await casesWith(token)).json()
+  expect(cases.find((item) => item.concept === 'index-out-of-range').analysis.explicacao).toBe(
+    'Você pediu a posição 3 de uma lista que só tem as posições 0, 1 e 2.',
+  )
+})

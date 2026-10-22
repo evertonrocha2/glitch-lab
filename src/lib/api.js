@@ -1,6 +1,11 @@
-import { currentLocale } from './i18n/I18nProvider.jsx'
+import { currentLocale, translate } from './i18n/I18nProvider.jsx'
+import { translateServerMessage } from './i18n/serverMessages.js'
 
-const GENERIC_MESSAGE = 'Something went wrong. Please try again.'
+// Every error a page shows reads in the reader's language: the server's English messages are
+// translated here, and so are the client's own fallbacks.
+const genericMessage = () => translate(currentLocale(), 'server.client.generic')
+const offlineMessage = () => translate(currentLocale(), 'server.client.offline')
+const serverMessage = (data, fallback) => (data?.message ? translateServerMessage(data.message, currentLocale()) : fallback())
 
 // Thrown on 401 so pages can send the person back to the login screen.
 export class AuthError extends Error {}
@@ -15,12 +20,12 @@ async function request(path, { method = 'GET', body, token, keepalive } = {}) {
   try {
     res = await fetch(path, { method, headers, keepalive, body: body === undefined ? undefined : JSON.stringify(body) })
   } catch {
-    throw new Error('Could not reach the server. Check your connection.')
+    throw new Error(offlineMessage())
   }
 
   const data = await res.json().catch(() => null)
-  if (res.status === 401) throw new AuthError(data?.message || 'Sign in to continue.')
-  if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
+  if (res.status === 401) throw new AuthError(serverMessage(data, () => translate(currentLocale(), 'server.signIn')))
+  if (!res.ok || !data) throw new Error(serverMessage(data, genericMessage))
   return data
 }
 
@@ -155,11 +160,11 @@ export async function getPublicProfile(handle, today, token) {
     if (token) headers.Authorization = `Bearer ${token}`
     res = await fetch(path, { method: 'GET', headers })
   } catch {
-    throw new Error('Could not reach the server. Check your connection.')
+    throw new Error(offlineMessage())
   }
   if (res.status === 404) return null
   const data = await res.json().catch(() => null)
-  if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
+  if (!res.ok || !data) throw new Error(serverMessage(data, genericMessage))
   return { profile: data.profile, preview: Boolean(data.preview) }
 }
 
@@ -169,11 +174,11 @@ async function publicGet(path) {
   try {
     res = await fetch(path, { method: 'GET', headers: { 'Accept-Language': currentLocale() } })
   } catch {
-    throw new Error('Could not reach the server. Check your connection.')
+    throw new Error(offlineMessage())
   }
   if (res.status === 404) return null
   const data = await res.json().catch(() => null)
-  if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
+  if (!res.ok || !data) throw new Error(serverMessage(data, genericMessage))
   return data
 }
 

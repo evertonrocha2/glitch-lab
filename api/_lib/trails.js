@@ -8,6 +8,8 @@ const MAX_CASES = 20
 const MAX_NOTES = 8
 
 const CONCEPT_IDS = new Set(CONCEPTS.map((concept) => concept.id))
+// The title a trail gets when the AI leaves it blank, in the reader's language.
+const FALLBACK_TITLE = { en: 'Your study trail', 'pt-BR': 'Sua trilha de estudos' }
 const text = (value, max) => (typeof value === 'string' ? clip(value.trim(), max) : '')
 
 // The bug type with the most open cases, or the most common one when everything is solved.
@@ -84,7 +86,7 @@ function cleanMission(raw, caseById) {
 // The AI's trail, checked field by field: known kinds, the student's own cases, real concepts,
 // minutes in range, text trimmed and capped. XP is set here, never by the AI. Throws (a 502) when
 // fewer than three missions are left.
-export function parseTrail(data, cases) {
+export function parseTrail(data, cases, locale = 'en') {
   if (!data || typeof data !== 'object' || !Array.isArray(data.missions)) throw new Error('AI trail is missing missions')
   const caseById = new Map(cases.map((item) => [item.id, item]))
   const missions = data.missions
@@ -94,7 +96,7 @@ export function parseTrail(data, cases) {
     .map((mission, index) => ({ id: `m${index + 1}`, ...mission, xp: MISSION_XP[mission.kind] }))
   if (missions.length < TRAIL_LIMITS.minMissions) throw new Error('AI trail has too few usable missions')
   return {
-    title: text(data.title, TRAIL_LIMITS.title) || 'Your study trail',
+    title: text(data.title, TRAIL_LIMITS.title) || (FALLBACK_TITLE[locale] ?? FALLBACK_TITLE.en),
     summary: text(data.summary, TRAIL_LIMITS.summary),
     missions,
   }

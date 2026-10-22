@@ -3,8 +3,9 @@ import { generateJson } from './_lib/ai/index.js'
 import { parseChallenge, toPublicChallenge } from './_lib/challenges.js'
 import { cron, getDaily, getGlobal, startPuzzle } from './_lib/handlers/daily.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
+import { localeOf } from './_lib/locale.js'
 import { getRiddle, guessRiddle } from './_lib/riddle/play.js'
-import { buildChallengePrompt, CHALLENGE_SCHEMA, CHALLENGE_SYSTEM } from './_lib/prompts/challenge.js'
+import { buildChallengePrompt, CHALLENGE_SCHEMA, challengeSystem } from './_lib/prompts/challenge.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
@@ -32,16 +33,21 @@ export async function POST(request) {
 
   if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
 
+  // Hints and the bug explanation in the reader's language; the symptom stays the real error text.
+  const locale = localeOf(request)
   let parsed
   try {
     const answer = await generateJson({
-      system: CHALLENGE_SYSTEM,
-      prompt: buildChallengePrompt({
-        conceptName: conceptLabel(kase.concept),
-        language: kase.language,
-        error: kase.error,
-        why: kase.analysis.causa,
-      }),
+      system: challengeSystem(locale),
+      prompt: buildChallengePrompt(
+        {
+          conceptName: conceptLabel(kase.concept),
+          language: kase.language,
+          error: kase.error,
+          why: kase.analysis.causa,
+        },
+        locale,
+      ),
       schema: CHALLENGE_SCHEMA,
     })
     parsed = parseChallenge(answer)

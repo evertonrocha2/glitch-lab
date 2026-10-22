@@ -196,3 +196,19 @@ it('refuses broken or oversized attachments before calling the AI', async () => 
   for (const [body, status] of cases) expect((await analyze(body)).status).toBe(status)
   expect(fetch).not.toHaveBeenCalled()
 })
+
+it('asks the AI to write the explanation, clues and exercise in Portuguese for a pt-BR reader', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  await analyze({ error: 'TypeError: x' }, { locale: 'pt-BR' })
+  const sent = JSON.parse(fetch.mock.calls[0][1].body)
+  expect(sent.systemInstruction.parts[0].text).toMatch(/Brazilian Portuguese/)
+  expect(sentPrompt()).toMatch(/Brazilian Portuguese/)
+  expect(sentPrompt()).toMatch(/exactly as the programming language prints them/)
+})
+
+it('keeps the prompt in English without a Portuguese header', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  await analyze({ error: 'TypeError: x' })
+  expect(sentPrompt()).toMatch(/plain, simple English/)
+  expect(sentPrompt()).not.toMatch(/Portuguese/)
+})

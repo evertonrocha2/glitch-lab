@@ -1,7 +1,8 @@
 import { generateJson } from './_lib/ai/index.js'
 import { parseAnalysis, validateInput } from './_lib/analysis.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { buildPrompt, RESPONSE_SCHEMA, SYSTEM_INSTRUCTION } from './_lib/prompts/analyze.js'
+import { localeOf } from './_lib/locale.js'
+import { analyzeSystem, buildPrompt, RESPONSE_SCHEMA } from './_lib/prompts/analyze.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
@@ -20,7 +21,9 @@ export async function POST(request) {
 
   let parsed
   try {
-    const answer = await generateJson({ system: SYSTEM_INSTRUCTION, prompt: buildPrompt(input.value), schema: RESPONSE_SCHEMA })
+    // Explanation, clues and exercise come back in the reader's language; the error stays as printed.
+    const locale = localeOf(request)
+    const answer = await generateJson({ system: analyzeSystem(locale), prompt: buildPrompt(input.value, locale), schema: RESPONSE_SCHEMA })
     parsed = parseAnalysis(answer)
   } catch (err) {
     return aiFailure(err)
