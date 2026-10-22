@@ -75,3 +75,32 @@ it('resets a paused session', async () => {
   })
   expect(clock()).toBe('00:00')
 })
+
+it('keeps the time from a failed report and sends it with the next one', async () => {
+  vi.mocked(addStudyTime).mockRejectedValueOnce(new Error('Could not reach the server. Check your connection.'))
+  renderAt('/progress', { user: 'alice' })
+  fireEvent.click(screen.getByRole('button', { name: 'Start the study timer' }))
+  await act(async () => {
+    vi.advanceTimersByTime(60_000)
+  })
+  await act(async () => {
+    vi.advanceTimersByTime(60_000)
+  })
+  expect(vi.mocked(addStudyTime).mock.calls.map(([body]) => body.seconds)).toEqual([60, 120])
+  expect(screen.getByText('Studying')).toBeInTheDocument()
+})
+
+it('pauses on its own after the computer slept, keeping the time before', async () => {
+  renderAt('/progress', { user: 'alice' })
+  fireEvent.click(screen.getByRole('button', { name: 'Start the study timer' }))
+  await act(async () => {
+    vi.advanceTimersByTime(30_000)
+  })
+  // The lid closes for 20 minutes: no timers run, then the tab wakes up.
+  vi.setSystemTime(Date.now() + 20 * 60_000)
+  await act(async () => {
+    vi.advanceTimersByTime(15_000)
+  })
+  expect(screen.getByText('Paused')).toBeInTheDocument()
+  expect(clock()).toBe('00:30')
+})

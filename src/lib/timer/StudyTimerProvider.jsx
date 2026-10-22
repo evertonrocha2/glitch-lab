@@ -3,20 +3,25 @@ import { AuthError, addStudyTime } from '../api.js'
 import { useAuth } from '../auth/AuthProvider.jsx'
 import { localDay } from '../day.js'
 import { useProgress } from '../progress/ProgressProvider.jsx'
-import { elapsed, idle, pause as pauseClock, restore, start as startClock, takeUnsent } from './clock.js'
+import {
+  elapsed,
+  giveBack,
+  heartbeat,
+  idle,
+  pause as pauseClock,
+  pendingSeconds,
+  reset as resetClock,
+  restore,
+  start as startClock,
+  takeUnsent,
+} from './clock.js'
 
 const TimerContext = createContext(null)
 export const REPORT_EVERY_MS = 60_000
+// Well under STALE_MS, so a live tab is never mistaken for a closed one.
+const HEARTBEAT_EVERY_MS = 15_000
 
 const keyFor = (userId) => `gd:timer:${userId}`
-
-function read(userId) {
-  try {
-    return restore(JSON.parse(localStorage.getItem(keyFor(userId))), Date.now())
-  } catch {
-    return idle()
-  }
-}
 
 function write(userId, state) {
   try {
@@ -26,11 +31,25 @@ function write(userId, state) {
   }
 }
 
+// Reads the shared timer. If it had to pause a stale run, that pause is saved right away,
+// so every tab (and the next report) agrees the timer stopped.
+function load(userId) {
+  let raw = null
+  try {
+    raw = JSON.parse(localStorage.getItem(keyFor(userId)))
+  } catch {
+    return idle()
+  }
+  const state = restore(raw, Date.now())
+  if (raw && state !== raw) write(userId, state)
+  return state
+}
+
 export function StudyTimerProvider({ children }) {
   const { user, getToken } = useAuth()
   const { refresh } = useProgress()
   const userId = user?.id
-  const [state, setState] = useState(() => (userId ? read(userId) : idle()))
+  const [state, setState] = useState(() => (userId ? load(userId) : idle()))
   const [now, setNow] = useState(() => Date.now())
 
   const save = useCallback(
@@ -41,47 +60,57 @@ export function StudyTimerProvider({ children }) {
     [userId],
   )
 
-  useEffect(() => {
-    if (userId) setState(read(userId))
-  }, [userId])
-
   // Sends the time not reported yet. Storage is read fresh so two tabs don't send the same seconds.
   const report = useCallback(
     async ({ keepalive = false } = {}) => {
       if (!userId) return
-      const { seconds, state: next } = takeUnsent(read(userId), Date.now())
+      const { seconds, state: next } = takeUnsent(load(userId), Date.now())
       if (seconds < 1) return
       save(next)
       try {
         await addStudyTime({ seconds, day: localDay() }, await getToken(), { keepalive })
         refresh()
       } catch (err) {
-        // Offline for a moment: give the seconds back so the next report carries them.
-        if (!(err instanceof AuthError)) {
-          const current = read(userId)
-          if (current.running) save({ ...current, lastSentAt: current.lastSentAt - seconds * 1000 })
-        }
+        // Offline for a moment: the seconds wait for the next report.
+        if (!(err instanceof AuthError)) save(giveBack(load(userId), seconds))
       }
     },
     [userId, getToken, save, refresh],
   )
 
+  // A new sign-in picks up its own timer and sends anything a closed tab left owed.
+  useEffect(() => {
+    if (!userId) return
+    setState(load(userId))
+    report()
+  }, [userId, report])
+
+  useEffect(() => {
+    if (!userId) return
+    const send = setInterval(report, REPORT_EVERY_MS)
+    return () => clearInterval(send)
+  }, [userId, report])
+
   useEffect(() => {
     if (!state.running) return
     const tick = setInterval(() => setNow(Date.now()), 1000)
-    const send = setInterval(report, REPORT_EVERY_MS)
+    const beat = setInterval(() => {
+      const current = load(userId)
+      // load() already paused it if this tab slept past STALE_MS.
+      save(current.running ? heartbeat(current, Date.now()) : current)
+    }, HEARTBEAT_EVERY_MS)
     return () => {
       clearInterval(tick)
-      clearInterval(send)
+      clearInterval(beat)
     }
-  }, [state.running, report])
+  }, [state.running, userId, save])
 
   useEffect(() => {
     if (!userId) return
     const onHide = () => report({ keepalive: true })
     // Another tab started or paused the timer.
     const onStorage = (event) => {
-      if (event.key === keyFor(userId)) setState(read(userId))
+      if (event.key === keyFor(userId)) setState(load(userId))
     }
     window.addEventListener('pagehide', onHide)
     window.addEventListener('storage', onStorage)
@@ -94,27 +123,28 @@ export function StudyTimerProvider({ children }) {
   const start = useCallback(() => {
     const moment = Date.now()
     setNow(moment)
-    save(startClock(read(userId), moment))
+    save(startClock(load(userId), moment))
   }, [userId, save])
 
   const pause = useCallback(async () => {
-    await report()
     const moment = Date.now()
     setNow(moment)
-    save(pauseClock(read(userId), moment))
+    // Pause first: the counted seconds move into `unsent`, so a failed report can't lose them.
+    save(pauseClock(load(userId), moment))
+    await report()
   }, [userId, report, save])
 
   const reset = useCallback(async () => {
+    save(resetClock(load(userId)))
     await report()
-    save(idle())
-  }, [report, save])
+  }, [userId, report, save])
 
   const value = useMemo(
     () => ({
       running: state.running,
       seconds: elapsed(state, now),
-      // Time already counted but not reported yet, so "today" can tick live.
-      unsentSeconds: state.running ? Math.max(0, Math.floor((now - state.lastSentAt) / 1000)) : 0,
+      // Counted but not reported yet, so "today" can tick live.
+      unsentSeconds: pendingSeconds(state, now),
       start,
       pause,
       reset,
