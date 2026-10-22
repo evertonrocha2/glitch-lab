@@ -2,6 +2,7 @@
 import { expect, it } from 'vitest'
 import { BADGES } from '../../shared/badges.js'
 import { computeProgress, STUDY_DAY_SECONDS } from '../../shared/progress.js'
+import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 
 const kase = (fields = {}) => ({ id: crypto.randomUUID(), status: 'new', language: 'javascript', ...fields })
 const passed = (fields = {}) => ({ id: crypto.randomUUID(), status: 'passed', hintsRevealed: 1, ...fields })
@@ -84,4 +85,29 @@ it('keeps streak badges after the streak ends', () => {
 it('earns marathon at five hours in total', () => {
   const study = Array.from({ length: 5 }, (_, index) => ({ day: `2026-09-0${index + 1}`, seconds: 3600 }))
   expect(earned(computeProgress({ ...empty, study }))).toContain('marathon')
+})
+
+it('adds xp for trail missions and a bonus for a finished trail, and earns trailblazer', () => {
+  const reflect = (id) => ({ id, kind: 'reflect', title: 'Think', description: 'Why?' })
+  const trail = (done) => ({ id: 't1', title: 'T', summary: '', missions: [reflect('m1'), reflect('m2')], done, createdAt: '2026-10-20T00:00:00.000Z' })
+  expect(computeProgress({ ...empty, trails: [trail(['m1'])] }).xp).toBe(MISSION_XP.reflect)
+  expect(earned(computeProgress({ ...empty, trails: [trail(['m1'])] }))).not.toContain('trailblazer')
+
+  const finished = computeProgress({ ...empty, trails: [trail(['m1', 'm2'])] })
+  expect(finished.xp).toBe(2 * MISSION_XP.reflect + TRAIL_BONUS_XP)
+  expect(earned(finished)).toEqual(['trailblazer'])
+})
+
+it('reads trail missions against the same cases, gym, notes and study time', () => {
+  const trail = {
+    id: 't1',
+    title: 'T',
+    summary: '',
+    missions: [{ id: 'm1', kind: 'study', title: 'Study', description: 'Focus', minutes: 10 }],
+    done: [],
+    createdAt: '2026-10-20T00:00:00.000Z',
+  }
+  const study = [{ day: '2026-10-21', seconds: 600 }]
+  // 10 study minutes, the study mission and the finished-trail bonus.
+  expect(computeProgress({ ...empty, study, trails: [trail] }).xp).toBe(10 + MISSION_XP.study + TRAIL_BONUS_XP)
 })
