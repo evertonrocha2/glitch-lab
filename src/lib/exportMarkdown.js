@@ -46,10 +46,14 @@ export function noteToMarkdown(note, cases, depth = 1) {
 }
 
 function caseToMarkdown(item) {
-  const { explicacao, causa, correcao, exercicio } = item.analysis
+  const { explicacao, causa, correcao, exercicio, pistas, local } = item.analysis
   const parts = [`### ${firstLine(item.error)}`, `*${caseSummary(item)}*`]
   if (item.error.includes('\n')) parts.push(fence(item.error))
+  if (item.context) parts.push(`**You were trying to:** ${item.context}`)
+  if (pistas?.length) parts.push(`**Clues**\n\n${pistas.map((clue, index) => `${index + 1}. ${clue}`).join('\n')}`)
+  if (local) parts.push(`**Likely spot:** ${local}`)
   if (item.code) parts.push('**Your code**', fence(item.code, item.language))
+  for (const file of item.files ?? []) parts.push(`**${file.path}**`, fence(file.content))
   parts.push(`**What happened.** ${explicacao}`, `**Why it broke.** ${causa}`, '**Fix**', fence(correcao))
   parts.push('**Practice**', fence(exercicio.enunciado), '**Answer**', fence(exercicio.resposta))
   return parts.join('\n\n')
