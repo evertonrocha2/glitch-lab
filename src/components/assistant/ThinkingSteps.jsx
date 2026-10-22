@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { pickSpecialists, SPECIALISTS } from '../../../shared/assistant.js'
+import { pickSpecialists } from '../../../shared/assistant.js'
+import { translate, useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelBug from '../pixel/PixelBug.jsx'
 import DetectiveAvatar from './DetectiveAvatar.jsx'
+import { routingStep, workingStep, writingStep } from './names.js'
 
 const STEP_MS = 2500
 
 // The server answers in one go, so the plan here is a best guess (the same keyword routing the
 // server falls back to). The real trace comes with the reply.
-export function plannedSteps(question, page) {
-  const agents = pickSpecialists(question, page).map((id) => SPECIALISTS.find((item) => item.id === id))
-  return ['Routing your question', ...agents.map((agent) => `${agent.name} ${agent.doing}`), 'Writing your answer']
+// `t` defaults to English, for callers outside a provider.
+export function plannedSteps(question, page, t) {
+  const say = t ?? ((key, vars) => translate('en', key, vars))
+  return [routingStep(say), ...pickSpecialists(question, page).map((id) => workingStep(say, id)), writingStep(say)]
 }
 
 export default function ThinkingSteps({ question, page }) {
-  const steps = useMemo(() => plannedSteps(question, page), [question, page])
+  const t = useT()
+  const steps = useMemo(() => plannedSteps(question, page, t), [question, page, t])
   const [active, setActive] = useState(0)
 
   useEffect(() => {
@@ -27,7 +31,7 @@ export default function ThinkingSteps({ question, page }) {
       <div role="status" className="min-w-0 flex-1 border-2 border-ink bg-white p-3 shadow-pixel">
         <div className="flex items-center gap-2.5">
           <PixelBug className="h-5 w-auto shrink-0 motion-safe:animate-walk" />
-          <span className="font-label text-[10px] text-primary">Working on it</span>
+          <span className="font-label text-[10px] text-primary">{t('app.assistant.working')}</span>
         </div>
         <ol className="mt-2.5 space-y-1.5 text-sm">
           {steps.map((step, index) => (
@@ -42,7 +46,7 @@ export default function ThinkingSteps({ question, page }) {
             </li>
           ))}
         </ol>
-        <p className="mt-2 text-xs text-muted">The free AI can take a minute.</p>
+        <p className="mt-2 text-xs text-muted">{t('app.assistant.slow')}</p>
       </div>
     </div>
   )

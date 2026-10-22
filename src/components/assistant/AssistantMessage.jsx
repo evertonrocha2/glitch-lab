@@ -1,6 +1,7 @@
-import { specialistName } from '../../../shared/assistant.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import DetectiveAvatar from './DetectiveAvatar.jsx'
+import { actionLabel, specialistLabel, stepLabel } from './names.js'
 import ReplyText from './ReplyText.jsx'
 
 export function UserBubble({ message }) {
@@ -15,6 +16,8 @@ export function UserBubble({ message }) {
 
 // One reply: who answered, each specialist's part, the actions it offers, and how it was answered.
 export function AssistantBubble({ message, onAction, busy }) {
+  const t = useT()
+  const name = (id) => specialistLabel(t, id)
   const agents = message.agents ?? []
   const parts = message.parts?.length ? message.parts : [{ agent: agents[0], reply: message.content }]
   const several = parts.length > 1
@@ -23,12 +26,12 @@ export function AssistantBubble({ message, onAction, busy }) {
     <div className="flex items-start gap-2.5">
       <DetectiveAvatar />
       <div className="min-w-0 flex-1 border-2 border-ink bg-white p-3 shadow-pixel">
-        {agents.length > 0 && <p className="font-label text-[10px] text-primary">Answered by {agents.map(specialistName).join(' + ')}</p>}
+        {agents.length > 0 && <p className="font-label text-[10px] text-primary">{t('app.assistant.answeredBy', { names: agents.map(name).join(' + ') })}</p>}
         <div className={`mt-1.5 ${several ? 'space-y-3' : ''}`}>
           {parts.map((part, index) => (
             <section key={index} className={several && index > 0 ? 'border-t-2 border-dashed border-line pt-3' : ''}>
-              {several && <h3 className="mb-1 font-label text-[10px] text-secondary">{specialistName(part.agent)}</h3>}
-              <ReplyText text={part.reply} label={specialistName(part.agent)} />
+              {several && <h3 className="mb-1 font-label text-[10px] text-secondary">{name(part.agent)}</h3>}
+              <ReplyText text={part.reply} label={name(part.agent)} />
             </section>
           ))}
         </div>
@@ -42,17 +45,17 @@ export function AssistantBubble({ message, onAction, busy }) {
                 disabled={busy}
                 className="px-2.5 py-1.5 text-[10px]"
               >
-                {action.label}
+                {actionLabel(t, action)}
               </PixelButton>
             ))}
           </div>
         )}
         {message.steps?.length > 0 && (
           <details className="mt-3 text-xs text-muted">
-            <summary className="cursor-pointer font-label text-[10px] hover:text-ink">How this was answered</summary>
+            <summary className="cursor-pointer font-label text-[10px] hover:text-ink">{t('app.assistant.howAnswered')}</summary>
             <ol className="mt-1.5 list-decimal space-y-0.5 pl-5">
               {message.steps.map((step) => (
-                <li key={step}>{step}</li>
+                <li key={step}>{stepLabel(t, step)}</li>
               ))}
             </ol>
           </details>

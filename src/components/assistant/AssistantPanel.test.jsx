@@ -225,3 +225,29 @@ it('is not on signed-out pages', () => {
   renderAt('/')
   expect(screen.queryByRole('button', { name: 'Ask the detective' })).toBeNull()
 })
+
+it('speaks Brazilian Portuguese: chips, thinking steps and the answer trace', async () => {
+  let answer
+  vi.mocked(askAssistant).mockReturnValue(
+    new Promise((resolve) => {
+      answer = resolve
+    }),
+  )
+  renderAt('/board', { user: 'alice', locale: 'pt-BR' })
+  await userEvent.click(screen.getByRole('button', { name: 'Pergunte ao detetive' }))
+  const dialog = screen.getByRole('dialog', { name: 'Pergunte ao detetive' })
+  expect(within(dialog).getByLabelText('Sua pergunta')).toHaveAttribute('placeholder', 'Pergunte sobre seus casos, o gym, notas...')
+  const chips = within(dialog).getByRole('list', { name: 'Perguntas sugeridas' })
+  await userEvent.click(within(chips).getByRole('button', { name: 'Qual é o meu ponto fraco?' }))
+  expect(vi.mocked(askAssistant).mock.lastCall[0].messages.at(-1).content).toBe('Qual é o meu ponto fraco?')
+  expect(within(dialog).getByText('Encaminhando sua pergunta')).toBeInTheDocument()
+  expect(within(dialog).getByText('Analista do board está olhando seus casos')).toBeInTheDocument()
+  await act(async () => answer({ ...REPLY, actions: [{ type: 'start_timer', target: 'timer', label: 'Start the study timer' }] }))
+  expect(within(dialog).getByText('Respondido por Analista do board')).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Iniciar o cronômetro de estudo' })).toBeInTheDocument()
+  expect(within(dialog).getByText('Como chegamos nesta resposta')).toBeInTheDocument()
+  expect(within(dialog).getAllByRole('listitem').map((item) => item.textContent)).toEqual(
+    expect.arrayContaining(['Encaminhando sua pergunta', 'Analista do board está olhando seus casos']),
+  )
+  expect(within(dialog).getByRole('button', { name: 'Nova conversa' })).toBeEnabled()
+})

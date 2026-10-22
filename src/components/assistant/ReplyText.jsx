@@ -1,4 +1,5 @@
 import { parseInline, parseReply } from '../../lib/assistant/conversation.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 // Text, `code` and **bold** as React nodes: the reply is never treated as HTML.
 function Inline({ text }) {
@@ -20,6 +21,7 @@ function Inline({ text }) {
 }
 
 export default function ReplyText({ text, label }) {
+  const t = useT()
   return (
     <div className="space-y-2.5 text-sm leading-relaxed">
       {parseReply(text).map((block, index) => {
@@ -32,7 +34,7 @@ export default function ReplyText({ text, label }) {
         }
         if (block.type === 'list') {
           return (
-            <ul key={index} aria-label={label ? `${label} reply list` : undefined} className="space-y-1">
+            <ul key={index} aria-label={label ? t('app.assistant.replyList', { name: label }) : undefined} className="space-y-1">
               {block.items.map((item, itemIndex) => (
                 <li key={itemIndex} className="flex gap-2">
                   <span aria-hidden="true" className="mt-[0.55em] size-1.5 shrink-0 bg-primary" />
