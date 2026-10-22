@@ -80,7 +80,7 @@ it('shows the game number, countdown, modes and my Classic board', async () => {
 it('filters languages as I type, skips guessed ones, and guesses with the keyboard', async () => {
   vi.mocked(guessRiddle).mockResolvedValue({ ...GAME(), correct: false })
   renderAt('/glitchdle', { user: 'alice' })
-  const input = await screen.findByRole('combobox')
+  const input = await screen.findByRole('combobox', { name: 'Guess a language' })
   await userEvent.type(input, 'py')
   const list = screen.getByRole('listbox')
   expect(within(list).getByRole('option', { name: /Python/ })).toHaveAttribute('aria-disabled', 'true')
@@ -100,7 +100,7 @@ it('filters languages as I type, skips guessed ones, and guesses with the keyboa
 it('closes the list with Escape and guesses the best match with the button', async () => {
   vi.mocked(guessRiddle).mockResolvedValue({ ...GAME(), correct: false })
   renderAt('/glitchdle', { user: 'alice' })
-  const input = await screen.findByRole('combobox')
+  const input = await screen.findByRole('combobox', { name: 'Guess a language' })
   await userEvent.type(input, 'golang')
   expect(screen.getByRole('listbox')).toBeInTheDocument()
   await userEvent.keyboard('{Escape}')
@@ -114,11 +114,11 @@ it('celebrates a win, shows the answer and copies a spoiler-free result', async 
   const user = userEvent.setup()
   vi.mocked(guessRiddle).mockResolvedValue(WON())
   renderAt('/glitchdle', { user: 'alice' })
-  await user.type(await screen.findByRole('combobox'), 'rust{Enter}')
+  await user.type(await screen.findByRole('combobox', { name: 'Guess a language' }), 'rust{Enter}')
 
   expect(await screen.findByText(/Solved in 2 guesses!/)).toHaveTextContent('It was Rust.')
   expect(screen.getByTestId('win-burst')).toBeInTheDocument()
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: 'Guess a language' })).not.toBeInTheDocument()
   expect(screen.getByText(/Next Glitchdle in/)).toBeInTheDocument()
   expect(within(screen.getByRole('tab', { name: /Classic/ })).getByText('(solved)')).toBeInTheDocument()
   // The progress refreshes for the XP and the badge toasts.
@@ -165,7 +165,7 @@ it("shows my stats and today's community numbers", async () => {
 it('says what went wrong and reloads the board when a guess is refused', async () => {
   vi.mocked(guessRiddle).mockRejectedValue(new Error('You already tried that language.'))
   renderAt('/glitchdle', { user: 'alice' })
-  await userEvent.type(await screen.findByRole('combobox'), 'rust{Enter}')
+  await userEvent.type(await screen.findByRole('combobox', { name: 'Guess a language' }), 'rust{Enter}')
   expect(await screen.findByRole('alert')).toHaveTextContent('You already tried that language.')
   await waitFor(() => expect(getRiddle).toHaveBeenCalledTimes(2))
 })

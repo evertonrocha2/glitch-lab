@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
 import { AssistantProvider } from '../lib/assistant/AssistantProvider.jsx'
 import { AuthProvider } from '../lib/auth/AuthProvider.jsx'
+import { I18nProvider } from '../lib/i18n/I18nProvider.jsx'
 import { ProgressProvider } from '../lib/progress/ProgressProvider.jsx'
 import { StudyTimerProvider } from '../lib/timer/StudyTimerProvider.jsx'
 import { AppRoutes } from '../routes.jsx'
@@ -12,12 +13,14 @@ function LocationProbe() {
 }
 
 // Renders the whole app at `path`, already signed in as `user` (token "token-<user>") when given.
-export function renderAt(path, { user } = {}) {
+// Tests speak English unless they ask for another `locale`.
+export function renderAt(path, { user, locale = 'en' } = {}) {
   if (user) {
     const session = { token: `token-${user}`, user: { id: user, email: `${user}@test.dev`, isDemo: false } }
     localStorage.setItem('gd:session', JSON.stringify(session))
   }
   return render(
+    <I18nProvider locale={locale}>
     <AuthProvider>
       <ProgressProvider>
         <StudyTimerProvider>
@@ -29,7 +32,8 @@ export function renderAt(path, { user } = {}) {
           </AssistantProvider>
         </StudyTimerProvider>
       </ProgressProvider>
-    </AuthProvider>,
+    </AuthProvider>
+    </I18nProvider>,
   )
 }
 

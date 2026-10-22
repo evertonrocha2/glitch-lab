@@ -4,6 +4,7 @@ import { useMyProfile } from '../lib/profile/myProfile.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
+import LanguageSelect from './LanguageSelect.jsx'
 import CommunityIcon from './community/CommunityIcon.jsx'
 import NotificationBell from './community/NotificationBell.jsx'
 import PixelAvatar from './pixel/PixelAvatar.jsx'
@@ -47,41 +48,47 @@ export default function AppShell({ children }) {
             </PixelButton>
           </div>
         </div>
-        {/* Second row: the pages. One line always; on narrow phones it scrolls sideways. */}
-        <div className="relative border-t-2 border-dashed border-line">
-          <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center gap-4 overflow-x-auto px-5 py-2 pr-10 whitespace-nowrap sm:gap-7 sm:px-8">
-            <NavLink to="/board" className={navClass}>
-              Board
-            </NavLink>
-            <NavLink to="/daily" className={navClass}>
-              Daily
-            </NavLink>
-            <NavLink to="/glitchdle" className={navClass}>
-              Glitchdle
-            </NavLink>
-            <NavLink to="/notes" className={navClass}>
-              Notes
-            </NavLink>
-            <NavLink to="/trail" className={navClass}>
-              Trail
-            </NavLink>
-            <NavLink to="/articles" className={navClass}>
-              Articles
-            </NavLink>
-            <NavLink to="/progress" className={navClass}>
-              Progress{' '}
-              {progress && (
-                <>
-                  <span aria-hidden="true" className="bg-secondary px-1 py-0.5 text-[10px] leading-none text-white">
-                    Lv {progress.level}
-                  </span>
-                  <span className="sr-only">(level {progress.level})</span>
-                </>
-              )}
-            </NavLink>
-          </nav>
-          {/* A fade at the edge says "there's more" when the row scrolls on a phone. */}
-          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-white to-transparent sm:hidden" />
+        {/* Second row: the pages, then the language. The pages stay on one line; on narrow phones they
+            scroll sideways while the language picker stays put at the end. */}
+        <div className="border-t-2 border-dashed border-line">
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 sm:px-8">
+            <div className="relative min-w-0 flex-1">
+              <nav aria-label="Main" className="flex items-center gap-4 overflow-x-auto py-2 pr-6 whitespace-nowrap sm:gap-7 sm:pr-0">
+              <NavLink to="/board" className={navClass}>
+                Board
+              </NavLink>
+              <NavLink to="/daily" className={navClass}>
+                Daily
+              </NavLink>
+              <NavLink to="/glitchdle" className={navClass}>
+                Glitchdle
+              </NavLink>
+              <NavLink to="/notes" className={navClass}>
+                Notes
+              </NavLink>
+              <NavLink to="/trail" className={navClass}>
+                Trail
+              </NavLink>
+              <NavLink to="/articles" className={navClass}>
+                Articles
+              </NavLink>
+              <NavLink to="/progress" className={navClass}>
+                Progress{' '}
+                {progress && (
+                  <>
+                    <span aria-hidden="true" className="bg-secondary px-1 py-0.5 text-[10px] leading-none text-white">
+                      Lv {progress.level}
+                    </span>
+                    <span className="sr-only">(level {progress.level})</span>
+                  </>
+                )}
+              </NavLink>
+              </nav>
+              {/* A fade at the edge says "there's more" when the row scrolls on a phone. */}
+              <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-white to-transparent sm:hidden" />
+            </div>
+            <LanguageSelect compact className="shrink-0" />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>

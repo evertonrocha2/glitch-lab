@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
+import LanguageSelect from '../LanguageSelect.jsx'
 
 export function TryLink() {
   return (
@@ -29,6 +30,7 @@ export default function PublicHeader({ showTry = true }) {
           <NavLink to="/people" end className={peopleClass}>
             People
           </NavLink>
+          <LanguageSelect compact />
           {user ? (
             <PixelButton as={Link} to="/board" className="px-3 py-2">
               Back to your board

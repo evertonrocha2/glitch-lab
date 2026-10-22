@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
+import LanguageSelect from '../LanguageSelect.jsx'
 
 const navLinkClass = 'whitespace-nowrap font-label text-xs text-ink transition-colors hover:text-primary'
 
@@ -36,6 +37,7 @@ export default function SiteHeader() {
               Sign in
             </Link>
           )}
+          <LanguageSelect compact />
           <PixelButton as="a" href="#try" className="whitespace-nowrap px-3 py-2">
             Try it
           </PixelButton>

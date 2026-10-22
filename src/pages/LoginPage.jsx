@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import PixelBug from '../components/pixel/PixelBug.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
+import LanguageSelect from '../components/LanguageSelect.jsx'
 import PixelLogo from '../components/pixel/PixelLogo.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 
@@ -92,11 +93,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
-        <div className="mx-auto flex max-w-6xl items-center px-5 py-3.5 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
           <Link to="/" className="flex items-center gap-2.5 font-pixel text-xl font-bold text-ink">
             <PixelLogo className="size-7" />
             <span>Glitch Detective</span>
           </Link>
+          <LanguageSelect compact />
         </div>
       </header>
 
