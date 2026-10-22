@@ -8,9 +8,15 @@ import PixelCard from '../components/pixel/PixelCard.jsx'
 import { AuthError, createNote, deleteNote, listCases, listNotes, updateNote } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { timeAgo } from '../lib/caseInfo.js'
-import { downloadText, noteToMarkdown, slug } from '../lib/exportMarkdown.js'
+import { exportNoteImage, exportNoteMarkdown, exportNotePdf } from '../lib/exportNote.js'
 import { newBlock } from '../lib/notes/blocks.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
+
+const EXPORTS = {
+  md: { run: exportNoteMarkdown, name: 'Markdown file' },
+  png: { run: exportNoteImage, name: 'image' },
+  pdf: { run: exportNotePdf, name: 'PDF' },
+}
 
 const caseCount = (note) => note.blocks.filter((block) => block.type === 'case').length
 
@@ -127,7 +133,15 @@ export default function NotesPage() {
     }
   }
 
-  const exportNote = (note) => downloadText(`${slug(note.title)}.md`, noteToMarkdown(note, cases))
+  async function exportNote(note, format) {
+    const { run, name } = EXPORTS[format]
+    setMessage('')
+    try {
+      await run({ note, cases })
+    } catch {
+      setMessage(`Couldn't make the ${name}. Try again.`)
+    }
+  }
 
   const open = notes?.find((note) => note.id === id)
 

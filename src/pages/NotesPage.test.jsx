@@ -2,6 +2,8 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createNote, deleteNote, listCases, listNotes, updateNote } from '../lib/api.js'
+import { noteToMarkdown } from '../lib/exportMarkdown.js'
+import { exportNoteImage, exportNotePdf } from '../lib/exportNote.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
@@ -13,6 +15,13 @@ vi.mock('../lib/api.js', () => ({
   createNote: vi.fn(),
   updateNote: vi.fn(),
   deleteNote: vi.fn(),
+}))
+
+// The image and PDF need a real browser to draw; jsdom only checks they are asked for.
+vi.mock('../lib/exportNote.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  exportNoteImage: vi.fn(),
+  exportNotePdf: vi.fn(),
 }))
 
 const analysis = { explicacao: 'a', causa: 'b', correcao: 'c', exercicio: { enunciado: 'd', resposta: 'e' } }
@@ -36,6 +45,8 @@ beforeEach(() => {
   vi.mocked(createNote).mockReset()
   vi.mocked(updateNote).mockReset().mockImplementation(async (id, fields) => ({ ...NOTE, id, ...fields, updatedAt: new Date().toISOString() }))
   vi.mocked(deleteNote).mockReset().mockResolvedValue()
+  vi.mocked(exportNoteImage).mockReset().mockResolvedValue()
+  vi.mocked(exportNotePdf).mockReset().mockResolvedValue()
 })
 
 const savedBlocks = () => vi.mocked(updateNote).mock.lastCall[1].blocks
@@ -158,4 +169,42 @@ it('keeps a deleted note gone even if a save comes back after the delete', async
   await waitFor(() => expect(currentLocation()).toBe('/notes'))
   await act(async () => finish())
   expect(screen.queryByRole('link', { name: /Undefined again/ })).toBeNull()
+})
+
+it('exports the note as Markdown, same as before', async () => {
+  let blob
+  const keep = (value) => {
+    blob = value
+    return 'blob:x'
+  }
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(keep), revokeObjectURL: vi.fn() }))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /Markdown/ }))
+  expect(click.mock.contexts[0].download).toBe('undefined-again.md')
+  expect(await blob.text()).toBe(noteToMarkdown(NOTE, CASES))
+  expect(exportNoteImage).not.toHaveBeenCalled()
+  click.mockRestore()
+  vi.unstubAllGlobals()
+})
+
+it('exports the note as it is on screen as an image or a PDF', async () => {
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Note title' }), '!')
+  await userEvent.click(screen.getByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /Image/ }))
+  expect(exportNoteImage).toHaveBeenCalledWith({ note: expect.objectContaining({ id: 'n1', title: 'Undefined again!' }), cases: CASES })
+
+  await userEvent.click(screen.getByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(exportNotePdf).toHaveBeenCalledWith({ note: expect.objectContaining({ title: 'Undefined again!' }), cases: CASES })
+})
+
+it('says so when a file could not be made', async () => {
+  vi.mocked(exportNotePdf).mockRejectedValue(new Error('canvas tainted'))
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(await screen.findByText("Couldn't make the PDF. Try again.")).toBeInTheDocument()
 })

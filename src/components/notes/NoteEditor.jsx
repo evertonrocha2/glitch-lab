@@ -6,6 +6,7 @@ import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, u
 import PixelButton from '../pixel/PixelButton.jsx'
 import BlockMenu from './BlockMenu.jsx'
 import CaseBlock from './CaseBlock.jsx'
+import ExportMenu from './ExportMenu.jsx'
 
 export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
@@ -303,9 +304,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
           )}
         </p>
         <div className="flex flex-wrap gap-2">
-          <PixelButton variant="ghost" onClick={() => onExport({ ...note, title, blocks })} className="px-3 py-2">
-            Export .md
-          </PixelButton>
+          <ExportMenu onExport={(format) => onExport({ ...note, title, blocks }, format)} />
           {confirming ? (
             <>
               <PixelButton variant="secondary" onClick={onDelete} className="px-3 py-2">
