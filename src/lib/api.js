@@ -3,14 +3,14 @@ const GENERIC_MESSAGE = 'Something went wrong. Please try again.'
 // Thrown on 401 so pages can send the person back to the login screen.
 export class AuthError extends Error {}
 
-async function request(path, { method = 'GET', body, token } = {}) {
+async function request(path, { method = 'GET', body, token, keepalive } = {}) {
   const headers = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
   let res
   try {
-    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) })
+    res = await fetch(path, { method, headers, keepalive, body: body === undefined ? undefined : JSON.stringify(body) })
   } catch {
     throw new Error('Could not reach the server. Check your connection.')
   }
@@ -58,4 +58,29 @@ export function revealHint(challengeId, token) {
 // { passed, feedback, case }
 export function checkFix(challengeId, code, token) {
   return request('/api/check', { method: 'POST', body: { challengeId, code }, token })
+}
+
+export async function listNotes(token) {
+  return (await request('/api/notes', { token })).notes
+}
+
+export async function createNote({ title, blocks }, token) {
+  return (await request('/api/notes', { method: 'POST', body: { title, blocks }, token })).note
+}
+
+export async function updateNote(id, { title, blocks }, token) {
+  return (await request('/api/notes', { method: 'PUT', body: { id, title, blocks }, token })).note
+}
+
+export async function deleteNote(id, token) {
+  await request(`/api/notes?id=${encodeURIComponent(id)}`, { method: 'DELETE', token })
+}
+
+// keepalive lets the last report go out while the tab is closing. Returns today's total in seconds.
+export async function addStudyTime({ seconds, day }, token, { keepalive = false } = {}) {
+  return (await request('/api/study', { method: 'POST', body: { seconds, day }, token, keepalive })).todaySeconds
+}
+
+export async function getProgress(today, token) {
+  return (await request(`/api/progress?today=${encodeURIComponent(today)}`, { token })).progress
 }

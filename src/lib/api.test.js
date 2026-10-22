@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { AuthError, analyzeError, listCases, signIn } from './api.js'
+import { AuthError, addStudyTime, analyzeError, deleteNote, listCases, signIn, updateNote } from './api.js'
 
 const CASE = { id: 'c1', status: 'new' }
 
@@ -67,4 +67,29 @@ it('throws a generic message when the body has no message', async () => {
 it('throws a connection message when the network fails', async () => {
   fetch.mockRejectedValue(new TypeError('Failed to fetch'))
   await expect(listCases('dev:alice')).rejects.toThrow('Could not reach the server. Check your connection.')
+})
+
+it('updates a note by id', async () => {
+  fetch.mockResolvedValue(Response.json({ note: { id: 'n1', title: 'T' } }))
+  await expect(updateNote('n1', { title: 'T', blocks: [] }, 'tok')).resolves.toEqual({ id: 'n1', title: 'T' })
+  const [url, init] = fetch.mock.calls[0]
+  expect(url).toBe('/api/notes')
+  expect(init.method).toBe('PUT')
+  expect(JSON.parse(init.body)).toEqual({ id: 'n1', title: 'T', blocks: [] })
+})
+
+it('deletes a note with its id in the query', async () => {
+  fetch.mockResolvedValue(Response.json({ deleted: true }))
+  await deleteNote('n 1', 'tok')
+  expect(fetch.mock.calls[0][0]).toBe('/api/notes?id=n%201')
+  expect(fetch.mock.calls[0][1].method).toBe('DELETE')
+})
+
+it('reports study time, with keepalive when the tab is closing', async () => {
+  fetch.mockResolvedValue(Response.json({ todaySeconds: 120 }))
+  await expect(addStudyTime({ seconds: 60, day: '2026-10-22' }, 'tok', { keepalive: true })).resolves.toBe(120)
+  const [url, init] = fetch.mock.calls[0]
+  expect(url).toBe('/api/study')
+  expect(init.keepalive).toBe(true)
+  expect(JSON.parse(init.body)).toEqual({ seconds: 60, day: '2026-10-22' })
 })
