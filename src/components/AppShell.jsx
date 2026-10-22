@@ -46,6 +46,9 @@ export default function AppShell({ children }) {
             <NavLink to="/notes" className={navClass}>
               Notes
             </NavLink>
+            <NavLink to="/trail" className={navClass}>
+              Trail
+            </NavLink>
             <NavLink to="/progress" className={navClass}>
               Progress{' '}
               {progress && (
