@@ -39,7 +39,7 @@ export function planSlot({ kind, day, difficulty }) {
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 // The app never shows em dashes; the AI likes them in prose.
-const prose = (text) => text.replace(/\s*—\s*/g, ', ')
+const prose = (text) => text.replace(/\s*\u2014\s*/g, ', ')
 
 // Splits the AI answer into the public puzzle and its secret, or throws when anything is off.
 // Stricter than a gym challenge: everyone gets this puzzle, so a broken one can't slip through.

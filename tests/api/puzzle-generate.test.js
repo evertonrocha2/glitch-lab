@@ -21,7 +21,7 @@ it('keeps the first three hints and trims the title', () => {
 })
 
 it('swaps em dashes in the prose for commas', () => {
-  const parsed = parse({ ...AI_PUZZLE, symptom: 'It crashes — every time' })
+  const parsed = parse({ ...AI_PUZZLE, symptom: 'It crashes \u2014 every time' })
   expect(parsed.puzzle.symptom).toBe('It crashes, every time')
 })
 

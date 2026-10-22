@@ -31,7 +31,7 @@ it('has at least two puzzles for every daily difficulty and for the global slot'
 })
 
 it('uses no em dashes', () => {
-  expect(JSON.stringify(POOL)).not.toContain('—')
+  expect(JSON.stringify(POOL)).not.toContain('\u2014')
 })
 
 it('picks the same puzzle for the same slot, and changes it the next day', () => {
