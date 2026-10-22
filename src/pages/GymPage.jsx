@@ -96,24 +96,32 @@ export default function GymPage() {
   }
 
   const passed = result?.passed === true || challenge?.status === 'passed'
+  // Daily and global puzzles have no case: they get their title and lead back to the daily page.
+  const puzzle = challenge?.puzzle ?? null
+  const back = puzzle ? { to: '/daily', label: 'daily', page: 'the daily page' } : { to: '/board', label: 'board', page: 'the board' }
 
   return (
     <AppShell>
-      <Link to="/board" className="font-label text-xs text-ink hover:text-primary">
-        &lt; Back to board
+      <Link to={back.to} className="font-label text-xs text-ink hover:text-primary">
+        &lt; Back to {back.label}
       </Link>
       <p className="mt-6 font-label text-xs text-secondary">
-        &gt; gym<span className="motion-safe:animate-caret">_</span>
+        &gt; {puzzle ? `${puzzle.kind} challenge` : 'gym'}
+        <span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Fix the bug</h1>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{puzzle ? puzzle.title : 'Fix the bug'}</h1>
       {challenge?.concept && (
         <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
           Training
           <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{conceptLabel(challenge.concept)}</span>
+          {puzzle && <span className="border border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">{puzzle.difficulty}</span>}
         </p>
       )}
       <p className="mt-2 max-w-2xl text-muted">
-        This code has one bug of the same kind as your case. Edit it until it works, then submit. The AI checks your fix.
+        {!puzzle && 'This code has one bug of the same kind as your case. Edit it until it works, then submit. The AI checks your fix.'}
+        {puzzle?.kind === 'daily' && "Today's puzzle, the same for everyone. This code has one bug. Edit it until it works, then submit. The AI checks your fix."}
+        {puzzle?.kind === 'global' &&
+          "This week's global challenge: it hides more than one bug, and fixing the first shows you the next. Your time runs from when you started."}
       </p>
 
       {message && (
@@ -130,9 +138,11 @@ export default function GymPage() {
 
       {challenge?.status === 'passed' && !result && (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
-          <p className="text-ink">You already fixed this one. Head back to the board to train again.</p>
-          <PixelButton as={Link} to="/board" variant="secondary">
-            Back to board
+          <p className="text-ink">
+            {puzzle ? 'You already fixed this one. Head back to the daily page for the next one.' : 'You already fixed this one. Head back to the board to train again.'}
+          </p>
+          <PixelButton as={Link} to={back.to} variant="secondary">
+            Back to {back.label}
           </PixelButton>
         </div>
       )}
@@ -170,7 +180,7 @@ export default function GymPage() {
               </PixelButton>
             )}
             {checking && <Working label="Checking your fix" />}
-            {result && <FixResult result={result} />}
+            {result && <FixResult result={result} back={back} />}
           </form>
 
           <HintList hints={hints} total={challenge.hintsTotal} onReveal={nextHint} loading={hintLoading} />

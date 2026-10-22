@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
+import { DAILY_XP } from '../../shared/daily.js'
 import { XP } from '../../shared/progress.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import AppShell from '../components/AppShell.jsx'
@@ -41,6 +42,8 @@ const EARN = [
   ['Study one minute', XP.studyMinute],
   ['Finish a trail mission', `${Math.min(...Object.values(MISSION_XP))}-${Math.max(...Object.values(MISSION_XP))}`],
   ['...and the whole trail', `+${TRAIL_BONUS_XP}`],
+  ['Solve a daily: easy, medium, hard', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
+  ['Solve the weekly global challenge', DAILY_XP.global],
 ]
 
 export default function ProgressPage() {

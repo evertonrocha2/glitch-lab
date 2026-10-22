@@ -3,7 +3,8 @@ import { ProgressBlocks } from '../board/CaseCard.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 
 // Blue when the fix passes (practice paid off), purple when it needs another look.
-export default function FixResult({ result }) {
+// back: where "Back to ..." goes; the board for a case, the daily page for a puzzle.
+export default function FixResult({ result, back = { to: '/board', label: 'board' } }) {
   const { passed, feedback, case: kase } = result
 
   if (!passed) {
@@ -27,8 +28,8 @@ export default function FixResult({ result }) {
           {kase.passedCount}/2 challenges passed on this case
         </p>
       )}
-      <PixelButton as={Link} to="/board" variant="secondary" className="mt-4">
-        Back to board
+      <PixelButton as={Link} to={back.to} variant="secondary" className="mt-4">
+        Back to {back.label}
       </PixelButton>
     </div>
   )

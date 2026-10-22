@@ -16,6 +16,7 @@ function parseVerdict(data) {
 }
 
 // The AI grades the student's fix against the secret solution; passing twice solves the case.
+// Daily and global puzzles have no case: they just pass (case is null in the answer).
 export async function POST(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
@@ -30,7 +31,7 @@ export async function POST(request) {
   const challenge = await store.getChallenge(userId, body.challengeId)
   if (!challenge) return fail(404, 'Challenge not found.')
   if (challenge.status === 'passed') return fail(409, 'This challenge is already solved.')
-  const kase = await store.getCase(userId, challenge.caseId)
+  const kase = challenge.caseId ? await store.getCase(userId, challenge.caseId) : null
 
   // Sending the untouched exercise back is a free "no", not a paid AI call.
   if (body.code.trim() === challenge.brokenCode.trim()) {
@@ -59,7 +60,7 @@ export async function POST(request) {
 
   let updatedCase = kase
   // Extra practice on a solved case is welcome, but the case can't go past 2/2.
-  if (verdict.passed && kase.status !== 'solved') {
+  if (verdict.passed && kase && kase.status !== 'solved') {
     const passedCount = kase.passedCount + 1
     updatedCase = await store.updateCase(userId, kase.id, {
       passedCount,

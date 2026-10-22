@@ -58,6 +58,9 @@ export function createLocalStore({ file }) {
   // Files saved before notes and study time existed don't have these lists yet.
   const notesOf = (data) => (data.notes ??= [])
   const studyOf = (data) => (data.study ??= {})
+  // Daily and global puzzles came later too; their secrets sit apart like challenge secrets.
+  const puzzlesOf = (data) => (data.puzzles ??= [])
+  const puzzleSecretsOf = (data) => (data.puzzleSecrets ??= {})
 
   return {
     // Emails are stored lowercase, so "Ada@X.com" and "ada@x.com" are the same account. null when taken.
@@ -106,9 +109,12 @@ export function createLocalStore({ file }) {
       return copy(found)
     },
 
-    async createChallenge(userId, { caseId, brokenCode, symptom, language, hints }, { solution, bugExplanation }) {
+    // A gym challenge has a caseId; a daily or global one has a puzzleId instead, and only one per user
+    // per puzzle (null when it already exists).
+    async createChallenge(userId, { caseId = null, puzzleId = null, brokenCode, symptom, language, hints }, { solution, bugExplanation }) {
       const data = await load()
-      const created = { id: randomUUID(), caseId, userId, brokenCode, symptom, language, hints, hintsRevealed: 0, status: 'open', attempts: 0, createdAt: now() }
+      if (puzzleId && data.challenges.some((item) => item.userId === userId && item.puzzleId === puzzleId)) return null
+      const created = { id: randomUUID(), caseId, puzzleId, userId, brokenCode, symptom, language, hints, hintsRevealed: 0, status: 'open', attempts: 0, passedAt: null, createdAt: now() }
       data.challenges.push(created)
       data.secrets[created.id] = { solution, bugExplanation }
       await save()
@@ -130,6 +136,8 @@ export function createLocalStore({ file }) {
       if (hintsRevealed !== undefined) found.hintsRevealed = hintsRevealed
       if (status !== undefined) found.status = status
       if (attempts !== undefined) found.attempts = attempts
+      // The first pass is the one the leaderboard times.
+      if (status === 'passed' && !found.passedAt) found.passedAt = now()
       await save()
       return copy(found)
     },
@@ -141,6 +149,50 @@ export function createLocalStore({ file }) {
 
     async getChallengeSecret(challengeId) {
       return copy((await load()).secrets[challengeId])
+    },
+
+    // One puzzle per slot (kind, day, difficulty): null when the slot is already taken.
+    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints }, { solution, bugExplanation }) {
+      const data = await load()
+      const puzzles = puzzlesOf(data)
+      if (puzzles.some((item) => item.kind === kind && item.day === day && item.difficulty === difficulty)) return null
+      const created = { id: randomUUID(), kind, day, difficulty, language, concept, title, brokenCode, symptom, hints, createdAt: now() }
+      puzzles.push(created)
+      puzzleSecretsOf(data)[created.id] = { solution, bugExplanation }
+      await save()
+      return copy(created)
+    },
+
+    // Every filter is optional: kind, day (exact), since (that day or later), ids.
+    async listPuzzles({ kind, day, since, ids } = {}) {
+      const puzzles = puzzlesOf(await load()).filter(
+        (item) =>
+          (kind === undefined || item.kind === kind) &&
+          (day === undefined || item.day === day) &&
+          (since === undefined || item.day >= since) &&
+          (ids === undefined || ids.includes(item.id)),
+      )
+      return copy(puzzles.sort((a, b) => a.day.localeCompare(b.day)))
+    },
+
+    async getPuzzle(id) {
+      return copy(puzzlesOf(await load()).find((item) => item.id === id))
+    },
+
+    async getPuzzleSecret(puzzleId) {
+      return copy(puzzleSecretsOf(await load())[puzzleId])
+    },
+
+    async findPuzzleChallenge(userId, puzzleId) {
+      return copy((await load()).challenges.find((item) => item.userId === userId && item.puzzleId === puzzleId))
+    },
+
+    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt }], first pass first.
+    async puzzleSolves(puzzleId) {
+      return (await load()).challenges
+        .filter((item) => item.puzzleId === puzzleId && item.status === 'passed')
+        .map((item) => ({ userId: item.userId, attempts: item.attempts, startedAt: item.createdAt, passedAt: item.passedAt }))
+        .sort((a, b) => a.passedAt.localeCompare(b.passedAt))
     },
 
     async createNote(userId, { title, blocks, isPublic = false }) {

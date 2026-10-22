@@ -1,6 +1,7 @@
 import { conceptLabel } from '../shared/concepts.js'
 import { generateJson } from './_lib/ai/index.js'
 import { parseChallenge, toPublicChallenge } from './_lib/challenges.js'
+import { cron, getDaily, getGlobal, startPuzzle } from './_lib/handlers/daily.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
 import { buildChallengePrompt, CHALLENGE_SCHEMA, CHALLENGE_SYSTEM } from './_lib/prompts/challenge.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
@@ -8,11 +9,15 @@ import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
 
 // Starts a gym challenge for one of my cases, or resumes the open one (no AI call, no quota).
+// With { daily: true, puzzleId } it starts a daily or global puzzle instead.
 export async function POST(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
 
   const body = await readJson(request)
+  if (body?.daily !== undefined || body?.puzzleId !== undefined) {
+    return typeof body.puzzleId === 'string' ? startPuzzle(auth.user, body.puzzleId) : fail(400, 'Invalid request.')
+  }
   if (typeof body?.caseId !== 'string') return fail(400, 'Invalid request.')
 
   const store = getStore()
@@ -46,14 +51,25 @@ export async function POST(request) {
   return ok({ challenge: toPublicChallenge(record, kase.concept) }, 201)
 }
 
+// GET ?id=: one of my challenges. ?daily=1 and ?global=1: the shared puzzles. ?cron=1: Vercel's
+// daily cron, signed with CRON_SECRET instead of a session.
 export async function GET(request) {
+  const params = new URL(request.url).searchParams
+  if (params.has('cron')) return cron(request)
+
   const auth = await requireUser(request)
   if (auth.response) return auth.response
+  if (params.has('daily')) return getDaily(auth.user)
+  if (params.has('global')) return getGlobal(auth.user)
 
-  const id = new URL(request.url).searchParams.get('id') ?? ''
+  const id = params.get('id') ?? ''
   const store = getStore()
   const record = await store.getChallenge(auth.user.id, id)
   if (!record) return fail(404, 'Challenge not found.')
+  if (record.puzzleId) {
+    const puzzle = await store.getPuzzle(record.puzzleId)
+    return ok({ challenge: toPublicChallenge(record, puzzle?.concept ?? 'other', puzzle) })
+  }
   const kase = await store.getCase(auth.user.id, record.caseId)
   return ok({ challenge: toPublicChallenge(record, kase?.concept ?? 'other') })
 }

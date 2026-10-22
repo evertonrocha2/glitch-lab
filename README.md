@@ -47,6 +47,16 @@ A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) wh
 
 One question counts as one AI call on the daily limit. The chat lives in the browser session only.
 
+## Daily and global challenges
+
+The **Daily** page has 3 new puzzles every day (easy, medium, hard), the same for everyone, plus one harder **global challenge** a week with a leaderboard.
+
+- **A cron feeds them.** Vercel runs `GET /api/challenge?cron=1` daily at 03:00 UTC (midnight in Brasilia), signed with `CRON_SECRET`. It asks Gemini for today's and tomorrow's puzzles, so the next set is ready the moment the day turns, plus the week's global challenge. Bug types and languages rotate, recent titles are avoided, and every answer is validated strictly. Running it twice adds nothing.
+- **Always something to solve.** If the cron didn't run or the AI is down, the day is filled from a curated pool of 15 hand-written puzzles (`api/_lib/puzzles/pool.js`), picked by date so everyone still gets the same set.
+- **Same gym, same secrets.** Solving a puzzle opens the regular gym: hints one at a time, and the AI judges your fix against a solution that never reaches the browser. Starting a puzzle costs no AI call.
+- **XP and badges.** Easy 20, medium 35, hard 50, global 100 XP. *Daily grinder*: a daily solved 7 days in a row. *Global ace*: solve a global challenge.
+- **Leaderboard.** Top 10 by time from start to pass, then fewer attempts, with the first solver marked. Only public profiles show a name and avatar; everyone else is an "Anonymous detective". No emails, no account ids.
+
 ## Try it
 
 Open the app and press **Use demo account**. Each visitor gets their own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak, a few badges and a study trail already half done, so you can try everything without waiting for the AI.

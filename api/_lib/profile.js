@@ -13,6 +13,7 @@ import {
   ROLES,
 } from '../../shared/profile.js'
 import { computeProgress } from '../../shared/progress.js'
+import { loadDaily } from './puzzles/solved.js'
 
 const INVALID = { status: 400, message: 'Invalid request.' }
 const tooLong = (what, max) => ({ status: 413, message: `Too long. Keep your ${what} under ${max + 1} characters.` })
@@ -175,8 +176,9 @@ export async function summarize(store, userId, today) {
     store.listStudyTime(userId),
     store.listTrails(userId),
   ])
+  const daily = await loadDaily(store, userId, challenges)
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today, trails }),
+    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily }),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,

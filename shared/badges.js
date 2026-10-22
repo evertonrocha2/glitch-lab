@@ -13,6 +13,8 @@ export const BADGES = [
   { id: 'unstoppable', name: 'Unstoppable', how: 'Study 7 days in a row.', earned: (s) => s.longestStreak >= 7 },
   { id: 'marathon', name: 'Marathon', how: 'Study 5 hours in total.', earned: (s) => s.totalSeconds >= 5 * 3600 },
   { id: 'trailblazer', name: 'Trailblazer', how: 'Finish every mission on a study trail.', earned: (s) => s.trailsDone >= 1 },
+  { id: 'daily-grinder', name: 'Daily grinder', how: 'Solve a daily challenge 7 days in a row.', earned: (s) => s.dailyLongestStreak >= 7 },
+  { id: 'global-ace', name: 'Global ace', how: 'Solve a weekly global challenge.', earned: (s) => s.globalSolved >= 1 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)

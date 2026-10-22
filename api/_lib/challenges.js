@@ -3,11 +3,13 @@ export const HINTS_PER_CHALLENGE = 3
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 
 // What the browser may see: never the solution, and only the hints already asked for.
-// `concept` comes from the case, so the gym can say which kind of bug is being trained.
-export function toPublicChallenge(record, concept) {
+// `concept` comes from the case (or the puzzle), so the gym can say which kind of bug is being trained.
+// A daily or global challenge has no case; `puzzle` names it instead.
+export function toPublicChallenge(record, concept, puzzle = null) {
   return {
     id: record.id,
-    caseId: record.caseId,
+    caseId: record.caseId ?? null,
+    puzzle: puzzle && { id: puzzle.id, kind: puzzle.kind, day: puzzle.day, difficulty: puzzle.difficulty, title: puzzle.title },
     concept,
     brokenCode: record.brokenCode,
     symptom: record.symptom,
