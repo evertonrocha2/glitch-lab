@@ -1,3 +1,4 @@
+import { conceptLabel } from '../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../shared/limits.js'
 
 const TOO_LONG = `Too long. Keep each block under ${NOTE_LIMITS.text} characters.`
@@ -42,5 +43,58 @@ export function parseNote(body) {
       value.blocks.push(cleaned)
     }
   }
+  if (body.isPublic !== undefined) {
+    if (typeof body.isPublic !== 'boolean') return { status: 400, message: 'Invalid request.' }
+    value.isPublic = body.isPublic
+  }
   return { value }
+}
+
+const EXCERPT = 140
+const ERROR_MESSAGE = 160
+const oneLine = (text) => text.replace(/\s+/g, ' ').trim()
+const cut = (text, max) => (text.length > max ? `${text.slice(0, max - 3).trimEnd()}...` : text)
+
+// A public note in a list: never the blocks themselves, just a taste of the writing.
+export function publicNoteSummary(note) {
+  const words = note.blocks.filter((block) => block.type !== 'case').map((block) => block.text)
+  return {
+    id: note.id,
+    title: note.title,
+    updatedAt: note.updatedAt,
+    excerpt: cut(oneLine(words.join(' ')), EXCERPT),
+    blockCount: note.blocks.length,
+  }
+}
+
+// "TypeError: message" style first lines; anything else is a plain "Error". Same rule as the board.
+const TYPED_ERROR = /^([A-Za-z_$][\w$.]*)\s*:\s*(.*)$/
+
+// What a reader may learn about a case: the kind of error and how far along it is.
+// Never the code, attached files, context, analysis, stack lines or the case id.
+function caseSummary(kase) {
+  const firstLine = kase.error.split('\n')[0].trim()
+  const match = TYPED_ERROR.exec(firstLine)
+  return {
+    errorType: match ? match[1] : 'Error',
+    message: cut(match ? match[2] : firstLine, ERROR_MESSAGE),
+    bugType: conceptLabel(kase.concept),
+    language: kase.language,
+    status: kase.status,
+  }
+}
+
+// A public note, read-only. getCase must only find the author's own cases, so a note that names
+// someone else's case id shows nothing about it.
+export async function publicNote(note, getCase) {
+  const blocks = await Promise.all(
+    note.blocks.map(async (block) => {
+      // Rebuilt field by field, like on save, so nothing extra rides along.
+      if (block.type === 'todo') return { id: block.id, type: 'todo', text: block.text, done: block.done }
+      if (block.type !== 'case') return { id: block.id, type: block.type, text: block.text }
+      const kase = await getCase(block.caseId)
+      return { id: block.id, type: 'case', case: kase ? caseSummary(kase) : null }
+    }),
+  )
+  return { id: note.id, title: note.title, updatedAt: note.updatedAt, blocks }
 }
