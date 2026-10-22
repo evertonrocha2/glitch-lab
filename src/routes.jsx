@@ -4,6 +4,7 @@ import BoardPage from './pages/BoardPage.jsx'
 import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import ProgressPage from './pages/ProgressPage.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -30,6 +31,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <GymPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/progress"
+        element={
+          <RequireAuth>
+            <ProgressPage />
           </RequireAuth>
         }
       />
