@@ -47,7 +47,8 @@ it('keeps the pasted error and goes to the board', async () => {
 it('presents the features, the comparison, bug types, ranks and answers', async () => {
   renderAt('/')
   const features = within(screen.getByRole('list', { name: 'Features' })).getAllByRole('heading', { level: 3 })
-  expect(features).toHaveLength(7)
+  expect(features).toHaveLength(8)
+  expect(features.at(-1)).toHaveTextContent('A study trail made from your cases')
   expect(within(screen.getByRole('list', { name: 'A chatbot compared with Glitch Detective' })).getAllByRole('listitem').length).toBeGreaterThan(3)
   expect(within(screen.getByRole('list', { name: 'Bug types' })).getAllByRole('listitem')).toHaveLength(12)
   const ranks = within(screen.getByRole('list', { name: 'Detective ranks' })).getAllByRole('listitem')

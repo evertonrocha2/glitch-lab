@@ -3,9 +3,10 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { computeProgress } from '../../shared/progress.js'
 import { parseProfile } from '../../api/_lib/profile.js'
 import { seedDemo } from '../../api/_lib/seed.js'
+import { computeProgress } from '../../shared/progress.js'
+import { trailView } from '../../shared/trails.js'
 import { createLocalStore } from '../../api/_lib/store/local.js'
 
 const freshStore = async () => createLocalStore({ file: join(await mkdtemp(join(tmpdir(), 'gd-seed-')), 'db.json') })
@@ -48,6 +49,27 @@ it('gives the demo a gym history, a note and a study streak', async () => {
   expect(progress.streak).toBe(3)
   expect(progress.badges.filter((badge) => badge.earned).length).toBeGreaterThanOrEqual(5)
   expect(progress.badges.some((badge) => !badge.earned)).toBe(true)
+})
+
+it('gives the demo a study trail that the seeded work has already started', async () => {
+  const store = await freshStore()
+  await seedDemo(store, 'demo', '2026-10-22')
+
+  const trails = await store.listTrails('demo')
+  expect(trails).toHaveLength(1)
+  const cases = await store.listCases('demo')
+  const data = { cases, challenges: await store.listChallenges('demo'), notes: await store.listNotes('demo'), study: await store.listStudyTime('demo') }
+  const view = trailView(trails[0], data)
+  expect(view.total).toBeGreaterThanOrEqual(5)
+  expect(new Set(view.missions.map((mission) => mission.kind)).size).toBe(5)
+  for (const mission of view.missions.filter((item) => item.caseId)) expect(cases.some((item) => item.id === mission.caseId)).toBe(true)
+  // Some missions done, one up next, and the trail not finished yet.
+  expect(view.doneCount).toBeGreaterThanOrEqual(2)
+  expect(view.complete).toBe(false)
+  expect(view.missions.filter((mission) => mission.status === 'next')).toHaveLength(1)
+
+  const progress = computeProgress({ ...data, today: '2026-10-22', trails })
+  expect(progress.xp).toBe(computeProgress({ ...data, today: '2026-10-22' }).xp + view.xp)
 })
 
 it('gives the demo a profile that features badges it really earned', async () => {

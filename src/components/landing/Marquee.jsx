@@ -1,10 +1,13 @@
+import { BADGES } from '../../../shared/badges.js'
+
 const ITEMS = [
   '12 bug types tracked',
   '3 hints, never the answer',
   '2 passes to solve a case',
   'Notes with @mentions',
   'Study timer',
-  '12 badges to earn',
+  `${BADGES.length} badges to earn`,
+  'AI study trails',
   'Export to Notion',
   'JavaScript · Python · and more',
 ]

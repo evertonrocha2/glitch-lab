@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
+import { BADGES } from '../../../shared/badges.js'
 import { BUG } from '../../../shared/bug.js'
+import BadgeIcon from './BadgeIcon.jsx'
 import PixelBug from './PixelBug.jsx'
 import PixelButton from './PixelButton.jsx'
 import Working from './Working.jsx'
@@ -24,4 +26,9 @@ it('Working announces progress', () => {
   const status = screen.getByRole('status')
   expect(status).toHaveTextContent('Investigating your error')
   expect(status).toHaveTextContent('The free AI can take a minute or two.')
+})
+
+it('BadgeIcon draws its own glyph for every badge', () => {
+  const drawings = BADGES.map((badge) => render(<BadgeIcon id={badge.id} />).container.innerHTML)
+  expect(new Set(drawings).size).toBe(BADGES.length)
 })

@@ -113,11 +113,19 @@ it('study: sums up progress, badges and how XP is earned', async () => {
   expect(text).toContain('No study plan saved.')
 })
 
-it('study: includes study trails when the store has them', async () => {
-  store.listTrails = vi.fn().mockResolvedValue([{ title: 'Master undefined', steps: ['read', 'train'] }])
+it('study: describes my active study trail and where each mission stands', async () => {
+  const missions = [
+    { id: 'm1', kind: 'reflect', title: 'Say why undefined happens', description: 'x', xp: 10 },
+    { id: 'm2', kind: 'investigate', title: 'Investigate a new error', description: 'x', xp: 15 },
+  ]
+  const trail = await store.createTrail('alice', { title: 'Master undefined', summary: '', missions })
+  await store.setMissionDone('alice', trail.id, 'm1', true)
+  await store.createTrail('bob', { title: 'Bob trail', summary: '', missions })
   const text = await load('study')
-  expect(store.listTrails).toHaveBeenCalledWith('alice')
-  expect(text).toContain('Master undefined')
+  expect(text).toContain('"Master undefined", 1/2 missions done')
+  expect(text).toContain('- [done] Reflect: Say why undefined happens')
+  expect(text).toContain('- [next] Investigate: Investigate a new error')
+  expect(text).not.toContain('Bob trail')
 })
 
 it('guide: static app knowledge, no student data', async () => {

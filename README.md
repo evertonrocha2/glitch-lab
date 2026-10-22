@@ -17,8 +17,9 @@ Glitch Detective uses AI the other way around: **it hides the answer and trains 
 3. **Train in the gym.** From any case, the AI **writes a brand-new program with the same kind of bug**. You see only the symptom. Fix it in the editor; hints unlock one at a time, from vague to almost-the-answer. The AI **judges your fix** against a reference solution it never shows you. Pass 2 challenges and the case is solved.
 4. **Write it down.** A Notion-style notebook: headings, text, to-dos, and your cases as blocks. Type **@** to drop a case into the page, **/** for other blocks. Every case links to the notes that mention it. Notes save on their own.
 5. **Track your study time.** A pixel stopwatch sits on every page. It keeps running through reloads and counts each day on your own clock.
-6. **Level up.** Cases, passed challenges, notes and study minutes earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 12 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
-7. **Take it with you.** Export the whole board, or one note, as Markdown. Notion, Obsidian and GitHub all read it.
+6. **Follow a study trail.** Press *Build my study trail* and the AI reads your cases and notes, finds your weak spot and lays out 5 to 7 missions on a pixel path: train a case in the gym, write a note about a case, study with the timer, investigate a new error, or reflect. Missions tick themselves when you do them (only *reflect* is ticked by hand). Each one earns XP, and finishing the trail adds a 100 XP bonus and the *Trailblazer* badge.
+7. **Level up.** Cases, passed challenges, notes, study minutes and trail missions earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 13 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
+8. **Take it with you.** Export the whole board, or one note, as Markdown. Notion, Obsidian and GitHub all read it.
 
 ## How AI is used
 
@@ -27,6 +28,7 @@ Glitch Detective uses AI the other way around: **it hides the answer and trains 
 | Investigate | Patient teacher, plain English, focus on *why* | explanation, cause, fix, mini exercise, **bug type** (from a fixed list), language |
 | Write a challenge | New code, same bug type and language, one bug only | broken code, symptom, 3 hints, **secret** solution, bug explanation |
 | Judge a fix | Accept any fix that removes the bug; student code is fenced off as data | passed, feedback |
+| Build a study trail | Coach, plain English, weak spot first; cases and notes are fenced off as data | title, summary, 5 to 7 missions (kind, case, concept, minutes). The server drops any mission with an unknown kind, a case that isn't yours or a made-up concept, clamps minutes, and sets the XP itself |
 
 - Model: **Gemini** (`gemini-3.8-flash`) via the REST API with `responseSchema`, so every answer is valid, typed JSON.
 - The solution and the hints you haven't unlocked **never reach the browser**. They live server-side, and the API only returns what you're allowed to see.
@@ -47,7 +49,7 @@ One question counts as one AI call on the daily limit. The chat lives in the bro
 
 ## Try it
 
-Open the app and press **Use demo account**. Each visitor gets their own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak and a few badges, so you can try everything without waiting for the AI.
+Open the app and press **Use demo account**. Each visitor gets their own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak, a few badges and a study trail already half done, so you can try everything without waiting for the AI.
 
 ## Architecture
 
@@ -60,7 +62,7 @@ React + Tailwind (Vite)  ──>  /api/* (Vercel Functions)  ──>  Gemini
 
 - Accounts: passwords hashed with scrypt, sessions signed with HMAC and valid for 7 days. Emails are unique and case-insensitive. After 10 wrong passwords an email is locked for the day.
 
-- `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`, `api/notes.js`, `api/progress.js`, `api/auth.js`: one function per route, each checking the signed-in user first (sign in, sign up and the demo share `api/auth.js`, so the app stays under the 12 functions of the Vercel free plan).
+- `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`, `api/notes.js`, `api/progress.js`, `api/trail.js`, `api/auth.js`: one function per route, each checking the signed-in user first (sign in, sign up and the demo share `api/auth.js`, so the app stays under the 12 functions of the Vercel free plan).
 - `shared/progress.js`: XP, levels, streaks and badges are worked out from what you've done, never stored, so they can't drift out of sync.
 - `api/_lib/ai`, `api/_lib/store`, `api/_lib/auth`: swappable layers. The same contract tests run against the local store and Supabase.
 - `supabase/schema.sql`: tables with Row Level Security on and no client policies. The browser can't read any row directly.

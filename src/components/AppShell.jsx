@@ -10,7 +10,7 @@ import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
 
 const navClass = ({ isActive }) =>
-  `flex items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors ${
+  `flex items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
@@ -39,12 +39,15 @@ export default function AppShell({ children }) {
               Sign out
             </PixelButton>
           </div>
-          <nav aria-label="Main" className="flex flex-auto items-center gap-5 sm:ml-auto sm:flex-none">
+          <nav aria-label="Main" className="flex flex-auto items-center gap-3 sm:ml-auto sm:flex-none sm:gap-5">
             <NavLink to="/board" className={navClass}>
               Board
             </NavLink>
             <NavLink to="/notes" className={navClass}>
               Notes
+            </NavLink>
+            <NavLink to="/trail" className={navClass}>
+              Trail
             </NavLink>
             <NavLink to="/progress" className={navClass}>
               Progress{' '}

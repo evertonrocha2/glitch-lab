@@ -87,6 +87,21 @@ export async function getProgress(today, token) {
   return (await request(`/api/progress?today=${encodeURIComponent(today)}`, { token })).progress
 }
 
+// The study trail page: { trail (or null), history, sources: { cases, notes } }.
+export function getTrail(token) {
+  return request('/api/trail', { token })
+}
+
+// Asks the AI for a new trail (slow: the free AI can take a minute). Same shape as getTrail.
+export function buildTrail(today, token) {
+  return request('/api/trail', { method: 'POST', body: { today }, token })
+}
+
+// Ticks or unticks a reflect mission; returns the updated trail.
+export async function setTrailMission({ trailId, missionId, done }, token) {
+  return (await request('/api/trail', { method: 'PUT', body: { trailId, missionId, done }, token })).trail
+}
+
 // "Ask the detective": { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })

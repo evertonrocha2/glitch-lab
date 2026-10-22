@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import { XP } from '../../shared/progress.js'
+import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
@@ -38,6 +39,8 @@ const EARN = [
   ['Solve a case', XP.solved],
   ['Write a note', XP.note],
   ['Study one minute', XP.studyMinute],
+  ['Finish a trail mission', `${Math.min(...Object.values(MISSION_XP))}-${Math.max(...Object.values(MISSION_XP))}`],
+  ['...and the whole trail', `+${TRAIL_BONUS_XP}`],
 ]
 
 export default function ProgressPage() {

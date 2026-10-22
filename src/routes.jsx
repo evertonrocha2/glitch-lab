@@ -10,6 +10,7 @@ import ProgressPage from './pages/ProgressPage.jsx'
 import PublicProfilePage from './pages/PublicProfilePage.jsx'
 import PeoplePage from './pages/PeoplePage.jsx'
 import PublicNotePage from './pages/PublicNotePage.jsx'
+import TrailPage from './pages/TrailPage.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -45,6 +46,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <NotesPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/trail"
+        element={
+          <RequireAuth>
+            <TrailPage />
           </RequireAuth>
         }
       />

@@ -1,4 +1,5 @@
 import { BADGES } from './badges.js'
+import { trailView } from './trails.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -35,12 +36,14 @@ function streaks(study, today) {
 }
 
 // Everything is derived from what's already stored, so there's nothing to keep in sync.
-export function computeProgress({ cases, challenges, notes, study, today }) {
+// trails: study trails, whose missions and finished-trail bonus add XP (see shared/trails.js).
+export function computeProgress({ cases, challenges, notes, study, today, trails = [] }) {
   const passes = challenges.filter((item) => item.status === 'passed')
   const cleanPasses = passes.filter((item) => item.hintsRevealed === 0).length
   const solved = cases.filter((item) => item.status === 'solved').length
   const totalSeconds = study.reduce((sum, entry) => sum + entry.seconds, 0)
   const { current, longest } = streaks(study, today)
+  const trailViews = trails.map((trail) => trailView(trail, { cases, challenges, notes, study }))
 
   const xp =
     cases.length * XP.case +
@@ -48,7 +51,8 @@ export function computeProgress({ cases, challenges, notes, study, today }) {
     cleanPasses * XP.cleanPass +
     solved * XP.solved +
     Math.min(notes.length, MAX_NOTES_FOR_XP) * XP.note +
-    Math.floor(totalSeconds / 60) * XP.studyMinute
+    Math.floor(totalSeconds / 60) * XP.studyMinute +
+    trailViews.reduce((sum, view) => sum + view.xp, 0)
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -61,6 +65,7 @@ export function computeProgress({ cases, challenges, notes, study, today }) {
     bestDaySeconds: Math.max(0, ...study.map((entry) => entry.seconds)),
     totalSeconds,
     longestStreak: longest,
+    trailsDone: trailViews.filter((view) => view.complete).length,
   }
 
   return {
