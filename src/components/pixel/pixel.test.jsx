@@ -42,3 +42,10 @@ it('PixelButton lets a className replace the default padding and text size', asy
   expect(buttonClasses('ghost', 'px-5')).toMatch(/\bpy-2\.5\b/)
   expect(buttonClasses('ghost', 'px-5')).not.toMatch(/\bpx-4\b/)
 })
+
+it('PixelButton can be hidden on phones', async () => {
+  const { buttonClasses } = await import('./PixelButton.jsx')
+  const classes = buttonClasses('primary', 'hidden sm:inline-flex')
+  expect(classes.split(' ')).not.toContain('inline-flex')
+  expect(buttonClasses('primary', '').split(' ')).toContain('inline-flex')
+})
