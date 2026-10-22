@@ -116,7 +116,7 @@ function PublicLink({ handle }) {
         Your public link
       </label>
       <div className="mt-2 flex flex-wrap gap-2">
-        <input id="public-link" readOnly value={url} onFocus={(event) => event.target.select()} className={`${INPUT} min-w-0 flex-1 font-mono text-sm`} />
+        <input id="public-link" readOnly value={url} onFocus={(event) => event.target.select()} className={`${INPUT} min-w-0 basis-full font-mono text-sm sm:basis-0 sm:flex-1`} />
         <PixelButton variant="secondary" onClick={copy}>
           {copied ? 'Copied' : 'Copy'}
         </PixelButton>
