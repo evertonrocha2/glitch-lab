@@ -3,6 +3,7 @@ import { scanError } from '../../shared/errorScan.js'
 import { LIMITS } from '../../shared/limits.js'
 import { mentionedLines, mergeFiles, preparePayload, readFiles, suggestSelection } from '../lib/attachments.js'
 import { EXAMPLES } from '../lib/examples.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
 import CodeEditor from './CodeEditor.jsx'
 import Attachments from './investigate/Attachments.jsx'
 import ScanStrip from './investigate/ScanStrip.jsx'
@@ -13,6 +14,7 @@ const labelClass = 'font-label text-xs text-ink'
 const textareaClass = 'block w-full resize-none bg-transparent font-mono text-sm leading-relaxed focus-visible:outline-none'
 
 export default function ErrorForm({ onSubmit, loading, initialError = '', initialCode = '', initialContext = '' }) {
+  const t = useT()
   const [error, setError] = useState(initialError)
   const [code, setCode] = useState(initialCode)
   const [context, setContext] = useState(initialContext)
@@ -68,7 +70,7 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-sm text-muted">Try an example:</span>
+        <span className="mr-1 text-sm text-muted">{t('landing.form.examples')}</span>
         {EXAMPLES.map((example) => (
           <PixelButton
             key={example.label}
@@ -86,7 +88,7 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
 
       <div>
         <label htmlFor="error-input" className={labelClass}>
-          Error message
+          {t('landing.form.error')}
         </label>
         <div className="mt-2 border-2 border-ink bg-primary-soft transition-shadow duration-150 focus-within:shadow-pixel">
           <p aria-hidden="true" className="flex items-center gap-2 border-b-2 border-ink bg-primary px-3 py-1.5 font-label text-[10px] text-white">
@@ -118,21 +120,21 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
 
       <div>
         <label htmlFor="context-input" className={labelClass}>
-          What were you trying to do? (optional)
+          {t('landing.form.context')}
         </label>
         <input
           id="context-input"
           value={context}
           onChange={(event) => setContext(event.target.value)}
           maxLength={LIMITS.context}
-          placeholder="Show the length of the user's name on the profile page"
+          placeholder={t('landing.form.contextPlaceholder')}
           className="mt-2 w-full border-2 border-ink bg-white px-3 py-2.5 text-sm text-ink placeholder:text-muted/70 transition-shadow duration-150 focus:shadow-pixel focus-visible:outline-none"
         />
       </div>
 
       <div>
         <label htmlFor="code-input" className={labelClass}>
-          Code (optional)
+          {t('landing.form.code')}
         </label>
         <div className="mt-2">
           <CodeEditor
@@ -140,13 +142,13 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
             value={code}
             onChange={setCode}
             maxLength={LIMITS.code}
-            placeholder="Paste the code around the error"
+            placeholder={t('landing.form.codePlaceholder')}
           />
         </div>
       </div>
 
       <div>
-        <p className={labelClass}>Your project files (optional)</p>
+        <p className={labelClass}>{t('landing.form.files')}</p>
         <div className="mt-2">
           <Attachments
             files={files}
@@ -164,11 +166,11 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
             }}
           />
         </div>
-        <p className="mt-2 text-xs text-muted">Don't paste or upload passwords, API keys or .env files.</p>
+        <p className="mt-2 text-xs text-muted">{t('landing.form.secrets')}</p>
       </div>
 
       <PixelButton type="submit" disabled={!canSubmit} className="px-5 py-3">
-        {loading ? 'Investigating...' : 'Investigate'}
+        {t(loading ? 'landing.form.investigating' : 'landing.form.investigate')}
       </PixelButton>
     </form>
   )

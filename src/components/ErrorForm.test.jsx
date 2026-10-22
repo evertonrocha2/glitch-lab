@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
+import { I18nProvider } from '../lib/i18n/I18nProvider.jsx'
 import ErrorForm from './ErrorForm.jsx'
 
 it('disables Investigate until an error is typed', async () => {
@@ -73,4 +74,17 @@ it('attaches a file the error mentions, ticks it and sends it with the context',
       files: [{ path: 'shop/src/cart.js', content: 'const user = {}\nuser.name.length' }],
     }),
   )
+})
+
+it('speaks Brazilian Portuguese inside the provider, scan and attachments included', async () => {
+  render(
+    <I18nProvider locale="pt-BR">
+      <ErrorForm onSubmit={vi.fn()} loading={false} />
+    </I18nProvider>,
+  )
+  expect(screen.getByLabelText('Código (opcional)')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Enviar uma pasta' })).toBeInTheDocument()
+  await userEvent.type(screen.getByLabelText('Mensagem de erro'), 'oops')
+  expect(screen.getByText('Nenhum tipo de erro encontrado ainda. Cole a mensagem inteira.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Investigar' })).toBeEnabled()
 })
