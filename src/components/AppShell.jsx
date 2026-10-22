@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
+import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 import PixelLogo from './pixel/PixelLogo.jsx'
@@ -11,7 +12,7 @@ const navClass = ({ isActive }) =>
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
-// Top bar for the signed-in pages, plus the study timer and badge announcements.
+// Top bar for the signed-in pages, plus the study timer, badge announcements and the assistant.
 export default function AppShell({ children }) {
   const { signOut } = useAuth()
   const { progress } = useProgress()
@@ -24,6 +25,7 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-3 sm:order-last sm:gap-4">
+            <AssistantButton />
             <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>
@@ -52,6 +54,7 @@ export default function AppShell({ children }) {
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
       <StudyTimer />
       <BadgeToasts />
+      <AssistantPanel />
     </div>
   )
 }

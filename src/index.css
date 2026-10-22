@@ -127,3 +127,15 @@
     }
   }
 }
+
+/* Ask the detective: the panel slides in from the left in a few hard steps. */
+@theme {
+  --animate-panel-in: panel-in 200ms steps(4, end) both;
+
+  @keyframes panel-in {
+    from {
+      translate: -24px 0;
+      opacity: 0;
+    }
+  }
+}
