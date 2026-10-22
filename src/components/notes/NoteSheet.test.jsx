@@ -38,8 +38,11 @@ it('lays out the whole note as a printable sheet', () => {
   expect(screen.getByText('This case is not on your board anymore.')).toBeInTheDocument()
   // A picture of the note: nothing to click or type in.
   expect(container.querySelectorAll('a, button, input, textarea')).toHaveLength(0)
-  // Empty text blocks are left out; every block marks where a page may break.
-  expect(container.querySelectorAll('[data-sheet-block]')).toHaveLength(6)
+  // Empty text blocks are left out. A page may break after any block but a heading,
+  // so a heading never ends a PDF page alone.
+  const edges = container.querySelectorAll('[data-sheet-block]')
+  expect(edges).toHaveLength(5)
+  expect([...edges].some((edge) => edge.tagName === 'H2')).toBe(false)
 })
 
 it('names an untitled note', () => {

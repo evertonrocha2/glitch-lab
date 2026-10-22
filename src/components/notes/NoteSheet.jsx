@@ -69,8 +69,8 @@ function SheetCase({ item }) {
             ))}
           </span>
         </div>
-        <p className="mt-2 font-pixel text-xl leading-tight font-bold break-words text-ink">{type}</p>
-        {message && <p className="mt-1 font-mono text-[13px] leading-snug break-words text-ink/75">{message}</p>}
+        <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{type}</p>
+        {message && <p className="mt-1 font-mono text-[13px] leading-snug wrap-break-word text-ink/75">{message}</p>}
       </div>
     </div>
   )
@@ -78,9 +78,10 @@ function SheetCase({ item }) {
 
 function SheetBlock({ block, casesById }) {
   switch (block.type) {
+    // No page break marker: a heading stays on the page with what follows it.
     case 'heading':
       return (
-        <h2 data-sheet-block className="pt-5 font-pixel text-[26px] leading-tight font-bold break-words text-ink">
+        <h2 className="pt-5 font-pixel text-[26px] leading-tight font-bold wrap-break-word text-ink">
           {block.text}
         </h2>
       )
@@ -90,7 +91,7 @@ function SheetBlock({ block, casesById }) {
           {block.items.map((todo) => (
             <li key={todo.id} data-sheet-block data-done={String(todo.done)} className="flex items-start gap-3">
               <PixelCheck done={todo.done} />
-              <span className={`leading-relaxed break-words ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>{todo.text}</span>
+              <span className={`leading-relaxed wrap-break-word ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>{todo.text}</span>
             </li>
           ))}
         </ul>
@@ -103,7 +104,7 @@ function SheetBlock({ block, casesById }) {
       )
     default:
       return (
-        <p data-sheet-block className="leading-relaxed break-words whitespace-pre-wrap text-ink">
+        <p data-sheet-block className="leading-relaxed wrap-break-word whitespace-pre-wrap text-ink">
           {block.text}
         </p>
       )
@@ -115,7 +116,7 @@ export default function NoteSheet({ note, cases, date }) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
   const line = summary(note.blocks)
   return (
-    <div className="w-[800px] bg-white font-sans text-[15px] text-ink">
+    <div className="w-200 bg-white font-sans text-[15px] text-ink">
       <header className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-14 py-6">
@@ -129,7 +130,7 @@ export default function NoteSheet({ note, cases, date }) {
 
       <main className="px-14 pt-11 pb-12">
         <p className="font-label text-xs text-secondary">&gt; case notes_</p>
-        <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold break-words text-ink">{note.title || 'Untitled'}</h1>
+        <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold wrap-break-word text-ink">{note.title || 'Untitled'}</h1>
         {line && <p className="mt-3 font-label text-[10px] text-muted">{line}</p>}
         <div aria-hidden="true" className="mt-7 mb-6 h-0.5 bg-ink" />
         <div className="space-y-3">
