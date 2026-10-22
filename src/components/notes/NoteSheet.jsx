@@ -1,18 +1,16 @@
-import { conceptLabel } from '../../../shared/concepts.js'
 import { splitError } from '../../lib/caseInfo.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 
 const STRIPE = { new: 'bg-muted', training: 'bg-secondary', solved: 'bg-primary' }
-const STATUS = { new: 'New', training: 'Training', solved: 'Solved' }
 
-const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`
-
-function summary(blocks) {
+function summary(blocks, t) {
   const cases = blocks.filter((block) => block.type === 'case').length
   const todos = blocks.filter((block) => block.type === 'todo')
   const parts = []
-  if (cases) parts.push(plural(cases, 'case'))
-  if (todos.length) parts.push(`${todos.filter((todo) => todo.done).length} of ${plural(todos.length, 'to-do')} done`)
+  if (cases) parts.push(t('notes.cases', { count: cases }))
+  if (todos.length) parts.push(t('notes.sheet.todos', { done: todos.filter((todo) => todo.done).length, count: todos.length }))
   return parts.join(' · ')
 }
 
@@ -48,8 +46,10 @@ function PixelCheck({ done }) {
 
 // The same card as CaseBlock in the editor, but nothing to click and the whole error shows.
 function SheetCase({ item }) {
+  const t = useT()
+  const labels = useLabels()
   if (!item) {
-    return <p className="border-2 border-dashed border-line px-4 py-3 text-sm text-muted">This case is not on your board anymore.</p>
+    return <p className="border-2 border-dashed border-line px-4 py-3 text-sm text-muted">{t('notes.case.gone')}</p>
   }
   const { type, message } = splitError(item.error)
   const passed = Math.min(item.passedCount, 2)
@@ -58,10 +58,10 @@ function SheetCase({ item }) {
       <span aria-hidden="true" className={`w-2 shrink-0 ${STRIPE[item.status]}`} />
       <div className="min-w-0 flex-1 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="bg-primary-soft px-1.5 py-0.5 font-semibold text-primary">{conceptLabel(item.concept)}</span>
+          <span className="bg-primary-soft px-1.5 py-0.5 font-semibold text-primary">{labels.concept(item.concept)}</span>
           <span className="border border-line px-1.5 py-0.5 font-mono text-muted">{item.language}</span>
           <span className="text-muted">
-            {STATUS[item.status]} · {passed}/2
+            {labels.status(item.status)} · {passed}/2
           </span>
           <span aria-hidden="true" className="ml-auto flex gap-1">
             {[0, 1].map((step) => (
@@ -113,8 +113,9 @@ function SheetBlock({ block, casesById }) {
 
 // A print-ready picture of a note, for the PNG and PDF exports: fixed width, white, Pixel Lab look.
 export default function NoteSheet({ note, cases, date }) {
+  const t = useT()
   const casesById = new Map(cases.map((item) => [item.id, item]))
-  const line = summary(note.blocks)
+  const line = summary(note.blocks, t)
   return (
     <div className="w-200 bg-white font-sans text-base text-ink">
       <header className="relative overflow-hidden border-b-2 border-ink">
@@ -124,13 +125,13 @@ export default function NoteSheet({ note, cases, date }) {
             <PixelLogo className="size-9" />
             <span>Glitch Detective</span>
           </span>
-          <span className="border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] text-ink shadow-pixel">Exported {date}</span>
+          <span className="border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] text-ink shadow-pixel">{t('notes.sheet.exported', { date })}</span>
         </div>
       </header>
 
       <main className="px-14 pt-11 pb-12">
-        <p className="font-label text-xs text-secondary">&gt; case notes_</p>
-        <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold wrap-break-word text-ink">{note.title || 'Untitled'}</h1>
+        <p className="font-label text-xs text-secondary">&gt; {t('notes.sheet.prompt')}_</p>
+        <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold wrap-break-word text-ink">{note.title || t('notes.untitled')}</h1>
         {line && <p className="mt-3 font-label text-[10px] text-muted">{line}</p>}
         <div aria-hidden="true" className="mt-7 mb-6 h-0.5 bg-ink" />
         <div className="space-y-3">
@@ -143,9 +144,9 @@ export default function NoteSheet({ note, cases, date }) {
       <footer className="mx-14 flex items-center justify-between gap-6 border-t-2 border-dashed border-line py-6 font-label text-[10px] text-muted">
         <span className="flex items-center gap-2">
           <PixelLogo className="size-4" />
-          Made with Glitch Detective
+          {t('notes.sheet.madeWith')}
         </span>
-        <span>Paste an error. Learn why. Stop writing it.</span>
+        <span>{t('notes.sheet.tagline')}</span>
       </footer>
     </div>
   )

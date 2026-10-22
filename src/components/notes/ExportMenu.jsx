@@ -1,16 +1,18 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 
 const FORMATS = [
-  { format: 'md', label: 'Markdown', ext: '.md' },
-  { format: 'png', label: 'Image', ext: '.png' },
-  { format: 'pdf', label: 'PDF', ext: '.pdf' },
+  { format: 'md', ext: '.md' },
+  { format: 'png', ext: '.png' },
+  { format: 'pdf', ext: '.pdf' },
 ]
 
 // "Export" with a small menu of file types. onExport(format) may return a promise; the button
 // says "Exporting..." until it settles. Keyboard: arrows, Home, End, Escape, like any menu.
 // buttonClassName sizes the button to sit next to its neighbors.
 export default function ExportMenu({ onExport, buttonClassName = 'px-3 py-2' }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const id = useId()
@@ -82,7 +84,7 @@ export default function ExportMenu({ onExport, buttonClassName = 'px-3 py-2' }) 
         }}
         className={`${buttonClassName} ${busy ? 'cursor-progress text-muted' : ''}`}
       >
-        {busy ? 'Exporting...' : 'Export'}
+        {busy ? t('notes.export.busy') : t('notes.export.button')}
         {!busy && (
           <svg aria-hidden="true" viewBox="0 0 5 3" shapeRendering="crispEdges" className="h-1.5 w-2.5 fill-current">
             <rect x="0" y="0" width="5" height="1" />
@@ -93,8 +95,8 @@ export default function ExportMenu({ onExport, buttonClassName = 'px-3 py-2' }) 
       </PixelButton>
       {open && (
         <div className="absolute top-full left-0 z-30 mt-2 w-48 border-2 border-ink bg-white shadow-pixel sm:right-0 sm:left-auto">
-          <p className="border-b-2 border-ink bg-mist px-3 py-1.5 font-label text-[10px] text-muted">Download as</p>
-          <div id={id} role="menu" aria-label="Export as" onKeyDown={menuKey} className="py-1">
+          <p className="border-b-2 border-ink bg-mist px-3 py-1.5 font-label text-[10px] text-muted">{t('notes.export.heading')}</p>
+          <div id={id} role="menu" aria-label={t('notes.export.menu')} onKeyDown={menuKey} className="py-1">
             {FORMATS.map((item, index) => (
               <button
                 key={item.format}
@@ -107,7 +109,7 @@ export default function ExportMenu({ onExport, buttonClassName = 'px-3 py-2' }) 
                 onClick={() => pick(item.format)}
                 className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold text-ink hover:bg-mist focus:bg-primary-soft focus-visible:outline-none"
               >
-                {item.label}
+                {t(`notes.export.${item.format}`)}
                 <span className="font-mono text-xs font-normal text-muted">{item.ext}</span>
               </button>
             ))}
