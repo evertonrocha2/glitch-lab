@@ -9,6 +9,8 @@ const copy = (value) => (value == null ? null : structuredClone(value))
 
 // Profile fields sit on the user; accounts made before profiles existed simply don't have them yet.
 const PROFILE_FIELDS = ['handle', 'displayName', 'bio', 'avatar', 'featuredBadges', 'isPublic']
+// "About you" fields, added later still: same story.
+const ABOUT_FIELDS = ['role', 'headline', 'university', 'course', 'work', 'location', 'languages', 'links', 'openTo']
 const toProfile = (user) =>
   copy({
     handle: user.handle ?? null,
@@ -17,8 +19,19 @@ const toProfile = (user) =>
     avatar: user.avatar ?? null,
     featuredBadges: user.featuredBadges ?? [],
     isPublic: user.isPublic ?? false,
+    role: user.role ?? null,
+    headline: user.headline ?? '',
+    university: user.university ?? '',
+    course: user.course ?? '',
+    work: user.work ?? '',
+    location: user.location ?? '',
+    languages: user.languages ?? [],
+    links: user.links ?? {},
+    openTo: user.openTo ?? [],
     createdAt: user.createdAt,
   })
+// Notes made before sharing existed are private.
+const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false })
 
 // Development only: the whole database is one JSON file (default .data/db.json).
 export function createLocalStore({ file }) {
@@ -130,38 +143,43 @@ export function createLocalStore({ file }) {
       return copy((await load()).secrets[challengeId])
     },
 
-    async createNote(userId, { title, blocks }) {
+    async createNote(userId, { title, blocks, isPublic = false }) {
       const data = await load()
       const stamp = now()
-      const created = { id: randomUUID(), userId, title, blocks, createdAt: stamp, updatedAt: stamp }
+      const created = { id: randomUUID(), userId, title, blocks, isPublic, createdAt: stamp, updatedAt: stamp }
       notesOf(data).push(created)
       await save()
-      return copy(created)
+      return toNote(created)
     },
 
     // Most recently edited first.
     async listNotes(userId) {
       const data = await load()
-      return copy(notesOf(data).filter((note) => note.userId === userId).reverse())
+      return notesOf(data)
+        .filter((note) => note.userId === userId)
+        .reverse()
+        .map(toNote)
     },
 
     async getNote(userId, id) {
       const data = await load()
-      return copy(notesOf(data).find((note) => note.id === id && note.userId === userId))
+      const found = notesOf(data).find((note) => note.id === id && note.userId === userId)
+      return found ? toNote(found) : null
     },
 
-    async updateNote(userId, id, { title, blocks }) {
+    async updateNote(userId, id, { title, blocks, isPublic }) {
       const notes = notesOf(await load())
       const index = notes.findIndex((note) => note.id === id && note.userId === userId)
       if (index === -1) return null
       const [found] = notes.splice(index, 1)
       if (title !== undefined) found.title = title
       if (blocks !== undefined) found.blocks = blocks
+      if (isPublic !== undefined) found.isPublic = isPublic
       found.updatedAt = now()
       // Kept in edit order, so the list stays "last edited first".
       notes.push(found)
       await save()
-      return copy(found)
+      return toNote(found)
     },
 
     async deleteNote(userId, id) {
@@ -203,7 +221,7 @@ export function createLocalStore({ file }) {
       if (!found) return null
       const handle = typeof patch.handle === 'string' ? patch.handle.toLowerCase() : patch.handle
       if (handle && users.some((user) => user.id !== userId && user.handle === handle)) return { conflict: 'handle' }
-      for (const field of PROFILE_FIELDS) {
+      for (const field of [...PROFILE_FIELDS, ...ABOUT_FIELDS]) {
         if (patch[field] !== undefined) found[field] = field === 'handle' ? handle : structuredClone(patch[field])
       }
       await save()
@@ -214,6 +232,18 @@ export function createLocalStore({ file }) {
       const normalized = handle.toLowerCase()
       const found = (await load()).users?.find((user) => user.handle === normalized && user.isPublic)
       return found ? { userId: found.id, profile: toProfile(found) } : null
+    },
+
+    // Public profiles whose handle or name holds the query (any case), newest members first.
+    // An empty query lists the newest ones.
+    async searchPublicProfiles(query, limit) {
+      const needle = query.toLowerCase()
+      return ((await load()).users ?? [])
+        .filter((user) => user.isPublic && user.handle)
+        .filter((user) => [user.handle, user.displayName ?? ''].some((value) => value.toLowerCase().includes(needle)))
+        .reverse()
+        .slice(0, limit)
+        .map((user) => ({ userId: user.id, profile: toProfile(user) }))
     },
 
     async countUsage(key, day) {

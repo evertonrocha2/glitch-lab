@@ -19,6 +19,30 @@ export const challengeFor = (caseId) => ({
 
 export const SECRET = { solution: 'console.log(a.b?.c)', bugExplanation: 'a.b is undefined' }
 
+// What a profile's "About you" holds before anything is picked, and a filled-in one.
+export const EMPTY_ABOUT = {
+  role: null,
+  headline: '',
+  university: '',
+  course: '',
+  work: '',
+  location: '',
+  languages: [],
+  links: {},
+  openTo: [],
+}
+export const ABOUT = {
+  role: 'student',
+  headline: 'Learning React at night',
+  university: 'Infnet',
+  course: 'Software Engineering',
+  work: 'Support analyst at Acme',
+  location: 'Rio de Janeiro',
+  languages: ['javascript', 'python'],
+  links: { github: 'https://github.com/ada', website: 'https://ada.dev/' },
+  openTo: ['study-buddies', 'internships'],
+}
+
 export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bob' }) {
   describe(`${label} store`, () => {
     let store
@@ -160,6 +184,7 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
         avatar: null,
         featuredBadges: [],
         isPublic: false,
+        ...EMPTY_ABOUT,
         createdAt: user.createdAt,
       })
       expect(await store.getProfile(crypto.randomUUID())).toBeNull()
@@ -202,6 +227,52 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(found).toEqual({ userId: user.id, profile: await store.getProfile(user.id) })
       expect(found.profile).not.toHaveProperty('email')
       expect(await store.findPublicProfile(uniqueHandle('nobody'))).toBeNull()
+    })
+
+    it('saves the about-you fields and changes only the ones given', async () => {
+      const user = await newUser()
+      const { profile } = await store.updateProfile(user.id, ABOUT)
+      expect(profile).toMatchObject(ABOUT)
+      expect(await store.getProfile(user.id)).toEqual(profile)
+
+      const next = await store.updateProfile(user.id, { headline: 'Now teaching', links: {}, role: null })
+      expect(next.profile).toMatchObject({ ...ABOUT, headline: 'Now teaching', links: {}, role: null })
+    })
+
+    it('finds public profiles by handle or name, never private ones', async () => {
+      const tag = crypto.randomUUID().slice(0, 6)
+      const make = async (handle, displayName, isPublic) => {
+        const user = await newUser()
+        await store.updateProfile(user.id, { handle, displayName, isPublic })
+        return user
+      }
+      const ada = await make(`ada-${tag}`, 'Ada Lovelace', true)
+      // Found by name only: the handle doesn't have the tag.
+      const grace = await make(uniqueHandle('grace'), `Grace ${tag.toUpperCase()}`, true)
+      await make(`hidden-${tag}`, 'Hidden', false)
+
+      const found = await store.searchPublicProfiles(tag, 20)
+      expect(found.map((item) => item.userId).sort()).toEqual([ada.id, grace.id].sort())
+      expect(found.find((item) => item.userId === ada.id).profile).toEqual(await store.getProfile(ada.id))
+      expect((await store.searchPublicProfiles(`ADA-${tag}`, 20)).map((item) => item.userId)).toEqual([ada.id])
+      expect(await store.searchPublicProfiles(tag, 1)).toHaveLength(1)
+      expect(await store.searchPublicProfiles(`zz-${crypto.randomUUID()}`, 20)).toEqual([])
+      // Search characters are plain text, never wildcards.
+      expect(await store.searchPublicProfiles(`%${tag}`, 20)).toEqual([])
+    })
+
+    it('keeps notes private until marked public', async () => {
+      const note = await store.createNote(ids.alice, { title: 'Shy', blocks: [] })
+      expect(note.isPublic).toBe(false)
+      const shared = await store.createNote(ids.alice, { title: 'Loud', blocks: [], isPublic: true })
+      expect(shared.isPublic).toBe(true)
+
+      expect(await store.updateNote(ids.bob, note.id, { isPublic: true })).toBeNull()
+      const updated = await store.updateNote(ids.alice, note.id, { isPublic: true })
+      expect(updated).toMatchObject({ title: 'Shy', isPublic: true })
+      expect((await store.updateNote(ids.alice, note.id, { title: 'Still shy' })).isPublic).toBe(true)
+      expect((await store.getNote(ids.alice, note.id)).isPublic).toBe(true)
+      expect((await store.listNotes(ids.alice)).every((item) => typeof item.isPublic === 'boolean')).toBe(true)
     })
   })
 }
