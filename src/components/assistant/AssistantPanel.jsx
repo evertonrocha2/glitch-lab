@@ -109,6 +109,8 @@ function Dialog() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="assistant-title"
+        // Focusable, so clicking plain text keeps focus inside and Escape still reaches the panel.
+        tabIndex={-1}
         onKeyDown={onKeyDown}
         className="relative flex h-full w-full flex-col border-ink bg-mist sm:w-105 sm:border-r-2 sm:shadow-[6px_0_0_var(--color-primary)] motion-safe:animate-panel-in"
       >
@@ -130,7 +132,7 @@ function Dialog() {
           </PixelButton>
         </header>
 
-        <div ref={log} className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+        <div ref={log} role="log" aria-live="polite" aria-label="Conversation" className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
           {empty && (
             <div className="space-y-4">
               <div className="flex items-start gap-2.5">

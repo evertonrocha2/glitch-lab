@@ -7,7 +7,8 @@ import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
 
 // "Ask the detective": a router agent hands the question to 1-2 specialist agents.
-// One question counts as one AI call on the daily limit, however many agents answer it.
+// The question takes one AI call from the daily limit up front; a second specialist takes another
+// afterwards, so the limit keeps tracking the real Gemini usage.
 export async function POST(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
@@ -21,7 +22,9 @@ export async function POST(request) {
   if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
 
   try {
-    return ok(await runAssistant({ store, userId: auth.user.id, ...input.value, generate: generateJson }))
+    const result = await runAssistant({ store, userId: auth.user.id, ...input.value, generate: generateJson })
+    for (let extra = 1; extra < result.agents.length; extra++) await takeAiCall(store, auth.user)
+    return ok(result)
   } catch (err) {
     return aiFailure(err)
   }

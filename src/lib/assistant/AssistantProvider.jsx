@@ -22,6 +22,13 @@ export function AssistantProvider({ children }) {
   const messagesRef = useRef(messages)
   messagesRef.current = messages
 
+  // Signing out wipes that account's chat: it holds summaries of their cases and notes.
+  const lastUser = useRef(userId)
+  useEffect(() => {
+    if (lastUser.current && lastUser.current !== userId) saveConversation(lastUser.current, [])
+    lastUser.current = userId
+  }, [userId])
+
   useEffect(() => {
     chat.current++
     setMessages(userId ? loadConversation(userId) : [])

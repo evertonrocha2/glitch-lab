@@ -92,7 +92,7 @@ it('routes to one specialist and returns its reply with checked actions', async 
   expect(boardPrompt).not.toContain(theirs.id)
 })
 
-it('runs two specialists in parallel and merges their replies, still one AI call on the quota', async () => {
+it('runs two specialists in parallel and merges their replies, and both specialists count on the quota', async () => {
   const kase = await store.createCase('alice', CASE)
   const challenge = await store.createChallenge('alice', challengeFor(kase.id), SECRET)
   await store.updateChallenge('alice', challenge.id, { hintsRevealed: 1 })
@@ -114,7 +114,7 @@ it('runs two specialists in parallel and merges their replies, still one AI call
     'Putting the answers together',
   ])
   expect(fetch).toHaveBeenCalledTimes(3)
-  expect(await store.countUsage('alice', today())).toBe(1)
+  expect(await store.countUsage('alice', today())).toBe(2)
 
   // Nothing the gym hides ever reaches the AI.
   const everything = sent().map(promptOf).join('\n')

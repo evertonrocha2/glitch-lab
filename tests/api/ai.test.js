@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { AiError, generateJson } from '../../api/_lib/ai/index.js'
+import { neverAnswers } from './helpers.js'
 
 const ARGS = { system: 'be nice', prompt: 'explain', schema: { type: 'OBJECT' } }
 const gemini = (text) => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }))
@@ -72,4 +73,12 @@ it('rejects an unknown provider with 500', async () => {
   const err = await failure(generateJson(ARGS))
   expect(err.status).toBe(500)
   expect(fetch).not.toHaveBeenCalled()
+})
+
+it('gives up at the custom time limit without a retry when asked', async () => {
+  vi.stubGlobal('fetch', vi.fn(neverAnswers()))
+  const started = Date.now()
+  await expect(generateJson({ system: 's', prompt: 'p', schema: {}, timeoutMs: 50, retry: false })).rejects.toMatchObject({ status: 504 })
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(Date.now() - started).toBeLessThan(2000)
 })

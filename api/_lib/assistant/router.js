@@ -59,10 +59,19 @@ export function parseRoute(answer) {
 export const fallbackRoute = (messages, page) =>
   pickSpecialists(messages.at(-1).content, page).map((name) => ({ name, needs: DATA_NEEDS[name], focus: '' }))
 
+// The router only picks who answers: if it's slow, keywords pick instead, so the specialists keep their time.
+export const ROUTER_TIMEOUT_MS = 25_000
+
 // The router agent's choice, or a keyword and page based one if the AI call fails or answers nonsense.
 export async function routeQuestion(generate, { messages, page }) {
   try {
-    const answer = await generate({ system: ROUTER_SYSTEM, prompt: buildRouterPrompt({ messages, page }), schema: ROUTER_SCHEMA })
+    const answer = await generate({
+      system: ROUTER_SYSTEM,
+      prompt: buildRouterPrompt({ messages, page }),
+      schema: ROUTER_SCHEMA,
+      timeoutMs: ROUTER_TIMEOUT_MS,
+      retry: false,
+    })
     return { route: parseRoute(answer), fellBack: false }
   } catch {
     return { route: fallbackRoute(messages, page), fellBack: true }

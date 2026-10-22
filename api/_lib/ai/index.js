@@ -17,11 +17,13 @@ function msFromEnv(name, fallback) {
   return process.env[name] && Number.isFinite(value) ? value : fallback
 }
 
-async function attempt(provider, args) {
-  return provider({ ...args, signal: AbortSignal.timeout(msFromEnv('AI_TIMEOUT_MS', 120_000)) })
+async function attempt(provider, args, timeoutMs) {
+  return provider({ ...args, signal: AbortSignal.timeout(timeoutMs ?? msFromEnv('AI_TIMEOUT_MS', 120_000)) })
 }
 
-export async function generateJson({ system, prompt, schema }) {
+// timeoutMs and retry let a quick side call (like the assistant's router) fail fast instead of
+// using up the whole function budget.
+export async function generateJson({ system, prompt, schema, timeoutMs, retry = true }) {
   const provider = PROVIDERS[process.env.AI_PROVIDER || 'gemini']
   if (!provider) throw new AiError(500, `Unknown AI provider: ${process.env.AI_PROVIDER}`)
 
@@ -29,13 +31,13 @@ export async function generateJson({ system, prompt, schema }) {
   const started = Date.now()
   let text
   try {
-    text = await attempt(provider, args)
+    text = await attempt(provider, args, timeoutMs)
   } catch (err) {
     // One retry, only for a busy answer that came back fast: a slow one would blow the 300s function budget.
     const fast = Date.now() - started < msFromEnv('AI_FAST_FAIL_MS', 30_000)
-    if (!(err instanceof AiError && BUSY_STATUSES.includes(err.status) && fast)) throw err
+    if (!(retry && err instanceof AiError && BUSY_STATUSES.includes(err.status) && fast)) throw err
     await new Promise((resolve) => setTimeout(resolve, msFromEnv('AI_RETRY_DELAY_MS', 2_000)))
-    text = await attempt(provider, args)
+    text = await attempt(provider, args, timeoutMs)
   }
 
   try {
