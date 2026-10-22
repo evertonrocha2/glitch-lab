@@ -1,4 +1,7 @@
+import { BADGES } from '../../../shared/badges.js'
+import { TRAIL_BONUS_XP } from '../../../shared/trails.js'
 import BadgeIcon from '../pixel/BadgeIcon.jsx'
+import KindIcon from '../trail/KindIcon.jsx'
 
 // Small drawings of the real screens. They're decoration: each card's heading and text say the same thing.
 
@@ -131,6 +134,35 @@ function MiniWeakSpot() {
   )
 }
 
+function MiniTrail() {
+  const steps = [
+    { kind: 'train', label: 'Train', done: true },
+    { kind: 'note', label: 'Write', done: true },
+    { kind: 'study', label: 'Study', next: true },
+    { kind: 'investigate', label: 'Investigate' },
+    { kind: 'reflect', label: 'Reflect' },
+  ]
+  return (
+    <ol className="flex items-start">
+      {steps.map((step, index) => (
+        <li key={step.kind} className="flex min-w-0 flex-1 items-start">
+          <span className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+            <span
+              className={`grid size-10 place-items-center border-2 border-ink ${step.done ? 'bg-primary-soft' : step.next ? 'bg-secondary-soft shadow-pixel-secondary' : 'bg-white'}`}
+            >
+              <KindIcon kind={step.kind} accent={step.next ? 'secondary' : 'primary'} className="size-6" />
+            </span>
+            <span className={`truncate font-label text-[9px] ${step.next ? 'text-secondary' : 'text-ink'}`}>{step.label}</span>
+          </span>
+          {index < steps.length - 1 && (
+            <span className="mt-5 h-1 w-3 shrink-0 bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_4px,transparent_4px_7px)] sm:w-8" />
+          )}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 const FEATURES = [
   {
     title: 'A board of your own bugs',
@@ -160,7 +192,7 @@ const FEATURES = [
   },
   {
     title: 'Levels and badges for real progress',
-    body: 'Cases, passed challenges, notes and study minutes earn XP. Climb six detective ranks and collect 12 pixel badges.',
+    body: `Cases, passed challenges, notes and study minutes earn XP. Climb six detective ranks and collect ${BADGES.length} pixel badges.`,
     visual: MiniBadges,
     span: 'lg:col-span-2',
   },
@@ -168,6 +200,12 @@ const FEATURES = [
     title: 'Know your weak spot',
     body: 'The board names the bug type you hit most, so you know exactly what to train next.',
     visual: MiniWeakSpot,
+  },
+  {
+    title: 'A study trail made from your cases',
+    body: `The AI reads your cases and notes and builds 5 to 7 missions, weak spot first: train, write, study, investigate, reflect. They tick themselves as you go, and a finished trail earns a ${TRAIL_BONUS_XP} XP bonus.`,
+    visual: MiniTrail,
+    span: 'lg:col-span-3',
   },
 ]
 
