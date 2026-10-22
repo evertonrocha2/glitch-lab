@@ -35,3 +35,20 @@ it('names each concept for people', () => {
   expect(conceptLabel('undefined-access')).toBe('Reading undefined')
   expect(conceptLabel('nope')).toBe('Other')
 })
+
+it('keeps up to four clues and where the bug likely is', () => {
+  const parsed = parseAnalysis({
+    ...ANALYSIS,
+    concept: 'other',
+    language: 'js',
+    pistas: ["It read 'length'", ' ', 'From undefined', 'c', 'd', 'e'],
+    local: '  cart.js, line 12  ',
+  })
+  expect(parsed.analysis.pistas).toEqual(["It read 'length'", 'From undefined', 'c', 'd'])
+  expect(parsed.analysis.local).toBe('cart.js, line 12')
+})
+
+it('leaves clues out when the AI gives none', () => {
+  const parsed = parseAnalysis({ ...ANALYSIS, concept: 'other', language: 'js' })
+  expect(parsed.analysis).toEqual(ANALYSIS)
+})

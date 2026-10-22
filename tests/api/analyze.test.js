@@ -160,3 +160,39 @@ it('returns 500 when the API key is missing', async () => {
   expect(res.status).toBe(500)
   expect(await res.json()).toEqual({ message: 'Server is not configured.' })
 })
+
+it('sends attached files, the context and the scanned spots to the AI, and keeps them on the case', async () => {
+  fetch.mockResolvedValue(geminiAnswer({ ...AI_ANSWER, pistas: ['clue one', 'clue two'], local: 'cart.js, line 2' }))
+  const files = [
+    { path: 'shop/src/cart.js', content: 'const user = {}\nconsole.log(user.name.length)' },
+    { path: 'shop/index.js', content: "require('./src/cart')" },
+  ]
+  const res = await analyze({
+    error: "TypeError: Cannot read properties of undefined (reading 'length')\n    at Object.<anonymous> (/x/shop/src/cart.js:2:23)",
+    files,
+    context: 'Printing the name length',
+  })
+  expect(res.status).toBe(201)
+  const prompt = sentPrompt()
+  expect(prompt).toContain('FILE shop/src/cart.js')
+  expect(prompt).toContain('console.log(user.name.length)')
+  expect(prompt).toContain('Printing the name length')
+  expect(prompt).toContain('/x/shop/src/cart.js line 2')
+  const { case: saved } = await res.json()
+  expect(saved.files).toEqual(files)
+  expect(saved.context).toBe('Printing the name length')
+  expect(saved.analysis.pistas).toEqual(['clue one', 'clue two'])
+})
+
+it('refuses broken or oversized attachments before calling the AI', async () => {
+  const cases = [
+    [{ error: 'E', files: 'nope' }, 400],
+    [{ error: 'E', files: [{ path: 'a.js' }] }, 400],
+    [{ error: 'E', files: Array.from({ length: 6 }, (_, i) => ({ path: `f${i}.js`, content: 'x' })) }, 413],
+    [{ error: 'E', files: [{ path: 'a.js', content: 'x'.repeat(6001) }] }, 413],
+    [{ error: 'E', files: [1, 2, 3].map((i) => ({ path: `f${i}.js`, content: 'x'.repeat(5500) })) }, 413],
+    [{ error: 'E', context: 'x'.repeat(301) }, 413],
+  ]
+  for (const [body, status] of cases) expect((await analyze(body)).status).toBe(status)
+  expect(fetch).not.toHaveBeenCalled()
+})
