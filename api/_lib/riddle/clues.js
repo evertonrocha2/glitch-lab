@@ -80,3 +80,19 @@ export function errorProblem(text, language) {
   const giveaway = giveawayIn(text, language)
   return giveaway ? `names ${giveaway}` : null
 }
+
+export const MIN_SNIPPET_LINES = 4
+export const MAX_SNIPPET_LINES = 12
+export const MAX_SNIPPET_LINE_CHARS = 90
+
+// Why a snippet can't be used for `language`, or null when it can.
+export function snippetProblem(code, language) {
+  if (typeof code !== 'string') return 'missing'
+  const lines = code.replace(/\s+$/, '').split('\n')
+  if (lines.filter((line) => line.trim()).length < MIN_SNIPPET_LINES) return 'too short'
+  if (lines.length > MAX_SNIPPET_LINES) return 'too many lines'
+  if (lines.some((line) => line.length > MAX_SNIPPET_LINE_CHARS)) return 'lines too long'
+  if (code.includes('```')) return 'not plain code'
+  const giveaway = giveawayIn(code, language)
+  return giveaway ? `names ${giveaway}` : null
+}

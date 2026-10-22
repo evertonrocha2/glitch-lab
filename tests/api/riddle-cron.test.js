@@ -14,6 +14,7 @@ const riddlePrompts = () => fetch.mock.calls.map(([, init]) => promptOf(init)).f
 const TODAY = '2026-10-22'
 const TOMORROW = '2026-10-23'
 const FRESH = "error: cannot find value `totl` in this scope"
+const FRESH_SNIPPET = ['let total = 0', 'for item in items {', '    total += item.price', '}', 'show(total)', 'done(total)'].join('\n')
 
 let store
 let riddleAnswer
@@ -27,11 +28,11 @@ beforeEach(async () => {
   vi.setSystemTime(new Date('2026-10-22T03:00:30Z'))
   // Puzzle prompts get a puzzle; Glitchdle prompts get whatever the test sets.
   let titles = 0
-  riddleAnswer = () => ({ error: FRESH })
+  riddleAnswer = (prompt) => (prompt.includes('snippet clue') ? { code: FRESH_SNIPPET } : { error: FRESH })
   vi.stubGlobal(
     'fetch',
     vi.fn(async (_url, init) =>
-      promptOf(init).startsWith('Glitchdle') ? geminiAnswer(riddleAnswer()) : geminiAnswer({ ...AI_PUZZLE, title: `AI puzzle ${++titles}` }),
+      promptOf(init).startsWith('Glitchdle') ? geminiAnswer(riddleAnswer(promptOf(init))) : geminiAnswer({ ...AI_PUZZLE, title: `AI puzzle ${++titles}` }),
     ),
   )
   store = await useTempStore()
@@ -63,9 +64,11 @@ it("writes today's and tomorrow's riddles, with a fresh AI error that names noth
   const today = Object.fromEntries((await store.listRiddles({ day: TODAY })).map((item) => [item.mode, item]))
   expect(today.classic.answer).toBe(answersFor(TODAY).classic)
   expect(today.error).toMatchObject({ answer: answersFor(TODAY).error, payload: { text: FRESH }, source: 'ai' })
-  expect(today.snippet.payload).toEqual(datasetPayload(TODAY, 'snippet', answersFor(TODAY).snippet))
+  // Snippet mode gets fresh code too, revealed in a fixed order for the day.
+  expect(today.snippet).toMatchObject({ source: 'ai', payload: { lines: FRESH_SNIPPET.split('\n') } })
+  expect([...today.snippet.payload.order].sort()).toEqual([0, 1, 2, 3, 4, 5])
   expect(await store.listRiddles({ day: TOMORROW })).toHaveLength(3)
-  expect(riddlePrompts()).toHaveLength(2)
+  expect(riddlePrompts()).toHaveLength(4)
   expect(riddlePrompts()[0]).toContain(languageById(answersFor(TODAY).error).name)
 })
 
@@ -110,4 +113,13 @@ it('a game played before the cron keeps its riddles: the cron only fills what is
   const body = await (await runCron()).json()
   expect(body.riddle.created.every((item) => item.day === TOMORROW)).toBe(true)
   expect(await store.listRiddles({ day: TODAY })).toEqual(before)
+})
+
+it('keeps the dataset snippet when the AI snippet names its language', async () => {
+  const name = languageById(answersFor(TODAY).snippet).name
+  riddleAnswer = (prompt) =>
+    prompt.includes('snippet clue') ? { code: [`// written in ${name}`, 'a = 1', 'b = 2', 'c = a + b', 'show(c)'].join('\n') } : { error: FRESH }
+  await runCron()
+  const [snippet] = (await store.listRiddles({ day: TODAY })).filter((item) => item.mode === 'snippet')
+  expect(snippet).toMatchObject({ source: 'dataset', payload: datasetPayload(TODAY, 'snippet', answersFor(TODAY).snippet) })
 })

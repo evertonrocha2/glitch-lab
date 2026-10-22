@@ -2,9 +2,16 @@ import { addDays, challengeDay } from '../../../shared/daily.js'
 import { languageById } from '../../../shared/riddle/languages.js'
 import { SAMPLES } from '../../../shared/riddle/samples.js'
 import { generateJson } from '../ai/index.js'
-import { buildRiddleErrorPrompt, RIDDLE_ERROR_SCHEMA, RIDDLE_ERROR_SYSTEM } from '../prompts/riddle.js'
-import { errorProblem } from './clues.js'
-import { datasetSet } from './schedule.js'
+import {
+  buildRiddleErrorPrompt,
+  buildRiddleSnippetPrompt,
+  RIDDLE_ERROR_SCHEMA,
+  RIDDLE_ERROR_SYSTEM,
+  RIDDLE_SNIPPET_SCHEMA,
+  RIDDLE_SNIPPET_SYSTEM,
+} from '../prompts/riddle.js'
+import { errorProblem, snippetProblem } from './clues.js'
+import { datasetSet, revealOrder } from './schedule.js'
 
 // A quick side call: the cron also writes the daily puzzles inside the same function budget.
 const AI_TIMEOUT_MS = 60_000
@@ -38,6 +45,30 @@ export async function freshError(languageId) {
   return text
 }
 
+// One fresh snippet for Snippet mode ({ lines, order }), or it throws when the AI fails or gives the
+// answer away. The answer repeats every few weeks; the code shown is new each time.
+export async function freshSnippet(languageId, day) {
+  const language = languageById(languageId)
+  const answer = await generateJson({
+    system: RIDDLE_SNIPPET_SYSTEM,
+    prompt: buildRiddleSnippetPrompt({ languageName: language.name, examples: SAMPLES[language.id].snippets }),
+    schema: RIDDLE_SNIPPET_SCHEMA,
+    timeoutMs: AI_TIMEOUT_MS,
+  })
+  // The app never shows em dashes.
+  const code = typeof answer?.code === 'string' ? answer.code.replace(/\s*\u2014\s*/g, ' - ').replace(/\s+$/, '') : ''
+  const problem = snippetProblem(code, language)
+  if (problem) throw new Error(`AI snippet clue ${problem}`)
+  const lines = code.split('\n')
+  return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
+}
+
+// Error and Snippet clues are written fresh by the AI each day; Classic needs none.
+const FRESH = {
+  error: async (item) => ({ text: await freshError(item.answer) }),
+  snippet: (item) => freshSnippet(item.answer, item.day),
+}
+
 // The daily cron: today's and tomorrow's riddles, so the next game is ready the moment the day
 // turns. Only missing modes are written, so running it twice changes nothing. Error mode asks
 // the AI for a fresh message and keeps the dataset's when the AI fails. Reports no answers.
@@ -50,11 +81,11 @@ export async function runRiddleCron(store, now = new Date()) {
       for (const item of datasetSet(day)) {
         if (existing[item.mode]) continue
         let made = item
-        if (item.mode === 'error') {
+        if (FRESH[item.mode]) {
           try {
-            made = { ...item, payload: { text: await freshError(item.answer) }, source: 'ai' }
+            made = { ...item, payload: await FRESH[item.mode](item), source: 'ai' }
           } catch (err) {
-            console.error(`Glitchdle error clue for ${day} failed, using the dataset:`, err.message)
+            console.error(`Glitchdle ${item.mode} clue for ${day} failed, using the dataset:`, err.message)
           }
         }
         const saved = await store.createRiddle(made)
