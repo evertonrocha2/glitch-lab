@@ -35,8 +35,9 @@ export function startDemo(today) {
   return request('/api/demo', { method: 'POST', body: { today } })
 }
 
-export async function analyzeError({ error, code }, token) {
-  return (await request('/api/analyze', { method: 'POST', body: { error, code }, token })).case
+// files and context are optional extras from the form.
+export async function analyzeError({ error, code, context, files }, token) {
+  return (await request('/api/analyze', { method: 'POST', body: { error, code, context, files }, token })).case
 }
 
 export async function listCases(token) {

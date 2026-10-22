@@ -1,9 +1,9 @@
 // The error someone pasted on the landing survives the trip through the login screen.
 const KEY = 'gd:draft'
 
-export function saveDraft({ error, code }) {
+export function saveDraft({ error, code, context, files }) {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ error, code }))
+    sessionStorage.setItem(KEY, JSON.stringify({ error, code, context, files }))
   } catch {
     // Storage blocked (private mode): the person just pastes again.
   }
