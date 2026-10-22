@@ -171,5 +171,5 @@ export const CONTEXT_LOADERS = {
 
 export async function loadContext(name, store, userId, { page, needs }) {
   const text = await CONTEXT_LOADERS[name]({ store, userId, page, needs })
-  return clip(text || 'Nothing here yet.', CONTEXT_BUDGET)
+  return clip(text?.trim() || 'Nothing here yet.', CONTEXT_BUDGET)
 }
