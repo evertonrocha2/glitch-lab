@@ -244,12 +244,12 @@ export default function AssistantPanel() {
 export function AssistantButton() {
   const { open } = useAssistant()
   return (
-    <PixelButton variant="primary" onClick={open} aria-label="Ask the detective" aria-keyshortcuts="Alt+A Control+/" className="px-2 py-1.5 sm:px-3 sm:py-2">
+    <PixelButton variant="primary" onClick={open} aria-label="Ask the detective" aria-keyshortcuts="Alt+A Control+/" className="px-1.5 py-1.5 sm:px-3 sm:py-2">
       <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
         <PixelLogo className="size-3.5" />
       </span>
-      {/* Phones show just the icon so the button fits the nav row; the name stays "Ask the detective". */}
-      <span className="hidden sm:inline">Ask the detective</span>
+      {/* Phones and tablets show just the icon so the top row fits; the name stays "Ask the detective". */}
+      <span className="hidden lg:inline">Ask the detective</span>
     </PixelButton>
   )
 }

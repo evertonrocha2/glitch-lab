@@ -12,7 +12,7 @@ import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
 
 const navClass = ({ isActive }) =>
-  `flex items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
+  `flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
@@ -24,27 +24,32 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-3.5 sm:px-8">
-          <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
-            <PixelLogo className="size-6 sm:size-7" />
-            <span>Glitch Detective</span>
+        {/* Top row: the brand on the left, everything about you on the right. */}
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
+          <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-[15px] font-bold text-ink sm:gap-2.5 sm:text-xl">
+            <PixelLogo className="size-5 shrink-0 sm:size-7" />
+            <span className="truncate">Glitch Detective</span>
           </Link>
-          <div className="flex items-center gap-2 sm:order-last sm:gap-4">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+            <AssistantButton />
             <NotificationBell />
             <Link to="/profile" aria-label="Your profile" className="block transition-transform hover:-translate-y-0.5">
               {avatar ? (
-                <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-8 sm:size-9" />
+                <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-7 sm:size-9" />
               ) : (
-                <span aria-hidden="true" className="block size-8 border-2 border-ink bg-mist sm:size-9" />
+                <span aria-hidden="true" className="block size-7 border-2 border-ink bg-mist sm:size-9" />
               )}
             </Link>
-            {/* Phones show just an exit icon so the bell fits the top row; the name stays "Sign out". */}
-            <PixelButton variant="ghost" onClick={signOut} aria-label="Sign out" className="px-2.5 py-2 sm:px-3">
+            {/* Phones show just an exit icon; the name stays "Sign out". */}
+            <PixelButton variant="ghost" onClick={signOut} aria-label="Sign out" className="px-1.5 py-1.5 sm:px-3 sm:py-2">
               <CommunityIcon name="exit" className="size-4 sm:hidden" />
               <span className="hidden sm:inline">Sign out</span>
             </PixelButton>
           </div>
-          <nav aria-label="Main" className="flex min-w-0 max-w-[calc(100%-5rem)] flex-auto flex-wrap items-center gap-x-5 gap-y-1 sm:ml-auto sm:max-w-none sm:flex-none">
+        </div>
+        {/* Second row: the pages. One line always; on narrow phones it scrolls sideways. */}
+        <div className="relative border-t-2 border-dashed border-line">
+          <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center gap-4 overflow-x-auto px-5 py-2 pr-10 whitespace-nowrap sm:gap-7 sm:px-8">
             <NavLink to="/board" className={navClass}>
               Board
             </NavLink>
@@ -72,8 +77,8 @@ export default function AppShell({ children }) {
               )}
             </NavLink>
           </nav>
-          {/* Phones: end of the nav row. Wider screens: just before Sign out (that group is order-last). */}
-          <AssistantButton />
+          {/* A fade at the edge says "there's more" when the row scrolls on a phone. */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-white to-transparent sm:hidden" />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
