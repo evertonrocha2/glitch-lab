@@ -86,3 +86,8 @@ export async function addStudyTime({ seconds, day }, token, { keepalive = false 
 export async function getProgress(today, token) {
   return (await request(`/api/progress?today=${encodeURIComponent(today)}`, { token })).progress
 }
+
+// "Ask the detective": { reply, parts, actions, agents, steps }.
+export function askAssistant({ messages, page }, token) {
+  return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
+}
