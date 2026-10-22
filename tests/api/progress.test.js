@@ -45,3 +45,13 @@ it("falls back to the server's day when today is missing or wrong", async () => 
 it('asks for sign in', async () => {
   expect((await GET(apiRequest('/api/progress', { method: 'GET', token: null }))).status).toBe(401)
 })
+
+it('adds xp and badges from my community articles', async () => {
+  const article = await store.createArticle('alice', { title: 'Undefined', body: 'Check first.', tags: [], caseId: null })
+  await store.setReaction(article.id, 'bob', { liked: true, rating: 'valid' })
+  await store.createComment('alice', article.id, 'Thanks for reading.')
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  // article 20 + like 2 + valid rating 5 + comment 2
+  expect(progress.xp).toBe(29)
+  expect(earned(progress)).toEqual(['author'])
+})

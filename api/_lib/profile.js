@@ -85,14 +85,15 @@ export function ownProfile(stored, user) {
 
 // Progress plus a few counts, from the same lists /api/progress uses.
 export async function summarize(store, userId, today) {
-  const [cases, challenges, notes, study] = await Promise.all([
+  const [cases, challenges, notes, study, community] = await Promise.all([
     store.listCases(userId),
     store.listChallenges(userId),
     store.listNotes(userId),
     store.listStudyTime(userId),
+    store.communityStats(userId),
   ])
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today }),
+    progress: computeProgress({ cases, challenges, notes, study, today, community }),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,
