@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router'
+import { useAuth } from '../../lib/auth/AuthProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 
@@ -15,6 +16,8 @@ const peopleClass = ({ isActive }) =>
 
 // Top bar for the pages anyone can open signed out: public profiles, shared notes and the people search.
 export default function PublicHeader({ showTry = true }) {
+  // Signed in, these pages are a detour from the app: offer the way back instead of a sign-up pitch.
+  const { user } = useAuth()
   return (
     <header className="border-b-2 border-ink bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-3.5 sm:px-8">
@@ -26,7 +29,13 @@ export default function PublicHeader({ showTry = true }) {
           <NavLink to="/people" end className={peopleClass}>
             People
           </NavLink>
-          {showTry && <TryLink />}
+          {user ? (
+            <PixelButton as={Link} to="/board" className="px-3 py-2">
+              Back to your board
+            </PixelButton>
+          ) : (
+            showTry && <TryLink />
+          )}
         </div>
       </div>
     </header>

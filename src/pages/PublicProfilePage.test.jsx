@@ -152,3 +152,9 @@ it('tells owners when they are looking at their own private profile', async () =
   expect(screen.getByRole('link', { name: 'Make it public' })).toHaveAttribute('href', '/profile')
   expect(getPublicProfile).toHaveBeenLastCalledWith('ada_dev', expect.any(String), 'token-alice')
 })
+
+it('offers the way back to the board instead of a sign-up pitch when signed in', async () => {
+  renderAt('/u/ada_dev', { user: 'alice' })
+  expect(await screen.findByRole('link', { name: 'Back to your board' })).toHaveAttribute('href', '/board')
+  expect(screen.queryByRole('link', { name: 'Try Glitch Detective' })).toBeNull()
+})
