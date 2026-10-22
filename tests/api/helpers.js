@@ -16,8 +16,10 @@ export async function useTempStore() {
 export const sessionFor = (id) => createToken({ id, email: `${id}@test.dev`, isDemo: id === 'demo' })
 
 // token: 'dev:<id>' signs in as that test user, null sends no Authorization header, anything else is sent as is.
-export function apiRequest(url, { method = 'POST', body, token = 'dev:alice' } = {}) {
+// locale: the Accept-Language the app sends ('pt-BR' for a Portuguese reader); none means English.
+export function apiRequest(url, { method = 'POST', body, token = 'dev:alice', locale } = {}) {
   const headers = { 'Content-Type': 'application/json' }
+  if (locale) headers['Accept-Language'] = locale
   if (token) headers.Authorization = `Bearer ${token.startsWith('dev:') ? sessionFor(token.slice(4)) : token}`
   const payload = body === undefined || typeof body === 'string' ? body : JSON.stringify(body)
   return new Request(`http://localhost${url}`, { method, headers, body: payload })

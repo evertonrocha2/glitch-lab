@@ -133,3 +133,13 @@ it('tells the gym which bug type the challenge trains', async () => {
   expect(created.challenge.concept).toBe('undefined-access')
   expect((await (await read(created.challenge.id)).json()).challenge.concept).toBe('undefined-access')
 })
+
+it('asks for hints and the bug explanation in Portuguese, with the symptom left as the real error', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_CHALLENGE))
+  await POST(apiRequest('/api/challenge', { body: { caseId: kase.id }, locale: 'pt-BR' }))
+  const sent = JSON.parse(fetch.mock.calls[0][1].body)
+  const prompt = sent.contents[0].parts[0].text
+  expect(sent.systemInstruction.parts[0].text).toMatch(/Brazilian Portuguese/)
+  expect(prompt).toMatch(/Brazilian Portuguese/)
+  expect(prompt).toMatch(/symptom is the real error message exactly as javascript prints it, never translated/)
+})

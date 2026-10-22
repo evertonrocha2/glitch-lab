@@ -1,12 +1,15 @@
 import { LIMITS } from '../shared/limits.js'
 import { generateJson } from './_lib/ai/index.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { buildCheckPrompt, CHECK_SCHEMA, CHECK_SYSTEM } from './_lib/prompts/check.js'
+import { localeOf } from './_lib/locale.js'
+import { buildCheckPrompt, CHECK_SCHEMA, checkSystem } from './_lib/prompts/check.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
 
 export const PASSES_TO_SOLVE = 2
+
+const UNCHANGED = { en: "You haven't changed anything yet.", 'pt-BR': 'Você ainda não mudou nada.' }
 
 function parseVerdict(data) {
   if (typeof data?.passed !== 'boolean' || typeof data.feedback !== 'string' || data.feedback.trim() === '') {
@@ -21,6 +24,7 @@ export async function POST(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
 
+  const locale = localeOf(request)
   const body = await readJson(request)
   if (typeof body?.challengeId !== 'string' || typeof body.code !== 'string') return fail(400, 'Invalid request.')
   if (body.code.trim() === '') return fail(400, 'Write your fix first.')
@@ -35,7 +39,7 @@ export async function POST(request) {
 
   // Sending the untouched exercise back is a free "no", not a paid AI call.
   if (body.code.trim() === challenge.brokenCode.trim()) {
-    return ok({ passed: false, feedback: "You haven't changed anything yet.", case: kase })
+    return ok({ passed: false, feedback: UNCHANGED[locale], case: kase })
   }
 
   if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
@@ -44,8 +48,8 @@ export async function POST(request) {
   try {
     const secret = await store.getChallengeSecret(challenge.id)
     const answer = await generateJson({
-      system: CHECK_SYSTEM,
-      prompt: buildCheckPrompt({ ...challenge, ...secret, studentCode: body.code }),
+      system: checkSystem(locale),
+      prompt: buildCheckPrompt({ ...challenge, ...secret, studentCode: body.code }, locale),
       schema: CHECK_SCHEMA,
     })
     verdict = parseVerdict(answer)
