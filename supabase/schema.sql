@@ -16,6 +16,9 @@ create table public.cases (
   user_id uuid not null references public.users (id) on delete cascade,
   error text not null,
   code text not null default '',
+  -- Files the student attached: [{ path, content }], already cut down to the lines that matter.
+  files jsonb not null default '[]',
+  context text not null default '',
   analysis jsonb not null,
   concept text not null,
   language text not null,

@@ -52,10 +52,10 @@ export function createLocalStore({ file }) {
       return copy((data.users ?? []).find((user) => user.email === normalized))
     },
 
-    async createCase(userId, { error, code, analysis, concept, language }) {
+    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '' }) {
       const data = await load()
       const stamp = now()
-      const created = { id: randomUUID(), userId, error, code, analysis, concept, language, status: 'new', passedCount: 0, createdAt: stamp, updatedAt: stamp }
+      const created = { id: randomUUID(), userId, error, code, files, context, analysis, concept, language, status: 'new', passedCount: 0, createdAt: stamp, updatedAt: stamp }
       data.cases.push(created)
       await save()
       return copy(created)

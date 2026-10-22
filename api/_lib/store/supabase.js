@@ -14,6 +14,8 @@ const toCase = (row) =>
     userId: row.user_id,
     error: row.error,
     code: row.code,
+    files: row.files ?? [],
+    context: row.context ?? '',
     analysis: row.analysis,
     concept: row.concept,
     language: row.language,
@@ -69,8 +71,10 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toUser(unwrap(await db.from('users').select('*').eq('email', email.trim().toLowerCase()).maybeSingle()))
     },
 
-    async createCase(userId, { error, code, analysis, concept, language }) {
-      return toCase(unwrap(await db.from('cases').insert({ user_id: userId, error, code, analysis, concept, language }).select().single()))
+    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '' }) {
+      return toCase(
+        unwrap(await db.from('cases').insert({ user_id: userId, error, code, files, context, analysis, concept, language }).select().single()),
+      )
     },
 
     async listCases(userId) {
