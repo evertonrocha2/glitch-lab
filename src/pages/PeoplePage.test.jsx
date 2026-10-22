@@ -64,3 +64,14 @@ it('shows the error when the search fails', async () => {
   renderAt('/people')
   expect(await screen.findByRole('alert')).toHaveTextContent('Search with letters')
 })
+
+it('speaks Brazilian Portuguese, roles included', async () => {
+  renderAt('/people', { locale: 'pt-BR' })
+  expect(await screen.findByRole('heading', { name: 'Encontre detetives', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Pessoas' })).toHaveAttribute('href', '/people')
+  await screen.findByRole('list', { name: 'Detetives' })
+  expect(screen.getByText('Detetives mais recentes')).toBeInTheDocument()
+  await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar por usuário ou nome' }), 'ada{Enter}')
+  expect(await screen.findByText('Resultados para "ada"')).toBeInTheDocument()
+  expect(within(screen.getByRole('list', { name: 'Detetives' })).getByText('Estudante')).toBeInTheDocument()
+})

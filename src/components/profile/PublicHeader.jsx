@@ -1,13 +1,15 @@
 import { Link, NavLink } from 'react-router'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 import LanguageSelect from '../LanguageSelect.jsx'
 
 export function TryLink() {
+  const t = useT()
   return (
     <PixelButton as={Link} to="/" className="px-3 py-2">
-      Try Glitch Detective
+      {t('landing.public.try')}
     </PixelButton>
   )
 }
@@ -19,6 +21,7 @@ const peopleClass = ({ isActive }) =>
 export default function PublicHeader({ showTry = true }) {
   // Signed in, these pages are a detour from the app: offer the way back instead of a sign-up pitch.
   const { user } = useAuth()
+  const t = useT()
   return (
     <header className="border-b-2 border-ink bg-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-3.5 sm:px-8">
@@ -28,12 +31,12 @@ export default function PublicHeader({ showTry = true }) {
         </Link>
         <div className="flex items-center gap-4 sm:gap-5">
           <NavLink to="/people" end className={peopleClass}>
-            People
+            {t('landing.public.people')}
           </NavLink>
           <LanguageSelect compact />
           {user ? (
             <PixelButton as={Link} to="/board" className="px-3 py-2">
-              Back to your board
+              {t('landing.public.back')}
             </PixelButton>
           ) : (
             showTry && <TryLink />

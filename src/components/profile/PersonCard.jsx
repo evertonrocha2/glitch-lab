@@ -1,13 +1,22 @@
 import { Link } from 'react-router'
 import { LANGUAGES, labelOf, ROLES } from '../../../shared/profile.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelAvatar from '../pixel/PixelAvatar.jsx'
 import PixelCard from '../pixel/PixelCard.jsx'
 
 const MAX_LANGUAGES = 4
 
+// The role in the reader's language (landing.role.<id>), or the English label the data carries.
+function roleName(t, role) {
+  const key = `landing.role.${role}`
+  const text = t(key)
+  return text === key ? labelOf(ROLES, role) : text
+}
+
 // A small card for one detective (search results, a note's author). The name links to the
 // public profile, and that link stretches over the whole card so anywhere on it opens the profile.
 export default function PersonCard({ person, headingLevel = 2, className = '' }) {
+  const t = useT()
   const Heading = `h${headingLevel}`
   const facts = [person.university, person.work, person.location].filter(Boolean)
   const languages = person.languages ?? []
@@ -27,14 +36,14 @@ export default function PersonCard({ person, headingLevel = 2, className = '' })
       {(person.role || person.headline) && (
         <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm">
           {person.role && (
-            <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">{labelOf(ROLES, person.role)}</span>
+            <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">{roleName(t, person.role)}</span>
           )}
           {person.headline && <span className="break-words font-semibold text-ink">{person.headline}</span>}
         </p>
       )}
       {facts.length > 0 && <p className="mt-2 break-words text-sm text-muted">{facts.join(' · ')}</p>}
       {languages.length > 0 && (
-        <ul aria-label="Languages" className="mt-auto flex flex-wrap gap-1.5 pt-3">
+        <ul aria-label={t('landing.person.languages')} className="mt-auto flex flex-wrap gap-1.5 pt-3">
           {languages.slice(0, MAX_LANGUAGES).map((id) => (
             <li key={id} className="border border-ink bg-white px-1.5 py-0.5 font-mono text-xs text-ink">
               {labelOf(LANGUAGES, id)}
