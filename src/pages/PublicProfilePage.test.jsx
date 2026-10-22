@@ -1,7 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getPublicProfile, listPublicNotes } from '../lib/api.js'
-import { renderAt } from '../test/render.jsx'
+import { currentLocation, renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
   AuthError: class extends Error {},
@@ -48,12 +48,12 @@ const NOTES = [
 ]
 
 beforeEach(() => {
-  vi.mocked(getPublicProfile).mockReset().mockResolvedValue(PUBLIC)
+  vi.mocked(getPublicProfile).mockReset().mockResolvedValue({ profile: PUBLIC, preview: false })
   vi.mocked(listPublicNotes).mockReset().mockResolvedValue([])
 })
 
 it('shows who they are: role, headline, school, job, languages, links and open-to', async () => {
-  vi.mocked(getPublicProfile).mockResolvedValue({ ...PUBLIC, ...ABOUT })
+  vi.mocked(getPublicProfile).mockResolvedValue({ profile: { ...PUBLIC, ...ABOUT }, preview: false })
   renderAt('/u/ada_dev')
   await screen.findByRole('heading', { name: 'Ada', level: 1 })
   expect(screen.getByText('Student')).toBeInTheDocument()
@@ -131,4 +131,24 @@ it('shows the error when the profile cannot load', async () => {
   vi.mocked(getPublicProfile).mockRejectedValue(new Error('Could not reach the server. Check your connection.'))
   renderAt('/u/ada_dev')
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server.')
+})
+
+it('opens the profile from /@handle and from /u/@Handle', async () => {
+  renderAt('/@ada_dev')
+  await waitFor(() => expect(currentLocation()).toBe('/u/ada_dev'))
+  expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+})
+
+it('tidies /u/@Ada_Dev to the plain handle', async () => {
+  renderAt('/u/@Ada_Dev')
+  await waitFor(() => expect(currentLocation()).toBe('/u/ada_dev'))
+  expect(getPublicProfile).toHaveBeenLastCalledWith('ada_dev', expect.any(String), null)
+})
+
+it('tells owners when they are looking at their own private profile', async () => {
+  vi.mocked(getPublicProfile).mockResolvedValue({ profile: PUBLIC, preview: true })
+  renderAt('/u/ada_dev', { user: 'alice' })
+  expect(await screen.findByText(/Only you can see this page/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Make it public' })).toHaveAttribute('href', '/profile')
+  expect(getPublicProfile).toHaveBeenLastCalledWith('ada_dev', expect.any(String), 'token-alice')
 })

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
 import { useAuth } from './lib/auth/AuthProvider.jsx'
 import ArticleEditorPage from './pages/ArticleEditorPage.jsx'
 import ArticlePage from './pages/ArticlePage.jsx'
@@ -21,6 +21,12 @@ export function RequireAuth({ children }) {
   const location = useLocation()
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />
   return children
+}
+
+// A top-level "@handle" goes to that profile; anything else unknown goes home.
+function AtHandle() {
+  const { slug } = useParams()
+  return <Navigate to={slug.startsWith('@') ? `/u/${slug.slice(1)}` : '/'} replace />
 }
 
 export function AppRoutes() {
@@ -87,6 +93,8 @@ export function AppRoutes() {
       />
       {/* Public: works signed out. */}
       <Route path="/u/:handle" element={<PublicProfilePage />} />
+      {/* "/@ada" is the short link people type: it opens /u/ada. */}
+      <Route path="/:slug" element={<AtHandle />} />
       <Route path="/u/:handle/notes/:id" element={<PublicNotePage />} />
       <Route path="/people" element={<PeoplePage />} />
       {/* Community articles: reading is public, writing needs an account. */}

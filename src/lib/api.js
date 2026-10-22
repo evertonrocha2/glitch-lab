@@ -133,18 +133,19 @@ export async function saveProfile(patch, token) {
 }
 
 // Anyone can look, signed in or not. null when the handle has no public profile (missing or private).
-export async function getPublicProfile(handle, today) {
+// { profile, preview } or null. With your token, your own private profile comes back as a preview.
+export async function getPublicProfile(handle, today, token) {
   const path = `/api/profile?handle=${encodeURIComponent(handle)}&today=${encodeURIComponent(today)}`
   let res
   try {
-    res = await fetch(path, { method: 'GET', headers: {} })
+    res = await fetch(path, { method: 'GET', headers: token ? { Authorization: `Bearer ${token}` } : {} })
   } catch {
     throw new Error('Could not reach the server. Check your connection.')
   }
   if (res.status === 404) return null
   const data = await res.json().catch(() => null)
   if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
-  return data.profile
+  return { profile: data.profile, preview: Boolean(data.preview) }
 }
 
 // Public pages (notes on a profile, people search) work signed out: no token, and 404 means "not shared".

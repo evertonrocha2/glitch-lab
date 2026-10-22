@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, Navigate, useParams } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
@@ -8,6 +8,7 @@ import PixelCard from '../components/pixel/PixelCard.jsx'
 import ProfileCard from '../components/profile/ProfileCard.jsx'
 import PublicHeader, { TryLink } from '../components/profile/PublicHeader.jsx'
 import { getPublicProfile, listPublicNotes } from '../lib/api.js'
+import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatDuration, localDay } from '../lib/day.js'
 
 const memberSince = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -86,7 +87,10 @@ function NotFound({ handle }) {
 
 // A detective's public file: anyone can open it, signed in or not.
 export default function PublicProfilePage() {
-  const { handle } = useParams()
+  const { handle: raw } = useParams()
+  // "/u/@Ada" and "/u/ada" are the same page; the address is tidied to the plain handle.
+  const handle = raw.replace(/^@+/, '').toLowerCase()
+  const { getToken } = useAuth()
   const [state, setState] = useState({ status: 'loading' })
   const [notes, setNotes] = useState(null)
 
@@ -94,8 +98,9 @@ export default function PublicProfilePage() {
     let live = true
     setState({ status: 'loading' })
     setNotes(null)
-    getPublicProfile(handle, localDay())
-      .then((profile) => live && setState(profile ? { status: 'ready', profile } : { status: 'missing' }))
+    getToken()
+      .then((token) => getPublicProfile(handle, localDay(), token))
+      .then((found) => live && setState(found ? { status: 'ready', ...found } : { status: 'missing' }))
       .catch((err) => live && setState({ status: 'error', message: err.message }))
     // The notes are a bonus: if they can't load, the profile still shows.
     listPublicNotes(handle)
@@ -104,9 +109,10 @@ export default function PublicProfilePage() {
     return () => {
       live = false
     }
-  }, [handle])
+  }, [handle, getToken])
 
-  const { profile } = state
+  const { profile, preview } = state
+  if (raw !== handle) return <Navigate to={`/u/${handle}`} replace />
   const earned = profile ? BADGES.filter((badge) => profile.badges.includes(badge.id)) : []
 
   return (
@@ -124,6 +130,15 @@ export default function PublicProfilePage() {
 
         {profile && (
           <>
+            {preview && (
+              <p role="status" className="mb-6 flex flex-wrap items-center gap-3 border-2 border-ink bg-secondary-soft px-4 py-3 text-sm text-ink">
+                <span className="font-label text-[10px] text-secondary">Preview</span>
+                Only you can see this page: your profile is private.
+                <Link to="/profile" className="font-semibold text-primary underline underline-offset-4">
+                  Make it public
+                </Link>
+              </p>
+            )}
             <p className="font-label text-xs text-secondary">
               &gt; detective file<span className="motion-safe:animate-caret">_</span>
             </p>

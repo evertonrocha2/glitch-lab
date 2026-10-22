@@ -34,7 +34,7 @@ it('shows the server message when a handle is taken', async () => {
 
 it('loads a public profile without a token', async () => {
   fetch.mockResolvedValue(Response.json({ profile: { handle: 'ada' } }))
-  await expect(getPublicProfile('Ada Dev', '2026-10-22')).resolves.toEqual({ handle: 'ada' })
+  await expect(getPublicProfile('Ada Dev', '2026-10-22')).resolves.toEqual({ profile: { handle: 'ada' }, preview: false })
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/profile?handle=Ada%20Dev&today=2026-10-22')
   expect(init.headers).toEqual({})
