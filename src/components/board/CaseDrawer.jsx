@@ -1,19 +1,24 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
-import { conceptLabel } from '../../../shared/concepts.js'
-import { splitError, timeAgo } from '../../lib/caseInfo.js'
+import { splitError } from '../../lib/caseInfo.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../../lib/i18n/format.js'
+import { useLabels } from '../../lib/i18n/labels.js'
 import PixelButton from '../pixel/PixelButton.jsx'
 import ResultCards from '../ResultCards.jsx'
 import { ProgressBlocks } from './CaseCard.jsx'
 
 const STATUS = {
-  new: { text: 'New', style: 'border border-ink bg-white text-ink' },
-  training: { text: 'Training', style: 'bg-secondary text-white' },
-  solved: { text: 'Solved', style: 'bg-primary text-white' },
+  new: { style: 'border border-ink bg-white text-ink' },
+  training: { style: 'bg-secondary text-white' },
+  solved: { style: 'bg-primary text-white' },
 }
 
 // A side panel to study one case, with the way into the gym at the bottom.
 export default function CaseDrawer({ item, onClose, onTrain, training, notes = [], onWriteNote, writing = false }) {
+  const t = useT()
+  const labels = useLabels()
+  const { timeAgo } = useFormat()
   const panel = useRef(null)
   const { type, message } = splitError(item.error)
   const status = STATUS[item.status]
@@ -41,7 +46,7 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
       <button
         type="button"
         tabIndex={-1}
-        aria-label="Close case panel"
+        aria-label={t('board.drawer.closePanel')}
         onClick={onClose}
         className="absolute inset-0 cursor-default bg-ink/40"
       />
@@ -55,13 +60,13 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
       >
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b-2 border-ink bg-white px-6 py-3 sm:px-8">
           <p className="flex flex-wrap items-center gap-1.5">
-            <span className={`px-1.5 py-0.5 text-xs font-semibold ${status.style}`}>{status.text}</span>
-            <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{conceptLabel(item.concept)}</span>
+            <span className={`px-1.5 py-0.5 text-xs font-semibold ${status.style}`}>{labels.status(item.status)}</span>
+            <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(item.concept)}</span>
             <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{item.language}</span>
-            <span className="text-xs text-muted">· opened {timeAgo(item.createdAt)}</span>
+            <span className="text-xs text-muted">{t('board.drawer.opened', { time: timeAgo(item.createdAt) })}</span>
           </p>
           <PixelButton variant="ghost" onClick={onClose} className="shrink-0 px-3 py-2">
-            Close
+            {t('board.drawer.close')}
           </PixelButton>
         </div>
 
@@ -74,13 +79,13 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
 
           {item.context && (
             <p className="mt-5 text-ink">
-              <span className="font-label text-[10px] text-muted">You were trying to</span> {item.context}
+              <span className="font-label text-[10px] text-muted">{t('board.drawer.tryingTo')}</span> {item.context}
             </p>
           )}
 
           {item.code && (
             <details className="mt-6 border-2 border-ink bg-white">
-              <summary className="cursor-pointer px-4 py-2.5 font-label text-xs text-ink">Your code</summary>
+              <summary className="cursor-pointer px-4 py-2.5 font-label text-xs text-ink">{t('board.drawer.yourCode')}</summary>
               <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink">{item.code}</pre>
             </details>
           )}
@@ -96,41 +101,39 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
 
           <div className="mt-10 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
             <div className="flex items-center justify-between gap-3">
-              <p className="font-label text-xs text-secondary">Gym</p>
+              <p className="font-label text-xs text-secondary">{t('board.drawer.gym')}</p>
               <span className="flex items-center gap-2 text-sm text-ink">
                 <ProgressBlocks passed={passed} />
-                {passed}/2 challenges passed
+                {t('board.drawer.passed', { passed })}
               </span>
             </div>
             <p className="mt-3 text-ink">
-              {solved
-                ? 'You solved this case. Practice again any time to keep it sharp.'
-                : 'The AI writes new code with this same kind of bug. You fix it. Pass 2 challenges to solve this case.'}
+              {solved ? t('board.drawer.solvedText') : t('board.drawer.trainText')}
             </p>
             <PixelButton variant="secondary" onClick={() => onTrain(item)} disabled={training || !onTrain} className="mt-4">
-              {training ? 'Preparing your challenge...' : solved ? 'Practice again' : 'Train this'}
+              {training ? t('board.drawer.preparing') : solved ? t('board.drawer.practiceAgain') : t('board.drawer.train')}
             </PixelButton>
           </div>
 
           <section aria-labelledby="case-notes-title" className="mt-8 border-2 border-ink bg-white p-5 shadow-pixel">
             <h3 id="case-notes-title" className="font-label text-xs text-primary">
-              Notes
+              {t('board.drawer.notes')}
             </h3>
             {notes.length > 0 ? (
               <ul className="mt-3 space-y-1.5">
                 {notes.map((note) => (
                   <li key={note.id}>
                     <Link to={`/notes/${note.id}`} className="font-semibold text-ink underline decoration-2 underline-offset-4 hover:text-primary">
-                      {note.title || 'Untitled'}
+                      {note.title || t('board.drawer.untitled')}
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-ink">Write what you learned in your own words. It sticks better than reading it.</p>
+              <p className="mt-3 text-ink">{t('board.drawer.notesEmpty')}</p>
             )}
             <PixelButton variant="ghost" onClick={() => onWriteNote(item)} disabled={writing || !onWriteNote} className="mt-4">
-              {writing ? 'Opening a note...' : 'Write a note about this'}
+              {writing ? t('board.drawer.openingNote') : t('board.drawer.writeNote')}
             </PixelButton>
           </section>
         </div>
