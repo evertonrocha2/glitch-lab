@@ -12,15 +12,18 @@ Glitch Detective uses AI the other way around: **it hides the answer and trains 
 
 ## What it does
 
-1. **Investigate.** Paste an error (and the code, if you have it). You get what happened, the concept behind it and the fix, hidden until you ask for it. Every investigation becomes a **case** tagged with its bug type ("Reading undefined", "Index out of range", ...).
+1. **Investigate.** Paste an error, the code, or attach files or a whole folder. A live scan reads the error type, language and file:line spots before any AI, and the files the error mentions are sent trimmed to the lines around it. You get clues from the error, the likely spot, what happened, the concept behind it and the fix, hidden until you ask for it. Every investigation becomes a **case** tagged with its bug type ("Reading undefined", "Index out of range", ...).
 2. **Study your board.** Your cases live on a Kanban board, **New → Training → Solved**, with a summary that names your **weak spot**: the bug type you hit most.
 3. **Train in the gym.** From any case, the AI **writes a brand-new program with the same kind of bug**. You see only the symptom. Fix it in the editor; hints unlock one at a time, from vague to almost-the-answer. The AI **judges your fix** against a reference solution it never shows you. Pass 2 challenges and the case is solved.
 4. **Write it down.** A Notion-style notebook: headings, text, to-dos, and your cases as blocks. Type **@** to drop a case into the page, **/** for other blocks. Every case links to the notes that mention it. Notes save on their own.
 5. **Track your study time.** A pixel stopwatch sits on every page. It keeps running through reloads and counts each day on your own clock.
 6. **Follow a study trail.** Press *Build my study trail* and the AI reads your cases and notes, finds your weak spot and lays out 5 to 7 missions on a pixel path: train a case in the gym, write a note about a case, study with the timer, investigate a new error, or reflect. Missions tick themselves when you do them (only *reflect* is ticked by hand). Each one earns XP, and finishing the trail adds a 100 XP bonus and the *Trailblazer* badge.
-7. **Level up.** Cases, passed challenges, notes, study minutes and trail missions earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 13 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
-8. **Take it with you.** Export the whole board, or one note, as Markdown. Notion, Obsidian and GitHub all read it.
-9. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. Everything runs through one function, `api/community.js` (`?resource=articles|comments|reactions|notifications`). Demo accounts can read, like and rate, but not publish or comment.
+7. **Level up.** Cases, passed challenges, notes, study minutes, trail missions, daily puzzles and community activity earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 17 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
+8. **Take it with you.** Export the whole board or one note as Markdown, a PNG image or an A4 PDF in the same pixel look (pages never cut a card in half).
+9. **Show who you are.** A profile with a pixel avatar, bio, what you do, university, job, languages and links, featured badges, and public notes. Make it public at `/u/<handle>` and find other detectives at `/people`.
+10. **Ask the detective.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
+11. **Daily and global challenges.** Three puzzles a day for everyone and a weekly global one with a leaderboard, fed by a daily cron.
+12. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. Everything runs through one function, `api/community.js` (`?resource=articles|comments|reactions|notifications`). Demo accounts can read, but not publish, comment, like or rate.
 
 ## How AI is used
 
@@ -96,7 +99,7 @@ For production, create a Supabase project, run `supabase/schema.sql`, then set t
 bun run test
 ```
 
-250+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, XP and badges, the timer, the note editor, the export, and every page.
+700+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, XP and badges, the timer, the note editor, the export, and every page.
 
 ## Built with
 
