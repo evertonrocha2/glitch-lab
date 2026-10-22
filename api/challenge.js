@@ -3,18 +3,21 @@ import { generateJson } from './_lib/ai/index.js'
 import { parseChallenge, toPublicChallenge } from './_lib/challenges.js'
 import { cron, getDaily, getGlobal, startPuzzle } from './_lib/handlers/daily.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
+import { getRiddle, guessRiddle } from './_lib/riddle/play.js'
 import { buildChallengePrompt, CHALLENGE_SCHEMA, CHALLENGE_SYSTEM } from './_lib/prompts/challenge.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
 
 // Starts a gym challenge for one of my cases, or resumes the open one (no AI call, no quota).
-// With { daily: true, puzzleId } it starts a daily or global puzzle instead.
+// With { daily: true, puzzleId } it starts a daily or global puzzle instead, and with
+// { riddle: true, mode, guess } it sends a Glitchdle guess.
 export async function POST(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
 
   const body = await readJson(request)
+  if (body?.riddle !== undefined) return guessRiddle(auth.user, body)
   if (body?.daily !== undefined || body?.puzzleId !== undefined) {
     return typeof body.puzzleId === 'string' ? startPuzzle(auth.user, body.puzzleId) : fail(400, 'Invalid request.')
   }
@@ -51,8 +54,8 @@ export async function POST(request) {
   return ok({ challenge: toPublicChallenge(record, kase.concept) }, 201)
 }
 
-// GET ?id=: one of my challenges. ?daily=1 and ?global=1: the shared puzzles. ?cron=1: Vercel's
-// daily cron, signed with CRON_SECRET instead of a session.
+// GET ?id=: one of my challenges. ?daily=1 and ?global=1: the shared puzzles. ?riddle=1: today's
+// Glitchdle. ?cron=1: Vercel's daily cron, signed with CRON_SECRET instead of a session.
 export async function GET(request) {
   const params = new URL(request.url).searchParams
   if (params.has('cron')) return cron(request)
@@ -61,6 +64,7 @@ export async function GET(request) {
   if (auth.response) return auth.response
   if (params.has('daily')) return getDaily(auth.user)
   if (params.has('global')) return getGlobal(auth.user)
+  if (params.has('riddle')) return getRiddle(auth.user)
 
   const id = params.get('id') ?? ''
   const store = getStore()

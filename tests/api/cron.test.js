@@ -86,7 +86,8 @@ it('the next day only writes the day after, since today was made ahead', async (
   fetch.mockClear()
   const body = await (await runCron()).json()
   expect(body.created.map((item) => item.day)).toEqual(['2026-10-24', '2026-10-24', '2026-10-24'])
-  expect(fetch).toHaveBeenCalledTimes(3)
+  // Three puzzles; the same run also asks for one Glitchdle error clue (see riddle-cron.test.js).
+  expect(prompts().filter((prompt) => !prompt.startsWith('Glitchdle'))).toHaveLength(3)
 })
 
 it("writes next week's global on the Sunday run", async () => {

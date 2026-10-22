@@ -5,6 +5,7 @@ import { fail, ok } from '../http.js'
 import { ensureSet, isCurrent, runCron, toPuzzleCard, withStatus } from '../puzzles/daily.js'
 import { leaderboard } from '../puzzles/leaderboard.js'
 import { loadDaily } from '../puzzles/solved.js'
+import { runRiddleCron } from '../riddle/daily.js'
 import { getStore } from '../store/index.js'
 
 // Daily and global challenges, served from /api/challenge to stay under Vercel's free-plan limit.
@@ -61,8 +62,17 @@ export function cronAllowed(request) {
   return timingSafeEqual(digest(request.headers.get('authorization') ?? ''), digest(`Bearer ${secret}`))
 }
 
-// GET ?cron=1: writes today's and tomorrow's puzzles. Reports titles only, never solutions.
+// GET ?cron=1: writes today's and tomorrow's puzzles and Glitchdle riddles. Reports titles and
+// modes only, never solutions or answers. A Glitchdle failure never costs the puzzles their run.
 export async function cron(request, now = new Date()) {
   if (!cronAllowed(request)) return fail(401, 'Not allowed.')
-  return ok(await runCron(getStore(), now))
+  const store = getStore()
+  const [puzzles, riddle] = await Promise.all([
+    runCron(store, now),
+    runRiddleCron(store, now).catch((err) => {
+      console.error('Glitchdle cron failed:', err)
+      return { failed: true }
+    }),
+  ])
+  return ok({ ...puzzles, riddle })
 }
