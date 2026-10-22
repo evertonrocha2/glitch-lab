@@ -203,5 +203,91 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(found.profile).not.toHaveProperty('email')
       expect(await store.findPublicProfile(uniqueHandle('nobody'))).toBeNull()
     })
+
+    // Puzzles are shared by everyone and the Supabase table outlives each test, so each test
+    // picks a far-future day of its own.
+    it('keeps a puzzle secret apart and allows one puzzle per slot', async () => {
+      const day = randomDay()
+      const puzzle = await store.createPuzzle(puzzleFor(day), PUZZLE_SECRET)
+      expect(puzzle).toMatchObject(puzzleFor(day))
+      expect(puzzle.id).toEqual(expect.any(String))
+      expect(puzzle).not.toHaveProperty('solution')
+      expect(await store.getPuzzle(puzzle.id)).toEqual(puzzle)
+      expect(await store.getPuzzleSecret(puzzle.id)).toEqual(PUZZLE_SECRET)
+      expect(await store.createPuzzle(puzzleFor(day, { title: 'Second try' }), PUZZLE_SECRET)).toBeNull()
+      expect(await store.getPuzzle(crypto.randomUUID())).toBeNull()
+      expect(await store.getPuzzle('not-an-id')).toBeNull()
+    })
+
+    it('lists puzzles by kind, day, start day or ids', async () => {
+      const day = randomDay()
+      const easy = await store.createPuzzle(puzzleFor(day), PUZZLE_SECRET)
+      const hard = await store.createPuzzle(puzzleFor(day, { difficulty: 'hard' }), PUZZLE_SECRET)
+      const global = await store.createPuzzle(puzzleFor(day, { kind: 'global', difficulty: 'hard' }), PUZZLE_SECRET)
+      const before = await store.createPuzzle(puzzleFor(`${day.slice(0, 8)}01`), PUZZLE_SECRET)
+      const ids = (list) => list.map((item) => item.id)
+
+      expect(ids(await store.listPuzzles({ kind: 'daily', day })).sort()).toEqual([easy.id, hard.id].sort())
+      expect(ids(await store.listPuzzles({ kind: 'global', day }))).toEqual([global.id])
+      const since = ids(await store.listPuzzles({ kind: 'daily', since: day }))
+      expect(since).toEqual(expect.arrayContaining([easy.id, hard.id]))
+      expect(since).not.toContain(before.id)
+      expect(since).not.toContain(global.id)
+      expect(ids(await store.listPuzzles({ ids: [hard.id, before.id] })).sort()).toEqual([hard.id, before.id].sort())
+      expect(await store.listPuzzles({ ids: [] })).toEqual([])
+      expect((await store.listPuzzles({ day }))[0]).not.toHaveProperty('solution')
+    })
+
+    it('starts one challenge per user per puzzle', async () => {
+      const puzzle = await store.createPuzzle(puzzleFor(randomDay()), PUZZLE_SECRET)
+      const fields = { caseId: null, puzzleId: puzzle.id, brokenCode: puzzle.brokenCode, symptom: puzzle.symptom, language: puzzle.language, hints: puzzle.hints }
+      const challenge = await store.createChallenge(ids.alice, fields, PUZZLE_SECRET)
+      expect(challenge).toMatchObject({ ...fields, userId: ids.alice, status: 'open', attempts: 0, passedAt: null })
+      expect(await store.createChallenge(ids.alice, fields, PUZZLE_SECRET)).toBeNull()
+      expect(await store.findPuzzleChallenge(ids.alice, puzzle.id)).toEqual(challenge)
+      expect(await store.findPuzzleChallenge(ids.bob, puzzle.id)).toBeNull()
+      expect(await store.getChallengeSecret(challenge.id)).toEqual(PUZZLE_SECRET)
+
+      const passed = await store.updateChallenge(ids.alice, challenge.id, { status: 'passed', attempts: 2 })
+      expect(passed.passedAt).toEqual(expect.any(String))
+      // Later updates keep the first pass time.
+      expect((await store.updateChallenge(ids.alice, challenge.id, { hintsRevealed: 1 })).passedAt).toBe(passed.passedAt)
+    })
+
+    it('lists who passed a puzzle, with attempts and times', async () => {
+      const puzzle = await store.createPuzzle(puzzleFor(randomDay()), PUZZLE_SECRET)
+      const start = (userId) =>
+        store.createChallenge(userId, { caseId: null, puzzleId: puzzle.id, brokenCode: 'x', symptom: 'y', language: 'python', hints: ['a', 'b', 'c'] }, PUZZLE_SECRET)
+      const mine = await start(ids.alice)
+      await start(ids.bob)
+      expect(await store.puzzleSolves(puzzle.id)).toEqual([])
+
+      await store.updateChallenge(ids.alice, mine.id, { status: 'passed', attempts: 3 })
+      const solves = await store.puzzleSolves(puzzle.id)
+      expect(solves).toEqual([{ userId: ids.alice, attempts: 3, startedAt: mine.createdAt, passedAt: expect.any(String) }])
+      expect(Date.parse(solves[0].passedAt)).toBeGreaterThanOrEqual(Date.parse(solves[0].startedAt))
+    })
   })
+}
+
+// A daily or global puzzle as the cron or the pool saves it.
+export const puzzleFor = (day, overrides = {}) => ({
+  kind: 'daily',
+  day,
+  difficulty: 'easy',
+  language: 'python',
+  concept: 'off-by-one',
+  title: 'The missing last item',
+  brokenCode: 'items = [1, 2, 3]\nfor i in range(len(items) - 1):\n    print(items[i])',
+  symptom: 'Prints 1 and 2, but never 3.',
+  hints: ['Count the lines printed.', 'Look at the range end.', 'range already stops before its end.'],
+  ...overrides,
+})
+
+export const PUZZLE_SECRET = { solution: 'items = [1, 2, 3]\nfor i in range(len(items)):\n    print(items[i])', bugExplanation: 'range(len(items) - 1) skips the last index.' }
+
+// YYYY-MM-DD in a far-off year, so tests against a shared database don't collide.
+export function randomDay() {
+  const pick = (count) => Math.floor(Math.random() * count)
+  return `${2100 + pick(800)}-${String(1 + pick(12)).padStart(2, '0')}-${String(10 + pick(18))}`
 }

@@ -126,3 +126,39 @@ alter table public.users add column if not exists is_public boolean not null def
 create unique index if not exists users_handle_unique on public.users (lower(handle));
 -- Handles are stored lowercase, so lookups use a plain equality and need this index.
 create index if not exists users_handle on public.users (handle);
+
+-- Daily and global challenges: the same puzzles for everyone. The cron (or the curated pool, as a
+-- fallback) writes 3 dailies a day (easy, medium, hard) and one global a week (day = its Monday).
+-- The unique slot makes writing a day twice a no-op. Solutions sit in puzzle_secrets, like
+-- challenge_secrets, and never reach the browser.
+create table if not exists public.puzzles (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('daily', 'global')),
+  day date not null,
+  difficulty text not null check (difficulty in ('easy', 'medium', 'hard')),
+  language text not null,
+  concept text not null,
+  title text not null,
+  broken_code text not null,
+  symptom text not null,
+  hints jsonb not null,
+  created_at timestamptz not null default now(),
+  unique (kind, day, difficulty)
+);
+
+create table if not exists public.puzzle_secrets (
+  puzzle_id uuid primary key references public.puzzles (id) on delete cascade,
+  solution text not null,
+  bug_explanation text not null
+);
+
+-- A puzzle attempt is a gym challenge with a puzzle instead of a case: one per user per puzzle.
+-- passed_at times the first pass for the leaderboard.
+alter table public.challenges alter column case_id drop not null;
+alter table public.challenges add column if not exists puzzle_id uuid references public.puzzles (id) on delete cascade;
+alter table public.challenges add column if not exists passed_at timestamptz;
+create unique index if not exists challenges_user_puzzle on public.challenges (user_id, puzzle_id) where puzzle_id is not null;
+create index if not exists challenges_puzzle_status on public.challenges (puzzle_id, status) where puzzle_id is not null;
+
+alter table public.puzzles enable row level security;
+alter table public.puzzle_secrets enable row level security;

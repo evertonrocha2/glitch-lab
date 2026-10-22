@@ -29,6 +29,7 @@ const toChallenge = (row) =>
   row && {
     id: row.id,
     caseId: row.case_id,
+    puzzleId: row.puzzle_id ?? null,
     userId: row.user_id,
     brokenCode: row.broken_code,
     symptom: row.symptom,
@@ -37,6 +38,22 @@ const toChallenge = (row) =>
     hintsRevealed: row.hints_revealed,
     status: row.status,
     attempts: row.attempts,
+    passedAt: row.passed_at ?? null,
+    createdAt: row.created_at,
+  }
+
+const toPuzzle = (row) =>
+  row && {
+    id: row.id,
+    kind: row.kind,
+    day: row.day,
+    difficulty: row.difficulty,
+    language: row.language,
+    concept: row.concept,
+    title: row.title,
+    brokenCode: row.broken_code,
+    symptom: row.symptom,
+    hints: row.hints,
     createdAt: row.created_at,
   }
 
@@ -103,14 +120,16 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toCase(unwrap(await db.from('cases').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle()))
     },
 
-    async createChallenge(userId, { caseId, brokenCode, symptom, language, hints }, { solution, bugExplanation }) {
-      const row = unwrap(
-        await db
-          .from('challenges')
-          .insert({ case_id: caseId, user_id: userId, broken_code: brokenCode, symptom, language, hints })
-          .select()
-          .single(),
-      )
+    // A gym challenge has a caseId; a daily or global one has a puzzleId instead, and only one per user
+    // per puzzle (null when it already exists).
+    async createChallenge(userId, { caseId = null, puzzleId = null, brokenCode, symptom, language, hints }, { solution, bugExplanation }) {
+      const inserted = await db
+        .from('challenges')
+        .insert({ case_id: caseId, puzzle_id: puzzleId, user_id: userId, broken_code: brokenCode, symptom, language, hints })
+        .select()
+        .single()
+      if (inserted.error?.code === UNIQUE_VIOLATION) return null
+      const row = unwrap(inserted)
       const secret = await db.from('challenge_secrets').insert({ challenge_id: row.id, solution, bug_explanation: bugExplanation })
       if (secret.error) {
         // Without its secret the challenge could never be judged; don't leave it behind to be resumed.
@@ -141,7 +160,11 @@ export function createSupabaseStore({ url, serviceKey }) {
 
     async updateChallenge(userId, id, { hintsRevealed, status, attempts }) {
       const patch = defined({ hints_revealed: hintsRevealed, status, attempts })
-      return toChallenge(unwrap(await db.from('challenges').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle()))
+      const row = unwrap(await db.from('challenges').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle())
+      // The first pass is the one the leaderboard times.
+      if (!row || status !== 'passed' || row.passed_at) return toChallenge(row)
+      const stamped = await db.from('challenges').update({ passed_at: new Date().toISOString() }).eq('id', id).is('passed_at', null).select().maybeSingle()
+      return toChallenge(unwrap(stamped) ?? row)
     },
 
     async listChallenges(userId) {
@@ -152,6 +175,62 @@ export function createSupabaseStore({ url, serviceKey }) {
     async getChallengeSecret(challengeId) {
       const row = unwrap(await db.from('challenge_secrets').select('*').eq('challenge_id', challengeId).maybeSingle())
       return row && { solution: row.solution, bugExplanation: row.bug_explanation }
+    },
+
+    // One puzzle per slot (kind, day, difficulty): null when the slot is already taken.
+    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints }, { solution, bugExplanation }) {
+      const inserted = await db
+        .from('puzzles')
+        .insert({ kind, day, difficulty, language, concept, title, broken_code: brokenCode, symptom, hints })
+        .select()
+        .single()
+      if (inserted.error?.code === UNIQUE_VIOLATION) return null
+      const row = unwrap(inserted)
+      const secret = await db.from('puzzle_secrets').insert({ puzzle_id: row.id, solution, bug_explanation: bugExplanation })
+      if (secret.error) {
+        // A puzzle nobody can be judged on must not take the slot.
+        await db.from('puzzles').delete().eq('id', row.id)
+        unwrap(secret)
+      }
+      return toPuzzle(row)
+    },
+
+    // Every filter is optional: kind, day (exact), since (that day or later), ids.
+    async listPuzzles({ kind, day, since, ids } = {}) {
+      if (ids?.length === 0) return []
+      let query = db.from('puzzles').select('*')
+      if (kind !== undefined) query = query.eq('kind', kind)
+      if (day !== undefined) query = query.eq('day', day)
+      if (since !== undefined) query = query.gte('day', since)
+      if (ids !== undefined) query = query.in('id', ids)
+      const rows = unwrap(await query.order('day', { ascending: true }))
+      return (rows ?? []).map(toPuzzle)
+    },
+
+    async getPuzzle(id) {
+      return toPuzzle(unwrap(await db.from('puzzles').select('*').eq('id', id).maybeSingle()))
+    },
+
+    async getPuzzleSecret(puzzleId) {
+      const row = unwrap(await db.from('puzzle_secrets').select('*').eq('puzzle_id', puzzleId).maybeSingle())
+      return row && { solution: row.solution, bugExplanation: row.bug_explanation }
+    },
+
+    async findPuzzleChallenge(userId, puzzleId) {
+      return toChallenge(unwrap(await db.from('challenges').select('*').eq('user_id', userId).eq('puzzle_id', puzzleId).maybeSingle()))
+    },
+
+    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt }], first pass first.
+    async puzzleSolves(puzzleId) {
+      const rows = unwrap(
+        await db
+          .from('challenges')
+          .select('user_id, attempts, created_at, passed_at')
+          .eq('puzzle_id', puzzleId)
+          .eq('status', 'passed')
+          .order('passed_at', { ascending: true }),
+      )
+      return (rows ?? []).map((row) => ({ userId: row.user_id, attempts: row.attempts, startedAt: row.created_at, passedAt: row.passed_at }))
     },
 
     async createNote(userId, { title, blocks }) {
