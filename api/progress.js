@@ -4,6 +4,7 @@ import { clientDay, serverDay } from './_lib/days.js'
 import { POST as addStudyTime } from './_lib/handlers/study.js'
 import { ok, requireUser } from './_lib/http.js'
 import { loadDaily } from './_lib/puzzles/solved.js'
+import { loadRiddle } from './_lib/riddle/solved.js'
 import { getStore } from './_lib/store/index.js'
 
 // POST: the study timer reports time (shares this function to stay under Vercel's free-plan limit).
@@ -26,8 +27,8 @@ export async function GET(request) {
     store.communityStats(userId),
   ])
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
-  // Daily and global puzzles passed, for their XP, the daily streak and their badges.
-  const daily = await loadDaily(store, userId, challenges)
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community })
-  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study }, today) } })
+  // Daily and global puzzles passed, and Glitchdle games, for their XP, streaks and badges.
+  const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle })
+  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle }, today) } })
 }

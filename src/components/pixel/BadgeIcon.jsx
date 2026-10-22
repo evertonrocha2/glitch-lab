@@ -16,6 +16,8 @@ const GLYPHS = {
   'daily-grinder': ['.#.....#.', '#########', '#ooooooo#', '#########', '#......##', '#.....#.#', '#.#..#..#', '#..##...#', '#########'],
   'global-ace': ['..#####..', '.#oo#oo#.', '#oo#o#oo#', '#########', '#oo#o#oo#', '#########', '#oo#o#oo#', '.#oo#oo#.', '..#####..'],
   author: ['.#####...', '.#ooo##..', '.#ooo#o#.', '.#ooo####', '.#o####o#', '.#oooooo#', '.#o####o#', '.#oooooo#', '.########'],
+  // A speech bubble with "< >" inside: three languages read in one day.
+  'lingo-master': ['.#######.', '#ooooooo#', '#oo#o#oo#', '#o#ooo#o#', '#oo#o#oo#', '#ooooooo#', '.##o####.', '..#o#....', '..##.....'],
   trusted: ['.#######.', '#ooooooo#', '#ooooo#o#', '#oooo#oo#', '#o#o#ooo#', '#oo#oooo#', '.#ooooo#.', '..#ooo#..', '...###...'],
 }
 

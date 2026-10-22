@@ -50,6 +50,20 @@ it('ignores activity older than the graph or after today', () => {
   expect(calendar.total).toBe(0)
 })
 
+it('counts a Glitchdle day once when any mode was solved', () => {
+  const riddle = {
+    results: [
+      { day: '2026-10-21', mode: 'classic', guessCount: 3, solved: true },
+      { day: '2026-10-21', mode: 'error', guessCount: 1, solved: true },
+      { day: '2026-10-20', mode: 'snippet', guessCount: 30, solved: false },
+    ],
+  }
+  const calendar = activityCalendar({ riddle }, TODAY)
+  expect(at(calendar, '2026-10-21')).toBe(1)
+  expect(at(calendar, '2026-10-20')).toBe(0)
+  expect(calendar.total).toBe(1)
+})
+
 it('turns counts into five levels', () => {
   expect([0, 1, 2, 3, 4, 6, 7, 40].map(activityLevel)).toEqual([0, 1, 2, 2, 3, 3, 4, 4])
 })

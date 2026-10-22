@@ -15,6 +15,7 @@ import {
 import { activityCalendar } from '../../shared/activity.js'
 import { computeProgress } from '../../shared/progress.js'
 import { loadDaily } from './puzzles/solved.js'
+import { loadRiddle } from './riddle/solved.js'
 
 const INVALID = { status: 400, message: 'Invalid request.' }
 const tooLong = (what, max) => ({ status: 413, message: `Too long. Keep your ${what} under ${max + 1} characters.` })
@@ -178,11 +179,11 @@ export async function summarize(store, userId, today) {
     store.listTrails(userId),
     store.communityStats(userId),
   ])
-  const daily = await loadDaily(store, userId, challenges)
+  const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community }),
+    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle }),
     // Only a count per day: what was done stays private, that something was done is shown.
-    activity: activityCalendar({ cases, challenges, notes, study }, today),
+    activity: activityCalendar({ cases, challenges, notes, study, riddle }, today),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,

@@ -3,6 +3,7 @@ import { conceptLabel } from '../../../shared/concepts.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
 import { kindLabel, trailViews } from '../../../shared/trails.js'
 import { loadDaily } from '../puzzles/solved.js'
+import { loadRiddle } from '../riddle/solved.js'
 import { serverDay } from '../days.js'
 import { APP_GUIDE } from './guide.js'
 import { clip, firstLines } from './text.js'
@@ -143,8 +144,8 @@ async function studyContext({ store, userId, needs }) {
   ])
   if (needs.includes('progress')) {
     // The same inputs as /api/progress, so the assistant never quotes a different XP.
-    const daily = await loadDaily(store, userId, challenges)
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community })
+    const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(

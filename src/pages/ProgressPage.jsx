@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import { DAILY_XP } from '../../shared/daily.js'
 import { COMMUNITY_XP, XP } from '../../shared/progress.js'
+import { RIDDLE_XP } from '../../shared/riddle/game.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import ActivityGraph from '../components/ActivityGraph.jsx'
 import AppShell from '../components/AppShell.jsx'
@@ -45,6 +46,7 @@ const EARN = [
   ['...and the whole trail', `+${TRAIL_BONUS_XP}`],
   ['Solve a daily: easy, medium, hard', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
   ['Solve the weekly global challenge', DAILY_XP.global],
+  ['Solve a Glitchdle mode (fewer guesses, more XP)', `${RIDDLE_XP.at(-1).xp}-${RIDDLE_XP[0].xp}`],
   ['Publish an article', COMMUNITY_XP.article],
   ['Get a valid rating', COMMUNITY_XP.validReceived],
   ['Get a like', COMMUNITY_XP.likeReceived],

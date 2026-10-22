@@ -89,6 +89,18 @@ it('adds xp and badges from my community articles', async () => {
   expect(earned(progress)).toEqual(['author'])
 })
 
+it('adds Glitchdle xp, the lingo-master badge and a day of activity', async () => {
+  for (const mode of ['classic', 'error', 'snippet']) {
+    await store.saveRiddleResult('alice', { day: '2026-10-21', mode, guesses: ['go', 'rust'], solved: true }, 0)
+  }
+  await store.saveRiddleResult('bob', { day: '2026-10-21', mode: 'classic', guesses: ['go'], solved: true }, 0)
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress.xp).toBe(3 * 25)
+  expect(earned(progress)).toEqual(['lingo-master'])
+  expect(progress.activity.total).toBe(1)
+  expect(progress.activity.best).toEqual({ day: '2026-10-21', count: 1 })
+})
+
 it('includes a year of activity, one count per day', async () => {
   await store.createCase('alice', CASE)
   const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()

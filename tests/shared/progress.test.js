@@ -164,3 +164,20 @@ it('earns author for an article and trusted for 5 valid ratings', () => {
   // Without community numbers nothing changes.
   expect(computeProgress(empty).xp).toBe(0)
 })
+
+const riddleResult = (day, mode, guessCount, solved = true) => ({ day, mode, guessCount, solved })
+
+it('adds Glitchdle xp per solved mode, more for fewer guesses', () => {
+  const riddle = {
+    results: [riddleResult('2026-10-21', 'classic', 2), riddleResult('2026-10-21', 'error', 9), riddleResult('2026-10-22', 'snippet', 4, false)],
+  }
+  expect(computeProgress({ ...empty, riddle }).xp).toBe(25 + 10)
+  expect(computeProgress(empty).xp).toBe(0)
+})
+
+it('earns lingo master for solving all three Glitchdle modes in one day', () => {
+  const day = (date, modes) => modes.map((mode) => riddleResult(date, mode, 3))
+  const split = { results: [...day('2026-10-21', ['classic', 'error']), ...day('2026-10-22', ['snippet'])] }
+  expect(earned(computeProgress({ ...empty, riddle: split }))).not.toContain('lingo-master')
+  expect(earned(computeProgress({ ...empty, riddle: { results: day('2026-10-21', ['classic', 'error', 'snippet']) } }))).toEqual(['lingo-master'])
+})

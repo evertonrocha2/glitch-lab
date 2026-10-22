@@ -1,6 +1,7 @@
 import { BADGES } from './badges.js'
 import { trailViews as viewTrails } from './trails.js'
 import { dailySummary } from './daily.js'
+import { riddleSummary } from './riddle/game.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -50,10 +51,12 @@ function streaks(study, today) {
 // trails: study trails, whose missions and finished-trail bonus add XP (see shared/trails.js).
 // daily (optional): { solved: [{ kind, day, difficulty }] }, the daily and global puzzles passed.
 // community (optional): articles written, likes and valid ratings received, comments written.
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY }) {
+// riddle (optional): { results: [{ day, mode, guessCount, solved }] }, the Glitchdle games played.
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle }) {
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
+  const glitchdle = riddleSummary(riddle?.results, today)
   const cleanPasses = passes.filter((item) => item.hintsRevealed === 0).length
   const solved = cases.filter((item) => item.status === 'solved').length
   const totalSeconds = study.reduce((sum, entry) => sum + entry.seconds, 0)
@@ -69,6 +72,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     Math.floor(totalSeconds / 60) * XP.studyMinute +
     trailViews.reduce((sum, view) => sum + view.xp, 0) +
     puzzles.xp +
+    glitchdle.xp +
     communityXp(community)
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
@@ -87,6 +91,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     globalSolved: puzzles.globalSolved,
     articles: community.articles,
     validReceived: community.validReceived,
+    riddlePerfectDays: glitchdle.perfectDays,
   }
 
   return {
