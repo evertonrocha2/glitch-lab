@@ -164,7 +164,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
 
   function keyDown(event, block) {
     if (menu?.blockId === block.id && menuKey(event)) return
-    if (event.key === 'Enter' && !event.shiftKey && block.type !== 'text') {
+    // Headings and to-dos are one line: Enter starts the next block instead of a line break.
+    if (event.key === 'Enter' && block.type !== 'text') {
       event.preventDefault()
       const next = newBlock(block.type === 'todo' ? 'todo' : 'text')
       setBlocks((current) => insertAfter(current, block.id, next))
@@ -220,18 +221,32 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
   function control(block) {
     switch (block.type) {
       case 'heading':
-        return <input {...inputProps(block)} aria-label="Heading" placeholder="Heading" className={`${lineClass} pt-3 font-pixel text-2xl font-bold`} />
+        return (
+          <textarea
+            {...inputProps(block)}
+            rows={1}
+            aria-label="Heading"
+            placeholder="Heading"
+            className={`${lineClass} block resize-none pt-3 font-pixel text-2xl font-bold field-sizing-content`}
+          />
+        )
       case 'todo':
         return (
-          <div className="flex items-center gap-2.5 py-0.5">
+          <div className="flex items-start gap-2.5 py-0.5">
             <input
               type="checkbox"
               checked={block.done}
               onChange={(event) => setBlocks((current) => updateBlock(current, block.id, { done: event.target.checked }))}
               aria-label={`Done: ${block.text || 'to-do'}`}
-              className="size-4 shrink-0 accent-primary"
+              className="mt-1 size-4 shrink-0 accent-primary"
             />
-            <input {...inputProps(block)} aria-label="To-do" placeholder="To-do" className={`${lineClass} ${block.done ? 'text-muted line-through' : ''}`} />
+            <textarea
+              {...inputProps(block)}
+              rows={1}
+              aria-label="To-do"
+              placeholder="To-do"
+              className={`${lineClass} block resize-none field-sizing-content ${block.done ? 'text-muted line-through' : ''}`}
+            />
           </div>
         )
       case 'case':
@@ -282,7 +297,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
         </div>
       </div>
 
-      <input
+      <textarea
+        rows={1}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         onKeyDown={(event) => {
@@ -294,7 +310,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
         maxLength={120}
         aria-label="Note title"
         placeholder="Untitled"
-        className={`${lineClass} mt-5 font-pixel text-3xl font-bold sm:text-4xl`}
+        className={`${lineClass} mt-5 block resize-none font-pixel text-3xl font-bold field-sizing-content sm:text-4xl`}
       />
       <p className="mt-2 text-sm text-muted">
         Type <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> to bring in a case from your board,{' '}

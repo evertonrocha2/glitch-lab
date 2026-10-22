@@ -153,7 +153,7 @@ export default function NotesPage() {
           Loading your notes...
         </p>
       ) : (
-        <div className="mt-10 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label="Notes" className={id ? 'hidden lg:block' : ''}>
             <NoteList notes={notes} />
           </nav>
