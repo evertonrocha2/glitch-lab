@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BADGES } from '../../shared/badges.js'
+import { DAILY_XP } from '../../shared/daily.js'
 import { XP } from '../../shared/progress.js'
 import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
@@ -37,6 +38,8 @@ const EARN = [
   ['Solve a case', XP.solved],
   ['Write a note', XP.note],
   ['Study one minute', XP.studyMinute],
+  ['Solve a daily: easy, medium, hard', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
+  ['Solve the weekly global challenge', DAILY_XP.global],
 ]
 
 export default function ProgressPage() {
