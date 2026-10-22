@@ -114,21 +114,27 @@ function Dialog() {
         onKeyDown={onKeyDown}
         className="relative flex h-full w-full flex-col border-ink bg-mist sm:w-105 sm:border-r-2 sm:shadow-[6px_0_0_var(--color-primary)] motion-safe:animate-panel-in"
       >
-        <header className="flex items-center gap-2 border-b-2 border-ink bg-primary px-4 py-3 text-white sm:gap-3">
-          <span className="hidden size-9 shrink-0 place-items-center border-2 border-ink bg-white sm:grid">
+        {/* Just the title and a close button: "New chat" lives by the composer, so the title never gets squeezed. */}
+        <header className="flex items-center gap-3 border-b-2 border-ink bg-primary px-4 py-3 text-white">
+          <span className="grid size-10 shrink-0 place-items-center border-2 border-ink bg-white">
             <DetectiveAvatar className="size-7 border-0" />
           </span>
           <span className="min-w-0 flex-1">
-            <h2 id="assistant-title" className="whitespace-nowrap font-pixel text-base leading-tight font-bold sm:text-xl">
+            <h2 id="assistant-title" className="font-pixel text-xl leading-tight font-bold">
               Ask the detective
             </h2>
-            <span className="block truncate font-label text-[9px] text-white/80">Five specialists, one answer</span>
+            <span className="block text-xs text-white/85">Five specialists, one answer</span>
           </span>
-          <PixelButton variant="ghost" onClick={assistant.newChat} disabled={empty} className="shrink-0 px-2 py-1.5 text-[10px]">
-            New chat
-          </PixelButton>
-          <PixelButton variant="ghost" onClick={close} className="shrink-0 px-2 py-1.5 text-[10px]">
-            Close
+          <PixelButton variant="ghost" onClick={close} aria-label="Close" title="Close (Esc)" className="size-10 shrink-0 p-0 text-lg">
+            {/* A pixel X: the pixel font draws "×" too small to see. */}
+            <svg aria-hidden="true" viewBox="0 0 7 7" shapeRendering="crispEdges" className="size-3.5 fill-current">
+              {[0, 1, 2, 3, 4, 5, 6].map((step) => (
+                <g key={step}>
+                  <rect x={step} y={step} width="1" height="1" />
+                  <rect x={6 - step} y={step} width="1" height="1" />
+                </g>
+              ))}
+            </svg>
           </PixelButton>
         </header>
 
@@ -216,7 +222,12 @@ function Dialog() {
               Send
             </PixelButton>
           </div>
-          <p className="mt-1.5 text-[11px] text-muted">Enter to send, Shift+Enter for a new line. Alt+A opens and closes me.</p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted">Enter sends. Shift+Enter adds a line. Alt+A opens and closes me.</p>
+            <PixelButton variant="ghost" onClick={assistant.newChat} disabled={empty} className="shrink-0 px-2.5 py-1.5 text-[10px]">
+              New chat
+            </PixelButton>
+          </div>
         </form>
       </aside>
     </div>
