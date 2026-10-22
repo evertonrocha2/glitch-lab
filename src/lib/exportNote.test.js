@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { exportDate, noteFileName, pageSlices, pdfGeometry } from './exportNote.js'
+import { canvasScale, exportDate, noteFileName, pageSlices, pdfGeometry } from './exportNote.js'
 
 it('names each export after the note title', () => {
   expect(noteFileName('Undefined: again!', 'md')).toBe('undefined-again.md')
@@ -45,4 +45,12 @@ it('ignores edges that are not whole pixels or sit outside the sheet', () => {
     { top: 0, height: 641 },
     { top: 641, height: 559 },
   ])
+})
+
+it('keeps tall sheets inside the browser canvas limits', () => {
+  expect(canvasScale(800, 1000)).toBe(2)
+  const tall = canvasScale(800, 12_000)
+  expect(800 * tall * 12_000 * tall).toBeLessThanOrEqual(16_000_000 * 1.0001)
+  expect(12_000 * tall).toBeLessThanOrEqual(16_000)
+  expect(canvasScale(800, 40_000) * 40_000).toBeLessThanOrEqual(16_000)
 })

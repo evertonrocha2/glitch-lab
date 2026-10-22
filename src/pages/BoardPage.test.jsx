@@ -153,7 +153,9 @@ it('exports the board as a Markdown file', async () => {
     blob = value
     return 'blob:x'
   }
-  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(keep), revokeObjectURL: vi.fn() }))
+  // jsdom has no object URLs: add them for this test only, then take them away again.
+  URL.createObjectURL = vi.fn(keep)
+  URL.revokeObjectURL = vi.fn()
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   vi.mocked(listCases).mockResolvedValue([makeCase()])
   renderAt('/board', { user: 'alice' })
@@ -164,5 +166,6 @@ it('exports the board as a Markdown file', async () => {
   expect(text).toContain('# Glitch Detective board')
   expect(text).toContain('## New (1)')
   click.mockRestore()
-  vi.unstubAllGlobals()
+  delete URL.createObjectURL
+  delete URL.revokeObjectURL
 })

@@ -177,7 +177,9 @@ it('exports the note as Markdown, same as before', async () => {
     blob = value
     return 'blob:x'
   }
-  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(keep), revokeObjectURL: vi.fn() }))
+  // jsdom has no object URLs: add them for this test only, then take them away again.
+  URL.createObjectURL = vi.fn(keep)
+  URL.revokeObjectURL = vi.fn()
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   renderAt('/notes/n1', { user: 'alice' })
   await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
@@ -186,7 +188,8 @@ it('exports the note as Markdown, same as before', async () => {
   expect(await blob.text()).toBe(noteToMarkdown(NOTE, CASES))
   expect(exportNoteImage).not.toHaveBeenCalled()
   click.mockRestore()
-  vi.unstubAllGlobals()
+  delete URL.createObjectURL
+  delete URL.revokeObjectURL
 })
 
 it('exports the note as it is on screen as an image or a PDF', async () => {

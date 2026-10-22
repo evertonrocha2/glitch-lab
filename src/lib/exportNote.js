@@ -6,6 +6,9 @@ import { downloadText, noteToMarkdown, slug } from './exportMarkdown.js'
 
 // Twice the screen pixels: crisp pixel fonts on retina screens and in print.
 const SCALE = 2
+// Browsers refuse canvases past a size (iOS Safari: about 16.7M pixels, most: 16384px a side).
+const MAX_CANVAS_PIXELS = 16_000_000
+const MAX_CANVAS_SIDE = 16_000
 // A4 portrait, in millimeters.
 const A4 = { width: 210, height: 297 }
 const MARGIN_MM = 12
@@ -15,6 +18,11 @@ const MIN_FILL = 0.25
 const FONTS = ['500 16px "Pixelify Sans"', '700 16px "Pixelify Sans"', '16px Silkscreen', '400 16px Geist', '600 16px Geist', '400 16px "Geist Mono"']
 
 export const noteFileName = (title, format) => `${slug(title)}.${format}`
+
+// The sharpest scale (up to 2x) that keeps a widthxheight sheet inside every browser's canvas limit.
+export function canvasScale(width, height) {
+  return Math.min(SCALE, Math.sqrt(MAX_CANVAS_PIXELS / (width * height)), MAX_CANVAS_SIDE / height, MAX_CANVAS_SIDE / width)
+}
 
 export const exportDate = (date = new Date()) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -60,15 +68,15 @@ export function downloadBlob(fileName, blob) {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-// Draws the sheet out of sight, hands its element to `use`, then takes it away again.
-async function withSheet({ note, cases }, use) {
+// Draws a sheet component out of sight, hands its element to `use`, then takes it away again.
+export async function withSheet(sheetElement, use) {
   const holder = document.createElement('div')
   holder.setAttribute('aria-hidden', 'true')
   holder.style.cssText = 'position:fixed;left:-10000px;top:0;pointer-events:none'
   document.body.append(holder)
   const root = createRoot(holder)
   try {
-    flushSync(() => root.render(createElement(NoteSheet, { note, cases, date: exportDate() })))
+    flushSync(() => root.render(sheetElement))
     await Promise.all(FONTS.map((font) => document.fonts.load(font).catch(() => {})))
     await document.fonts.ready
     return await use(holder.firstElementChild)
@@ -81,47 +89,57 @@ async function withSheet({ note, cases }, use) {
 // The web fonts come from Google Fonts. index.html loads that stylesheet with crossorigin, so the
 // library can read its @font-face rules and inline the font files. If that ever fails the picture
 // still comes out, just in the fallback fonts.
+// { canvas, scale }: the scale drops below 2x only for sheets too tall for one canvas.
 async function drawSheet(sheet) {
   const { domToCanvas } = await import('modern-screenshot')
-  return domToCanvas(sheet, { scale: SCALE, backgroundColor: '#ffffff', timeout: 15000 })
+  const scale = canvasScale(sheet.offsetWidth, sheet.offsetHeight)
+  return { canvas: await domToCanvas(sheet, { scale, backgroundColor: '#ffffff', timeout: 15000 }), scale }
 }
 
-export async function exportNoteImage({ note, cases }) {
-  const blob = await withSheet({ note, cases }, async (sheet) => {
-    const canvas = await drawSheet(sheet)
+const noteSheet = ({ note, cases }) => createElement(NoteSheet, { note, cases, date: exportDate() })
+
+// Any sheet as one PNG.
+export async function exportSheetImage(sheetElement, fileName) {
+  const blob = await withSheet(sheetElement, async (sheet) => {
+    const { canvas } = await drawSheet(sheet)
     return new Promise((resolve, reject) => canvas.toBlob((png) => (png ? resolve(png) : reject(new Error('No image.'))), 'image/png'))
   })
-  downloadBlob(noteFileName(note.title, 'png'), blob)
+  downloadBlob(fileName, blob)
 }
 
-export async function exportNotePdf({ note, cases }) {
+export const exportNoteImage = ({ note, cases }) => exportSheetImage(noteSheet({ note, cases }), noteFileName(note.title, 'png'))
+
+export const exportNotePdf = ({ note, cases }) => exportSheetPdf(noteSheet({ note, cases }), noteFileName(note.title, 'pdf'), note.title || 'Untitled')
+
+// Any sheet as A4 pages. Elements marked data-sheet-block are never cut in half.
+export async function exportSheetPdf(sheetElement, fileName, title) {
   const [{ jsPDF }, drawn] = await Promise.all([
     import('jspdf'),
-    withSheet({ note, cases }, async (sheet) => {
+    withSheet(sheetElement, async (sheet) => {
       const top = sheet.getBoundingClientRect().top
       const breaks = [...sheet.querySelectorAll('[data-sheet-block]')].map((block) => block.getBoundingClientRect().bottom - top)
-      return { canvas: await drawSheet(sheet), width: sheet.offsetWidth, height: sheet.offsetHeight, breaks }
+      return { ...(await drawSheet(sheet)), width: sheet.offsetWidth, height: sheet.offsetHeight, breaks }
     }),
   ])
-  const { canvas, width, height, breaks } = drawn
+  const { canvas, scale, width, height, breaks } = drawn
   const page = pdfGeometry({ widthPx: width })
   const slices = pageSlices(height, page.pageHeightPx, breaks)
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
-  pdf.setProperties({ title: note.title || 'Untitled', creator: 'Glitch Detective' })
+  pdf.setProperties({ title, creator: 'Glitch Detective' })
 
   slices.forEach((slice, index) => {
     if (index > 0) pdf.addPage()
     const part = document.createElement('canvas')
     part.width = canvas.width
-    part.height = Math.round(slice.height * SCALE)
+    part.height = Math.round(slice.height * scale)
     const context = part.getContext('2d')
     context.fillStyle = '#ffffff'
     context.fillRect(0, 0, part.width, part.height)
-    context.drawImage(canvas, 0, Math.round(slice.top * SCALE), part.width, part.height, 0, 0, part.width, part.height)
+    context.drawImage(canvas, 0, Math.round(slice.top * scale), part.width, part.height, 0, 0, part.width, part.height)
     pdf.addImage(part, 'PNG', MARGIN_MM, MARGIN_MM, page.contentWidthMm, slice.height * page.mmPerPx, undefined, 'FAST')
     pdf.setFontSize(8)
     pdf.setTextColor(91, 95, 112)
     pdf.text(`${index + 1} / ${slices.length}`, A4.width - MARGIN_MM, A4.height - MARGIN_MM / 2, { align: 'right' })
   })
-  downloadBlob(noteFileName(note.title, 'pdf'), pdf.output('blob'))
+  downloadBlob(fileName, pdf.output('blob'))
 }
