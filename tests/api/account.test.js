@@ -101,7 +101,8 @@ it("lines the demo's study streak up with the visitor's own date", async () => {
   try {
     // 22:30 on the 22nd in Brazil, already the 23rd in UTC.
     const { user } = await (await send(demo, '/api/demo', { today: '2026-10-22' })).json()
-    expect((await store.listStudyTime(user.id)).map((entry) => entry.day)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21'])
+    // The last three study days run up to yesterday on the visitor's clock (older history comes before).
+    expect((await store.listStudyTime(user.id)).map((entry) => entry.day).slice(-3)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21'])
     const fallback = await (await send(demo, '/api/demo', { today: 'yesterday' })).json()
     expect((await store.listStudyTime(fallback.user.id)).at(-1).day).toBe('2026-10-22')
   } finally {

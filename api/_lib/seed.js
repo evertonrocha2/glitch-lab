@@ -90,6 +90,13 @@ import { MISSION_XP } from '../../shared/trails.js'
 import { seedCommunity } from './community/seed.js'
 import { serverDay } from './days.js'
 
+// Earlier, shorter sessions over the past two months, so the demo's activity graph has a history.
+// Day 4 stays empty, so the current streak is still the 3 days below.
+const DEMO_STUDY_HISTORY = [
+  [6, 15], [8, 25], [9, 10], [12, 40], [15, 20], [16, 12], [19, 35], [23, 18], [27, 22],
+  [30, 30], [33, 14], [37, 26], [41, 16], [44, 45], [48, 20], [52, 11], [58, 28], [63, 19],
+]
+
 // Minutes studied 3, 2 and 1 days ago: a 3-day streak, and one day long enough for Deep focus.
 const DEMO_STUDY_MINUTES = [20, 35, 15]
 
@@ -182,6 +189,7 @@ export async function seedDemo(store, userId, today = serverDay()) {
     const day = daysBefore(today, DEMO_STUDY_MINUTES.length - index)
     await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
+  for (const [daysAgo, minutes] of DEMO_STUDY_HISTORY) await store.addStudyTime(userId, daysBefore(today, daysAgo), minutes * 60, minutes * 60)
   await store.createTrail(userId, demoTrail(byConcept, daysBefore(today, DEMO_STUDY_MINUTES.length)))
   // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
   if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, DEMO_PROFILE)
