@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
-import { AVATAR_COLORS, handleProblem, PROFILE_LIMITS } from '../../shared/profile.js'
+import { AVATAR_COLORS, handleProblem, LANGUAGES, LINKS, linkProblem, OPEN_TO, PROFILE_LIMITS, ROLES } from '../../shared/profile.js'
 import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
@@ -20,6 +20,7 @@ const HANDLE_RULES = 'Lowercase letters, numbers, _ and -. 3 to 20 characters.'
 const newSeed = () => Math.random().toString(36).slice(2, 10)
 
 // The editable copy of the profile. Featured badges you no longer hold are dropped.
+// Links are edited as three text fields, so each is a string here.
 const draftFrom = (profile, earned) => ({
   handle: profile.handle ?? '',
   displayName: profile.displayName ?? '',
@@ -27,7 +28,181 @@ const draftFrom = (profile, earned) => ({
   avatar: profile.avatar,
   featuredBadges: profile.featuredBadges.filter((id) => earned.includes(id)),
   isPublic: profile.isPublic,
+  role: profile.role ?? null,
+  headline: profile.headline ?? '',
+  university: profile.university ?? '',
+  course: profile.course ?? '',
+  work: profile.work ?? '',
+  location: profile.location ?? '',
+  languages: profile.languages ?? [],
+  links: Object.fromEntries(LINKS.map((link) => [link.id, profile.links?.[link.id] ?? ''])),
+  openTo: profile.openTo ?? [],
 })
+
+// Only the links that are filled in and pass the check (the preview shows these; the save sends them).
+const goodLinks = (links) =>
+  Object.fromEntries(
+    Object.entries(links)
+      .map(([id, url]) => [id, url.trim()])
+      .filter(([id, url]) => url && !linkProblem(id, url)),
+  )
+const linksOk = (links) => Object.entries(links).every(([id, url]) => !url.trim() || !linkProblem(id, url.trim()))
+
+const toggle = (list, id) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
+
+const ABOUT_TEXT = [
+  { field: 'university', label: 'University', placeholder: 'Where you study' },
+  { field: 'course', label: 'Course', placeholder: 'Computer Science' },
+  { field: 'work', label: 'Job or company', placeholder: 'Intern at a startup' },
+  { field: 'location', label: 'Location', placeholder: 'City, country' },
+]
+const LINK_PLACEHOLDERS = { github: 'https://github.com/you', linkedin: 'https://www.linkedin.com/in/you', website: 'https://your.site' }
+
+function Chips({ label, hint, options, picked, max, onToggle }) {
+  const full = max !== undefined && picked.length >= max
+  return (
+    <fieldset>
+      <legend className={LABEL}>{label}</legend>
+      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        {options.map((option) => {
+          const on = picked.includes(option.id)
+          return (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={on}
+              disabled={!on && full}
+              onClick={() => onToggle(option.id)}
+              className={`border-2 px-2.5 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                on ? 'border-ink bg-primary text-white shadow-pixel-ink' : 'border-line bg-white text-ink hover:border-ink'
+              }`}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
+// "About you": what you do, where you study or work, your languages, links and what you're open to.
+function AboutFields({ draft, change }) {
+  return (
+    <fieldset aria-labelledby="about-title" className="space-y-5 border-t-2 border-dashed border-line pt-5">
+      <div>
+        <h2 id="about-title" className="font-pixel text-xl font-bold text-ink">
+          About you
+        </h2>
+        <p className="mt-1 text-sm text-muted">All optional. Shown on your public profile.</p>
+      </div>
+
+      <div role="radiogroup" aria-labelledby="role-label">
+        <p id="role-label" className={LABEL}>
+          What do you do?
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {[...ROLES, { id: null, label: 'Rather not say' }].map((role) => (
+            <label key={role.id ?? 'none'} className="cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                checked={draft.role === role.id}
+                onChange={() => change({ role: role.id })}
+                className="peer sr-only"
+              />
+              <span className="block border-2 border-line bg-white px-2.5 py-1.5 text-sm text-ink transition-colors peer-checked:border-ink peer-checked:bg-secondary peer-checked:text-white peer-checked:shadow-pixel-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-secondary hover:border-ink">
+                {role.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor="headline" className={LABEL}>
+            Headline
+          </label>
+          <span className="font-label text-[10px] text-muted">
+            {draft.headline.length}/{PROFILE_LIMITS.headline}
+          </span>
+        </div>
+        <input
+          id="headline"
+          value={draft.headline}
+          maxLength={PROFILE_LIMITS.headline}
+          placeholder="Learning React at night"
+          onChange={(event) => change({ headline: event.target.value })}
+          className={`mt-2 ${INPUT}`}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {ABOUT_TEXT.map(({ field, label, placeholder }) => (
+          <div key={field} className="min-w-0">
+            <label htmlFor={`about-${field}`} className={LABEL}>
+              {label}
+            </label>
+            <input
+              id={`about-${field}`}
+              value={draft[field]}
+              maxLength={PROFILE_LIMITS[field]}
+              placeholder={placeholder}
+              onChange={(event) => change({ [field]: event.target.value })}
+              className={`mt-2 ${INPUT}`}
+            />
+          </div>
+        ))}
+      </div>
+
+      <Chips
+        label="Languages you write"
+        hint={`${draft.languages.length}/${PROFILE_LIMITS.languages} picked`}
+        options={LANGUAGES}
+        picked={draft.languages}
+        max={PROFILE_LIMITS.languages}
+        onToggle={(id) => change({ languages: toggle(draft.languages, id) })}
+      />
+
+      <Chips label="Open to" options={OPEN_TO} picked={draft.openTo} onToggle={(id) => change({ openTo: toggle(draft.openTo, id) })} />
+
+      <div className="space-y-4">
+        {LINKS.map((link) => {
+          const value = draft.links[link.id]
+          const problem = value.trim() ? linkProblem(link.id, value.trim()) : null
+          return (
+            <div key={link.id}>
+              <label htmlFor={`link-${link.id}`} className={LABEL}>
+                {link.label}
+              </label>
+              <input
+                id={`link-${link.id}`}
+                type="url"
+                inputMode="url"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={value}
+                maxLength={PROFILE_LIMITS.link}
+                placeholder={LINK_PLACEHOLDERS[link.id]}
+                aria-invalid={Boolean(problem)}
+                aria-describedby={problem ? `link-${link.id}-hint` : undefined}
+                onChange={(event) => change({ links: { ...draft.links, [link.id]: event.target.value } })}
+                className={`mt-2 font-mono text-sm ${INPUT}`}
+              />
+              {problem && (
+                <p id={`link-${link.id}-hint`} className="mt-1.5 text-xs text-primary">
+                  {problem}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
 
 function HandleHint({ handle }) {
   if (!handle) return <p className="mt-1.5 text-xs text-muted">{HANDLE_RULES}</p>
@@ -172,7 +347,7 @@ export default function ProfilePage() {
     setStatus('saving')
     setMessage('')
     try {
-      const profile = await saveProfile({ ...draft, handle: draft.handle || null }, await getToken())
+      const profile = await saveProfile({ ...draft, handle: draft.handle || null, links: goodLinks(draft.links) }, await getToken())
       setSaved(profile)
       rememberMyProfile(userId, { ...data, profile })
       setStatus('saved')
@@ -191,6 +366,7 @@ export default function ProfilePage() {
     ...draft,
     displayName: draft.displayName.trim() || draft.handle || 'Detective',
     handle: draft.handle && !handleProblem(draft.handle) ? draft.handle : null,
+    links: goodLinks(draft.links),
   }
 
   return (
@@ -200,6 +376,9 @@ export default function ProfilePage() {
       </p>
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your profile</h1>
       <p className="mt-2 text-muted">Pick a name, a pixel face and the badges you are proudest of. Share it when you're ready.</p>
+      <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
+        Find detectives
+      </Link>
 
       {message && (
         <div className="mt-8">
@@ -287,6 +466,8 @@ export default function ProfilePage() {
               />
             </div>
 
+            <AboutFields draft={draft} change={change} />
+
             <div>
               <p className={LABEL}>Avatar</p>
               <div className="mt-3 flex flex-wrap items-center gap-4">
@@ -318,7 +499,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
-              <PixelButton type="submit" disabled={status === 'saving' || !handleOk || needsHandle}>
+              <PixelButton type="submit" disabled={status === 'saving' || !handleOk || needsHandle || !linksOk(draft.links)}>
                 {status === 'saving' ? 'Saving...' : 'Save profile'}
               </PixelButton>
               <span role="status" className="font-label text-xs text-secondary">
