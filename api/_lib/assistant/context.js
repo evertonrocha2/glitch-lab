@@ -66,7 +66,7 @@ async function boardContext({ store, userId, page, needs }) {
 function publicChallenge(record, concept) {
   const hints = record.hints.slice(0, record.hintsRevealed)
   return [
-    `- id ${record.id} | case ${record.caseId} (${conceptLabel(concept)}) | ${record.status} | attempts ${record.attempts} | hints revealed ${record.hintsRevealed} of ${record.hints.length}`,
+    `- id ${record.id} | ${record.puzzleId ? 'daily or global puzzle' : `case ${record.caseId}`} (${conceptLabel(concept)}) | ${record.status} | attempts ${record.attempts} | hints revealed ${record.hintsRevealed} of ${record.hints.length}`,
     `  Symptom: ${clip(firstLines(record.symptom, 3), 200)}`,
     ...hints.map((hint, index) => `  Hint ${index + 1}: ${clip(hint, 200)}`),
   ].join('\n')
