@@ -13,7 +13,7 @@ const navClass = ({ isActive }) =>
 
 // Top bar for the signed-in pages, plus the study timer and badge announcements.
 export default function AppShell({ children }) {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const { progress } = useProgress()
   return (
     <div className="min-h-screen bg-mist">
@@ -24,7 +24,6 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-3 sm:order-last sm:gap-4">
-            <span className="hidden max-w-48 truncate text-sm text-muted lg:inline">{user?.isDemo ? 'Demo account' : user?.email}</span>
             <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>
