@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './lib/auth/AuthProvider.jsx'
 import BoardPage from './pages/BoardPage.jsx'
+import DailyPage from './pages/DailyPage.jsx'
 import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -34,6 +35,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <GymPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/daily"
+        element={
+          <RequireAuth>
+            <DailyPage />
           </RequireAuth>
         }
       />

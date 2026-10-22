@@ -136,3 +136,43 @@ it('says when the challenge does not exist', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('Challenge not found.')
   await waitFor(() => expect(currentLocation()).toBe('/gym/nope'))
 })
+
+// Daily and global puzzles run in the same gym, without a case.
+const PUZZLE = { id: 'p1', kind: 'daily', day: '2026-10-22', difficulty: 'medium', title: 'The missing last item' }
+const puzzleChallenge = (overrides = {}) => makeChallenge({ caseId: null, concept: 'off-by-one', puzzle: PUZZLE, ...overrides })
+
+it('names a daily puzzle and leads back to the daily page', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge())
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByRole('heading', { name: 'The missing last item' })).toBeInTheDocument()
+  expect(screen.getByText('medium')).toBeInTheDocument()
+  expect(screen.getByText('Off by one')).toBeInTheDocument()
+  expect(screen.queryByText(/same kind as your case/)).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: '< Back to daily' }))
+  expect(currentLocation()).toBe('/daily')
+})
+
+it('shows a passed puzzle without any case progress', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge())
+  vi.mocked(checkFix).mockResolvedValue({ passed: true, feedback: 'Every item prints now.', case: null })
+  renderAt('/gym/ch1', { user: 'alice' })
+  await userEvent.type(await editor(), '# fixed')
+  await userEvent.click(screen.getByRole('button', { name: 'Submit fix' }))
+  expect(await screen.findByText('Every item prints now.')).toBeInTheDocument()
+  expect(screen.queryByText(/challenges passed on this case/)).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: 'Back to daily' }))
+  expect(currentLocation()).toBe('/daily')
+})
+
+it('says when a puzzle is already fixed', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge({ status: 'passed' }))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByText('You already fixed this one. Head back to the daily page for the next one.')).toBeInTheDocument()
+})
+
+it('calls out the global challenge', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge({ puzzle: { ...PUZZLE, kind: 'global', difficulty: 'hard', title: 'The big one' } }))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByRole('heading', { name: 'The big one' })).toBeInTheDocument()
+  expect(screen.getByText(/more than one bug/)).toBeInTheDocument()
+})
