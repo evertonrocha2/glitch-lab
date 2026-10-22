@@ -12,7 +12,7 @@ import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
 
 const navClass = ({ isActive }) =>
-  `flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
+  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
