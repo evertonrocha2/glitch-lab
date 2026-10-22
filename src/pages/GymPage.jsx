@@ -140,11 +140,16 @@ export default function GymPage() {
       {challenge && (
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <form onSubmit={submit} className="space-y-6">
-            <section aria-labelledby="symptom-title" className="border-2 border-ink bg-ink">
-              <h2 id="symptom-title" className="border-b-2 border-white/10 px-4 py-2 font-label text-xs text-white/60">
+            <section aria-labelledby="symptom-title" className="border-2 border-ink bg-primary-soft">
+              <h2 id="symptom-title" className="border-b-2 border-ink bg-primary px-4 py-2 font-label text-xs text-white">
                 What you see when you run it
               </h2>
-              <p className="px-4 py-3 font-mono text-sm leading-relaxed text-white">{challenge.symptom}</p>
+              <p className="flex gap-2.5 px-4 py-3 font-mono text-sm leading-relaxed text-ink">
+                <span aria-hidden="true" className="select-none font-bold text-primary">
+                  &gt;
+                </span>
+                <span className="min-w-0 wrap-break-word">{challenge.symptom}</span>
+              </p>
             </section>
 
             <div>
