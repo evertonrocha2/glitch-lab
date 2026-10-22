@@ -30,7 +30,9 @@ describe('comparing a Classic guess', () => {
     expect(cell(guess, 'typing')).toEqual({ key: 'typing', value: 'static', status: 'miss' })
     expect(cell(guess, 'strength')).toEqual({ key: 'strength', value: 'strong', status: 'match' })
     expect(cell(guess, 'execution').status).toBe('miss')
-    expect(cell(guess, 'memory').status).toBe('miss')
+    // Both garbage collected.
+    expect(cell(guess, 'memory').status).toBe('match')
+    expect(cell(compareGuess(lang('rust'), answer), 'memory').status).toBe('miss')
     expect(cell(guess, 'syntax').status).toBe('miss')
     expect(cell(compareGuess(lang('ruby'), lang('crystal')), 'syntax').status).toBe('match')
     expect(guess.correct).toBe(false)

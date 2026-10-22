@@ -151,3 +151,9 @@ describe('searching languages', () => {
     expect(searchLanguages('zzzz')).toEqual([])
   })
 })
+
+it('puts the closest match first for short searches', () => {
+  expect(searchLanguages('ts')[0].id).toBe('typescript')
+  expect(searchLanguages('f')[0].name.startsWith('F')).toBe(true)
+  expect(searchLanguages('c')[0].id).toBe('c')
+})

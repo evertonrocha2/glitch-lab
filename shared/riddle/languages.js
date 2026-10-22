@@ -10,7 +10,8 @@ export const PARADIGMS = ['imperative', 'object-oriented', 'functional', 'concur
 export const TYPING = ['static', 'dynamic', 'gradual']
 export const STRENGTH = ['strong', 'weak']
 export const EXECUTION = ['compiled', 'interpreted', 'jit', 'transpiled']
-export const MEMORY = ['gc', 'manual', 'ownership', 'arc', 'refcount']
+// 'engine': the language has no memory model of its own; the database or shell handles it.
+export const MEMORY = ['gc', 'manual', 'ownership', 'arc', 'refcount', 'engine']
 export const DOMAINS = [
   'web',
   'backend',
@@ -52,6 +53,7 @@ export const LABELS = {
   ownership: 'Ownership',
   arc: 'ARC',
   refcount: 'Ref counting',
+  engine: 'Engine handles it',
   web: 'Web',
   backend: 'Backend',
   mobile: 'Mobile',
@@ -129,8 +131,8 @@ export const LANGUAGES = [
     strength: 'strong',
     // CPython compiles to bytecode and interprets it.
     execution: 'interpreted',
-    // CPython frees objects by reference counting, with a cycle collector on top.
-    memory: 'refcount',
+    // CPython counts references with a cycle collector on top; mainstream answer: garbage collected.
+    memory: 'gc',
     domains: ['data', 'scientific', 'backend', 'scripting'],
     syntax: 'python-like',
     extension: '.py',
@@ -206,8 +208,8 @@ export const LANGUAGES = [
     aliases: ['rs', 'rustlang'],
     // 1.0 shipped in 2015; earlier releases were pre-stable experiments.
     year: 2015,
-    // Traits instead of classes: no object-oriented inheritance.
-    paradigms: ['imperative', 'functional'],
+    // Traits instead of classes: no object-oriented inheritance. Fearless concurrency is a headline feature.
+    paradigms: ['imperative', 'functional', 'concurrent'],
     typing: 'static',
     strength: 'strong',
     execution: 'compiled',
@@ -238,7 +240,8 @@ export const LANGUAGES = [
     strength: 'weak',
     // The Zend engine interprets opcodes; the JIT added in PHP 8 is off by default.
     execution: 'interpreted',
-    memory: 'refcount',
+    // Reference counting plus a cycle collector since 5.3, like Python: garbage collected.
+    memory: 'gc',
     domains: ['web', 'backend'],
     syntax: 'c-like',
     extension: '.php',
@@ -338,7 +341,8 @@ export const LANGUAGES = [
     // First-class functions and closures; objects only through metatables.
     paradigms: ['imperative', 'functional'],
     typing: 'dynamic',
-    strength: 'strong',
+    // Strings and numbers convert in arithmetic ("10" + 1 is 11): weak.
+    strength: 'weak',
     execution: 'interpreted',
     memory: 'gc',
     domains: ['games', 'embedded', 'scripting'],
@@ -551,8 +555,8 @@ export const LANGUAGES = [
     strength: 'strong',
     // The database plans and runs each query.
     execution: 'interpreted',
-    // The engine owns all memory.
-    memory: 'gc',
+    // The database engine owns all memory; SQL itself has no memory model.
+    memory: 'engine',
     domains: ['databases', 'data'],
     syntax: 'other',
     extension: '.sql',
@@ -565,8 +569,8 @@ export const LANGUAGES = [
     // Everything is a string until something reads it as a number.
     strength: 'weak',
     execution: 'interpreted',
-    // The shell manages its own memory; scripts never free anything.
-    memory: 'gc',
+    // The shell manages its own memory; scripts never allocate or free anything.
+    memory: 'engine',
     domains: ['scripting', 'devops'],
     syntax: 'other',
     extension: '.sh',
@@ -610,8 +614,20 @@ export function searchLanguages(query, list = LANGUAGES) {
   const needle = normalize(query ?? '')
   const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name))
   if (!needle) return sorted
+  // Best match first: an exact name, id or alias, then names that start with it, then aliases that
+  // do, then anything containing it. So "ts" is TypeScript (not T-SQL) and "f" is F# (not Flutter's Dart).
   const words = (item) => [item.name, item.id, ...item.aliases].map(normalize)
-  const starts = sorted.filter((item) => words(item).some((word) => word.startsWith(needle)))
-  const contains = sorted.filter((item) => !starts.includes(item) && words(item).some((word) => word.includes(needle)))
-  return [...starts, ...contains]
+  const tier = (item) => {
+    const name = normalize(item.name)
+    if (words(item).includes(needle)) return 0
+    if (name.startsWith(needle) || normalize(item.id).startsWith(needle)) return 1
+    if (words(item).some((word) => word.startsWith(needle))) return 2
+    if (words(item).some((word) => word.includes(needle))) return 3
+    return null
+  }
+  return sorted
+    .map((item) => ({ item, rank: tier(item) }))
+    .filter(({ rank }) => rank !== null)
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ item }) => item)
 }
