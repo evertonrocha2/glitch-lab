@@ -86,6 +86,7 @@ const DEMO_CASES = [
   },
 ]
 
+import { MISSION_XP } from '../../shared/trails.js'
 import { serverDay } from './days.js'
 
 // Minutes studied 3, 2 and 1 days ago: a 3-day streak, and one day long enough for Deep focus.
@@ -127,6 +128,26 @@ const DEMO_PROFILE = {
 const DAY_MS = 24 * 3_600_000
 const daysBefore = (day, count) => new Date(Date.parse(`${day}T00:00:00Z`) - count * DAY_MS).toISOString().slice(0, 10)
 
+// A study trail that started before the seeded study days, so the seeded gym pass, note and study
+// minutes already tick the first three missions. XP per kind comes from shared/trails.js, like a real trail.
+function demoTrail(byConcept, startDay) {
+  const missions = [
+    { kind: 'train', title: 'Beat a list index challenge', description: 'Pass a gym challenge on your IndexError case. It is still in training, so one more pass helps it stick.', caseId: byConcept['index-out-of-range'].id, concept: 'index-out-of-range' },
+    { kind: 'note', title: 'Write down the undefined rule', description: 'Add your TypeError case to a note and say, in your own words, why reading undefined fails.', caseId: byConcept['undefined-access'].id, concept: 'undefined-access' },
+    { kind: 'study', title: 'Study for 30 focused minutes', description: 'Run the timer while you reread your cases. Short, regular sessions stick best.', minutes: 30 },
+    { kind: 'train', title: 'Train your undefined case', description: 'Fix a fresh program with the same bug. Try it without hints for extra XP.', caseId: byConcept['undefined-access'].id, concept: 'undefined-access' },
+    { kind: 'investigate', title: 'Investigate an off-by-one bug', description: 'Next time a loop goes one step too far, paste the error on your board.', concept: 'off-by-one' },
+    { kind: 'reflect', title: 'Explain why lists start at 0', description: 'Think it through: why is the last index of a list length - 1? Mark it done when you can say it out loud.' },
+  ]
+  return {
+    title: 'Index and undefined bootcamp',
+    summary: 'Your open cases are mostly about reading things that are not there. This trail trains both, then checks you can explain them.',
+    missions: missions.map((mission, index) => ({ id: `m${index + 1}`, ...mission, xp: MISSION_XP[mission.kind] })),
+    done: [],
+    createdAt: `${startDay}T00:00:00.000Z`,
+  }
+}
+
 // Returns false (and changes nothing) when the account already has cases.
 // today is the visitor's own date, so the streak lines up with their clock.
 export async function seedDemo(store, userId, today = serverDay()) {
@@ -150,6 +171,7 @@ export async function seedDemo(store, userId, today = serverDay()) {
     const day = daysBefore(today, DEMO_STUDY_MINUTES.length - index)
     await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
+  await store.createTrail(userId, demoTrail(byConcept, daysBefore(today, DEMO_STUDY_MINUTES.length)))
   // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
   if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, DEMO_PROFILE)
   return true
