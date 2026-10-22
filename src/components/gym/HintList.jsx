@@ -1,25 +1,27 @@
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 
 // Hints arrive one at a time, vaguest first; the button disappears after the last one.
 export default function HintList({ hints, total, onReveal, loading }) {
+  const t = useT()
   const remaining = total - hints.length
 
   return (
     <section aria-labelledby="hints-title" className="border-2 border-ink bg-primary-soft p-5 shadow-pixel">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="hints-title" className="font-label text-sm text-primary">
-          Hints
+          {t('board.hints.title')}
         </h2>
         {remaining > 0 ? (
           <PixelButton variant="ghost" onClick={onReveal} disabled={loading} className="px-3 py-2">
-            Get a hint ({hints.length}/{total})
+            {t('board.hints.get', { shown: hints.length, total })}
           </PixelButton>
         ) : (
-          <p className="text-sm text-muted">No more hints.</p>
+          <p className="text-sm text-muted">{t('board.hints.noMore')}</p>
         )}
       </div>
       {hints.length === 0 ? (
-        <p className="mt-3 text-sm text-ink/75">Try it on your own first. Hints get more direct each time.</p>
+        <p className="mt-3 text-sm text-ink/75">{t('board.hints.empty')}</p>
       ) : (
         <ol className="mt-4 space-y-2">
           {hints.map((hint, index) => (
