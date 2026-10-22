@@ -54,8 +54,9 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
 
   // Enter or the button: the highlighted language, or the best match when nothing is highlighted.
   function submit() {
+    // The highlight wins even when the list just closed (clicking the button blurs the input first).
     const highlighted = options[active]
-    if (open && highlighted && !taken.has(highlighted.id)) return pick(highlighted)
+    if (highlighted && !taken.has(highlighted.id)) return pick(highlighted)
     if (query.trim()) pick(enabled[0])
   }
 

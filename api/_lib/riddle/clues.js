@@ -62,6 +62,8 @@ export function giveawayIn(text, language) {
   // An extension follows a file name, so only its end needs a boundary: "main.py" counts.
   if (new RegExp(`${escape(language.extension)}(?![A-Za-z])`, 'i').test(text)) return language.extension
   for (const term of GIVEAWAYS[language.id] ?? []) if (word(term, 'iu').test(text)) return term
+  // Aliases name the language too (rails, phoenix, tsql...); very short ones would match by chance.
+  for (const alias of language.aliases ?? []) if (alias.length >= 3 && word(alias, 'iu').test(text)) return alias
   for (const other of OTHER_NAMES) if (other.id !== language.id && word(other.name, 'iu').test(text)) return other.name
   return null
 }
