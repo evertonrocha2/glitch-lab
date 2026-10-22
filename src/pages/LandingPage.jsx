@@ -12,9 +12,11 @@ import SiteFooter from '../components/landing/SiteFooter.jsx'
 import SiteHeader from '../components/landing/SiteHeader.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { saveDraft } from '../lib/draft.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const t = useT()
 
   // The board investigates the draft right away; signed-out visitors pass through the login first.
   function handleSubmit(input) {
@@ -36,14 +38,11 @@ export default function LandingPage() {
         <Faq />
         <section id="try" aria-labelledby="try-title" className="scroll-mt-4 bg-mist">
           <div className="mx-auto max-w-3xl px-5 py-20 sm:px-8 lg:py-24">
-            <p className="font-label text-xs text-primary">Your turn</p>
+            <p className="font-label text-xs text-primary">{t('landing.try.kicker')}</p>
             <h2 id="try-title" className="mt-4 font-pixel text-3xl font-bold text-ink sm:text-[2.6rem]">
-              Investigate your error
+              {t('landing.try.title')}
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-muted">
-              Paste the message exactly as it appears. JavaScript, Python and most other languages work. It lands on your
-              board as a new case.
-            </p>
+            <p className="mt-4 text-lg leading-relaxed text-muted">{t('landing.try.body')}</p>
             <PixelCard className="mt-10 p-5 sm:p-8">
               <ErrorForm onSubmit={handleSubmit} loading={false} />
             </PixelCard>

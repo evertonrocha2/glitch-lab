@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 import LanguageSelect from '../LanguageSelect.jsx'
@@ -8,6 +9,7 @@ const navLinkClass = 'whitespace-nowrap font-label text-xs text-ink transition-c
 
 export default function SiteHeader() {
   const { user } = useAuth()
+  const t = useT()
   return (
     <header className="border-b-2 border-ink bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
@@ -15,31 +17,31 @@ export default function SiteHeader() {
           <PixelLogo className="size-6 sm:size-7" />
           <span>Glitch Detective</span>
         </a>
-        <nav aria-label="Main" className="flex items-center gap-4 sm:gap-6">
+        <nav aria-label={t('landing.nav.label')} className="flex items-center gap-4 sm:gap-6">
           <a href="#how" className={`hidden md:inline ${navLinkClass}`}>
-            How it works
+            {t('landing.nav.how')}
           </a>
           <a href="#features" className={`hidden md:inline ${navLinkClass}`}>
-            Features
+            {t('landing.nav.features')}
           </a>
           <a href="#faq" className={`hidden md:inline ${navLinkClass}`}>
-            FAQ
+            {t('landing.nav.faq')}
           </a>
           <Link to="/articles" className={`hidden sm:inline ${navLinkClass}`}>
-            Articles
+            {t('landing.nav.articles')}
           </Link>
           {user ? (
             <Link to="/board" className={navLinkClass}>
-              My board
+              {t('landing.nav.board')}
             </Link>
           ) : (
             <Link to="/login" className={navLinkClass}>
-              Sign in
+              {t('landing.nav.signIn')}
             </Link>
           )}
           <LanguageSelect compact />
           <PixelButton as="a" href="#try" className="whitespace-nowrap px-3 py-2">
-            Try it
+            {t('landing.nav.try')}
           </PixelButton>
         </nav>
       </div>

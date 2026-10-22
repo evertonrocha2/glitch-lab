@@ -1,21 +1,24 @@
 import { BADGES } from '../../../shared/badges.js'
 import { TRAIL_BONUS_XP } from '../../../shared/trails.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { conceptName, levelTitle, statusName, trailKindName } from '../../lib/i18n/labels.js'
 import BadgeIcon from '../pixel/BadgeIcon.jsx'
 import KindIcon from '../trail/KindIcon.jsx'
 
 // Small drawings of the real screens. They're decoration: each card's heading and text say the same thing.
 
 function MiniBoard() {
+  const t = useT()
   const columns = [
-    { title: 'New', stripe: 'bg-muted', cards: ['TypeError', 'IndentationError'] },
-    { title: 'Training', stripe: 'bg-secondary', cards: ['IndexError'] },
-    { title: 'Solved', stripe: 'bg-primary', cards: ['ReferenceError', 'KeyError'] },
+    { status: 'new', stripe: 'bg-muted', cards: ['TypeError', 'IndentationError'] },
+    { status: 'training', stripe: 'bg-secondary', cards: ['IndexError'] },
+    { status: 'solved', stripe: 'bg-primary', cards: ['ReferenceError', 'KeyError'] },
   ]
   return (
     <div className="grid grid-cols-3 gap-2">
       {columns.map((column) => (
-        <div key={column.title} className="border-2 border-ink bg-mist p-1.5">
-          <p className="mb-1.5 font-label text-[10px] text-ink">{column.title}</p>
+        <div key={column.status} className="min-w-0 border-2 border-ink bg-mist p-1.5">
+          <p className="mb-1.5 truncate font-label text-[10px] text-ink">{statusName(t, column.status)}</p>
           <div className="space-y-1.5">
             {column.cards.map((card) => (
               <div key={card} className="flex overflow-hidden border-2 border-ink bg-white">
@@ -31,6 +34,7 @@ function MiniBoard() {
 }
 
 function MiniGym() {
+  const t = useT()
   return (
     <div className="space-y-2">
       <div className="border-2 border-ink bg-white font-mono text-xs leading-relaxed">
@@ -39,19 +43,20 @@ function MiniGym() {
         <p className="px-2 text-muted">3 &nbsp;&nbsp;&nbsp;print(scores[i])</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">Hint 1/3</span>
-        <span className="border-2 border-ink bg-primary px-1.5 py-0.5 font-label text-[10px] text-white">Passed 2/2</span>
+        <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">{t('landing.mini.hint')}</span>
+        <span className="border-2 border-ink bg-primary px-1.5 py-0.5 font-label text-[10px] text-white">{t('landing.mini.passed')}</span>
       </div>
     </div>
   )
 }
 
 function MiniNote() {
+  const t = useT()
   return (
     <div className="space-y-1.5 border-2 border-ink bg-white p-2.5">
-      <p className="font-pixel text-sm font-bold text-ink">Things I keep getting wrong</p>
+      <p className="font-pixel text-sm font-bold text-ink">{t('landing.mini.noteTitle')}</p>
       <p className="text-xs text-ink/80">
-        Check the object first <span className="bg-primary-soft px-1 font-semibold text-primary">@TypeError</span>
+        {t('landing.mini.noteText')} <span className="bg-primary-soft px-1 font-semibold text-primary">@TypeError</span>
       </p>
       <div className="flex overflow-hidden border-2 border-ink">
         <span className="w-1 bg-secondary" />
@@ -59,13 +64,14 @@ function MiniNote() {
       </div>
       <p className="flex items-center gap-1.5 text-xs text-muted line-through">
         <span className="grid size-3 place-items-center bg-primary text-[10px] text-white no-underline">✓</span>
-        Try optional chaining
+        {t('landing.mini.noteTodo')}
       </p>
     </div>
   )
 }
 
 function MiniTimer() {
+  const t = useT()
   return (
     <div className="flex items-center justify-between gap-3 border-2 border-ink bg-white p-3 shadow-pixel-secondary">
       <span className="flex items-center gap-2">
@@ -73,15 +79,16 @@ function MiniTimer() {
         <span className="font-label text-2xl leading-none text-ink">25:00</span>
       </span>
       <span className="text-right text-xs text-muted">
-        3-day streak
+        {t('landing.mini.streak')}
         <br />
-        <strong className="text-ink">Today 1h 05m</strong>
+        <strong className="text-ink">{t('landing.mini.today')}</strong>
       </span>
     </div>
   )
 }
 
 function MiniBadges() {
+  const t = useT()
   const ids = ['first-clue', 'fixed-it', 'case-closed', 'sharp-eye', 'note-taker', 'on-a-roll']
   return (
     <div>
@@ -93,7 +100,7 @@ function MiniBadges() {
         ))}
       </div>
       <p className="mt-3 flex items-center justify-between font-label text-[10px] text-ink">
-        <span>Lv 3 · Detective</span>
+        <span>{t('landing.mini.level', { title: levelTitle(t, 3) })}</span>
         <span className="text-muted">420 / 600 XP</span>
       </p>
       <div className="mt-1.5 flex gap-[2px] border-2 border-ink bg-white p-[2px]">
@@ -125,22 +132,24 @@ function MiniExport() {
 }
 
 function MiniWeakSpot() {
+  const t = useT()
   return (
     <div className="border-2 border-ink bg-primary-soft p-3">
-      <p className="font-label text-[10px] text-primary">Weak spot</p>
-      <p className="mt-1 text-lg font-semibold text-ink">Reading undefined</p>
-      <p className="text-xs text-muted">3 open cases of this kind</p>
+      <p className="font-label text-[10px] text-primary">{t('landing.mini.weakSpot')}</p>
+      <p className="mt-1 text-lg font-semibold text-ink">{conceptName(t, 'undefined-access')}</p>
+      <p className="text-xs text-muted">{t('landing.mini.openCases')}</p>
     </div>
   )
 }
 
 function MiniTrail() {
+  const t = useT()
   const steps = [
-    { kind: 'train', label: 'Train', done: true },
-    { kind: 'note', label: 'Write', done: true },
-    { kind: 'study', label: 'Study', next: true },
-    { kind: 'investigate', label: 'Investigate' },
-    { kind: 'reflect', label: 'Reflect' },
+    { kind: 'train', done: true },
+    { kind: 'note', done: true },
+    { kind: 'study', next: true },
+    { kind: 'investigate' },
+    { kind: 'reflect' },
   ]
   return (
     <ol className="flex items-start">
@@ -152,7 +161,9 @@ function MiniTrail() {
             >
               <KindIcon kind={step.kind} accent={step.next ? 'secondary' : 'primary'} className="size-6" />
             </span>
-            <span className={`truncate font-label text-[10px] ${step.next ? 'text-secondary' : 'text-ink'}`}>{step.label}</span>
+            <span className={`max-w-full truncate font-label text-[10px] ${step.next ? 'text-secondary' : 'text-ink'}`}>
+              {trailKindName(t, step.kind)}
+            </span>
           </span>
           {index < steps.length - 1 && (
             <span className="mt-5 h-1 w-3 shrink-0 bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_4px,transparent_4px_7px)] sm:w-8" />
@@ -163,76 +174,42 @@ function MiniTrail() {
   )
 }
 
+// Each card's text is landing.features.<id>.title and landing.features.<id>.body.
 const FEATURES = [
-  {
-    title: 'A board of your own bugs',
-    body: 'Every error becomes a case with what happened, why, the fix and a practice exercise. Cards move from New to Training to Solved.',
-    visual: MiniBoard,
-    span: 'lg:col-span-2',
-  },
-  {
-    title: 'A gym, not a cheat sheet',
-    body: 'The AI writes new code with the same kind of bug. You fix it. It judges your fix, and hints get more direct only if you ask.',
-    visual: MiniGym,
-  },
-  {
-    title: 'A notebook that knows your cases',
-    body: 'Headings, text and to-dos. Type @ to drop a case into the page, so your notes and your bugs stay linked.',
-    visual: MiniNote,
-  },
-  {
-    title: 'A study timer that keeps going',
-    body: 'Start it on any page. It survives reloads, counts each day on your clock, and builds your streak.',
-    visual: MiniTimer,
-  },
-  {
-    title: 'Take it anywhere',
-    body: 'Export the whole board or one note as Markdown, ready for Notion, Obsidian or a GitHub repo.',
-    visual: MiniExport,
-  },
-  {
-    title: 'Levels and badges for real progress',
-    body: `Cases, passed challenges, notes and study minutes earn XP. Climb six detective ranks and collect ${BADGES.length} pixel badges.`,
-    visual: MiniBadges,
-    span: 'lg:col-span-2',
-  },
-  {
-    title: 'Know your weak spot',
-    body: 'The board names the bug type you hit most, so you know exactly what to train next.',
-    visual: MiniWeakSpot,
-  },
-  {
-    title: 'A study trail made from your cases',
-    body: `The AI reads your cases and notes and builds 5 to 7 missions, weak spot first: train, write, study, investigate, reflect. They tick themselves as you go, and a finished trail earns a ${TRAIL_BONUS_XP} XP bonus.`,
-    visual: MiniTrail,
-    span: 'lg:col-span-3',
-  },
+  { id: 'board', visual: MiniBoard, span: 'lg:col-span-2' },
+  { id: 'gym', visual: MiniGym },
+  { id: 'notes', visual: MiniNote },
+  { id: 'timer', visual: MiniTimer },
+  { id: 'export', visual: MiniExport },
+  { id: 'levels', visual: MiniBadges, span: 'lg:col-span-2' },
+  { id: 'weak', visual: MiniWeakSpot },
+  { id: 'trail', visual: MiniTrail, span: 'lg:col-span-3' },
 ]
 
 export default function Features() {
+  const t = useT()
+  const vars = { count: BADGES.length, xp: TRAIL_BONUS_XP }
   return (
     <section id="features" aria-labelledby="features-title" className="scroll-mt-4 border-b-2 border-ink bg-mist">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="max-w-2xl">
-          <p className="font-label text-xs text-primary">Inside the app</p>
+          <p className="font-label text-xs text-primary">{t('landing.features.kicker')}</p>
           <h2 id="features-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
-            Your detective kit
+            {t('landing.features.title')}
           </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">
-            Everything you need to turn the errors you hit into skills you keep.
-          </p>
+          <p className="mt-5 text-lg leading-relaxed text-muted">{t('landing.features.body')}</p>
         </div>
-        <ul aria-label="Features" className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(({ title, body, visual: Visual, span = '' }, index) => (
+        <ul aria-label={t('landing.features.list')} className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map(({ id, visual: Visual, span = '' }, index) => (
             <li
-              key={title}
+              key={id}
               className={`flex flex-col border-2 border-ink bg-white p-6 ${index % 3 === 1 ? 'shadow-pixel-secondary' : 'shadow-pixel'} ${span}`}
             >
               <div aria-hidden="true" className="relative mb-6 overflow-hidden border-2 border-dashed border-line bg-mist/60 p-4">
                 <Visual />
               </div>
-              <h3 className="font-pixel text-xl font-bold text-ink">{title}</h3>
-              <p className="mt-2 leading-relaxed text-ink/75">{body}</p>
+              <h3 className="font-pixel text-xl font-bold text-ink">{t(`landing.features.${id}.title`)}</h3>
+              <p className="mt-2 leading-relaxed text-ink/75">{t(`landing.features.${id}.body`, vars)}</p>
             </li>
           ))}
         </ul>

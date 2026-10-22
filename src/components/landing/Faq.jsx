@@ -1,39 +1,8 @@
 import { useId, useState } from 'react'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
-const QUESTIONS = [
-  {
-    q: 'Is it free?',
-    a: 'Yes. Each account gets a daily number of AI calls so the free quota lasts. Studying your board, writing notes and the timer never use it.',
-  },
-  {
-    q: 'Which languages does it understand?',
-    a: 'Anything with an error message: JavaScript, TypeScript, Python, Java, C#, PHP and more. The gym writes challenges in the same language as your case.',
-  },
-  {
-    q: 'Will it just give me the answer?',
-    a: 'Only when you ask. The fix on each case is hidden behind a button, and in the gym you never see the solution. You get up to 3 hints, each one a bit more direct.',
-  },
-  {
-    q: 'How does the AI judge my fix?',
-    a: "It compares your code with a reference solution it wrote but never shows you. Any fix that removes the bug passes, even if it's not the same as the reference.",
-  },
-  {
-    q: 'Can I upload my project?',
-    a: 'Yes. Attach files or a whole folder. Glitch Detective reads the error, finds the files it mentions, and sends only the lines around the problem.',
-  },
-  {
-    q: 'Is my code safe?',
-    a: "Your cases and notes are only visible to you. Don't paste passwords or API keys: the error and code are sent to the AI to be explained.",
-  },
-  {
-    q: 'Can I take my notes with me?',
-    a: 'Yes. Export your whole board or a single note as a Markdown file. Notion, Obsidian and GitHub all open it.',
-  },
-  {
-    q: 'Do I need an account?',
-    a: 'To keep a board, yes: sign up with email and password. Just looking? Press "Use demo account" on the sign-in page to get a board that is already filled in.',
-  },
-]
+// Each question is landing.faq.<id>.q, with its answer in landing.faq.<id>.a.
+const QUESTIONS = ['free', 'languages', 'answer', 'judge', 'upload', 'safe', 'export', 'account']
 
 function Question({ q, a, open, onToggle }) {
   const id = useId()
@@ -79,6 +48,7 @@ function Question({ q, a, open, onToggle }) {
 }
 
 export default function Faq() {
+  const t = useT()
   const [open, setOpen] = useState(() => new Set([0]))
   const toggle = (index) =>
     setOpen((current) => {
@@ -92,22 +62,22 @@ export default function Faq() {
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 border-b-2 border-ink bg-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1.6fr] lg:py-24">
         <div>
-          <p className="font-label text-xs text-secondary">Questions</p>
+          <p className="font-label text-xs text-secondary">{t('landing.faq.kicker')}</p>
           <h2 id="faq-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
-            Before you start
+            {t('landing.faq.title')}
           </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">The things people ask first.</p>
+          <p className="mt-5 text-lg leading-relaxed text-muted">{t('landing.faq.body')}</p>
           <button
             type="button"
             onClick={() => setOpen((current) => (current.size === QUESTIONS.length ? new Set() : new Set(QUESTIONS.keys())))}
             className="mt-6 font-label text-xs text-primary underline underline-offset-4 hover:text-ink"
           >
-            {open.size === QUESTIONS.length ? 'Close all' : 'Open all'}
+            {t(open.size === QUESTIONS.length ? 'landing.faq.closeAll' : 'landing.faq.openAll')}
           </button>
         </div>
         <div className="space-y-3">
-          {QUESTIONS.map(({ q, a }, index) => (
-            <Question key={q} q={q} a={a} open={open.has(index)} onToggle={() => toggle(index)} />
+          {QUESTIONS.map((id, index) => (
+            <Question key={id} q={t(`landing.faq.${id}.q`)} a={t(`landing.faq.${id}.a`)} open={open.has(index)} onToggle={() => toggle(index)} />
           ))}
         </div>
       </div>
