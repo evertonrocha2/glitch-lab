@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import AppShell from '../components/AppShell.jsx'
 import Board from '../components/board/Board.jsx'
 import BoardStats from '../components/board/BoardStats.jsx'
@@ -9,14 +9,21 @@ import ErrorNotice from '../components/ErrorNotice.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
-import { AuthError, analyzeError, listCases, startChallenge } from '../lib/api.js'
+import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { splitError } from '../lib/caseInfo.js'
+import { localDay } from '../lib/day.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
+import { boardToMarkdown, downloadText } from '../lib/exportMarkdown.js'
+import { mentionsCase, newBlock } from '../lib/notes/blocks.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 export default function BoardPage() {
-  const { getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const { user, getToken, signOut } = useAuth()
+  const { progress, refresh: refreshProgress } = useProgress()
+  const [params, setParams] = useSearchParams()
+  const [notes, setNotes] = useState([])
+  const [writing, setWriting] = useState(false)
   const [draft] = useState(() => takeDraft())
   const [cases, setCases] = useState(null)
   const [investigating, setInvestigating] = useState(false)
@@ -80,6 +87,26 @@ export default function BoardPage() {
     }
   }, [getToken, recoverFromAuth])
 
+  // Notes only add to the board (the drawer links them, the export includes them): a failure is ignored.
+  useEffect(() => {
+    let alive = true
+    getToken()
+      .then(listNotes)
+      .then((list) => alive && setNotes(list))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [getToken])
+
+  // /board?case=<id> (from a note) opens that case once the board has loaded.
+  const caseParam = params.get('case')
+  useEffect(() => {
+    if (!caseParam || cases === null) return
+    if (cases.some((item) => item.id === caseParam)) setOpenId(caseParam)
+    setParams({}, { replace: true })
+  }, [caseParam, cases, setParams])
+
   // The error pasted on the landing gets investigated as soon as the board opens.
   useEffect(() => {
     if (draft) investigate(draft)
@@ -108,6 +135,32 @@ export default function BoardPage() {
     [getToken, navigate, recoverFromAuth],
   )
 
+  const writeNote = useCallback(
+    async (item) => {
+      if (writing) return
+      setWriting(true)
+      try {
+        const blocks = [newBlock('case', { caseId: item.id }), newBlock('text')]
+        const note = await createNote({ title: `Notes on ${splitError(item.error).type}`, blocks }, await getToken())
+        refreshProgress()
+        navigate(`/notes/${note.id}`)
+      } catch (err) {
+        if (!(await recoverFromAuth(err))) {
+          setOpenId(null)
+          setMessage(err.message)
+        }
+      } finally {
+        setWriting(false)
+      }
+    },
+    [writing, getToken, navigate, recoverFromAuth, refreshProgress],
+  )
+
+  function exportBoard() {
+    const date = localDay()
+    downloadText(`glitch-detective-${date}.md`, boardToMarkdown({ cases: cases ?? [], notes, progress, email: user?.email, date }))
+  }
+
   const closeDrawer = useCallback(() => setOpenId(null), [])
   const openCase = cases?.find((item) => item.id === openId)
   const hasCases = (cases?.length ?? 0) > 0
@@ -125,9 +178,14 @@ export default function BoardPage() {
           <p className="mt-2 text-muted">Open a card to study it. Press Train this to practice it in the gym.</p>
         </div>
         {hasCases && !investigating && (
-          <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
-            {formOpen ? 'Hide the form' : 'New investigation'}
-          </PixelButton>
+          <div className="flex flex-wrap gap-3">
+            <PixelButton variant="ghost" onClick={exportBoard} className="px-4 py-3">
+              Export .md
+            </PixelButton>
+            <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+              {formOpen ? 'Hide the form' : 'New investigation'}
+            </PixelButton>
+          </div>
         )}
       </div>
 
@@ -172,7 +230,17 @@ export default function BoardPage() {
         <Board cases={cases ?? []} onOpen={(item) => setOpenId(item.id)} />
       </div>
 
-      {openCase && <CaseDrawer item={openCase} onClose={closeDrawer} onTrain={train} training={training} />}
+      {openCase && (
+        <CaseDrawer
+          item={openCase}
+          onClose={closeDrawer}
+          onTrain={train}
+          training={training}
+          notes={notes.filter((note) => mentionsCase(note, openCase.id))}
+          onWriteNote={writeNote}
+          writing={writing}
+        />
+      )}
     </AppShell>
   )
 }

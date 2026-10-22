@@ -12,6 +12,7 @@ vi.mock('../lib/api.js', () => ({
   revealHint: vi.fn(),
   checkFix: vi.fn(),
   listCases: vi.fn().mockResolvedValue([]),
+  listNotes: vi.fn().mockResolvedValue([]),
 }))
 
 const HINTS = ['Which value is undefined?', 'order.items was never set.', 'Give order an items array.']

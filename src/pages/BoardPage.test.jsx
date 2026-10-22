@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { AuthError, analyzeError, listCases, startChallenge } from '../lib/api.js'
+import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../lib/api.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
 import { makeCase } from '../test/fixtures.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
@@ -11,12 +11,18 @@ vi.mock('../lib/api.js', () => ({
   analyzeError: vi.fn(),
   listCases: vi.fn(),
   startChallenge: vi.fn(),
+  listNotes: vi.fn(),
+  createNote: vi.fn(),
+  getProgress: vi.fn().mockResolvedValue(null),
+  addStudyTime: vi.fn(),
 }))
 
 beforeEach(() => {
   vi.mocked(listCases).mockReset().mockResolvedValue([])
   vi.mocked(analyzeError).mockReset()
   vi.mocked(startChallenge).mockReset()
+  vi.mocked(listNotes).mockReset().mockResolvedValue([])
+  vi.mocked(createNote).mockReset()
 })
 
 const newColumn = () => screen.getByRole('region', { name: 'New' })
@@ -109,4 +115,54 @@ it('Investigate cannot be sent twice while waiting', async () => {
   await userEvent.click(button)
   expect(await screen.findByText('Investigating your error')).toBeInTheDocument()
   expect(analyzeError).toHaveBeenCalledTimes(1)
+})
+
+it('opens the case a note linked to', async () => {
+  const item = makeCase()
+  vi.mocked(listCases).mockResolvedValue([item])
+  renderAt(`/board?case=${item.id}`, { user: 'alice' })
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  await waitFor(() => expect(currentLocation()).toBe('/board'))
+})
+
+it('lists the notes that mention a case and starts a new one', async () => {
+  const item = makeCase()
+  vi.mocked(listCases).mockResolvedValue([item])
+  vi.mocked(listNotes).mockResolvedValue([
+    { id: 'n1', title: 'Why undefined', blocks: [{ id: 'b', type: 'case', caseId: item.id }], updatedAt: item.createdAt },
+    { id: 'n2', title: 'Unrelated', blocks: [], updatedAt: item.createdAt },
+  ])
+  vi.mocked(createNote).mockResolvedValue({ id: 'n3', title: 'Notes on TypeError', blocks: [], updatedAt: item.createdAt })
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: /TypeError/ }))
+  const drawer = screen.getByRole('dialog')
+  expect(await within(drawer).findByRole('link', { name: 'Why undefined' })).toHaveAttribute('href', '/notes/n1')
+  expect(within(drawer).queryByRole('link', { name: 'Unrelated' })).toBeNull()
+
+  await userEvent.click(within(drawer).getByRole('button', { name: 'Write a note about this' }))
+  await waitFor(() => expect(currentLocation()).toBe('/notes/n3'))
+  const [fields, token] = vi.mocked(createNote).mock.lastCall
+  expect(token).toBe('token-alice')
+  expect(fields.title).toBe('Notes on TypeError')
+  expect(fields.blocks[0]).toMatchObject({ type: 'case', caseId: item.id })
+})
+
+it('exports the board as a Markdown file', async () => {
+  let blob
+  const keep = (value) => {
+    blob = value
+    return 'blob:x'
+  }
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(keep), revokeObjectURL: vi.fn() }))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Export .md' }))
+  expect(click).toHaveBeenCalled()
+  expect(click.mock.contexts[0].download).toMatch(/^glitch-detective-\d{4}-\d{2}-\d{2}\.md$/)
+  const text = await blob.text()
+  expect(text).toContain('# Glitch Detective board')
+  expect(text).toContain('## New (1)')
+  click.mockRestore()
+  vi.unstubAllGlobals()
 })

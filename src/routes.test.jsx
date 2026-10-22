@@ -6,6 +6,7 @@ import { currentLocation, renderAt } from './test/render.jsx'
 vi.mock('./lib/api.js', () => ({
   AuthError: class extends Error {},
   listCases: vi.fn().mockResolvedValue([]),
+  listNotes: vi.fn().mockResolvedValue([]),
   startDemo: vi.fn().mockResolvedValue({ token: 't', user: { id: 'd1', email: 'demo-1@demo.glitch', isDemo: true } }),
 }))
 
