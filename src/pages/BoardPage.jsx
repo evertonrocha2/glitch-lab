@@ -193,7 +193,7 @@ export default function BoardPage() {
         </div>
         {hasCases && !investigating && (
           <div className="flex flex-wrap gap-3">
-            <ExportMenu onExport={exportBoard} />
+            <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
             <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
               {formOpen ? 'Hide the form' : 'New investigation'}
             </PixelButton>

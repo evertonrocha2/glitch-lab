@@ -9,7 +9,8 @@ const FORMATS = [
 
 // "Export" with a small menu of file types. onExport(format) may return a promise; the button
 // says "Exporting..." until it settles. Keyboard: arrows, Home, End, Escape, like any menu.
-export default function ExportMenu({ onExport }) {
+// buttonClassName sizes the button to sit next to its neighbors.
+export default function ExportMenu({ onExport, buttonClassName = 'px-3 py-2' }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const id = useId()
@@ -79,7 +80,7 @@ export default function ExportMenu({ onExport }) {
             setOpen(true)
           }
         }}
-        className={`px-3 py-2 ${busy ? 'cursor-progress text-muted' : ''}`}
+        className={`${buttonClassName} ${busy ? 'cursor-progress text-muted' : ''}`}
       >
         {busy ? 'Exporting...' : 'Export'}
         {!busy && (
