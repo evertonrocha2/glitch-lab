@@ -10,6 +10,7 @@ vi.mock('../lib/api.js', () => ({
   getGlobalChallenge: vi.fn(),
   startPuzzle: vi.fn(),
   getChallenge: vi.fn().mockReturnValue(new Promise(() => {})),
+  getRiddle: vi.fn().mockReturnValue(new Promise(() => {})),
   getProgress: vi.fn().mockResolvedValue(null),
   addStudyTime: vi.fn(),
 }))
@@ -157,6 +158,14 @@ it('is in the main nav', async () => {
   const nav = screen.getByRole('navigation', { name: 'Main' })
   expect(within(nav).getByRole('link', { name: 'Daily' })).toHaveAttribute('href', '/daily')
   await dailyList()
+})
+
+it("links to today's Glitchdle", async () => {
+  renderAt('/daily', { user: 'alice' })
+  const teaser = await screen.findByRole('link', { name: /Glitchdle #1/ })
+  expect(teaser).toHaveAttribute('href', '/glitchdle')
+  await userEvent.click(teaser)
+  expect(currentLocation()).toBe('/glitchdle')
 })
 
 it('asks for sign in', () => {

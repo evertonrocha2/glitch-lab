@@ -56,6 +56,9 @@ export default function AppShell({ children }) {
             <NavLink to="/daily" className={navClass}>
               Daily
             </NavLink>
+            <NavLink to="/glitchdle" className={navClass}>
+              Glitchdle
+            </NavLink>
             <NavLink to="/notes" className={navClass}>
               Notes
             </NavLink>

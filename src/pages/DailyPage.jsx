@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { gameNumber } from '../../shared/riddle/game.js'
 import AppShell from '../components/AppShell.jsx'
 import Leaderboard from '../components/daily/Leaderboard.jsx'
 import PuzzleCard, { PuzzleStatus, PuzzleTags, StartButton, xpFor } from '../components/daily/PuzzleCard.jsx'
@@ -67,6 +68,33 @@ function GlobalChallenge({ data, now, onStart, starting }) {
         <Leaderboard entries={leaderboard} you={you} />
       </div>
     </section>
+  )
+}
+
+// A 3x3 board of graded cells, the way a Glitchdle guess looks.
+const TEASER_CELLS = ['bg-primary', 'bg-white', 'bg-secondary', 'bg-white', 'bg-primary', 'bg-white', 'bg-secondary', 'bg-primary', 'bg-primary']
+
+function GlitchdleTeaser({ day }) {
+  return (
+    <Link
+      to="/glitchdle"
+      className="group mt-10 flex items-center gap-4 border-2 border-ink bg-white p-4 shadow-pixel transition-transform hover:-translate-y-0.5 sm:max-w-xl sm:gap-5 sm:p-5"
+    >
+      <span aria-hidden="true" className="grid size-14 shrink-0 grid-cols-3 gap-[2px] border-2 border-ink bg-ink">
+        {TEASER_CELLS.map((color, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: fixed decoration
+          <span key={index} className={color} />
+        ))}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-label text-[10px] text-secondary">Also today</span>
+        <span className="mt-0.5 block font-pixel text-xl font-bold text-ink group-hover:text-primary">Glitchdle #{gameNumber(day)}</span>
+        <span className="mt-0.5 block text-sm text-muted">Guess the programming language of the day from its traits, an error and a hidden snippet.</span>
+      </span>
+      <span aria-hidden="true" className="hidden font-label text-xs text-primary sm:block">
+        Play &gt;
+      </span>
+    </Link>
   )
 }
 
@@ -177,6 +205,8 @@ export default function DailyPage() {
               </li>
             ))}
           </ul>
+
+          <GlitchdleTeaser day={daily.day} />
         </>
       )}
 
