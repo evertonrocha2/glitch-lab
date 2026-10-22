@@ -10,6 +10,10 @@ const KEY = 'gd:locale'
 // The language the rest of the app reads outside React (the API client sends it to the server).
 let current = DEFAULT_LOCALE
 export const currentLocale = () => current
+// Tests reset this between cases, so one test's language never leaks into the next.
+export const resetCurrentLocale = () => {
+  current = DEFAULT_LOCALE
+}
 
 export function initialLocale() {
   try {
@@ -22,11 +26,19 @@ export function initialLocale() {
   return browser.toLowerCase().startsWith('pt') ? 'pt-BR' : DEFAULT_LOCALE
 }
 
+// Intl calls 0 singular in Portuguese ("0 curtida"), but people say "0 curtidas": zero takes the plural
+// form, or its own `zero` message when one exists ("Nenhum caso ainda").
+function pluralForm(message, locale, count) {
+  if (count === 0 && message.zero !== undefined) return message.zero
+  const form = count === 0 && locale.startsWith('pt') ? 'other' : new Intl.PluralRules(locale).select(count)
+  return message[form] ?? message.other
+}
+
 // "{count} cases" -> "3 cases". A message can also be { one, other } and picks by vars.count.
 export function translate(locale, key, vars = {}) {
   let message = MESSAGES[locale]?.[key] ?? MESSAGES[DEFAULT_LOCALE][key]
   if (message === undefined) return key
-  if (typeof message === 'object') message = message[new Intl.PluralRules(locale).select(vars.count ?? 0)] ?? message.other
+  if (typeof message === 'object') message = pluralForm(message, locale, vars.count ?? 0)
   return message.replace(/\{(\w+)\}/g, (whole, name) => (vars[name] === undefined ? whole : String(vars[name])))
 }
 

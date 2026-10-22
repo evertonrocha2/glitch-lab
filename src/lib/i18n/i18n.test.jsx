@@ -51,3 +51,14 @@ it('writes relative times in the chosen language', () => {
   expect(timeAgoIn('en', '2026-10-22T10:00:00Z', now)).toBe('2 hours ago')
   expect(timeAgoIn('pt-BR', '2026-10-22T10:00:00Z', now)).toBe('há 2 horas')
 })
+
+it('says zero in the plural in Portuguese, or with its own zero message', async () => {
+  const { MESSAGES: catalog } = await import('./catalog.js')
+  catalog['pt-BR']['test.likes'] = { one: '{count} curtida', other: '{count} curtidas' }
+  catalog['pt-BR']['test.cases'] = { zero: 'Nenhum caso', one: '{count} caso', other: '{count} casos' }
+  expect(translate('pt-BR', 'test.likes', { count: 0 })).toBe('0 curtidas')
+  expect(translate('pt-BR', 'test.likes', { count: 1 })).toBe('1 curtida')
+  expect(translate('pt-BR', 'test.cases', { count: 0 })).toBe('Nenhum caso')
+  delete catalog['pt-BR']['test.likes']
+  delete catalog['pt-BR']['test.cases']
+})
