@@ -16,6 +16,8 @@ const en = {
   'server.methodNotAllowed': 'Method not allowed.',
   'server.notAllowed': 'Not allowed.',
   'server.notConfigured': 'Server is not configured.',
+  // Only the local dev server sends this one (vite.config.js).
+  'server.serverError': 'Server error.',
 
   // The AI.
   'server.aiBusy': 'The AI is busy right now. Try again in a minute.',
@@ -137,6 +139,7 @@ const ptBR = {
   'server.methodNotAllowed': 'Método não permitido.',
   'server.notAllowed': 'Não permitido.',
   'server.notConfigured': 'O servidor não está configurado.',
+  'server.serverError': 'Erro no servidor.',
 
   'server.aiBusy': 'A IA está ocupada agora. Tente de novo em um minuto.',
   'server.aiSlow': 'A IA demorou demais. Tente de novo.',
