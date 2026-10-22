@@ -150,7 +150,7 @@ const ROWS = [
   ['notes.articles.write', 'Write an article', 'Escrever um artigo'],
   ['notes.articles.signInToWrite', 'Sign in to write', 'Entre para escrever'],
   ['notes.articles.searchLabel', 'Search articles', 'Buscar artigos'],
-  ['notes.articles.searchPlaceholder', 'Search titles, tags, authors', 'Busque títulos, tags e autores'],
+  ['notes.articles.searchPlaceholder', 'Search titles, tags, authors', 'Títulos, tags ou autores'],
   ['notes.articles.search', 'Search', 'Buscar'],
   ['notes.articles.sort', 'Sort', 'Ordenar'],
   ['notes.articles.sort.new', 'New', 'Novos'],

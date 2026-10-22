@@ -95,7 +95,7 @@ it('lists articles in Brazilian Portuguese, with a language picker when signed o
   expect(within(card).getByText('3 curtidas, 2 votos válidos, 0 voto ruim, 1 comentário')).toBeInTheDocument()
   expect(within(card).getByText(/anteontem|há 2 dias/)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Entre para escrever' })).toBeInTheDocument()
-  expect(screen.getByRole('searchbox', { name: 'Buscar artigos' })).toHaveAttribute('placeholder', 'Busque títulos, tags e autores')
+  expect(screen.getByRole('searchbox', { name: 'Buscar artigos' })).toHaveAttribute('placeholder', 'Títulos, tags ou autores')
   expect(within(screen.getByRole('group', { name: 'Ordenar' })).getAllByRole('button').map((button) => button.textContent)).toEqual([
     'Novos',
     'Mais curtidos',

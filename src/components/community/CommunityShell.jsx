@@ -21,7 +21,7 @@ export default function CommunityShell({ children }) {
             <PixelLogo className="size-6 sm:size-7" />
             <span>Glitch Detective</span>
           </Link>
-          <nav aria-label={t('notes.articles.nav')} className="flex items-center gap-4">
+          <nav aria-label={t('notes.articles.nav')} className="flex items-center gap-2 sm:gap-4">
             <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
               {t('notes.articles.title')}
             </Link>
