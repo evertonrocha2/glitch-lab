@@ -11,7 +11,7 @@ const DEFAULT_LABELS = {
   go: 'Go there',
 }
 // Pages an answer may send the student to. Gym pages are checked against the student's challenges.
-const PAGES = ['/board', '/notes', '/progress']
+const PAGES = ['/board', '/notes', '/progress', '/trail']
 const GYM_PAGE = /^\/gym\/([\w-]{1,64})$/
 
 const isId = (value) => typeof value === 'string' && value !== '' && value.length <= 64

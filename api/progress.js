@@ -14,12 +14,13 @@ export async function GET(request) {
 
   const store = getStore()
   const userId = auth.user.id
-  const [cases, challenges, notes, study] = await Promise.all([
+  const [cases, challenges, notes, study, trails] = await Promise.all([
     store.listCases(userId),
     store.listChallenges(userId),
     store.listNotes(userId),
     store.listStudyTime(userId),
+    store.listTrails(userId),
   ])
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
-  return ok({ progress: computeProgress({ cases, challenges, notes, study, today }) })
+  return ok({ progress: computeProgress({ cases, challenges, notes, study, today, trails }) })
 }

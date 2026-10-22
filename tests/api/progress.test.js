@@ -34,6 +34,24 @@ it('builds my progress from my cases, gym, notes and study time', async () => {
   expect(earned(progress)).toEqual(['first-clue', 'fixed-it', 'sharp-eye', 'note-taker'])
 })
 
+it('counts my study trail missions and the finished-trail bonus', async () => {
+  await store.createCase('alice', CASE)
+  const trail = await store.createTrail('alice', {
+    title: 'T',
+    summary: '',
+    missions: [{ id: 'm1', kind: 'reflect', title: 'Think', description: 'Why?', xp: 10 }],
+  })
+  await store.setMissionDone('alice', trail.id, 'm1', true)
+  // Bob's finished trail is not mine.
+  const other = await store.createTrail('bob', { title: 'B', summary: '', missions: [{ id: 'm1', kind: 'reflect', title: 'x', description: 'x', xp: 10 }] })
+  await store.setMissionDone('bob', other.id, 'm1', true)
+
+  // case 10 + reflect mission 10 + finished trail 100
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress.xp).toBe(10 + 10 + 100)
+  expect(earned(progress)).toContain('trailblazer')
+})
+
 it("falls back to the server's day when today is missing or wrong", async () => {
   await store.addStudyTime('alice', '2026-10-22', 300, 57_600)
   for (const query of ['', '?today=1999-01-01', '?today=nope']) {

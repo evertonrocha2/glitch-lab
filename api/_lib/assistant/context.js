@@ -1,6 +1,7 @@
 import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
+import { kindLabel, trailView } from '../../../shared/trails.js'
 import { serverDay } from '../days.js'
 import { APP_GUIDE } from './guide.js'
 import { clip, firstLines } from './text.js'
@@ -130,14 +131,16 @@ async function notesContext({ store, userId, page, needs }) {
 
 async function studyContext({ store, userId, needs }) {
   const parts = []
+  if (!needs.includes('progress') && !needs.includes('study_plan')) return ''
+  const [cases, challenges, notes, study, trails] = await Promise.all([
+    store.listCases(userId),
+    store.listChallenges(userId),
+    store.listNotes(userId),
+    store.listStudyTime(userId),
+    store.listTrails(userId),
+  ])
   if (needs.includes('progress')) {
-    const [cases, challenges, notes, study] = await Promise.all([
-      store.listCases(userId),
-      store.listChallenges(userId),
-      store.listNotes(userId),
-      store.listStudyTime(userId),
-    ])
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay() })
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(
@@ -151,9 +154,16 @@ async function studyContext({ store, userId, needs }) {
     )
   }
   if (needs.includes('study_plan')) {
-    // Study trails are an optional store feature; only read them where the store has them.
-    const trails = typeof store.listTrails === 'function' ? await store.listTrails(userId) : null
-    parts.push(trails?.length ? `Saved study plan: ${clip(JSON.stringify(trails), 1500)}` : 'No study plan saved.')
+    // The newest study trail is the active one; its missions are checked against the data above.
+    if (trails.length) {
+      const view = trailView(trails[0], { cases, challenges, notes, study })
+      parts.push(
+        `Study trail (/trail): "${clip(view.title, 80)}", ${view.doneCount}/${view.total} missions done, ${view.xp} of ${view.xpTotal} XP.`,
+        ...view.missions.map((mission) => `- [${mission.status}] ${kindLabel(mission.kind)}: ${clip(mission.title, 80)}`),
+      )
+    } else {
+      parts.push('No study plan saved.')
+    }
   }
   return parts.join('\n')
 }
