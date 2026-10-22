@@ -133,7 +133,8 @@ function StudyMeter({ studied, goal }) {
 }
 
 // The missions as a path: numbered nodes on a dashed pixel line. Phones get one column with the
-// line on the left; wider screens put the line in the middle and zig-zag the cards around it.
+// line on the left; wider screens put the line in the middle and zig-zag the cards around it,
+// each card tucked up beside the one before so the path reads as one climb.
 export default function TrailMap({ missions, ...props }) {
   return (
     <ol aria-label="Trail missions" className="relative mt-10 flex flex-col gap-8">
@@ -144,7 +145,7 @@ export default function TrailMap({ missions, ...props }) {
           <li
             key={mission.id}
             aria-label={`Mission ${index + 1}: ${(STATUS[mission.status] ?? STATUS.todo).name}`}
-            className="relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] md:gap-6"
+            className={`relative grid grid-cols-[48px_minmax(0,1fr)] items-start gap-4 md:grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] md:gap-6 ${index > 0 ? 'md:-mt-18' : ''}`}
           >
             <div className="col-start-1 row-start-1 pt-1 md:col-start-2">
               <Node number={index + 1} status={mission.status} />
