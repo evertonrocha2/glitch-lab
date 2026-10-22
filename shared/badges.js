@@ -12,6 +12,8 @@ export const BADGES = [
   { id: 'on-a-roll', name: 'On a roll', how: 'Study 3 days in a row.', earned: (s) => s.longestStreak >= 3 },
   { id: 'unstoppable', name: 'Unstoppable', how: 'Study 7 days in a row.', earned: (s) => s.longestStreak >= 7 },
   { id: 'marathon', name: 'Marathon', how: 'Study 5 hours in total.', earned: (s) => s.totalSeconds >= 5 * 3600 },
+  { id: 'author', name: 'Author', how: 'Publish a community article.', earned: (s) => s.articles >= 1 },
+  { id: 'trusted', name: 'Trusted', how: 'Get 5 valid ratings on your articles.', earned: (s) => s.validReceived >= 5 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)
