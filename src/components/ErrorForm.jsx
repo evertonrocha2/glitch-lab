@@ -44,12 +44,17 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
         <label htmlFor="error-input" className={labelClass}>
           Error message
         </label>
-        <div className="mt-2 border-2 border-ink bg-ink transition-shadow duration-150 focus-within:shadow-pixel">
-          <p aria-hidden="true" className="border-b-2 border-white/10 px-3 py-1.5 font-label text-[10px] text-white/50">
+        <div className="mt-2 border-2 border-ink bg-primary-soft transition-shadow duration-150 focus-within:shadow-pixel">
+          <p aria-hidden="true" className="flex items-center gap-2 border-b-2 border-ink bg-primary px-3 py-1.5 font-label text-[10px] text-white">
+            <span className="flex gap-1">
+              <span className="size-1.5 bg-white" />
+              <span className="size-1.5 bg-white/60" />
+              <span className="size-1.5 bg-white/30" />
+            </span>
             console
           </p>
           <div className="flex gap-2.5 px-3 py-3">
-            <span aria-hidden="true" className="select-none font-mono text-sm leading-relaxed text-primary-soft">
+            <span aria-hidden="true" className="select-none font-mono text-sm font-bold leading-relaxed text-primary">
               &gt;
             </span>
             <textarea
@@ -60,7 +65,7 @@ export default function ErrorForm({ onSubmit, loading, initialError = '', initia
               rows={3}
               spellCheck={false}
               placeholder="TypeError: Cannot read properties of undefined (reading 'length')"
-              className={`${textareaClass} text-white placeholder:text-white/35`}
+              className={`${textareaClass} text-ink placeholder:text-muted/70`}
             />
           </div>
         </div>
