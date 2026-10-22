@@ -20,13 +20,14 @@ export default function BlockMenu({ id, label, items, active, onPick, empty, sea
           className="w-full border-b-2 border-ink px-3 py-2 text-sm text-ink focus-visible:outline-none"
         />
       )}
-      <ul id={id} role="listbox" aria-label={label} className="max-h-64 overflow-y-auto py-1">
-        {items.length === 0 && <li className="px-3 py-2 text-sm text-muted">{empty}</li>}
+      {items.length === 0 && <p className="px-3 py-2 text-sm text-muted">{empty}</p>}
+      <div id={id} role="listbox" aria-label={label} className="max-h-64 overflow-y-auto py-1">
         {items.map((item, index) => (
-          <li
+          <div
             key={item.key}
             id={`${id}-${index}`}
             role="option"
+            tabIndex={-1}
             aria-selected={index === active}
             // mousedown would blur the input first and close the menu.
             onMouseDown={(event) => event.preventDefault()}
@@ -36,9 +37,9 @@ export default function BlockMenu({ id, label, items, active, onPick, empty, sea
           >
             <span className="block truncate text-sm font-semibold text-ink">{item.label}</span>
             {item.sub && <span className="block truncate text-xs text-muted">{item.sub}</span>}
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   )
 }
