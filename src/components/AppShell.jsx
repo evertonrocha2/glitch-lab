@@ -30,7 +30,7 @@ export default function AppShell({ children }) {
             <PixelLogo className="size-5 shrink-0 sm:size-7" />
             <span className="truncate">Glitch Detective</span>
           </Link>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <AssistantButton />
             <NotificationBell />
             <Link to="/profile" aria-label="Your profile" className="block transition-transform hover:-translate-y-0.5">

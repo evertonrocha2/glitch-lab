@@ -78,7 +78,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
           aria-activedescendant={showList && options[active] ? optionId(options[active].id) : undefined}
           autoComplete="off"
           spellCheck="false"
-          placeholder={mode === 'classic' ? 'Type a language, like Python...' : 'Which language is it?'}
+          placeholder={mode === 'classic' ? 'Type a language...' : 'Which language is it?'}
           value={query}
           readOnly={busy}
           onChange={(event) => {
