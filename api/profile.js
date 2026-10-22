@@ -17,7 +17,10 @@ export async function GET(request) {
     if (handleProblem(handle)) return fail(404, NOT_FOUND)
     const found = await store.findPublicProfile(handle)
     if (!found) return fail(404, NOT_FOUND)
-    return ok({ profile: publicProfile(found.profile, found.userId, await summarize(store, found.userId, today)) })
+    const response = ok({ profile: publicProfile(found.profile, found.userId, await summarize(store, found.userId, today)) })
+    // A shared link can get a lot of hits: let the CDN answer repeats for a minute.
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   }
 
   const auth = await requireUser(request)
@@ -39,6 +42,10 @@ export async function PUT(request) {
   if (!body || Array.isArray(body)) return fail(400, 'Invalid request.')
   const parsed = parseProfile(body)
   if (!parsed.value) return fail(parsed.status, parsed.message)
+  // Demo accounts are free and throwaway: they can't squat handles or publish pages.
+  if (auth.user.isDemo && (parsed.value.handle || parsed.value.isPublic)) {
+    return fail(403, 'Sign up to pick a handle and share your profile.')
+  }
 
   const store = getStore()
   const current = await store.getProfile(auth.user.id)

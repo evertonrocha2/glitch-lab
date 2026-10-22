@@ -68,11 +68,14 @@ export const defaultSeed = (userId) => createHash('sha256').update(userId).diges
 const avatarOf = (stored, userId) => stored.avatar ?? { seed: defaultSeed(userId), color: AVATAR_COLORS[0].id }
 
 // What the editor shows: stored fields with the defaults filled in. No email.
+// The name stays null until the person types one: the email-based suggestion is only a placeholder,
+// so saving other fields can never publish part of an email address.
 export function ownProfile(stored, user) {
   const profile = stored ?? EMPTY
   return {
     handle: profile.handle,
-    displayName: profile.displayName ?? defaultDisplayName(user),
+    displayName: profile.displayName,
+    suggestedName: defaultDisplayName(user),
     bio: profile.bio,
     avatar: avatarOf(profile, user.id),
     featuredBadges: profile.featuredBadges,

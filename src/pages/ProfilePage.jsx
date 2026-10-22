@@ -22,7 +22,7 @@ const newSeed = () => Math.random().toString(36).slice(2, 10)
 // The editable copy of the profile. Featured badges you no longer hold are dropped.
 const draftFrom = (profile, earned) => ({
   handle: profile.handle ?? '',
-  displayName: profile.displayName,
+  displayName: profile.displayName ?? '',
   bio: profile.bio,
   avatar: profile.avatar,
   featuredBadges: profile.featuredBadges.filter((id) => earned.includes(id)),
@@ -233,6 +233,7 @@ export default function ProfilePage() {
               <input
                 id="display-name"
                 value={draft.displayName}
+                placeholder={saved?.suggestedName}
                 maxLength={PROFILE_LIMITS.displayName}
                 onChange={(event) => change({ displayName: event.target.value })}
                 className={`mt-2 ${INPUT}`}

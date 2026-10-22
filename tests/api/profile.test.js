@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET, PUT } from '../../api/profile.js'
+import { createToken } from '../../api/_lib/auth/session.js'
 import { apiRequest, useTempStore } from './helpers.js'
 import { CASE, challengeFor, SECRET } from './store-contract.js'
 
@@ -57,7 +58,8 @@ it('fills in defaults before anything is chosen', async () => {
   const body = await res.json()
   expect(body.profile).toEqual({
     handle: null,
-    displayName: ada.id,
+    displayName: null,
+    suggestedName: ada.id,
     bio: '',
     avatar: { seed: expect.stringMatching(/^[0-9a-f]{12}$/), color: 'violet' },
     featuredBadges: [],
@@ -82,20 +84,36 @@ it('saves a profile and normalizes the handle', async () => {
   const res = await save({ ...VALID, handle: '  Ada_Dev ' })
   expect(res.status).toBe(200)
   const { profile } = await res.json()
-  expect(profile).toEqual(VALID)
-  expect((await (await getMine()).json()).profile).toEqual(VALID)
+  expect(profile).toEqual({ ...VALID, suggestedName: ada.id })
+  expect((await (await getMine()).json()).profile).toEqual({ ...VALID, suggestedName: ada.id })
 })
 
 it('changes only the fields sent', async () => {
   await save(VALID)
   await save({ bio: 'New bio.' })
-  expect((await (await getMine()).json()).profile).toEqual({ ...VALID, bio: 'New bio.' })
+  expect((await (await getMine()).json()).profile).toEqual({ ...VALID, bio: 'New bio.', suggestedName: ada.id })
 })
 
 it('goes back to the default name when the name is cleared', async () => {
   await save({ displayName: 'Ada' })
   const { profile } = await (await save({ displayName: '   ' })).json()
-  expect(profile.displayName).toBe(ada.id)
+  expect(profile.displayName).toBeNull()
+})
+
+it('never stores the email-based name unless it is typed in', async () => {
+  await save({ handle: 'ada_x', isPublic: true })
+  expect((await store.getProfile(ada.id)).displayName).toBeNull()
+  const res = await GET(apiRequest('/api/profile?handle=ada_x', { method: 'GET', token: null }))
+  expect((await res.json()).profile.displayName).toBe('ada_x')
+  expect(res.headers.get('Cache-Control')).toContain('s-maxage=60')
+})
+
+it('keeps demo accounts from claiming handles or going public', async () => {
+  const demo = await store.createUser({ email: 'demo-1@demo.glitch', passwordHash: null, isDemo: true })
+  const token = createToken({ id: demo.id, email: demo.email, isDemo: true })
+  expect((await save({ handle: 'admin' }, token)).status).toBe(403)
+  expect((await save({ isPublic: true }, token)).status).toBe(403)
+  expect((await save({ bio: 'Just looking around.' }, token)).status).toBe(200)
 })
 
 it('rejects anything that does not fit the rules', async () => {

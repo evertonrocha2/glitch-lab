@@ -124,3 +124,5 @@ alter table public.users add column if not exists avatar jsonb;
 alter table public.users add column if not exists featured_badges jsonb not null default '[]';
 alter table public.users add column if not exists is_public boolean not null default false;
 create unique index if not exists users_handle_unique on public.users (lower(handle));
+-- Handles are stored lowercase, so lookups use a plain equality and need this index.
+create index if not exists users_handle on public.users (handle);

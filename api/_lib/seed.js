@@ -150,6 +150,7 @@ export async function seedDemo(store, userId, today = serverDay()) {
     const day = daysBefore(today, DEMO_STUDY_MINUTES.length - index)
     await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
-  await store.updateProfile(userId, DEMO_PROFILE)
+  // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
+  if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, DEMO_PROFILE)
   return true
 }
