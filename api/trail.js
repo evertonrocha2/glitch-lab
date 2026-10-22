@@ -3,7 +3,8 @@ import { trailSummary, trailView, trailViews } from '../shared/trails.js'
 import { generateJson } from './_lib/ai/index.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { buildTrailPrompt, TRAIL_SCHEMA, TRAIL_SYSTEM } from './_lib/prompts/trail.js'
+import { localeOf } from './_lib/locale.js'
+import { buildTrailPrompt, TRAIL_SCHEMA, trailSystem } from './_lib/prompts/trail.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { parseTrail, trailFacts } from './_lib/trails.js'
@@ -53,10 +54,16 @@ export async function POST(request) {
 
   const today = clientDay(body.today) ?? serverDay()
   const progress = computeProgress({ ...data, today })
+  // Titles and mission texts are written in the reader's language and saved that way.
+  const locale = localeOf(request)
   let parsed
   try {
-    const answer = await generateJson({ system: TRAIL_SYSTEM, prompt: buildTrailPrompt(trailFacts({ ...data, progress })), schema: TRAIL_SCHEMA })
-    parsed = parseTrail(answer, data.cases)
+    const answer = await generateJson({
+      system: trailSystem(locale),
+      prompt: buildTrailPrompt(trailFacts({ ...data, progress }), locale),
+      schema: TRAIL_SCHEMA,
+    })
+    parsed = parseTrail(answer, data.cases, locale)
   } catch (err) {
     return aiFailure(err)
   }

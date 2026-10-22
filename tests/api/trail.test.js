@@ -304,3 +304,15 @@ it('only lets the current trail be ticked by hand', async () => {
   const res = await PUT(apiRequest('/api/trail', { method: 'PUT', body: { trailId: old.id, missionId: 'm1', done: true } }))
   expect(res.status).toBe(409)
 })
+
+it('asks for the trail title, summary and missions in Portuguese for a pt-BR reader', async () => {
+  const kase = await store.createCase('alice', CASE)
+  fetch.mockResolvedValue(geminiAnswer({ ...answerFor(kase.id), title: '' }))
+  const res = await buildTrail({ locale: 'pt-BR' })
+  expect(res.status).toBe(201)
+  expect(JSON.parse(fetch.mock.calls[0][1].body).systemInstruction.parts[0].text).toMatch(/Brazilian Portuguese/)
+  expect(sentPrompt()).toMatch(/Brazilian Portuguese/)
+  expect(sentPrompt()).toMatch(/every mission title and description/)
+  // A blank title from the AI falls back in the reader's language.
+  expect((await res.json()).trail.title).toBe('Sua trilha de estudos')
+})
