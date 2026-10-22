@@ -31,19 +31,22 @@ function studyGoalSeconds(mission, trail) {
   return total
 }
 
+// Supabase and the JSON file write timestamps differently, so compare times, not strings.
+const atOrAfter = (iso, since) => Date.parse(iso) >= since
+
 export function missionDone(mission, trail, { cases, challenges, notes, study }) {
-  const since = trail.createdAt
+  const since = Date.parse(trail.createdAt)
   switch (mission.kind) {
     case 'train':
-      return challenges.some((item) => item.caseId === mission.caseId && item.status === 'passed' && item.createdAt >= since)
+      return challenges.some((item) => item.caseId === mission.caseId && item.status === 'passed' && atOrAfter(item.createdAt, since))
     case 'note':
       return notes.some(
-        (note) => note.updatedAt >= since && note.blocks.some((block) => block.type === 'case' && block.caseId === mission.caseId),
+        (note) => atOrAfter(note.updatedAt, since) && note.blocks.some((block) => block.type === 'case' && block.caseId === mission.caseId),
       )
     case 'study':
       return studiedSeconds(trail, study) >= studyGoalSeconds(mission, trail)
     case 'investigate':
-      return cases.some((item) => item.createdAt >= since && (!mission.concept || item.concept === mission.concept))
+      return cases.some((item) => atOrAfter(item.createdAt, since) && (!mission.concept || item.concept === mission.concept))
     case 'reflect':
       return trail.done.includes(mission.id)
     default:

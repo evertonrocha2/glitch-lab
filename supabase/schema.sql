@@ -126,3 +126,18 @@ alter table public.users add column if not exists is_public boolean not null def
 create unique index if not exists users_handle_unique on public.users (lower(handle));
 -- Handles are stored lowercase, so lookups use a plain equality and need this index.
 create index if not exists users_handle on public.users (handle);
+
+-- Study trails: AI-built missions from the student's own cases and notes. "if not exists" so this block
+-- also upgrades an older database. Only hand-ticked reflect missions are stored in done; the rest is
+-- worked out from cases, challenges, notes and study time.
+create table if not exists public.trails (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  title text not null,
+  summary text not null default '',
+  missions jsonb not null default '[]',
+  done jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+create index if not exists trails_user_created on public.trails (user_id, created_at desc);
+alter table public.trails enable row level security;

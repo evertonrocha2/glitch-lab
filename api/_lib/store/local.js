@@ -191,6 +191,42 @@ export function createLocalStore({ file }) {
         .sort((a, b) => a.day.localeCompare(b.day))
     },
 
+    // Study trails. createdAt may be given (the demo's trail starts in the past); files saved before
+    // trails existed don't have the list yet.
+    async createTrail(userId, { title, summary, missions, done = [], createdAt }) {
+      const data = await load()
+      const created = { id: randomUUID(), userId, title, summary, missions, done, createdAt: createdAt ?? now() }
+      data.trails ??= []
+      data.trails.push(created)
+      await save()
+      return copy(created)
+    },
+
+    // Newest first; for the same start time, the one made last.
+    async listTrails(userId) {
+      const trails = (await load()).trails ?? []
+      return copy(
+        trails
+          .filter((trail) => trail.userId === userId)
+          .reverse()
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      )
+    },
+
+    async getTrail(userId, id) {
+      return copy(((await load()).trails ?? []).find((trail) => trail.id === id && trail.userId === userId))
+    },
+
+    // null when the trail isn't mine or has no such mission.
+    async setMissionDone(userId, trailId, missionId, done) {
+      const found = ((await load()).trails ?? []).find((trail) => trail.id === trailId && trail.userId === userId)
+      if (!found?.missions.some((mission) => mission.id === missionId)) return null
+      const others = found.done.filter((id) => id !== missionId)
+      found.done = done ? [...others, missionId] : others
+      await save()
+      return copy(found)
+    },
+
     async getProfile(userId) {
       const found = (await load()).users?.find((user) => user.id === userId)
       return found ? toProfile(found) : null

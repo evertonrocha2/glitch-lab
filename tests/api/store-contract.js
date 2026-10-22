@@ -203,5 +203,51 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(found.profile).not.toHaveProperty('email')
       expect(await store.findPublicProfile(uniqueHandle('nobody'))).toBeNull()
     })
+
+    const trailFor = (caseId) => ({
+      title: 'Beat undefined',
+      summary: 'Your weak spot first.',
+      missions: [
+        { id: 'm1', kind: 'train', title: 'Train it', description: 'Pass a challenge.', caseId, xp: 40 },
+        { id: 'm2', kind: 'reflect', title: 'Think', description: 'Say why.', xp: 10 },
+      ],
+    })
+
+    it('creates and lists study trails for their owner only, newest first', async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const first = await store.createTrail(ids.alice, trailFor(kase.id))
+      expect(first).toMatchObject({ ...trailFor(kase.id), userId: ids.alice, done: [] })
+      expect(first.id).toEqual(expect.any(String))
+      expect(first.createdAt).toEqual(expect.any(String))
+
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      const second = await store.createTrail(ids.alice, { ...trailFor(kase.id), title: 'Second' })
+      expect((await store.listTrails(ids.alice)).map((trail) => trail.id)).toEqual([second.id, first.id])
+      expect(await store.listTrails(ids.bob)).toEqual([])
+      expect(await store.getTrail(ids.alice, first.id)).toEqual(first)
+      expect(await store.getTrail(ids.bob, first.id)).toBeNull()
+    })
+
+    it('keeps a given start time, so a trail can begin in the past', async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const createdAt = '2026-10-19T00:00:00.000Z'
+      const trail = await store.createTrail(ids.alice, { ...trailFor(kase.id), createdAt })
+      expect(new Date(trail.createdAt).toISOString()).toBe(createdAt)
+      const newer = await store.createTrail(ids.alice, trailFor(kase.id))
+      expect((await store.listTrails(ids.alice)).map((item) => item.id)).toEqual([newer.id, trail.id])
+    })
+
+    it('marks a mission done and undone, only on my own trail', async () => {
+      const kase = await store.createCase(ids.alice, CASE)
+      const trail = await store.createTrail(ids.alice, trailFor(kase.id))
+      expect((await store.setMissionDone(ids.alice, trail.id, 'm2', true)).done).toEqual(['m2'])
+      // Ticking twice keeps one entry.
+      expect((await store.setMissionDone(ids.alice, trail.id, 'm2', true)).done).toEqual(['m2'])
+      expect(await store.setMissionDone(ids.bob, trail.id, 'm2', false)).toBeNull()
+      expect((await store.getTrail(ids.alice, trail.id)).done).toEqual(['m2'])
+      expect(await store.setMissionDone(ids.alice, trail.id, 'nope', true)).toBeNull()
+      expect((await store.setMissionDone(ids.alice, trail.id, 'm2', false)).done).toEqual([])
+      expect(await store.setMissionDone(ids.alice, crypto.randomUUID(), 'm2', true)).toBeNull()
+    })
   })
 }

@@ -43,6 +43,17 @@ const toChallenge = (row) =>
 const toNote = (row) =>
   row && { id: row.id, userId: row.user_id, title: row.title, blocks: row.blocks, createdAt: row.created_at, updatedAt: row.updated_at }
 
+const toTrail = (row) =>
+  row && {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    summary: row.summary,
+    missions: row.missions ?? [],
+    done: row.done ?? [],
+    createdAt: row.created_at,
+  }
+
 const toProfile = (row) =>
   row && {
     handle: row.handle ?? null,
@@ -184,6 +195,30 @@ export function createSupabaseStore({ url, serviceKey }) {
     async listStudyTime(userId) {
       const rows = unwrap(await db.from('study_time').select('day, seconds').eq('user_id', userId).order('day', { ascending: true }))
       return rows ?? []
+    },
+
+    // Study trails. created_at may be given (the demo's trail starts in the past).
+    async createTrail(userId, { title, summary, missions, done = [], createdAt }) {
+      const row = defined({ user_id: userId, title, summary, missions, done, created_at: createdAt })
+      return toTrail(unwrap(await db.from('trails').insert(row).select().single()))
+    },
+
+    async listTrails(userId) {
+      const rows = unwrap(await db.from('trails').select('*').eq('user_id', userId).order('created_at', { ascending: false }))
+      return (rows ?? []).map(toTrail)
+    },
+
+    async getTrail(userId, id) {
+      return toTrail(unwrap(await db.from('trails').select('*').eq('id', id).eq('user_id', userId).maybeSingle()))
+    },
+
+    // Read, change, write: only the student ticks their own reflect missions, so a race is harmless.
+    async setMissionDone(userId, trailId, missionId, done) {
+      const trail = toTrail(unwrap(await db.from('trails').select('*').eq('id', trailId).eq('user_id', userId).maybeSingle()))
+      if (!trail?.missions.some((mission) => mission.id === missionId)) return null
+      const others = trail.done.filter((id) => id !== missionId)
+      const next = done ? [...others, missionId] : others
+      return toTrail(unwrap(await db.from('trails').update({ done: next }).eq('id', trailId).eq('user_id', userId).select().maybeSingle()))
     },
 
     async getProfile(userId) {
