@@ -4,20 +4,46 @@ import { BADGES } from '../../shared/badges.js'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelBug from '../components/pixel/PixelBug.jsx'
-import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
-import PixelLogo from '../components/pixel/PixelLogo.jsx'
 import ProfileCard from '../components/profile/ProfileCard.jsx'
-import { getPublicProfile } from '../lib/api.js'
+import PublicHeader, { TryLink } from '../components/profile/PublicHeader.jsx'
+import { getPublicProfile, listPublicNotes } from '../lib/api.js'
 import { formatDuration, localDay } from '../lib/day.js'
 
 const memberSince = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+const shortDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-function TryLink() {
+// The notes this detective shared. Each one opens read-only on its own page.
+function PublicNotes({ handle, notes }) {
   return (
-    <PixelButton as={Link} to="/" className="px-3 py-2">
-      Try Glitch Detective
-    </PixelButton>
+    <section aria-labelledby="notes-title" className="mt-14">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 id="notes-title" className="font-pixel text-2xl font-bold text-ink">
+          Notes
+        </h2>
+        {notes?.length > 0 && <p className="font-label text-xs text-muted">{notes.length} shared</p>}
+      </div>
+      {notes === null && <p className="mt-4 font-label text-xs text-muted">Loading notes...</p>}
+      {notes?.length === 0 && <p className="mt-4 text-sm text-muted">No public notes yet.</p>}
+      {notes?.length > 0 && (
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {notes.map((note) => (
+            <li key={note.id}>
+              <Link
+                to={`/u/${handle}/notes/${note.id}`}
+                className="flex h-full flex-col border-2 border-ink bg-white p-4 shadow-pixel-ink transition-transform hover:-translate-y-0.5 focus-visible:-translate-y-0.5"
+              >
+                <strong className="font-pixel text-lg leading-tight wrap-break-word text-ink">{note.title || 'Untitled'}</strong>
+                {note.excerpt && <span className="mt-2 line-clamp-3 text-sm wrap-break-word text-muted">{note.excerpt}</span>}
+                <span className="mt-auto pt-3 font-label text-[10px] text-secondary">
+                  {note.blockCount} {note.blockCount === 1 ? 'block' : 'blocks'} · {shortDate(note.updatedAt)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
@@ -62,13 +88,19 @@ function NotFound({ handle }) {
 export default function PublicProfilePage() {
   const { handle } = useParams()
   const [state, setState] = useState({ status: 'loading' })
+  const [notes, setNotes] = useState(null)
 
   useEffect(() => {
     let live = true
     setState({ status: 'loading' })
+    setNotes(null)
     getPublicProfile(handle, localDay())
       .then((profile) => live && setState(profile ? { status: 'ready', profile } : { status: 'missing' }))
       .catch((err) => live && setState({ status: 'error', message: err.message }))
+    // The notes are a bonus: if they can't load, the profile still shows.
+    listPublicNotes(handle)
+      .then((list) => live && setNotes(list ?? []))
+      .catch(() => live && setNotes([]))
     return () => {
       live = false
     }
@@ -79,15 +111,7 @@ export default function PublicProfilePage() {
 
   return (
     <div className="min-h-screen bg-mist">
-      <header className="border-b-2 border-ink bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
-          <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
-            <PixelLogo className="size-6 sm:size-7" />
-            <span>Glitch Detective</span>
-          </Link>
-          {state.status !== 'missing' && <TryLink />}
-        </div>
-      </header>
+      <PublicHeader showTry={state.status !== 'missing'} />
 
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-20 sm:px-8 sm:pt-14">
         {state.status === 'loading' && (
@@ -112,6 +136,8 @@ export default function PublicProfilePage() {
                 )}
               </div>
             </div>
+
+            <PublicNotes handle={profile.handle} notes={notes} />
 
             <section aria-labelledby="badges-title" className="mt-14">
               <div className="flex flex-wrap items-end justify-between gap-3">
