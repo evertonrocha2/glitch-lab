@@ -283,3 +283,32 @@ it('says so when a file could not be made', async () => {
   await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
   expect(await screen.findByText("Couldn't make the PDF. Try again.")).toBeInTheDocument()
 })
+
+it('speaks Brazilian Portuguese', async () => {
+  renderAt('/notes/n1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByRole('heading', { level: 1, name: 'Suas notas' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Nova nota' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Título da nota' })).toHaveAttribute('placeholder', 'Sem título')
+  expect(screen.getByRole('link', { name: /Undefined again/ })).toHaveTextContent('1 caso · editada')
+  // The case card uses the shared labels in Portuguese.
+  expect(screen.getByText('Lendo undefined')).toBeInTheDocument()
+  expect(screen.getByText('Treinando · 1/2')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Abrir TypeError no board' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Exportar' })).toBeInTheDocument()
+  const toggle = await screen.findByRole('switch', { name: /Pública no meu perfil/ })
+  await waitFor(() => expect(toggle).toBeEnabled())
+  expect(screen.getByText('Só você pode ver esta nota.')).toBeInTheDocument()
+
+  // "@" finds a case by its bug type in Portuguese too.
+  await userEvent.click(screen.getByRole('button', { name: '@ Caso' }))
+  await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar nos seus casos' }), 'fora do intervalo')
+  expect(screen.getByRole('option', { name: /IndexError/ })).toHaveTextContent('Índice fora do intervalo · python · Novo')
+})
+
+it('says an export failed in Portuguese', async () => {
+  vi.mocked(exportNotePdf).mockRejectedValue(new Error('canvas tainted'))
+  renderAt('/notes/n1', { user: 'alice', locale: 'pt-BR' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Exportar' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(await screen.findByText('Não deu para gerar o PDF. Tente de novo.')).toBeInTheDocument()
+})

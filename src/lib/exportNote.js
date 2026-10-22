@@ -3,6 +3,8 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import NoteSheet from '../components/notes/NoteSheet.jsx'
 import { downloadText, noteToMarkdown, slug } from './exportMarkdown.js'
+import { currentLocale, I18nProvider, translate } from './i18n/I18nProvider.jsx'
+import { dateIn } from './i18n/format.js'
 
 // Twice the screen pixels: crisp pixel fonts on retina screens and in print.
 const SCALE = 2
@@ -24,7 +26,8 @@ export function canvasScale(width, height) {
   return Math.min(SCALE, Math.sqrt(MAX_CANVAS_PIXELS / (width * height)), MAX_CANVAS_SIDE / height, MAX_CANVAS_SIDE / width)
 }
 
-export const exportDate = (date = new Date()) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+// Today in the reader's language: "Oct 22, 2026", "22 de out. de 2026".
+export const exportDate = (date = new Date(), locale = currentLocale()) => dateIn(locale, date)
 
 // How a sheet `widthPx` wide fits across an A4 page inside its margins.
 export function pdfGeometry({ widthPx, marginMm = MARGIN_MM }) {
@@ -69,6 +72,7 @@ export function downloadBlob(fileName, blob) {
 }
 
 // Draws a sheet component out of sight, hands its element to `use`, then takes it away again.
+// The sheet is drawn in its own React root, so it gets the reader's language here.
 export async function withSheet(sheetElement, use) {
   const holder = document.createElement('div')
   holder.setAttribute('aria-hidden', 'true')
@@ -76,7 +80,7 @@ export async function withSheet(sheetElement, use) {
   document.body.append(holder)
   const root = createRoot(holder)
   try {
-    flushSync(() => root.render(sheetElement))
+    flushSync(() => root.render(createElement(I18nProvider, { locale: currentLocale() }, sheetElement)))
     await Promise.all(FONTS.map((font) => document.fonts.load(font).catch(() => {})))
     await document.fonts.ready
     return await use(holder.firstElementChild)
@@ -109,7 +113,7 @@ export async function exportSheetImage(sheetElement, fileName) {
 
 export const exportNoteImage = ({ note, cases }) => exportSheetImage(noteSheet({ note, cases }), noteFileName(note.title, 'png'))
 
-export const exportNotePdf = ({ note, cases }) => exportSheetPdf(noteSheet({ note, cases }), noteFileName(note.title, 'pdf'), note.title || 'Untitled')
+export const exportNotePdf = ({ note, cases }) => exportSheetPdf(noteSheet({ note, cases }), noteFileName(note.title, 'pdf'), note.title || translate(currentLocale(), 'notes.untitled'))
 
 // Any sheet as A4 pages. Elements marked data-sheet-block are never cut in half.
 export async function exportSheetPdf(sheetElement, fileName, title) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { COMMUNITY_LIMITS } from '../../shared/community.js'
+import { CONCEPTS } from '../../shared/concepts.js'
 import ArticleBody from '../components/community/ArticleBody.jsx'
 import AuthorChip from '../components/community/AuthorChip.jsx'
 import CommunityIcon from '../components/community/CommunityIcon.jsx'
@@ -10,37 +11,41 @@ import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { addArticleComment, AuthError, deleteArticle, deleteArticleComment, getArticle, reactToArticle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
-import { timeAgo } from '../lib/caseInfo.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../lib/i18n/format.js'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
-const SESSION_ENDED = 'Your session ended. Sign in again to keep going.'
 const NO_REACTION = { liked: false, rating: null }
 const EDIT_GRACE_MS = 60_000
 
-const longDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-
-function dateLine(article) {
+function dateLine(article, date, t) {
   const edited = Date.parse(article.updatedAt) - Date.parse(article.createdAt) > EDIT_GRACE_MS
-  return `${longDate(article.createdAt)}${edited ? ' · edited' : ''}`
+  return `${date(article.createdAt)}${edited ? ` · ${t('notes.article.edited')}` : ''}`
 }
 
 // Only the kind of bug: the case's code and error text stay private.
 function LinkedCase({ summary }) {
+  const t = useT()
+  const labels = useLabels()
+  // The server sends the bug type's English name: show it in the reader's language when it's a known one.
+  const concept = CONCEPTS.find((item) => item.label === summary.concept)
   return (
-    <section aria-label="Linked case" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-2 border-ink bg-secondary-soft px-4 py-3">
-      <span className="font-label text-[10px] text-secondary">Linked case</span>
+    <section aria-label={t('notes.article.linkedCase')} className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-2 border-ink bg-secondary-soft px-4 py-3">
+      <span className="font-label text-[10px] text-secondary">{t('notes.article.linkedCase')}</span>
       <span className="font-pixel text-lg font-bold leading-none text-ink">{summary.errorType}</span>
-      <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{summary.concept}</span>
+      <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{concept ? labels.concept(concept.id) : summary.concept}</span>
       <span className="border border-ink/20 bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{summary.language}</span>
     </section>
   )
 }
 
 function ReactionButton({ icon, label, count, pressed, disabled, onClick, tone }) {
+  const t = useT()
   return (
     <button
       type="button"
-      aria-label={`${label} (${count})`}
+      aria-label={t('notes.article.reactionLabel', { label, count })}
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
@@ -56,15 +61,16 @@ function ReactionButton({ icon, label, count, pressed, disabled, onClick, tone }
 }
 
 function Reactions({ article, reaction, busy, onReact }) {
+  const t = useT()
   const { counts, mine } = article
   return (
-    <section aria-label="Reactions" className="mt-10 border-t-2 border-dashed border-line pt-6">
+    <section aria-label={t('notes.article.reactions')} className="mt-10 border-t-2 border-dashed border-line pt-6">
       <div className="flex flex-wrap items-center gap-3">
-        <ReactionButton icon="heart" label="Like" count={counts.likes} pressed={reaction.liked} disabled={mine || busy} tone="bg-primary" onClick={() => onReact({ like: !reaction.liked })} />
+        <ReactionButton icon="heart" label={t('notes.article.like')} count={counts.likes} pressed={reaction.liked} disabled={mine || busy} tone="bg-primary" onClick={() => onReact({ like: !reaction.liked })} />
         <span aria-hidden="true" className="mx-1 hidden h-6 w-0.5 bg-line sm:block" />
         <ReactionButton
           icon="check"
-          label="Valid"
+          label={t('notes.article.valid')}
           count={counts.valid}
           pressed={reaction.rating === 'valid'}
           disabled={mine || busy}
@@ -73,7 +79,7 @@ function Reactions({ article, reaction, busy, onReact }) {
         />
         <ReactionButton
           icon="cross"
-          label="Bad"
+          label={t('notes.article.bad')}
           count={counts.bad}
           pressed={reaction.rating === 'bad'}
           disabled={mine || busy}
@@ -82,23 +88,24 @@ function Reactions({ article, reaction, busy, onReact }) {
         />
       </div>
       <p className="mt-3 text-xs text-muted">
-        {mine ? "You can't like or rate your own article." : 'Is this explanation right? Rate it valid or bad. Press again to take it back.'}
+        {mine ? t('notes.article.ownArticle') : t('notes.article.rateHint')}
       </p>
     </section>
   )
 }
 
 function Composer({ user, loginLink, onPost }) {
+  const t = useT()
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   if (!user) {
     return (
       <PixelButton as={Link} to={loginLink} variant="ghost">
-        Sign in to comment
+        {t('notes.article.signInToComment')}
       </PixelButton>
     )
   }
-  if (user.isDemo) return <p className="border-2 border-dashed border-ink/40 p-4 text-sm text-muted">Sign up to comment on articles. Demo accounts can still like and rate.</p>
+  if (user.isDemo) return <p className="border-2 border-dashed border-ink/40 p-4 text-sm text-muted">{t('notes.article.demoComment')}</p>
 
   async function submit(event) {
     event.preventDefault()
@@ -111,7 +118,7 @@ function Composer({ user, loginLink, onPost }) {
   return (
     <form onSubmit={submit}>
       <label htmlFor="comment-body" className="font-label text-xs text-ink">
-        Your comment
+        {t('notes.article.yourComment')}
       </label>
       <textarea
         id="comment-body"
@@ -119,7 +126,7 @@ function Composer({ user, loginLink, onPost }) {
         onChange={(event) => setText(event.target.value)}
         maxLength={COMMUNITY_LIMITS.comment}
         rows={3}
-        placeholder="Add what helped you, or ask a question."
+        placeholder={t('notes.article.commentPlaceholder')}
         className="mt-2 block w-full resize-y border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel"
       />
       <div className="mt-2 flex items-center justify-between gap-3">
@@ -127,7 +134,7 @@ function Composer({ user, loginLink, onPost }) {
           {text.length}/{COMMUNITY_LIMITS.comment}
         </span>
         <PixelButton type="submit" disabled={!text.trim() || busy}>
-          {busy ? 'Posting...' : 'Post comment'}
+          {busy ? t('notes.article.posting') : t('notes.article.post')}
         </PixelButton>
       </div>
     </form>
@@ -135,22 +142,23 @@ function Composer({ user, loginLink, onPost }) {
 }
 
 function DeleteArticle({ onDelete }) {
+  const t = useT()
   const [asking, setAsking] = useState(false)
   if (!asking) {
     return (
       <PixelButton variant="ghost" onClick={() => setAsking(true)} className="px-3 py-2">
-        Delete
+        {t('notes.article.delete')}
       </PixelButton>
     )
   }
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-ink">Delete this article?</span>
+      <span className="text-sm text-ink">{t('notes.article.deleteAsk')}</span>
       <PixelButton onClick={onDelete} className="px-3 py-2">
-        Yes, delete it
+        {t('notes.article.deleteYes')}
       </PixelButton>
       <PixelButton variant="ghost" onClick={() => setAsking(false)} className="px-3 py-2">
-        Cancel
+        {t('notes.article.cancel')}
       </PixelButton>
     </span>
   )
@@ -161,6 +169,8 @@ export default function ArticlePage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const t = useT()
+  const { date, timeAgo } = useFormat()
   const { user, getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
   const [state, setState] = useState({ status: 'loading' })
@@ -189,10 +199,10 @@ export default function ArticlePage() {
     async (err) => {
       if (err instanceof AuthError) {
         await signOut()
-        setMessage(SESSION_ENDED)
+        setMessage(t('notes.article.sessionEnded'))
       } else setMessage(err.message)
     },
-    [signOut],
+    [signOut, t],
   )
 
   async function react(change) {
@@ -260,12 +270,12 @@ export default function ArticlePage() {
   return (
     <CommunityShell>
       <Link to="/articles" className="font-label text-xs text-ink hover:text-primary">
-        &lt; All articles
+        &lt; {t('notes.article.all')}
       </Link>
 
       {state.status === 'loading' && (
         <p role="status" className="mt-8 font-label text-xs text-muted">
-          Opening the article...
+          {t('notes.article.opening')}
         </p>
       )}
       {state.status === 'error' && (
@@ -280,7 +290,7 @@ export default function ArticlePage() {
             <div aria-hidden="true" className="dither-primary absolute top-0 right-0 h-24 w-1/2 opacity-15" />
             <div className="relative">
               {article.tags.length > 0 && (
-                <ul aria-label="Tags" className="flex flex-wrap gap-1.5">
+                <ul aria-label={t('notes.articles.tags')} className="flex flex-wrap gap-1.5">
                   {article.tags.map((tag) => (
                     <li key={tag}>
                       <Link to={`/articles?tag=${encodeURIComponent(tag)}`} className="bg-primary-soft px-1.5 py-0.5 font-mono text-xs text-primary hover:bg-primary hover:text-white">
@@ -292,11 +302,11 @@ export default function ArticlePage() {
               )}
               <h1 className="mt-4 break-words font-pixel text-3xl font-bold leading-tight text-ink sm:text-4xl">{article.title}</h1>
               <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-                <AuthorChip author={article.author} meta={dateLine(article)} size="size-10" />
+                <AuthorChip author={article.author} meta={dateLine(article, date, t)} size="size-10" />
                 {article.mine && (
                   <span className="flex flex-wrap items-center gap-2">
                     <PixelButton as={Link} to={`/articles/${article.id}/edit`} variant="secondary" className="px-3 py-2">
-                      Edit
+                      {t('notes.article.edit')}
                     </PixelButton>
                     <DeleteArticle onDelete={removeArticle} />
                   </span>
@@ -318,10 +328,10 @@ export default function ArticlePage() {
 
           <section aria-labelledby="comments-title" className="mt-12">
             <h2 id="comments-title" className="font-pixel text-2xl font-bold text-ink">
-              Comments ({comments.length})
+              {t('notes.article.comments', { count: comments.length })}
             </h2>
             {comments.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">No comments yet. Start the conversation.</p>
+              <p className="mt-3 text-sm text-muted">{t('notes.article.noComments')}</p>
             ) : (
               <ul className="mt-5 space-y-3">
                 {comments.map((comment) => (
@@ -329,8 +339,8 @@ export default function ArticlePage() {
                     <div className="flex items-start justify-between gap-3">
                       <AuthorChip author={comment.author} meta={timeAgo(comment.createdAt)} size="size-7" />
                       {comment.canDelete && (
-                        <button type="button" onClick={() => removeComment(comment.id)} aria-label="Delete comment" className="font-label text-[10px] text-muted hover:text-primary">
-                          Delete
+                        <button type="button" onClick={() => removeComment(comment.id)} aria-label={t('notes.article.deleteComment')} className="font-label text-[10px] text-muted hover:text-primary">
+                          {t('notes.article.delete')}
                         </button>
                       )}
                     </div>

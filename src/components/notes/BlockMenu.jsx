@@ -1,6 +1,9 @@
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+
 // The pop-up under a block: "/" block types or "@" cases. The input that opened it keeps focus and
 // drives it with the arrow keys (aria-activedescendant); a search box appears when nothing else can type.
 export default function BlockMenu({ id, label, items, active, onPick, empty, search, onSearch, onKeyDown, onClose }) {
+  const t = useT()
   return (
     <div className="absolute top-full left-0 z-20 mt-1 w-full max-w-md border-2 border-ink bg-white shadow-pixel">
       <p className="border-b-2 border-ink bg-mist px-3 py-1.5 font-label text-[10px] text-muted">{label}</p>
@@ -13,10 +16,10 @@ export default function BlockMenu({ id, label, items, active, onPick, empty, sea
           onChange={(event) => onSearch(event.target.value)}
           onKeyDown={onKeyDown}
           onBlur={onClose}
-          aria-label="Search your cases"
+          aria-label={t('notes.editor.searchCases')}
           aria-controls={id}
           aria-activedescendant={items.length ? `${id}-${active}` : undefined}
-          placeholder="Search by error, bug type or language"
+          placeholder={t('notes.editor.searchPlaceholder')}
           className="w-full border-b-2 border-ink px-3 py-2 text-sm text-ink focus-visible:outline-none"
         />
       )}

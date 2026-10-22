@@ -11,6 +11,10 @@ it('writes the export date in plain words', () => {
   expect(exportDate(new Date(2026, 9, 22))).toBe('Oct 22, 2026')
 })
 
+it("writes the export date in the reader's language", () => {
+  expect(exportDate(new Date(2026, 9, 22), 'pt-BR')).toBe('22 de out. de 2026')
+})
+
 it('fits an 800px sheet across A4 with margins', () => {
   const page = pdfGeometry({ widthPx: 800, marginMm: 10 })
   expect(page.contentWidthMm).toBe(190)

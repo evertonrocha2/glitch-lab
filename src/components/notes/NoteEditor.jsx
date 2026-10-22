@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../shared/limits.js'
 import { splitError } from '../../lib/caseInfo.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, updateBlock } from '../../lib/notes/blocks.js'
 import PixelButton from '../pixel/PixelButton.jsx'
 import BlockMenu from './BlockMenu.jsx'
@@ -13,32 +15,28 @@ export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
 const APPEND = 'append'
 const MENU_ID = 'note-block-menu'
-const STATUS = { new: 'New', training: 'Training', solved: 'Solved' }
 
-const BLOCK_TYPES = [
-  { key: 'text', label: 'Text', sub: 'Plain writing' },
-  { key: 'heading', label: 'Heading', sub: 'A section title' },
-  { key: 'todo', label: 'To-do', sub: 'Something to practice' },
-  { key: 'case', label: 'Case from your board', sub: 'Same as typing @' },
-]
+const BLOCK_TYPES = ['text', 'heading', 'todo', 'case']
 
-const SAVE_TEXT = { saved: 'Saved', unsaved: 'Unsaved changes', saving: 'Saving...', error: "Couldn't save." }
+const SAVE_TEXT = { saved: 'notes.editor.saved', unsaved: 'notes.editor.unsaved', saving: 'notes.editor.saving', error: 'notes.editor.saveFailed' }
 
 const lineClass = 'w-full bg-transparent text-ink placeholder:text-muted/60 focus-visible:outline-none'
 
-function caseOption(item) {
+function caseOption(item, labels) {
   const { type, message } = splitError(item.error)
   return {
     key: item.id,
     caseId: item.id,
     label: message ? `${type}: ${message}` : type,
-    sub: `${conceptLabel(item.concept)} · ${item.language} · ${STATUS[item.status]}`,
+    sub: `${labels.concept(item.concept)} · ${item.language} · ${labels.status(item.status)}`,
   }
 }
 
 // A Notion-style page: a title and a list of blocks. Saves on its own a moment after you stop typing.
 // With onShare, a switch puts the note on your public profile (sharing says whether that's allowed).
 export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare }) {
+  const t = useT()
+  const labels = useLabels()
   const [initialBlocks] = useState(() => (note.blocks.length ? note.blocks : [newBlock('text')]))
   const [title, setTitle] = useState(note.title)
   const [blocks, setBlocks] = useState(initialBlocks)
@@ -123,7 +121,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   // placeCase can add two blocks (the case and a line after it).
   const full = blocks.length + 2 > NOTE_LIMITS.blocks
   const casesById = new Map(cases.map((item) => [item.id, item]))
-  const items = !menu ? [] : menu.kind === 'slash' ? BLOCK_TYPES : matchCases(cases, menu.query, conceptLabel).map(caseOption)
+  const blockTypes = BLOCK_TYPES.map((key) => ({ key, label: t(`notes.block.${key}`), sub: t(`notes.block.${key}Sub`) }))
+  // Search finds a bug type by its English name and by its name in the reader's language.
+  const conceptWords = (id) => `${conceptLabel(id)} ${labels.concept(id)}`
+  const items = !menu ? [] : menu.kind === 'slash' ? blockTypes : matchCases(cases, menu.query, conceptWords).map((item) => caseOption(item, labels))
   const active = Math.min(menu?.active ?? 0, Math.max(items.length - 1, 0))
 
   function pick(item) {
@@ -223,11 +224,11 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     return (
       <BlockMenu
         id={MENU_ID}
-        label={menu.kind === 'slash' ? 'Turn into' : 'Mention a case'}
+        label={menu.kind === 'slash' ? t('notes.editor.turnInto') : t('notes.editor.mention')}
         items={items}
         active={active}
         onPick={pick}
-        empty={cases.length ? 'No case matches that.' : 'Your board is empty. Investigate an error first.'}
+        empty={cases.length ? t('notes.editor.noMatch') : t('notes.editor.emptyBoard')}
         {...extra}
       />
     )
@@ -254,8 +255,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           <textarea
             {...inputProps(block)}
             rows={1}
-            aria-label="Heading"
-            placeholder="Heading"
+            aria-label={t('notes.block.heading')}
+            placeholder={t('notes.block.heading')}
             className={`${lineClass} block resize-none pt-3 font-pixel text-2xl font-bold field-sizing-content`}
           />
         )
@@ -266,14 +267,14 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
               type="checkbox"
               checked={block.done}
               onChange={(event) => setBlocks((current) => updateBlock(current, block.id, { done: event.target.checked }))}
-              aria-label={`Done: ${block.text || 'to-do'}`}
+              aria-label={t('notes.block.todoDone', { text: block.text || t('notes.block.todoFallback') })}
               className="mt-1 size-4 shrink-0 accent-primary"
             />
             <textarea
               {...inputProps(block)}
               rows={1}
-              aria-label="To-do"
-              placeholder="To-do"
+              aria-label={t('notes.block.todo')}
+              placeholder={t('notes.block.todo')}
               className={`${lineClass} block resize-none field-sizing-content ${block.done ? 'text-muted line-through' : ''}`}
             />
           </div>
@@ -285,8 +286,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           <textarea
             {...inputProps(block)}
             rows={1}
-            aria-label="Text"
-            placeholder="Write something. Type @ to mention a case, / for more."
+            aria-label={t('notes.block.text')}
+            placeholder={t('notes.block.textPlaceholder')}
             className={`${lineClass} block resize-none py-1 leading-relaxed field-sizing-content`}
           />
         )
@@ -294,14 +295,14 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   }
 
   return (
-    <article aria-label="Note editor">
+    <article aria-label={t('notes.editor.label')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p aria-live="polite" className="flex items-center gap-2 font-label text-[10px] text-muted">
           <span aria-hidden="true" className={`size-2 border border-ink ${status === 'saved' ? 'bg-primary' : status === 'error' ? 'bg-ink' : 'bg-white'}`} />
-          {status === 'error' ? saveError || SAVE_TEXT.error : SAVE_TEXT[status]}
+          {status === 'error' ? saveError || t(SAVE_TEXT.error) : t(SAVE_TEXT[status])}
           {status === 'error' && (
             <button type="button" onClick={flush} className="text-primary underline underline-offset-2">
-              Retry
+              {t('notes.editor.retry')}
             </button>
           )}
         </p>
@@ -310,15 +311,15 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           {confirming ? (
             <>
               <PixelButton variant="secondary" onClick={onDelete} className="px-3 py-2">
-                Yes, delete
+                {t('notes.editor.confirmDelete')}
               </PixelButton>
               <PixelButton variant="ghost" onClick={() => setConfirming(false)} className="px-3 py-2">
-                Keep it
+                {t('notes.editor.keep')}
               </PixelButton>
             </>
           ) : (
             <PixelButton variant="ghost" onClick={() => setConfirming(true)} className="px-3 py-2">
-              Delete
+              {t('notes.editor.delete')}
             </PixelButton>
           )}
         </div>
@@ -337,13 +338,13 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           if (first) setFocusId(first.id)
         }}
         maxLength={120}
-        aria-label="Note title"
-        placeholder="Untitled"
+        aria-label={t('notes.editor.titleLabel')}
+        placeholder={t('notes.untitled')}
         className={`${lineClass} mt-5 block resize-none font-pixel text-3xl font-bold field-sizing-content sm:text-4xl`}
       />
       <p className="mt-2 text-sm text-muted">
-        Type <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> to bring in a case from your board,{' '}
-        <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> for other blocks.
+        {t('notes.editor.hintBefore')} <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> {t('notes.editor.hintMiddle')}{' '}
+        <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> {t('notes.editor.hintAfter')}
       </p>
 
       <div className="mt-6 space-y-2">
@@ -353,7 +354,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
             <button
               type="button"
               onClick={() => setBlocks((current) => removeBlock(current, block.id))}
-              aria-label="Remove this block"
+              aria-label={t('notes.editor.removeBlock')}
               className="mt-1 px-1.5 text-lg leading-none text-muted opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-ink focus:opacity-100"
             >
               ×
@@ -364,11 +365,11 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       </div>
 
       <div className="relative mt-6 flex flex-wrap items-center gap-2 border-t-2 border-dashed border-line pt-4">
-        <span className="mr-1 font-label text-[10px] text-muted">Add</span>
+        <span className="mr-1 font-label text-[10px] text-muted">{t('notes.editor.add')}</span>
         {[
-          ['text', '+ Text'],
-          ['heading', '+ Heading'],
-          ['todo', '+ To-do'],
+          ['text', t('notes.editor.addText')],
+          ['heading', t('notes.editor.addHeading')],
+          ['todo', t('notes.editor.addTodo')],
         ].map(([type, label]) => (
           <PixelButton key={type} variant="ghost" onClick={() => append(type)} disabled={full} className="px-2.5 py-1.5">
             {label}
@@ -380,9 +381,9 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           disabled={full}
           className="px-2.5 py-1.5"
         >
-          @ Case
+          {t('notes.editor.addCase')}
         </PixelButton>
-        {full && <span className="text-xs text-muted">This note is full. Start a new one to keep going.</span>}
+        {full && <span className="text-xs text-muted">{t('notes.editor.full')}</span>}
         {menuFor(APPEND, {
           search: menu?.query ?? '',
           onSearch: (query) => setMenu((current) => ({ ...current, query, active: 0 })),

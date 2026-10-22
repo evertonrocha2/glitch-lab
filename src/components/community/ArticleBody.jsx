@@ -1,4 +1,5 @@
 import { parseBody, splitInline } from '../../../shared/community.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 // Paragraphs, `inline code` and fenced code blocks. Everything is a text node: an article can
 // never put HTML on the page, whatever its author types.
@@ -18,8 +19,9 @@ function Inline({ text }) {
 }
 
 export default function ArticleBody({ body }) {
+  const t = useT()
   const blocks = parseBody(body)
-  if (!blocks.length) return <p className="text-muted">Nothing written yet.</p>
+  if (!blocks.length) return <p className="text-muted">{t('notes.articles.empty')}</p>
   return (
     <div className="space-y-5 text-lg leading-relaxed text-ink">
       {blocks.map((block, index) =>

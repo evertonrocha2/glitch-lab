@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import AppShell from '../AppShell.jsx'
+import LanguageSelect from '../LanguageSelect.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 
@@ -8,6 +10,7 @@ import PixelLogo from '../pixel/PixelLogo.jsx'
 export default function CommunityShell({ children }) {
   const { user } = useAuth()
   const location = useLocation()
+  const t = useT()
   if (user) return <AppShell>{children}</AppShell>
   const next = encodeURIComponent(location.pathname + location.search)
   return (
@@ -18,12 +21,13 @@ export default function CommunityShell({ children }) {
             <PixelLogo className="size-6 sm:size-7" />
             <span>Glitch Detective</span>
           </Link>
-          <nav aria-label="Main" className="flex items-center gap-4">
+          <nav aria-label={t('notes.articles.nav')} className="flex items-center gap-2 sm:gap-4">
             <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
-              Articles
+              {t('notes.articles.title')}
             </Link>
+            <LanguageSelect compact />
             <PixelButton as={Link} to={`/login?next=${next}`} className="px-3 py-2">
-              Sign in
+              {t('notes.articles.signIn')}
             </PixelButton>
           </nav>
         </div>

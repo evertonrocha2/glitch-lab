@@ -1,12 +1,12 @@
 import { Link } from 'react-router'
-import { timeAgo } from '../../lib/caseInfo.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../../lib/i18n/format.js'
 import AuthorChip from './AuthorChip.jsx'
 import CommunityIcon from './CommunityIcon.jsx'
 
-const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`
-
 // "3 likes, 2 valid, 0 bad, 1 comment" for screen readers; little pixel icons for everyone else.
 export function CountRow({ counts }) {
+  const t = useT()
   const items = [
     { icon: 'heart', value: counts.likes, tone: 'text-primary' },
     { icon: 'check', value: counts.valid, tone: 'text-secondary' },
@@ -16,7 +16,12 @@ export function CountRow({ counts }) {
   return (
     <span className="flex items-center gap-3 text-xs text-ink">
       <span className="sr-only">
-        {plural(counts.likes, 'like')}, {counts.valid} valid, {counts.bad} bad, {plural(counts.comments, 'comment')}
+        {[
+          t('notes.articles.likes', { count: counts.likes }),
+          t('notes.articles.valids', { count: counts.valid }),
+          t('notes.articles.bads', { count: counts.bad }),
+          t('notes.articles.comments', { count: counts.comments }),
+        ].join(', ')}
       </span>
       {items.map((item) => (
         <span key={item.icon} aria-hidden="true" className="flex items-center gap-1 font-label text-xs">
@@ -30,17 +35,19 @@ export function CountRow({ counts }) {
 
 // One article in a list. onTag, when given, turns the tags into filter buttons.
 export default function ArticleCard({ article, onTag }) {
+  const t = useT()
+  const { timeAgo } = useFormat()
   return (
     <article className="flex w-full min-w-0 flex-col border-2 border-ink bg-white p-4 shadow-pixel-muted transition-[translate,box-shadow] duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pixel sm:p-5">
       {article.tags.length > 0 && (
-        <ul aria-label="Tags" className="mb-3 flex flex-wrap gap-1.5">
+        <ul aria-label={t('notes.articles.tags')} className="mb-3 flex flex-wrap gap-1.5">
           {article.tags.map((tag) => (
             <li key={tag}>
               {onTag ? (
                 <button
                   type="button"
                   onClick={() => onTag(tag)}
-                  aria-label={`Filter by #${tag}`}
+                  aria-label={t('notes.articles.filterTag', { tag })}
                   className="bg-primary-soft px-1.5 py-0.5 font-mono text-xs text-primary hover:bg-primary hover:text-white"
                 >
                   #{tag}

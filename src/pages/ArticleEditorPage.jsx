@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { COMMUNITY_LIMITS, parseTags, tagProblem } from '../../shared/community.js'
-import { conceptLabel } from '../../shared/concepts.js'
 import ArticleBody from '../components/community/ArticleBody.jsx'
 import CommunityShell from '../components/community/CommunityShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
@@ -10,18 +9,20 @@ import PixelCard from '../components/pixel/PixelCard.jsx'
 import { AuthError, createArticle, getArticle, listCases, updateArticle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { splitError } from '../lib/caseInfo.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
 const LABEL = 'font-label text-xs text-ink'
 const EMPTY = { title: '', tags: '', body: '', caseId: '' }
-const BODY_HINT = 'Leave a blank line between paragraphs. Wrap code in `backticks`, or put a block between ``` lines.'
 
-// What's wrong with the typed tags, or null.
-function tagsProblem(tags) {
-  const bad = tags.map(tagProblem).find(Boolean)
-  if (bad) return bad
-  return tags.length > COMMUNITY_LIMITS.tags ? `Use up to ${COMMUNITY_LIMITS.tags} tags.` : null
+// What's wrong with the typed tags, or null. tagProblem (shared with the API) says it in English,
+// so the reason is told again here in the reader's language.
+function tagsProblem(tags, t) {
+  const bad = tags.find((tag) => tagProblem(tag))
+  if (bad) return bad.length > COMMUNITY_LIMITS.tag ? t('notes.editorPage.tagTooLong', { max: COMMUNITY_LIMITS.tag }) : t('notes.editorPage.tagChars')
+  return tags.length > COMMUNITY_LIMITS.tags ? t('notes.editorPage.tooManyTags', { max: COMMUNITY_LIMITS.tags }) : null
 }
 
 function Counter({ value, max }) {
@@ -36,6 +37,8 @@ function Counter({ value, max }) {
 export default function ArticleEditorPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const t = useT()
+  const labels = useLabels()
   const { user, getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
   const [draft, setDraft] = useState(EMPTY)
@@ -78,7 +81,7 @@ export default function ArticleEditorPage() {
 
   const set = (field) => (event) => setDraft((current) => ({ ...current, [field]: event.target.value }))
   const tags = parseTags(draft.tags)
-  const problem = tagsProblem(tags)
+  const problem = tagsProblem(tags, t)
   const title = draft.title.trim()
   const body = draft.body.trim()
   const tooLong = title.length > COMMUNITY_LIMITS.title || body.length > COMMUNITY_LIMITS.body
@@ -105,21 +108,21 @@ export default function ArticleEditorPage() {
   return (
     <CommunityShell>
       <Link to={id ? `/articles/${id}` : '/articles'} className="font-label text-xs text-ink hover:text-primary">
-        &lt; {id ? 'Back to the article' : 'All articles'}
+        &lt; {id ? t('notes.editorPage.back') : t('notes.article.all')}
       </Link>
       <p className="mt-6 font-label text-xs text-secondary">
-        &gt; {id ? 'edit article' : 'new article'}
+        &gt; {id ? t('notes.editorPage.promptEdit') : t('notes.editorPage.promptNew')}
         <span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{id ? 'Edit your article' : 'Write an article'}</h1>
-      <p className="mt-2 max-w-xl text-muted">Explain one bug you understand now. Others can like it, rate it valid or bad, and comment. Publishing earns XP.</p>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{id ? t('notes.editorPage.titleEdit') : t('notes.articles.write')}</h1>
+      <p className="mt-2 max-w-xl text-muted">{t('notes.editorPage.lede')}</p>
 
       {status === 'loading' && (
         <p role="status" className="mt-8 font-label text-xs text-muted">
-          Loading your article...
+          {t('notes.editorPage.loading')}
         </p>
       )}
-      {status === 'forbidden' && <p className="mt-8 border-2 border-dashed border-ink/40 p-6 text-muted">You can only edit your own articles.</p>}
+      {status === 'forbidden' && <p className="mt-8 border-2 border-dashed border-ink/40 p-6 text-muted">{t('notes.editorPage.forbidden')}</p>}
       {status === 'error' && (
         <div className="mt-8">
           <ErrorNotice message={message} />
@@ -130,11 +133,11 @@ export default function ArticleEditorPage() {
         <form onSubmit={save} className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <PixelCard className="min-w-0 p-5 sm:p-7">
             {user?.isDemo && (
-              <p className="mb-5 border-2 border-ink bg-secondary-soft p-3 text-sm text-ink">Sign up to publish articles. Demo accounts can read, like and rate.</p>
+              <p className="mb-5 border-2 border-ink bg-secondary-soft p-3 text-sm text-ink">{t('notes.editorPage.demo')}</p>
             )}
             <div className="flex items-baseline justify-between gap-3">
               <label htmlFor="article-title" className={LABEL}>
-                Title
+                {t('notes.editorPage.title')}
               </label>
               <Counter value={draft.title.length} max={COMMUNITY_LIMITS.title} />
             </div>
@@ -143,12 +146,12 @@ export default function ArticleEditorPage() {
               value={draft.title}
               onChange={set('title')}
               maxLength={COMMUNITY_LIMITS.title}
-              placeholder="Undefined everywhere: reading a property too early"
+              placeholder={t('notes.editorPage.titlePlaceholder')}
               className={`mt-2 font-pixel text-xl ${INPUT}`}
             />
 
             <label htmlFor="article-tags" className={`mt-6 block ${LABEL}`}>
-              Tags
+              {t('notes.editorPage.tags')}
             </label>
             <input id="article-tags" value={draft.tags} onChange={set('tags')} placeholder="javascript, loops" className={`mt-2 font-mono text-sm ${INPUT}`} />
             {problem ? (
@@ -161,15 +164,15 @@ export default function ArticleEditorPage() {
                         #{tag}
                       </span>
                     ))
-                  : `Up to ${COMMUNITY_LIMITS.tags} words, separated by commas.`}
+                  : t('notes.editorPage.tagsHint', { max: COMMUNITY_LIMITS.tags })}
               </p>
             )}
 
             <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-              <div role="tablist" aria-label="Body view" className="flex border-2 border-ink">
+              <div role="tablist" aria-label={t('notes.editorPage.bodyView')} className="flex border-2 border-ink">
                 {[
-                  { id: 'write', label: 'Write' },
-                  { id: 'preview', label: 'Preview' },
+                  { id: 'write', label: t('notes.editorPage.write') },
+                  { id: 'preview', label: t('notes.editorPage.preview') },
                 ].map((option) => (
                   <button
                     key={option.id}
@@ -188,7 +191,7 @@ export default function ArticleEditorPage() {
             {tab === 'write' ? (
               <>
                 <label htmlFor="article-body" className="sr-only">
-                  Article
+                  {t('notes.editorPage.body')}
                 </label>
                 <textarea
                   id="article-body"
@@ -196,13 +199,13 @@ export default function ArticleEditorPage() {
                   onChange={set('body')}
                   maxLength={COMMUNITY_LIMITS.body}
                   rows={16}
-                  placeholder="What was the bug, why did it happen, and how do you spot it next time?"
+                  placeholder={t('notes.editorPage.bodyPlaceholder')}
                   className={`mt-3 block resize-y font-mono text-sm leading-relaxed ${INPUT}`}
                 />
-                <p className="mt-1.5 text-xs text-muted">{BODY_HINT}</p>
+                <p className="mt-1.5 text-xs text-muted">{t('notes.editorPage.bodyHint')}</p>
               </>
             ) : (
-              <div role="tabpanel" aria-label="Preview" className="mt-3 min-h-64 border-2 border-dashed border-ink/40 p-4">
+              <div role="tabpanel" aria-label={t('notes.editorPage.preview')} className="mt-3 min-h-64 border-2 border-dashed border-ink/40 p-4">
                 <ArticleBody body={draft.body} />
               </div>
             )}
@@ -211,22 +214,22 @@ export default function ArticleEditorPage() {
           <div className="space-y-5">
             <PixelCard tone="secondary" className="p-5">
               <label htmlFor="article-case" className={LABEL}>
-                Linked case (optional)
+                {t('notes.editorPage.linkedCase')}
               </label>
               <select id="article-case" value={draft.caseId} onChange={set('caseId')} className={`mt-2 text-sm ${INPUT}`}>
-                <option value="">No case</option>
+                <option value="">{t('notes.editorPage.noCase')}</option>
                 {cases.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {splitError(item.error).type} · {conceptLabel(item.concept)} ({item.language})
+                    {splitError(item.error).type} · {labels.concept(item.concept)} ({item.language})
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs text-muted">Readers see only its error type, bug type and language. Your code stays private.</p>
+              <p className="mt-2 text-xs text-muted">{t('notes.editorPage.caseHint')}</p>
             </PixelCard>
 
             {message && <ErrorNotice message={message} />}
             <PixelButton type="submit" disabled={!canSave} className="w-full py-3">
-              {saving ? 'Saving...' : id ? 'Save changes' : 'Publish'}
+              {saving ? t('notes.editorPage.saving') : id ? t('notes.editorPage.save') : t('notes.editorPage.publish')}
             </PixelButton>
           </div>
         </form>

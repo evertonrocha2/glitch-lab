@@ -122,3 +122,17 @@ it('says when the article is gone', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('Article not found.')
   expect(screen.getByRole('link', { name: '< All articles' })).toHaveAttribute('href', '/articles')
 })
+
+it('reads in Brazilian Portuguese', async () => {
+  renderAt('/articles/a1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByRole('heading', { level: 1, name: 'Undefined everywhere' })).toBeInTheDocument()
+  const linked = screen.getByRole('region', { name: 'Caso vinculado' })
+  expect(within(linked).getByText('Lendo undefined')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Curtir (3)' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Válido (2)' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Ruim (0)' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Comentários (1)' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Seu comentário' })).toHaveAttribute('placeholder', 'Conte o que te ajudou ou faça uma pergunta.')
+  expect(screen.getByRole('button', { name: 'Publicar comentário' })).toBeDisabled()
+  expect(screen.getByRole('link', { name: '< Todos os artigos' })).toHaveAttribute('href', '/articles')
+})

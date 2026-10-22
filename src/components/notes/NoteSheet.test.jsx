@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
+import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import NoteSheet from './NoteSheet.jsx'
 
 const analysis = { explicacao: 'a', causa: 'b', correcao: 'c', exercicio: { enunciado: 'd', resposta: 'e' } }
@@ -48,4 +49,19 @@ it('lays out the whole note as a printable sheet', () => {
 it('names an untitled note', () => {
   render(<NoteSheet note={{ ...NOTE, title: '', blocks: [] }} cases={[]} date="Oct 22, 2026" />)
   expect(screen.getByRole('heading', { level: 1, name: 'Untitled' })).toBeInTheDocument()
+})
+
+it('prints the sheet in Brazilian Portuguese', () => {
+  render(
+    <I18nProvider locale="pt-BR">
+      <NoteSheet note={{ ...NOTE, title: '' }} cases={CASES} date="22 de out. de 2026" />
+    </I18nProvider>,
+  )
+  expect(screen.getByText('Exportada em 22 de out. de 2026')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Sem título' })).toBeInTheDocument()
+  expect(screen.getByText('2 casos · 1 de 2 tarefas feitas')).toBeInTheDocument()
+  expect(screen.getByText('Lendo undefined')).toBeInTheDocument()
+  expect(screen.getByText('Treinando · 1/2')).toBeInTheDocument()
+  expect(screen.getByText('Esse caso não está mais no seu board.')).toBeInTheDocument()
+  expect(screen.getByText('Feito com Glitch Detective')).toBeInTheDocument()
 })

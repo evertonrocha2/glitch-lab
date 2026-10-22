@@ -1,7 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
+import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import ExportMenu from './ExportMenu.jsx'
+
+it('offers the formats in Brazilian Portuguese', async () => {
+  render(
+    <I18nProvider locale="pt-BR">
+      <ExportMenu onExport={vi.fn()} />
+    </I18nProvider>,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Exportar' }))
+  expect(screen.getByRole('menu', { name: 'Exportar como' })).toBeInTheDocument()
+  expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Markdown.md', 'Imagem.png', 'PDF.pdf'])
+  expect(screen.getByText('Baixar como')).toBeInTheDocument()
+})
 
 it('opens a menu with the three formats', async () => {
   render(<ExportMenu onExport={vi.fn()} />)

@@ -87,3 +87,22 @@ it('says so when nothing matches, and shows errors', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Most valid' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server.')
 })
+
+it('lists articles in Brazilian Portuguese, with a language picker when signed out', async () => {
+  renderAt('/articles', { locale: 'pt-BR' })
+  const card = (await screen.findByRole('heading', { name: 'Undefined everywhere' })).closest('article')
+  expect(screen.getByRole('heading', { level: 1, name: 'Artigos' })).toBeInTheDocument()
+  expect(within(card).getByText('3 curtidas, 2 votos válidos, 0 voto ruim, 1 comentário')).toBeInTheDocument()
+  expect(within(card).getByText(/anteontem|há 2 dias/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Entre para escrever' })).toBeInTheDocument()
+  expect(screen.getByRole('searchbox', { name: 'Buscar artigos' })).toHaveAttribute('placeholder', 'Títulos, tags ou autores')
+  expect(within(screen.getByRole('group', { name: 'Ordenar' })).getAllByRole('button').map((button) => button.textContent)).toEqual([
+    'Novos',
+    'Mais curtidos',
+    'Mais válidos',
+  ])
+  expect(screen.getAllByRole('button', { name: 'Filtrar por #javascript' }).length).toBeGreaterThan(0)
+  // Signed out, the light header still lets readers switch language.
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Idioma' }), 'en')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Articles' })).toBeInTheDocument()
+})

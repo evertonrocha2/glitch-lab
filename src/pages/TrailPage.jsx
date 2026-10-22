@@ -11,20 +11,21 @@ import KindIcon from '../components/trail/KindIcon.jsx'
 import TrailMap from '../components/trail/TrailMap.jsx'
 import { AuthError, buildTrail, createNote, getTrail, setTrailMission, startChallenge } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
-import { timeAgo } from '../lib/caseInfo.js'
 import { localDay } from '../lib/day.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../lib/i18n/format.js'
+import { useLabels } from '../lib/i18n/labels.js'
 import { newBlock } from '../lib/notes/blocks.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import { useStudyTimer } from '../lib/timer/StudyTimerProvider.jsx'
 
-const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`
-
 // One block per mission, filled as they get done.
 function MissionBar({ trail }) {
+  const t = useT()
   return (
     <div
       role="progressbar"
-      aria-label="Missions done"
+      aria-label={t('notes.trail.missionsDone')}
       aria-valuemin={0}
       aria-valuemax={trail.total}
       aria-valuenow={trail.doneCount}
@@ -38,40 +39,41 @@ function MissionBar({ trail }) {
 }
 
 function EmptyState({ sources, onBuild }) {
+  const t = useT()
+  const labels = useLabels()
   const ready = sources.cases > 0
   return (
     <PixelCard className="relative mt-10 overflow-hidden p-6 sm:p-8">
       <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/3 opacity-20" />
       <div className="relative max-w-2xl">
-        <p className="font-label text-xs text-primary">No trail yet</p>
-        <h2 className="mt-2 font-pixel text-3xl font-bold text-ink">Plan your next steps</h2>
+        <p className="font-label text-xs text-primary">{t('notes.trail.emptyKicker')}</p>
+        <h2 className="mt-2 font-pixel text-3xl font-bold text-ink">{t('notes.trail.emptyTitle')}</h2>
         {ready ? (
           <p className="mt-3 text-muted">
-            The AI reads your {plural(sources.cases, 'case')} and {plural(sources.notes, 'note')}, finds your weak spot and builds 5 to 7
-            missions just for you. Missions tick themselves as you do them.
+            {t('notes.trail.emptyReady', { cases: t('notes.cases', { count: sources.cases }), notes: t('notes.notes', { count: sources.notes }) })}
           </p>
         ) : (
-          <p className="mt-3 text-muted">Your trail is built from your cases. Investigate your first error on the board, then come back here.</p>
+          <p className="mt-3 text-muted">{t('notes.trail.emptyNotReady')}</p>
         )}
-        <ul aria-label="Kinds of mission" className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <ul aria-label={t('notes.trail.kinds')} className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {TRAIL_KINDS.map((kind, index) => (
             <li key={kind.id} className="flex items-center gap-2 border-2 border-ink bg-white px-2.5 py-2">
               <KindIcon kind={kind.id} accent={index % 2 ? 'secondary' : 'primary'} className="size-5 shrink-0" />
               <span className="min-w-0">
-                <span className="block font-label text-[10px] text-ink">{kind.label}</span>
+                <span className="block font-label text-[10px] text-ink">{labels.trailKind(kind.id)}</span>
                 <span className="block text-xs text-muted">+{kind.xp} XP</span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-muted">Finish every mission for a +{TRAIL_BONUS_XP} XP bonus and the Trailblazer badge.</p>
+        <p className="mt-3 text-sm text-muted">{t('notes.trail.bonus', { xp: TRAIL_BONUS_XP, badge: labels.badgeName('trailblazer') })}</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <PixelButton onClick={onBuild} disabled={!ready}>
-            Build my study trail
+            {t('notes.trail.build')}
           </PixelButton>
           {!ready && (
             <PixelButton as={Link} to="/board" variant="ghost">
-              Go to the board
+              {t('notes.trail.toBoard')}
             </PixelButton>
           )}
         </div>
@@ -81,6 +83,8 @@ function EmptyState({ sources, onBuild }) {
 }
 
 function Celebration({ onBuild }) {
+  const t = useT()
+  const labels = useLabels()
   return (
     <PixelCard tone="secondary" className="relative mt-8 overflow-hidden p-6 sm:p-8">
       <div aria-hidden="true" className="dither-secondary absolute inset-0 opacity-20" />
@@ -89,11 +93,11 @@ function Celebration({ onBuild }) {
           <BadgeIcon id="trailblazer" className="size-14" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-pixel text-3xl font-bold text-ink">Trail complete!</h2>
-          <p className="mt-1 text-muted">Every mission done: +{TRAIL_BONUS_XP} XP bonus and the Trailblazer badge. Ready for the next one?</p>
+          <h2 className="font-pixel text-3xl font-bold text-ink">{t('notes.trail.complete')}</h2>
+          <p className="mt-1 text-muted">{t('notes.trail.completeText', { xp: TRAIL_BONUS_XP, badge: labels.badgeName('trailblazer') })}</p>
         </div>
         <PixelButton onClick={onBuild} className="self-start sm:self-center">
-          Build a new trail
+          {t('notes.trail.buildNew')}
         </PixelButton>
       </div>
     </PixelCard>
@@ -101,11 +105,13 @@ function Celebration({ onBuild }) {
 }
 
 function TrailHeader({ trail, confirming, onAskNew, onCancel, onBuild }) {
+  const t = useT()
+  const { timeAgo } = useFormat()
   return (
     <PixelCard className="relative mt-10 overflow-hidden p-6 sm:p-8">
       <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/4 opacity-20" />
       <div className="relative">
-        <p className="font-label text-xs text-primary">Active trail · started {timeAgo(trail.createdAt)}</p>
+        <p className="font-label text-xs text-primary">{t('notes.trail.active', { time: timeAgo(trail.createdAt) })}</p>
         <h2 className="mt-2 font-pixel text-3xl font-bold text-ink sm:text-4xl">{trail.title}</h2>
         {trail.summary && <p className="mt-2 max-w-2xl text-muted">{trail.summary}</p>}
         <div className="mt-5">
@@ -114,7 +120,7 @@ function TrailHeader({ trail, confirming, onAskNew, onCancel, onBuild }) {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <span className="border-2 border-ink bg-white px-2 py-1 font-label text-xs text-ink">
-              {trail.doneCount}/{trail.total} missions
+              {t('notes.trail.missionCount', { done: trail.doneCount, total: trail.total })}
             </span>
             <span className="border-2 border-ink bg-primary-soft px-2 py-1 font-label text-xs text-primary">
               {trail.xp}/{trail.xpTotal} XP
@@ -122,17 +128,17 @@ function TrailHeader({ trail, confirming, onAskNew, onCancel, onBuild }) {
           </div>
           {!confirming && (
             <PixelButton variant="ghost" onClick={trail.complete ? onBuild : onAskNew}>
-              Build a new trail
+              {t('notes.trail.buildNew')}
             </PixelButton>
           )}
         </div>
         {confirming && (
-          <div role="group" aria-label="Replace this trail" className="mt-4 border-2 border-dashed border-ink bg-mist p-4">
-            <p className="text-sm text-ink">Start over with a new trail? This one moves to your history, and the AI takes about a minute.</p>
+          <div role="group" aria-label={t('notes.trail.replace')} className="mt-4 border-2 border-dashed border-ink bg-mist p-4">
+            <p className="text-sm text-ink">{t('notes.trail.replaceText')}</p>
             <div className="mt-3 flex flex-wrap gap-3">
-              <PixelButton onClick={onBuild}>Yes, build a new one</PixelButton>
+              <PixelButton onClick={onBuild}>{t('notes.trail.replaceYes')}</PixelButton>
               <PixelButton variant="ghost" onClick={onCancel}>
-                Keep this one
+                {t('notes.trail.replaceNo')}
               </PixelButton>
             </div>
           </div>
@@ -143,21 +149,23 @@ function TrailHeader({ trail, confirming, onAskNew, onCancel, onBuild }) {
 }
 
 function History({ history }) {
+  const t = useT()
+  const { timeAgo } = useFormat()
   if (!history.length) return null
   return (
     <section aria-labelledby="history-title" className="mt-14 max-w-xl">
       <h2 id="history-title" className="font-label text-sm text-primary">
-        Earlier trails
+        {t('notes.trail.history')}
       </h2>
-      <ul aria-label="Earlier trails" className="mt-4 divide-y-2 divide-dashed divide-line border-2 border-ink bg-white">
+      <ul aria-label={t('notes.trail.history')} className="mt-4 divide-y-2 divide-dashed divide-line border-2 border-ink bg-white">
         {history.map((item) => (
           <li key={item.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
             <span className="min-w-0">
               <span className="block truncate text-ink">{item.title}</span>
-              <span className="block text-xs text-muted">started {timeAgo(item.createdAt)}</span>
+              <span className="block text-xs text-muted">{t('notes.trail.started', { time: timeAgo(item.createdAt) })}</span>
             </span>
             <strong className={`shrink-0 font-label text-xs ${item.complete ? 'text-primary' : 'text-secondary'}`}>
-              {item.complete ? 'Complete' : `${item.doneCount}/${item.total} done`}
+              {item.complete ? t('notes.trail.historyComplete') : t('notes.trail.historyDone', { done: item.doneCount, total: item.total })}
             </strong>
           </li>
         ))}
@@ -168,6 +176,7 @@ function History({ history }) {
 
 // A study plan from the student's own cases and notes, laid out as a path of missions.
 export default function TrailPage() {
+  const t = useT()
   const { getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
   const { running, start } = useStudyTimer()
@@ -259,10 +268,11 @@ export default function TrailPage() {
   return (
     <AppShell>
       <p className="font-label text-xs text-secondary">
-        &gt; study trail<span className="motion-safe:animate-caret">_</span>
+        &gt; {t('notes.trail.prompt')}
+        <span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your study trail</h1>
-      <p className="mt-2 max-w-2xl text-muted">Missions built from your own cases and notes. They tick themselves as you train, write and study.</p>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('notes.trail.title')}</h1>
+      <p className="mt-2 max-w-2xl text-muted">{t('notes.trail.lede')}</p>
 
       {message && (
         <div className="mt-8">
@@ -272,12 +282,12 @@ export default function TrailPage() {
 
       {building ? (
         <div className="mt-10 max-w-xl">
-          <Working label="Building your study trail" />
+          <Working label={t('notes.trail.building')} />
         </div>
       ) : !data ? (
         !message && (
           <p role="status" className="mt-10 font-label text-xs text-muted">
-            Loading your trail...
+            {t('notes.trail.loading')}
           </p>
         )
       ) : !trail ? (
