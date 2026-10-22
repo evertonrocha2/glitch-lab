@@ -24,7 +24,7 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-3 sm:order-last sm:gap-4">
-            <span className="hidden max-w-48 truncate text-sm text-muted lg:inline">{user?.email}</span>
+            <span className="hidden max-w-48 truncate text-sm text-muted lg:inline">{user?.isDemo ? 'Demo account' : user?.email}</span>
             <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>
@@ -50,7 +50,7 @@ export default function AppShell({ children }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-5 pt-10 pb-36 sm:px-8 sm:pt-14">{children}</main>
+      <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
       <StudyTimer />
       <BadgeToasts />
     </div>
