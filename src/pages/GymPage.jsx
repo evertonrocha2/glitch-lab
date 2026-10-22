@@ -12,10 +12,12 @@ import Working from '../components/pixel/Working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { saveGymDraft, takeGymDraft } from '../lib/draft.js'
+import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 export default function GymPage() {
   const { id } = useParams()
   const { getToken, signOut } = useAuth()
+  const { refresh: refreshProgress } = useProgress()
   const [challenge, setChallenge] = useState(null)
   const [code, setCode] = useState('')
   const [hints, setHints] = useState([])
@@ -84,6 +86,7 @@ export default function GymPage() {
     setResult(null)
     try {
       setResult(await checkFix(id, code, await getToken()))
+      refreshProgress()
     } catch (err) {
       await handleError(err)
     } finally {

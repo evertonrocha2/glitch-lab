@@ -12,9 +12,11 @@ import Working from '../components/pixel/Working.jsx'
 import { AuthError, analyzeError, listCases, startChallenge } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { saveDraft, takeDraft } from '../lib/draft.js'
+import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 export default function BoardPage() {
   const { getToken, signOut } = useAuth()
+  const { refresh: refreshProgress } = useProgress()
   const [draft] = useState(() => takeDraft())
   const [cases, setCases] = useState(null)
   const [investigating, setInvestigating] = useState(false)
@@ -51,6 +53,7 @@ export default function BoardPage() {
         setOpenId(saved.id)
         setFormKey((key) => key + 1)
         setFormOpen(false)
+        refreshProgress()
       } catch (err) {
         if (!(await recoverFromAuth(err, input))) setMessage(err.message)
       } finally {
@@ -58,7 +61,7 @@ export default function BoardPage() {
         setInvestigating(false)
       }
     },
-    [getToken, recoverFromAuth],
+    [getToken, recoverFromAuth, refreshProgress],
   )
 
   useEffect(() => {
