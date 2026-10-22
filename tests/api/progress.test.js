@@ -88,3 +88,11 @@ it('adds xp and badges from my community articles', async () => {
   expect(progress.xp).toBe(29)
   expect(earned(progress)).toEqual(['author'])
 })
+
+it('includes a year of activity, one count per day', async () => {
+  await store.createCase('alice', CASE)
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress.activity.days).toHaveLength(53 * 7)
+  expect(progress.activity.total).toBe(1)
+  expect(progress.activity.best).toEqual({ day: "2026-10-22", count: 1 })
+})

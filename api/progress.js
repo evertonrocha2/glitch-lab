@@ -1,3 +1,4 @@
+import { activityCalendar } from '../shared/activity.js'
 import { computeProgress } from '../shared/progress.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { POST as addStudyTime } from './_lib/handlers/study.js'
@@ -27,5 +28,6 @@ export async function GET(request) {
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
   // Daily and global puzzles passed, for their XP, the daily streak and their badges.
   const daily = await loadDaily(store, userId, challenges)
-  return ok({ progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community }) })
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community })
+  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study }, today) } })
 }

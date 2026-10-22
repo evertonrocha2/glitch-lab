@@ -12,6 +12,7 @@ import {
   PROFILE_LIMITS,
   ROLES,
 } from '../../shared/profile.js'
+import { activityCalendar } from '../../shared/activity.js'
 import { computeProgress } from '../../shared/progress.js'
 import { loadDaily } from './puzzles/solved.js'
 
@@ -180,6 +181,8 @@ export async function summarize(store, userId, today) {
   const daily = await loadDaily(store, userId, challenges)
   return {
     progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community }),
+    // Only a count per day: what was done stays private, that something was done is shown.
+    activity: activityCalendar({ cases, challenges, notes, study }, today),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,
@@ -193,7 +196,7 @@ export const earnedIds = (progress) => progress.badges.filter((badge) => badge.e
 // The only things a visitor ever sees. Built field by field so nothing private slips in:
 // no email, no ids, no case, note or challenge contents. Without a chosen name, the handle
 // stands in (the email-based default would leak part of the email).
-export function publicProfile(stored, userId, { progress, counts }) {
+export function publicProfile(stored, userId, { progress, counts, activity }) {
   const badges = earnedIds(progress)
   return {
     handle: stored.handle,
@@ -208,6 +211,7 @@ export function publicProfile(stored, userId, { progress, counts }) {
     streak: progress.streak,
     totalSeconds: progress.totalSeconds,
     counts,
+    activity,
     badges,
     featuredBadges: stored.featuredBadges.filter((id) => badges.includes(id)),
     memberSince: stored.createdAt,

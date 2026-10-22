@@ -358,3 +358,12 @@ it('shows owners their own private profile as a preview, and nobody else', async
   expect((await GET(apiRequest('/api/profile?handle=ada_private', { method: 'GET', token: `dev:${bob.id}` }))).status).toBe(404)
   expect((await GET(apiRequest('/api/profile?handle=ada_private', { method: 'GET', token: null }))).status).toBe(404)
 })
+
+it('shows a year of activity on a public profile, as counts only', async () => {
+  await save({ handle: 'ada_busy', isPublic: true })
+  await store.createCase(ada.id, CASE)
+  const { profile } = await (await GET(apiRequest('/api/profile?handle=ada_busy', { method: 'GET', token: null }))).json()
+  expect(profile.activity.days).toHaveLength(53 * 7)
+  expect(profile.activity.total).toBe(1)
+  expect(JSON.stringify(profile.activity)).not.toContain(CASE.error)
+})
