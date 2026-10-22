@@ -10,6 +10,7 @@ import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
 import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../lib/api.js'
+import { useAssistantFocus } from '../lib/assistant/AssistantProvider.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { splitError } from '../lib/caseInfo.js'
 import { localDay } from '../lib/day.js'
@@ -29,6 +30,8 @@ export default function BoardPage() {
   const [investigating, setInvestigating] = useState(false)
   const [message, setMessage] = useState('')
   const [openId, setOpenId] = useState(null)
+  // The assistant reads "this case" as the one open here.
+  useAssistantFocus({ caseId: openId })
   const [formKey, setFormKey] = useState(0)
   const [formOpen, setFormOpen] = useState(Boolean(draft))
   const [training, setTraining] = useState(false)

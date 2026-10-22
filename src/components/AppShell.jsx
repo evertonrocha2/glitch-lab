@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
+import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 import PixelLogo from './pixel/PixelLogo.jsx'
@@ -11,7 +12,7 @@ const navClass = ({ isActive }) =>
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
-// Top bar for the signed-in pages, plus the study timer and badge announcements.
+// Top bar for the signed-in pages, plus the study timer, badge announcements and the assistant.
 export default function AppShell({ children }) {
   const { signOut } = useAuth()
   const { progress } = useProgress()
@@ -28,7 +29,7 @@ export default function AppShell({ children }) {
               Sign out
             </PixelButton>
           </div>
-          <nav aria-label="Main" className="flex w-full items-center gap-5 sm:ml-auto sm:w-auto">
+          <nav aria-label="Main" className="flex flex-auto items-center gap-5 sm:ml-auto sm:flex-none">
             <NavLink to="/board" className={navClass}>
               Board
             </NavLink>
@@ -47,11 +48,14 @@ export default function AppShell({ children }) {
               )}
             </NavLink>
           </nav>
+          {/* Phones: end of the nav row. Wider screens: just before Sign out (that group is order-last). */}
+          <AssistantButton />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
       <StudyTimer />
       <BadgeToasts />
+      <AssistantPanel />
     </div>
   )
 }

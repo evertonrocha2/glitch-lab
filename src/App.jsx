@@ -1,4 +1,5 @@
 import { BrowserRouter } from 'react-router'
+import { AssistantProvider } from './lib/assistant/AssistantProvider.jsx'
 import { AuthProvider } from './lib/auth/AuthProvider.jsx'
 import { ProgressProvider } from './lib/progress/ProgressProvider.jsx'
 import { StudyTimerProvider } from './lib/timer/StudyTimerProvider.jsx'
@@ -9,9 +10,11 @@ export default function App() {
     <AuthProvider>
       <ProgressProvider>
         <StudyTimerProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <AssistantProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </AssistantProvider>
         </StudyTimerProvider>
       </ProgressProvider>
     </AuthProvider>
