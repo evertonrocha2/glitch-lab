@@ -77,6 +77,16 @@ export async function startPuzzle(puzzleId, token) {
   return (await request('/api/challenge', { method: 'POST', body: { daily: true, puzzleId }, token })).challenge
 }
 
+// Today's Glitchdle: { day, number, nextResetAt, modes: { classic, error, snippet }, stats, community }.
+export function getRiddle(token) {
+  return request('/api/challenge?riddle=1', { token })
+}
+
+// One Glitchdle guess (a language id). Answers with the same shape as getRiddle plus { correct }.
+export function guessRiddle({ mode, guess, day }, token) {
+  return request('/api/challenge', { method: 'POST', body: { riddle: true, mode, guess, day }, token })
+}
+
 export async function listNotes(token) {
   return (await request('/api/notes', { token })).notes
 }

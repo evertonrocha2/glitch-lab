@@ -128,6 +128,36 @@
   }
 }
 
+/* Glitchdle: cells flip in one after the other, a win throws pixels out from the middle, and
+   hidden snippet lines are a dither bar. Motion only runs with motion-safe: in the markup. */
+@theme {
+  --animate-flip-in: flip-in 360ms steps(4, end) both;
+  --animate-burst: burst 900ms steps(6, end) both;
+
+  @keyframes flip-in {
+    from {
+      transform: perspective(400px) rotateX(90deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes burst {
+    from {
+      translate: 0 0;
+      opacity: 1;
+    }
+    to {
+      translate: var(--burst-x) var(--burst-y);
+      opacity: 0;
+    }
+  }
+}
+
+@utility dither-hidden {
+  background: repeating-conic-gradient(var(--color-primary) 0 25%, transparent 0 50%) 0 0 / 4px 4px;
+  opacity: 0.35;
+}
+
 /* Ask the detective: the panel slides in from the left in a few hard steps. */
 @theme {
   --animate-panel-in: panel-in 200ms steps(4, end) both;

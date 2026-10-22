@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { getDaily, getGlobalChallenge, startPuzzle } from './api.js'
+import { getDaily, getGlobalChallenge, getRiddle, guessRiddle, startPuzzle } from './api.js'
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
@@ -31,4 +31,16 @@ it('starts a puzzle and returns its challenge', async () => {
   expect(url).toBe('/api/challenge')
   expect(init.method).toBe('POST')
   expect(JSON.parse(init.body)).toEqual({ daily: true, puzzleId: 'p1' })
+})
+
+it("loads today's Glitchdle and sends a guess", async () => {
+  fetch.mockResolvedValueOnce(Response.json({ day: '2026-10-22', number: 1 }))
+  await expect(getRiddle('t1')).resolves.toEqual({ day: '2026-10-22', number: 1 })
+  expect(fetch.mock.calls[0][0]).toBe('/api/challenge?riddle=1')
+
+  fetch.mockResolvedValueOnce(Response.json({ correct: true }))
+  await expect(guessRiddle({ mode: 'classic', guess: 'rust', day: '2026-10-22' }, 't1')).resolves.toEqual({ correct: true })
+  const [url, init] = fetch.mock.calls[1]
+  expect(url).toBe('/api/challenge')
+  expect(JSON.parse(init.body)).toEqual({ riddle: true, mode: 'classic', guess: 'rust', day: '2026-10-22' })
 })

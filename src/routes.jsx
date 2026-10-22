@@ -5,6 +5,7 @@ import ArticlePage from './pages/ArticlePage.jsx'
 import ArticlesPage from './pages/ArticlesPage.jsx'
 import BoardPage from './pages/BoardPage.jsx'
 import DailyPage from './pages/DailyPage.jsx'
+import GlitchdlePage from './pages/GlitchdlePage.jsx'
 import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -55,6 +56,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <DailyPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/glitchdle"
+        element={
+          <RequireAuth>
+            <GlitchdlePage />
           </RequireAuth>
         }
       />
