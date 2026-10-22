@@ -1,5 +1,13 @@
 const BASE =
-  'inline-flex items-center justify-center gap-2 border-2 border-ink px-4 py-2.5 font-label text-xs tracking-wide transition-[translate,box-shadow] duration-100 active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:translate-0 disabled:border-ink/30 disabled:bg-mist disabled:text-muted disabled:shadow-none'
+  'inline-flex items-center justify-center gap-2 border-2 border-ink font-label tracking-wide transition-[translate,box-shadow] duration-100 active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:translate-0 disabled:border-ink/30 disabled:bg-mist disabled:text-muted disabled:shadow-none'
+
+// Default size. A className that sets its own padding or text size replaces these: Tailwind applies
+// whichever class comes later in its stylesheet, not in the class list, so both can't be kept.
+const SIZE = [
+  { test: /(^|\s)(sm:|md:|lg:)?(px|p)-/, value: 'px-4' },
+  { test: /(^|\s)(sm:|md:|lg:)?(py|p)-/, value: 'py-2.5' },
+  { test: /(^|\s)(sm:|md:|lg:)?text-(\[|xs|sm|base|lg|xl)/, value: 'text-xs' },
+]
 
 // Colored buttons sit on a hard ink shadow that shrinks when pressed.
 const VARIANTS = {
@@ -8,7 +16,12 @@ const VARIANTS = {
   ghost: 'bg-white text-ink hover:bg-mist',
 }
 
+export const buttonClasses = (variant = 'primary', className = '') => {
+  const size = SIZE.filter(({ test }) => !test.test(className)).map(({ value }) => value)
+  return [BASE, ...size, VARIANTS[variant], className].filter(Boolean).join(' ')
+}
+
 export default function PixelButton({ as: Component = 'button', variant = 'primary', className = '', ...props }) {
   const typeProps = Component === 'button' ? { type: 'button' } : {}
-  return <Component {...typeProps} {...props} className={`${BASE} ${VARIANTS[variant]} ${className}`} />
+  return <Component {...typeProps} {...props} className={buttonClasses(variant, className)} />
 }

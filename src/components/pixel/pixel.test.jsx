@@ -32,3 +32,13 @@ it('BadgeIcon draws its own glyph for every badge', () => {
   const drawings = BADGES.map((badge) => render(<BadgeIcon id={badge.id} />).container.innerHTML)
   expect(new Set(drawings).size).toBe(BADGES.length)
 })
+
+it('PixelButton lets a className replace the default padding and text size', async () => {
+  const { buttonClasses } = await import('./PixelButton.jsx')
+  expect(buttonClasses('primary', '')).toMatch(/\bpx-4\b.*\bpy-2\.5\b.*\btext-xs\b/)
+  const small = buttonClasses('ghost', 'px-2 py-1.5 text-[10px]')
+  expect(small).not.toMatch(/\bpx-4\b|\bpy-2\.5\b|\btext-xs\b/)
+  // Only what is overridden goes: here just the horizontal padding.
+  expect(buttonClasses('ghost', 'px-5')).toMatch(/\bpy-2\.5\b/)
+  expect(buttonClasses('ghost', 'px-5')).not.toMatch(/\bpx-4\b/)
+})
