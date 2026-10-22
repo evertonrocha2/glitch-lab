@@ -4,6 +4,7 @@ import { useMyProfile } from '../lib/profile/myProfile.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
+import NotificationBell from './community/NotificationBell.jsx'
 import PixelAvatar from './pixel/PixelAvatar.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 import PixelLogo from './pixel/PixelLogo.jsx'
@@ -28,6 +29,7 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-2 sm:order-last sm:gap-4">
+            <NotificationBell />
             <Link to="/profile" aria-label="Your profile" className="block transition-transform hover:-translate-y-0.5">
               {avatar ? (
                 <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-8 sm:size-9" />
@@ -45,6 +47,9 @@ export default function AppShell({ children }) {
             </NavLink>
             <NavLink to="/notes" className={navClass}>
               Notes
+            </NavLink>
+            <NavLink to="/articles" className={navClass}>
+              Articles
             </NavLink>
             <NavLink to="/progress" className={navClass}>
               Progress{' '}
