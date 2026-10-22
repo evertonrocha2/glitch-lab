@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
 import { AuthProvider } from '../lib/auth/AuthProvider.jsx'
+import { ProgressProvider } from '../lib/progress/ProgressProvider.jsx'
+import { StudyTimerProvider } from '../lib/timer/StudyTimerProvider.jsx'
 import { AppRoutes } from '../routes.jsx'
 
 function LocationProbe() {
@@ -16,10 +18,14 @@ export function renderAt(path, { user } = {}) {
   }
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <AppRoutes />
-        <LocationProbe />
-      </MemoryRouter>
+      <ProgressProvider>
+        <StudyTimerProvider>
+          <MemoryRouter initialEntries={[path]}>
+            <AppRoutes />
+            <LocationProbe />
+          </MemoryRouter>
+        </StudyTimerProvider>
+      </ProgressProvider>
     </AuthProvider>,
   )
 }
