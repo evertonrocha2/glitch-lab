@@ -144,5 +144,64 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.countUsage(ids.alice, '2026-10-22')).toBe(0)
       expect(await store.countUsage(ids.bob, '2026-10-21')).toBe(0)
     })
+
+    // Profiles live on real accounts, so these tests make their own users.
+    const newUser = () =>
+      store.createUser({ email: `profile-${crypto.randomUUID()}@glitch.test`, passwordHash: null, isDemo: false })
+    // Handles are unique across the whole store, and the Supabase one outlives each test.
+    const uniqueHandle = (name) => `${name}-${crypto.randomUUID().slice(0, 8)}`
+
+    it('starts every profile empty and private', async () => {
+      const user = await newUser()
+      expect(await store.getProfile(user.id)).toEqual({
+        handle: null,
+        displayName: null,
+        bio: '',
+        avatar: null,
+        featuredBadges: [],
+        isPublic: false,
+        createdAt: user.createdAt,
+      })
+      expect(await store.getProfile(crypto.randomUUID())).toBeNull()
+    })
+
+    it('updates only the profile fields given', async () => {
+      const user = await newUser()
+      const handle = uniqueHandle('ada')
+      const first = await store.updateProfile(user.id, { handle, displayName: 'Ada', avatar: { seed: 'abc', color: 'cobalt' } })
+      expect(first.profile).toMatchObject({ handle, displayName: 'Ada', avatar: { seed: 'abc', color: 'cobalt' }, bio: '', isPublic: false })
+
+      const second = await store.updateProfile(user.id, { bio: 'Fixing bugs.', featuredBadges: ['first-clue'], isPublic: true })
+      expect(second.profile).toMatchObject({ handle, displayName: 'Ada', bio: 'Fixing bugs.', featuredBadges: ['first-clue'], isPublic: true })
+      expect(await store.getProfile(user.id)).toEqual(second.profile)
+
+      // null clears a field back to "not chosen yet".
+      expect((await store.updateProfile(user.id, { displayName: null })).profile.displayName).toBeNull()
+      expect(await store.updateProfile(crypto.randomUUID(), { bio: 'x' })).toBeNull()
+    })
+
+    it('refuses a handle someone else has, in any case', async () => {
+      const ada = await newUser()
+      const bob = await newUser()
+      const handle = uniqueHandle('taken')
+      await store.updateProfile(ada.id, { handle })
+      expect(await store.updateProfile(bob.id, { handle: handle.toUpperCase(), bio: 'mine' })).toEqual({ conflict: 'handle' })
+      expect((await store.getProfile(bob.id)).bio).toBe('')
+      // Saving your own handle again is fine.
+      expect((await store.updateProfile(ada.id, { handle })).profile.handle).toBe(handle)
+    })
+
+    it('finds a profile by handle only while it is public', async () => {
+      const user = await newUser()
+      const handle = uniqueHandle('pub')
+      await store.updateProfile(user.id, { handle, displayName: 'Pub' })
+      expect(await store.findPublicProfile(handle)).toBeNull()
+
+      await store.updateProfile(user.id, { isPublic: true })
+      const found = await store.findPublicProfile(handle.toUpperCase())
+      expect(found).toEqual({ userId: user.id, profile: await store.getProfile(user.id) })
+      expect(found.profile).not.toHaveProperty('email')
+      expect(await store.findPublicProfile(uniqueHandle('nobody'))).toBeNull()
+    })
   })
 }

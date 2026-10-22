@@ -1,8 +1,10 @@
 import { Link, NavLink } from 'react-router'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { useMyProfile } from '../lib/profile/myProfile.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import AssistantPanel, { AssistantButton } from './assistant/AssistantPanel.jsx'
 import BadgeToasts from './BadgeToasts.jsx'
+import PixelAvatar from './pixel/PixelAvatar.jsx'
 import PixelButton from './pixel/PixelButton.jsx'
 import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
@@ -16,6 +18,7 @@ const navClass = ({ isActive }) =>
 export default function AppShell({ children }) {
   const { signOut } = useAuth()
   const { progress } = useProgress()
+  const avatar = useMyProfile()?.profile.avatar
   return (
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
@@ -24,7 +27,14 @@ export default function AppShell({ children }) {
             <PixelLogo className="size-6 sm:size-7" />
             <span>Glitch Detective</span>
           </Link>
-          <div className="flex items-center gap-3 sm:order-last sm:gap-4">
+          <div className="flex items-center gap-2 sm:order-last sm:gap-4">
+            <Link to="/profile" aria-label="Your profile" className="block transition-transform hover:-translate-y-0.5">
+              {avatar ? (
+                <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-8 sm:size-9" />
+              ) : (
+                <span aria-hidden="true" className="block size-8 border-2 border-ink bg-mist sm:size-9" />
+              )}
+            </Link>
             <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>

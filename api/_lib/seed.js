@@ -117,6 +117,13 @@ function demoNote(byConcept) {
   }
 }
 
+// The demo's profile shows off badges the seed above really earns (solved case, clean pass, 3-day streak).
+const DEMO_PROFILE = {
+  displayName: 'Demo Detective',
+  bio: 'Learning to read error messages one case at a time.',
+  featuredBadges: ['case-closed', 'sharp-eye', 'on-a-roll'],
+}
+
 const DAY_MS = 24 * 3_600_000
 const daysBefore = (day, count) => new Date(Date.parse(`${day}T00:00:00Z`) - count * DAY_MS).toISOString().slice(0, 10)
 
@@ -143,5 +150,6 @@ export async function seedDemo(store, userId, today = serverDay()) {
     const day = daysBefore(today, DEMO_STUDY_MINUTES.length - index)
     await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
+  await store.updateProfile(userId, DEMO_PROFILE)
   return true
 }

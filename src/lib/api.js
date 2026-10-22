@@ -91,3 +91,28 @@ export async function getProgress(today, token) {
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
 }
+
+// { profile, earnedBadges, progress } for the profile editor.
+export function getMyProfile(today, token) {
+  return request(`/api/profile?today=${encodeURIComponent(today)}`, { token })
+}
+
+// Sends only the fields that changed; returns the saved profile.
+export async function saveProfile(patch, token) {
+  return (await request('/api/profile', { method: 'PUT', body: patch, token })).profile
+}
+
+// Anyone can look, signed in or not. null when the handle has no public profile (missing or private).
+export async function getPublicProfile(handle, today) {
+  const path = `/api/profile?handle=${encodeURIComponent(handle)}&today=${encodeURIComponent(today)}`
+  let res
+  try {
+    res = await fetch(path, { method: 'GET', headers: {} })
+  } catch {
+    throw new Error('Could not reach the server. Check your connection.')
+  }
+  if (res.status === 404) return null
+  const data = await res.json().catch(() => null)
+  if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
+  return data.profile
+}

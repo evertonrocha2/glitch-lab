@@ -48,3 +48,25 @@ it('gives the demo a gym history, a note and a study streak', async () => {
   expect(progress.badges.filter((badge) => badge.earned).length).toBeGreaterThanOrEqual(5)
   expect(progress.badges.some((badge) => !badge.earned)).toBe(true)
 })
+
+it('gives the demo a profile that features badges it really earned', async () => {
+  const store = await freshStore()
+  const user = await store.createUser({ email: 'demo-x@demo.glitch', passwordHash: null, isDemo: true })
+  await seedDemo(store, user.id, '2026-10-22')
+
+  const profile = await store.getProfile(user.id)
+  expect(profile).toMatchObject({ displayName: 'Demo Detective', isPublic: false })
+  expect(profile.bio.length).toBeGreaterThan(0)
+  expect(profile.featuredBadges.length).toBeGreaterThanOrEqual(2)
+  expect(profile.featuredBadges.length).toBeLessThanOrEqual(3)
+
+  const progress = computeProgress({
+    cases: await store.listCases(user.id),
+    challenges: await store.listChallenges(user.id),
+    notes: await store.listNotes(user.id),
+    study: await store.listStudyTime(user.id),
+    today: '2026-10-22',
+  })
+  const earned = progress.badges.filter((badge) => badge.earned).map((badge) => badge.id)
+  for (const id of profile.featuredBadges) expect(earned).toContain(id)
+})
