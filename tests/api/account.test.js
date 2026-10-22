@@ -93,3 +93,17 @@ it('does not let anyone sign in to a demo account with a password', async () => 
   const { user } = await (await demo(apiRequest('/api/demo', { token: null }))).json()
   expect((await signIn({ email: user.email, password: 'anything at all' })).status).toBe(401)
 })
+
+it("lines the demo's study streak up with the visitor's own date", async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-23T01:30:00Z'))
+  try {
+    // 22:30 on the 22nd in Brazil, already the 23rd in UTC.
+    const { user } = await (await send(demo, '/api/demo', { today: '2026-10-22' })).json()
+    expect((await store.listStudyTime(user.id)).map((entry) => entry.day)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21'])
+    const fallback = await (await send(demo, '/api/demo', { today: 'yesterday' })).json()
+    expect((await store.listStudyTime(fallback.user.id)).at(-1).day).toBe('2026-10-22')
+  } finally {
+    vi.useRealTimers()
+  }
+})

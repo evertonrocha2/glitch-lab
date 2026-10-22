@@ -1,4 +1,5 @@
 import { signIn, signUp, startDemo } from '../api.js'
+import { localDay } from '../day.js'
 
 const KEY = 'gd:session'
 
@@ -46,7 +47,7 @@ export function createSessionAuth() {
     },
     signInWithPassword: async (email, password) => write(await signIn({ email, password })),
     signUp: async (email, password) => write(await signUp({ email, password })),
-    signInDemo: async () => write(await startDemo()),
+    signInDemo: async () => write(await startDemo(localDay())),
     async signOut() {
       write(null)
     },

@@ -33,7 +33,7 @@ it('leaves a board that already has cases alone', async () => {
 
 it('gives the demo a gym history, a note and a study streak', async () => {
   const store = await freshStore()
-  await seedDemo(store, 'demo', new Date('2026-10-22T15:00:00Z'))
+  await seedDemo(store, 'demo', '2026-10-22')
 
   const challenges = await store.listChallenges('demo')
   expect(challenges.filter((item) => item.status === 'passed')).toHaveLength(3)

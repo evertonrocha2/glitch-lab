@@ -86,6 +86,8 @@ const DEMO_CASES = [
   },
 ]
 
+import { serverDay } from './days.js'
+
 // Minutes studied 3, 2 and 1 days ago: a 3-day streak, and one day long enough for Deep focus.
 const DEMO_STUDY_MINUTES = [20, 35, 15]
 
@@ -115,8 +117,12 @@ function demoNote(byConcept) {
   }
 }
 
+const DAY_MS = 24 * 3_600_000
+const daysBefore = (day, count) => new Date(Date.parse(`${day}T00:00:00Z`) - count * DAY_MS).toISOString().slice(0, 10)
+
 // Returns false (and changes nothing) when the account already has cases.
-export async function seedDemo(store, userId, now = new Date()) {
+// today is the visitor's own date, so the streak lines up with their clock.
+export async function seedDemo(store, userId, today = serverDay()) {
   if ((await store.listCases(userId)).length > 0) return false
 
   const byConcept = {}
@@ -134,7 +140,7 @@ export async function seedDemo(store, userId, now = new Date()) {
 
   await store.createNote(userId, demoNote(byConcept))
   for (const [index, minutes] of DEMO_STUDY_MINUTES.entries()) {
-    const day = new Date(now.getTime() - (DEMO_STUDY_MINUTES.length - index) * 24 * 3_600_000).toISOString().slice(0, 10)
+    const day = daysBefore(today, DEMO_STUDY_MINUTES.length - index)
     await store.addStudyTime(userId, day, minutes * 60, minutes * 60)
   }
   return true
