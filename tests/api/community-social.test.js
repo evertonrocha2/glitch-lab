@@ -101,8 +101,8 @@ describe('reactions', () => {
     expect((await react({ like: true }, ada.token)).status).toBe(403)
   })
 
-  it('lets demo accounts react, but their reactions earn the author no XP', async () => {
-    expect((await react({ like: true, rating: 'valid' }, 'dev:demo')).status).toBe(200)
+  it('keeps demo accounts from reacting, so throwaway accounts never move counts or XP', async () => {
+    expect((await react({ like: true, rating: 'valid' }, 'dev:demo')).status).toBe(403)
     expect(await store.communityStats(ada.id)).toMatchObject({ likesReceived: 0, validReceived: 0 })
     await react({ like: true, rating: 'valid' }, bob.token)
     expect(await store.communityStats(ada.id)).toMatchObject({ likesReceived: 1, validReceived: 1 })

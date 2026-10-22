@@ -2,6 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { hashPassword, verifyPassword } from '../../api/_lib/auth/password.js'
 import { createToken, SESSION_DAYS, verifyToken } from '../../api/_lib/auth/session.js'
+import { credentialsProblem } from '../../api/_lib/accounts.js'
 
 const ALICE = { id: 'alice', email: 'alice@test.dev', isDemo: false }
 
@@ -56,4 +57,9 @@ it('refuses to sign sessions in production without a secret', () => {
   vi.stubEnv('VERCEL', '1')
   vi.stubEnv('AUTH_SECRET', '')
   expect(() => createToken(ALICE)).toThrow(/AUTH_SECRET/)
+})
+
+it("won't let anyone sign up with the app's own demo or sample domains", () => {
+  expect(credentialsProblem({ email: 'team@sample.glitch', password: 'correct horse' })).toBe('Enter a valid email.')
+  expect(credentialsProblem({ email: 'x@DEMO.glitch', password: 'correct horse' })).toBe('Enter a valid email.')
 })

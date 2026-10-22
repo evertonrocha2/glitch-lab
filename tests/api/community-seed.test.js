@@ -3,6 +3,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
+import { seedCommunity } from '../../api/_lib/community/seed.js'
 import { seedDemo } from '../../api/_lib/seed.js'
 import { createLocalStore } from '../../api/_lib/store/local.js'
 
@@ -43,4 +44,12 @@ it('gives each demo one notification to open, and never seeds the samples twice'
   // The demo's own notification comes from a sample reader, never from itself.
   const [note] = await store.listNotifications(first.id)
   expect(note.actorId).not.toBe(first.id)
+})
+
+it('never takes over a real account that holds a sample email', async () => {
+  const store = await freshStore()
+  const real = await store.createUser({ email: 'team@sample.glitch', passwordHash: 'scrypt$aa$bb', isDemo: false })
+  const demo = await demoUser(store)
+  await seedCommunity(store, demo.id)
+  expect((await store.communityStats(real.id)).articles).toBe(0)
 })

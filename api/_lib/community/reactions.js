@@ -15,6 +15,9 @@ export async function POST(request) {
   if (like !== undefined && typeof like !== 'boolean') return fail(400, 'Invalid request.')
   if (rating !== undefined && rating !== null && !RATINGS.includes(rating)) return fail(400, 'Invalid request.')
 
+  // Demo accounts are free and unlimited: they'd skew counts, rankings and notifications.
+  if (auth.user.isDemo) return fail(403, 'Sign up to like and rate articles.')
+
   const store = getStore()
   const article = await store.getArticle(body.articleId)
   if (!article) return fail(404, 'Article not found.')

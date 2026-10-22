@@ -4,10 +4,14 @@ import { ok } from './http.js'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const MIN_PASSWORD = 8
 export const MAX_WRONG_PASSWORDS_PER_DAY = 10
+// The app makes accounts on these domains itself (demo visitors, sample community authors).
+const RESERVED_DOMAINS = ['demo.glitch', 'sample.glitch']
 
 // Returns an error message, or null when the credentials are well formed.
 export function credentialsProblem({ email, password }) {
   if (typeof email !== 'string' || email.trim().length > 254 || !EMAIL.test(email.trim())) return 'Enter a valid email.'
+  const domain = email.trim().toLowerCase().split('@').pop()
+  if (RESERVED_DOMAINS.includes(domain)) return 'Enter a valid email.'
   if (typeof password !== 'string' || password.length < MIN_PASSWORD || password.length > 200) {
     return `Use a password with at least ${MIN_PASSWORD} characters.`
   }

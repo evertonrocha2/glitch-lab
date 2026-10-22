@@ -60,7 +60,8 @@ const ARTICLES = [
 // The account for a sample person, made (with its profile) the first time it is needed.
 async function samplePerson(store, { email, profile }) {
   const existing = await store.findUserByEmail(email)
-  if (existing) return existing
+  // Only ever reuse the app's own passwordless sample account, never someone's real one.
+  if (existing) return existing.passwordHash === null && !existing.isDemo ? existing : null
   // Two demos starting at once: the second create finds the email taken and reads the first one.
   const created = (await store.createUser({ email, passwordHash: null, isDemo: false })) ?? (await store.findUserByEmail(email))
   const result = await store.updateProfile(created.id, profile)
@@ -73,6 +74,7 @@ async function samplePerson(store, { email, profile }) {
 export async function seedCommunity(store, demoUserId) {
   const team = await samplePerson(store, TEAM)
   const reader = await samplePerson(store, READER)
+  if (!team || !reader) return
 
   if ((await store.communityStats(team.id)).articles === 0) {
     for (const { comments, reaction, ...fields } of ARTICLES) {
