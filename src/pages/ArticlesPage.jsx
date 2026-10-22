@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { cleanQuery, SORT_IDS, SORTS } from '../../shared/community.js'
+import { cleanQuery, SORT_IDS } from '../../shared/community.js'
 import ArticleList from '../components/community/ArticleList.jsx'
 import CommunityShell from '../components/community/CommunityShell.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
 
 const MAX_CHIPS = 10
 
 // The community: everyone's articles, searchable. Filters live in the address, so a search can be shared.
 export default function ArticlesPage() {
   const { user } = useAuth()
+  const t = useT()
   const [params, setParams] = useSearchParams()
   const q = cleanQuery(params.get('q') ?? '')
   const tag = params.get('tag') ?? ''
@@ -44,18 +46,19 @@ export default function ArticlesPage() {
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div className="min-w-0">
           <p className="font-label text-xs text-secondary">
-            &gt; community<span className="motion-safe:animate-caret">_</span>
+            &gt; {t('notes.articles.prompt')}
+            <span className="motion-safe:animate-caret">_</span>
           </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Articles</h1>
-          <p className="mt-2 max-w-xl text-muted">Short write-ups from students who cracked a bug. Read them, rate them valid or bad, and share what you learned.</p>
+          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('notes.articles.title')}</h1>
+          <p className="mt-2 max-w-xl text-muted">{t('notes.articles.lede')}</p>
         </div>
         {user ? (
           <PixelButton as={Link} to="/articles/new" className="px-5 py-3">
-            Write an article
+            {t('notes.articles.write')}
           </PixelButton>
         ) : (
           <PixelButton as={Link} to={`/login?next=${encodeURIComponent('/articles/new')}`} className="px-5 py-3">
-            Sign in to write
+            {t('notes.articles.signInToWrite')}
           </PixelButton>
         )}
       </div>
@@ -69,43 +72,43 @@ export default function ArticlesPage() {
         className="mt-8 flex gap-2"
       >
         <label htmlFor="article-search" className="sr-only">
-          Search articles
+          {t('notes.articles.searchLabel')}
         </label>
         <input
           id="article-search"
           type="search"
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
-          placeholder="Search titles, tags, authors"
+          placeholder={t('notes.articles.searchPlaceholder')}
           maxLength={80}
           className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel"
         />
         <PixelButton type="submit" variant="secondary" className="px-4">
-          Search
+          {t('notes.articles.search')}
         </PixelButton>
       </form>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-        <div role="group" aria-label="Sort" className="flex border-2 border-ink bg-white">
-          {SORTS.map((option) => (
+        <div role="group" aria-label={t('notes.articles.sort')} className="flex border-2 border-ink bg-white">
+          {SORT_IDS.map((id) => (
             <button
-              key={option.id}
+              key={id}
               type="button"
-              aria-pressed={sort === option.id}
-              onClick={() => setFilter({ sort: option.id })}
-              className={`px-3 py-2 font-label text-xs transition-colors sm:text-xs ${sort === option.id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
+              aria-pressed={sort === id}
+              onClick={() => setFilter({ sort: id })}
+              className={`px-3 py-2 font-label text-xs transition-colors sm:text-xs ${sort === id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
             >
-              {option.label}
+              {t(`notes.articles.sort.${id}`)}
             </button>
           ))}
         </div>
-        <ul aria-label="Tags" className="flex flex-wrap gap-1.5">
+        <ul aria-label={t('notes.articles.tags')} className="flex flex-wrap gap-1.5">
           {tag && (
             <li>
               <button
                 type="button"
                 onClick={() => setFilter({ tag: '' })}
-                aria-label={`Clear tag ${tag}`}
+                aria-label={t('notes.articles.clearTag', { tag })}
                 className="border-2 border-ink bg-primary px-2 py-0.5 font-mono text-xs text-white"
               >
                 #{tag} <span aria-hidden="true">x</span>
@@ -117,7 +120,7 @@ export default function ArticlesPage() {
               <button
                 type="button"
                 onClick={() => pickTag(value)}
-                aria-label={`Filter by #${value}`}
+                aria-label={t('notes.articles.filterTag', { tag: value })}
                 className="border-2 border-transparent bg-primary-soft px-2 py-0.5 font-mono text-xs text-primary hover:border-ink"
               >
                 #{value}

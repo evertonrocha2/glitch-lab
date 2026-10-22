@@ -46,6 +46,18 @@ it('shows the unread count and lists what happened', async () => {
   ])
 })
 
+it('says what happened in Brazilian Portuguese', async () => {
+  renderAt('/articles', { user: 'alice', locale: 'pt-BR' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Notificações (2 não lidas)' }))
+  const list = screen.getByRole('list', { name: 'Notificações' })
+  expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    expect.stringContaining('Ana comentou em Undefined everywhere'),
+    expect.stringContaining('Bo avaliou Undefined everywhere como válido'),
+    expect.stringContaining('Ana curtiu Off by one'),
+  ])
+  expect(screen.getByRole('button', { name: 'Marcar todas como lidas' })).toBeInTheDocument()
+})
+
 it('opens the article and marks that one read', async () => {
   renderAt('/articles', { user: 'alice' })
   await userEvent.click(await screen.findByRole('button', { name: 'Notifications (2 unread)' }))

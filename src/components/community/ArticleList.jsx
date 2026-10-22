@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { listArticles } from '../../lib/api.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import ErrorNotice from '../ErrorNotice.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import ArticleCard from './ArticleCard.jsx'
@@ -8,6 +9,7 @@ import ArticleCard from './ArticleCard.jsx'
 // author: only that handle's articles (for a profile page). onTag: makes tags clickable filters.
 // onArticles: hears every article loaded so far (the list page builds its tag chips from them).
 export default function ArticleList({ q = '', tag = '', author = '', sort = 'new', onTag, onArticles, emptyMessage }) {
+  const t = useT()
   const [state, setState] = useState({ status: 'loading', articles: [], page: 1, hasMore: false })
   const [loadingMore, setLoadingMore] = useState(false)
   const latest = useRef(0)
@@ -47,7 +49,7 @@ export default function ArticleList({ q = '', tag = '', author = '', sort = 'new
   if (state.status === 'loading') {
     return (
       <p role="status" className="font-label text-xs text-muted">
-        Loading articles...
+        {t('notes.articles.loading')}
       </p>
     )
   }
@@ -60,11 +62,11 @@ export default function ArticleList({ q = '', tag = '', author = '', sort = 'new
         <div className="relative grid min-h-40 place-items-center overflow-hidden border-2 border-dashed border-ink/40 p-8 text-center">
           <div aria-hidden="true" className="dither-secondary absolute inset-0 opacity-15" />
           <p className="relative max-w-sm text-muted">
-            {emptyMessage ?? (filtered ? 'No articles match. Try other words or another tag.' : 'No articles yet. Be the first to write one.')}
+            {emptyMessage ?? (filtered ? t('notes.articles.noMatch') : t('notes.articles.none'))}
           </p>
         </div>
       ) : (
-        <ul aria-label="Articles" className="grid gap-5 md:grid-cols-2">
+        <ul aria-label={t('notes.articles.list')} className="grid gap-5 md:grid-cols-2">
           {state.articles.map((article) => (
             <li key={article.id} className="flex">
               <ArticleCard article={article} onTag={onTag} />
@@ -80,7 +82,7 @@ export default function ArticleList({ q = '', tag = '', author = '', sort = 'new
       {state.hasMore && (
         <div className="mt-8 text-center">
           <PixelButton variant="ghost" onClick={loadMore} disabled={loadingMore}>
-            {loadingMore ? 'Loading...' : 'Load more'}
+            {loadingMore ? t('notes.articles.loadingMore') : t('notes.articles.loadMore')}
           </PixelButton>
         </div>
       )}
