@@ -57,12 +57,16 @@ const cut = (text, max) => (text.length > max ? `${text.slice(0, max - 3).trimEn
 
 // A public note in a list: never the blocks themselves, just a taste of the writing.
 export function publicNoteSummary(note) {
-  const words = note.blocks.filter((block) => block.type !== 'case').map((block) => block.text)
+  // A dot between blocks, so a heading doesn't run into the sentence after it.
+  const words = note.blocks
+    .filter((block) => block.type !== 'case')
+    .map((block) => oneLine(block.text))
+    .filter(Boolean)
   return {
     id: note.id,
     title: note.title,
     updatedAt: note.updatedAt,
-    excerpt: cut(oneLine(words.join(' ')), EXCERPT),
+    excerpt: cut(words.join(' · '), EXCERPT),
     blockCount: note.blocks.length,
   }
 }

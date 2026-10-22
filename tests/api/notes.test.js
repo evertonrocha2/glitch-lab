@@ -155,7 +155,7 @@ describe('public notes', () => {
     const { notes } = await res.json()
     expect(notes).toHaveLength(1)
     expect(notes[0]).toEqual({ id: shared.id, title: 'Reading undefined', updatedAt: shared.updatedAt, excerpt: expect.any(String), blockCount: 3 })
-    expect(notes[0].excerpt.startsWith('What I learned Check the object first.')).toBe(true)
+    expect(notes[0].excerpt.startsWith('What I learned · Check the object first.')).toBe(true)
     expect(notes[0].excerpt.length).toBeLessThanOrEqual(160)
     const text = JSON.stringify(notes)
     for (const secret of ['Secret diary', 'private thoughts', ada.id, adaCase.id]) expect(text).not.toContain(secret)
