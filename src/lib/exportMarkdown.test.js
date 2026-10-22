@@ -22,17 +22,16 @@ const NOTE = {
 }
 
 it('writes a note as Markdown', () => {
-  expect(noteToMarkdown(NOTE, CASES)).toBe(
-    [
-      '# Undefined again',
-      '## Pattern',
-      'Check before reading.',
-      '- [x] Use ?.',
-      '- [ ] Second pass',
-      '> **Case:** TypeError: boom\n> Reading undefined · javascript · Training (1/2)',
-      '> **Case:** (no longer on the board)',
-    ].join('\n\n') + '\n',
-  )
+  const blocks = [
+    '# Undefined again',
+    '## Pattern',
+    'Check before reading.',
+    '- [x] Use ?.',
+    '- [ ] Second pass',
+    '> **Case:** TypeError: boom\n> Reading undefined · javascript · Training (1/2)',
+    '> **Case:** (no longer on the board)',
+  ]
+  expect(noteToMarkdown(NOTE, CASES)).toBe(`${blocks.join('\n\n')}\n`)
 })
 
 it('writes the board by column, with progress and notes', () => {
