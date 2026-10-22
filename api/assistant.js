@@ -2,6 +2,7 @@ import { generateJson } from './_lib/ai/index.js'
 import { runAssistant } from './_lib/assistant/orchestrator.js'
 import { parseAssistantRequest } from './_lib/assistant/request.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
+import { localeOf } from './_lib/locale.js'
 import { aiFailure, dailyLimitReached } from './_lib/responses.js'
 import { getStore } from './_lib/store/index.js'
 import { takeAiCall } from './_lib/usage.js'
@@ -22,7 +23,7 @@ export async function POST(request) {
   if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
 
   try {
-    const result = await runAssistant({ store, userId: auth.user.id, ...input.value, generate: generateJson })
+    const result = await runAssistant({ store, userId: auth.user.id, ...input.value, generate: generateJson, locale: localeOf(request) })
     for (let extra = 1; extra < result.agents.length; extra++) await takeAiCall(store, auth.user)
     return ok(result)
   } catch (err) {
