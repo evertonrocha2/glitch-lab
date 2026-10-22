@@ -64,7 +64,7 @@ describe('share text', () => {
       },
     })
     expect(text).toBe('Glitchdle #12  Classic 2 · Error X · Snippet ?\n⬜\u{1F7E6}\u{1F7EA}\n\u{1F7EA}\u{1F7EA}\u{1F7EA}')
-    expect(text).not.toContain('—')
+    expect(text).not.toContain('\u2014')
   })
 
   it('keeps long boards short and can add a link', () => {

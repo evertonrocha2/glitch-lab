@@ -32,7 +32,7 @@ export async function freshError(languageId) {
     timeoutMs: AI_TIMEOUT_MS,
   })
   // The app never shows em dashes.
-  const text = typeof answer?.error === 'string' ? answer.error.replace(/\s*—\s*/g, ' - ').trim() : ''
+  const text = typeof answer?.error === 'string' ? answer.error.replace(/\s*\u2014\s*/g, ' - ').trim() : ''
   const problem = errorProblem(text, language)
   if (problem) throw new Error(`AI error clue ${problem}`)
   return text

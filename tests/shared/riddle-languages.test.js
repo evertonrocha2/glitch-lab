@@ -102,8 +102,8 @@ describe('the Glitchdle dataset', () => {
   })
 
   it('has no em dashes anywhere', () => {
-    expect(JSON.stringify(LANGUAGES)).not.toContain('—')
-    expect(JSON.stringify(SAMPLES)).not.toContain('—')
+    expect(JSON.stringify(LANGUAGES)).not.toContain('\u2014')
+    expect(JSON.stringify(SAMPLES)).not.toContain('\u2014')
   })
 })
 
