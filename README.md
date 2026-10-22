@@ -19,6 +19,7 @@ Glitch Detective uses AI the other way around: **it hides the answer and trains 
 5. **Track your study time.** A pixel stopwatch sits on every page. It keeps running through reloads and counts each day on your own clock.
 6. **Level up.** Cases, passed challenges, notes and study minutes earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 12 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
 7. **Take it with you.** Export the whole board, or one note, as Markdown. Notion, Obsidian and GitHub all read it.
+8. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. Everything runs through one function, `api/community.js` (`?resource=articles|comments|reactions|notifications`). Demo accounts can read, like and rate, but not publish or comment.
 
 ## How AI is used
 
