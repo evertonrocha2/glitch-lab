@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { badgeById } from '../../shared/badges.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 import BadgeIcon from './pixel/BadgeIcon.jsx'
 
@@ -8,11 +10,14 @@ const SHOW_MS = 7000
 
 function Toast({ id, onDismiss }) {
   const badge = badgeById(id)
+  const t = useT()
+  const labels = useLabels()
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(id), SHOW_MS)
     return () => clearTimeout(timer)
   }, [id, onDismiss])
   if (!badge) return null
+  const name = labels.badgeName(id)
 
   return (
     <li className="flex items-center gap-3 border-2 border-ink bg-white p-3 shadow-pixel motion-safe:animate-toast-in">
@@ -20,13 +25,13 @@ function Toast({ id, onDismiss }) {
         <BadgeIcon id={id} className="size-8" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-label text-[10px] text-primary">New badge</span>
+        <span className="block font-label text-[10px] text-primary">{t('app.toast.new')}</span>
         <Link to="/progress" className="block font-pixel text-lg font-bold leading-tight text-ink hover:text-primary">
-          {badge.name}
+          {name}
         </Link>
-        <span className="block text-xs text-muted">{badge.how}</span>
+        <span className="block text-xs text-muted">{labels.badgeHow(id)}</span>
       </span>
-      <button type="button" onClick={() => onDismiss(id)} aria-label={`Dismiss ${badge.name}`} className="self-start px-1 text-muted hover:text-ink">
+      <button type="button" onClick={() => onDismiss(id)} aria-label={t('app.toast.dismiss', { name })} className="self-start px-1 text-muted hover:text-ink">
         ×
       </button>
     </li>
@@ -36,8 +41,9 @@ function Toast({ id, onDismiss }) {
 // Announces badges as they're earned, on any signed-in page.
 export default function BadgeToasts() {
   const { toasts, dismissToast } = useProgress()
+  const t = useT()
   return (
-    <ul aria-live="polite" aria-label="New badges" className="fixed right-4 bottom-4 z-40 flex w-[calc(100vw-2rem)] max-w-80 flex-col gap-3">
+    <ul aria-live="polite" aria-label={t('app.toast.list')} className="fixed right-4 bottom-4 z-40 flex w-[calc(100vw-2rem)] max-w-80 flex-col gap-3">
       {toasts.map((id) => (
         <Toast key={id} id={id} onDismiss={dismissToast} />
       ))}
