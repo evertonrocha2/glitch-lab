@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../lib/api.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
+import { exportBoardImage, exportBoardPdf } from '../lib/exportBoard.js'
 import { makeCase } from '../test/fixtures.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
@@ -17,12 +18,21 @@ vi.mock('../lib/api.js', () => ({
   addStudyTime: vi.fn(),
 }))
 
+// The image and PDF need a real browser to draw; jsdom only checks they are asked for.
+vi.mock('../lib/exportBoard.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  exportBoardImage: vi.fn(),
+  exportBoardPdf: vi.fn(),
+}))
+
 beforeEach(() => {
   vi.mocked(listCases).mockReset().mockResolvedValue([])
   vi.mocked(analyzeError).mockReset()
   vi.mocked(startChallenge).mockReset()
   vi.mocked(listNotes).mockReset().mockResolvedValue([])
   vi.mocked(createNote).mockReset()
+  vi.mocked(exportBoardImage).mockReset().mockResolvedValue()
+  vi.mocked(exportBoardPdf).mockReset().mockResolvedValue()
 })
 
 const newColumn = () => screen.getByRole('region', { name: 'New' })
@@ -159,13 +169,45 @@ it('exports the board as a Markdown file', async () => {
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   vi.mocked(listCases).mockResolvedValue([makeCase()])
   renderAt('/board', { user: 'alice' })
-  await userEvent.click(await screen.findByRole('button', { name: 'Export .md' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /Markdown/ }))
   expect(click).toHaveBeenCalled()
-  expect(click.mock.contexts[0].download).toMatch(/^glitch-detective-\d{4}-\d{2}-\d{2}\.md$/)
+  expect(click.mock.contexts[0].download).toMatch(/^glitch-detective-board-\d{4}-\d{2}-\d{2}\.md$/)
   const text = await blob.text()
   expect(text).toContain('# Glitch Detective board')
   expect(text).toContain('## New (1)')
+  expect(exportBoardImage).not.toHaveBeenCalled()
   click.mockRestore()
   delete URL.createObjectURL
   delete URL.revokeObjectURL
+})
+
+it('exports the board as an image or a PDF', async () => {
+  const item = makeCase()
+  const note = { id: 'n1', title: 'Why undefined', blocks: [], updatedAt: item.createdAt }
+  vi.mocked(listCases).mockResolvedValue([item])
+  vi.mocked(listNotes).mockResolvedValue([note])
+  renderAt('/board', { user: 'alice' })
+  // Wait for the notes too, so the export carries them.
+  await screen.findByRole('button', { name: /TypeError/ })
+  await waitFor(() => expect(listNotes).toHaveBeenCalled())
+
+  await userEvent.click(screen.getByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /Image/ }))
+  expect(exportBoardImage).toHaveBeenCalledWith(expect.objectContaining({ cases: [item], notes: [note] }))
+  expect(exportBoardPdf).not.toHaveBeenCalled()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(exportBoardPdf).toHaveBeenCalledWith(expect.objectContaining({ cases: [item], notes: [note] }))
+  expect(exportBoardImage).toHaveBeenCalledTimes(1)
+})
+
+it('says so when a board file could not be made', async () => {
+  vi.mocked(exportBoardPdf).mockRejectedValue(new Error('canvas tainted'))
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  renderAt('/board', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Export' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't make the PDF. Try again.")
 })

@@ -6,6 +6,7 @@ import BoardStats from '../components/board/BoardStats.jsx'
 import CaseDrawer from '../components/board/CaseDrawer.jsx'
 import ErrorForm from '../components/ErrorForm.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import ExportMenu from '../components/notes/ExportMenu.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
@@ -13,11 +14,16 @@ import { AuthError, analyzeError, createNote, listCases, listNotes, startChallen
 import { useAssistantFocus } from '../lib/assistant/AssistantProvider.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { splitError } from '../lib/caseInfo.js'
-import { localDay } from '../lib/day.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
-import { boardToMarkdown, downloadText } from '../lib/exportMarkdown.js'
+import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../lib/exportBoard.js'
 import { mentionsCase, newBlock } from '../lib/notes/blocks.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
+
+const EXPORTS = {
+  md: { run: exportBoardMarkdown, name: 'Markdown file' },
+  png: { run: exportBoardImage, name: 'image' },
+  pdf: { run: exportBoardPdf, name: 'PDF' },
+}
 
 export default function BoardPage() {
   const { user, getToken, signOut } = useAuth()
@@ -159,9 +165,14 @@ export default function BoardPage() {
     [writing, getToken, navigate, recoverFromAuth, refreshProgress],
   )
 
-  function exportBoard() {
-    const date = localDay()
-    downloadText(`glitch-detective-${date}.md`, boardToMarkdown({ cases: cases ?? [], notes, progress, email: user?.email, date }))
+  async function exportBoard(format) {
+    const { run, name } = EXPORTS[format]
+    setMessage('')
+    try {
+      await run({ cases: cases ?? [], notes, progress, email: user?.email })
+    } catch {
+      setMessage(`Couldn't make the ${name}. Try again.`)
+    }
   }
 
   const closeDrawer = useCallback(() => setOpenId(null), [])
@@ -182,9 +193,7 @@ export default function BoardPage() {
         </div>
         {hasCases && !investigating && (
           <div className="flex flex-wrap gap-3">
-            <PixelButton variant="ghost" onClick={exportBoard} className="px-4 py-3">
-              Export .md
-            </PixelButton>
+            <ExportMenu onExport={exportBoard} />
             <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
               {formOpen ? 'Hide the form' : 'New investigation'}
             </PixelButton>
