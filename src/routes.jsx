@@ -1,5 +1,8 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './lib/auth/AuthProvider.jsx'
+import ArticleEditorPage from './pages/ArticleEditorPage.jsx'
+import ArticlePage from './pages/ArticlePage.jsx'
+import ArticlesPage from './pages/ArticlesPage.jsx'
 import BoardPage from './pages/BoardPage.jsx'
 import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
@@ -64,6 +67,25 @@ export function AppRoutes() {
       />
       {/* Public: works signed out. */}
       <Route path="/u/:handle" element={<PublicProfilePage />} />
+      {/* Community articles: reading is public, writing needs an account. */}
+      <Route path="/articles" element={<ArticlesPage />} />
+      <Route
+        path="/articles/new"
+        element={
+          <RequireAuth>
+            <ArticleEditorPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/articles/:id/edit"
+        element={
+          <RequireAuth>
+            <ArticleEditorPage />
+          </RequireAuth>
+        }
+      />
+      <Route path="/articles/:id" element={<ArticlePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
