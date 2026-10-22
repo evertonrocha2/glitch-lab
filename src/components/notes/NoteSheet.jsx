@@ -70,7 +70,7 @@ function SheetCase({ item }) {
           </span>
         </div>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{type}</p>
-        {message && <p className="mt-1 font-mono text-[13px] leading-snug wrap-break-word text-ink/75">{message}</p>}
+        {message && <p className="mt-1 font-mono text-sm leading-snug wrap-break-word text-ink/75">{message}</p>}
       </div>
     </div>
   )
@@ -116,7 +116,7 @@ export default function NoteSheet({ note, cases, date }) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
   const line = summary(note.blocks)
   return (
-    <div className="w-200 bg-white font-sans text-[15px] text-ink">
+    <div className="w-200 bg-white font-sans text-base text-ink">
       <header className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-14 py-6">

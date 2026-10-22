@@ -5,8 +5,9 @@ function Inline({ text }) {
   return parseInline(text).map((token, index) => {
     if (token.type === 'code') {
       return (
+        // Same font as the sentence around it: code names only get weight, never a font switch.
         // biome-ignore lint/suspicious/noArrayIndexKey: tokens of a fixed text, never reordered.
-        <code key={index} className="border border-line bg-mist px-1 font-mono text-[0.85em] text-primary">
+        <code key={index} className="font-sans font-semibold text-ink">
           {token.text}
         </code>
       )

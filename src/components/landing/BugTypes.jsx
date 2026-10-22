@@ -22,7 +22,7 @@ export default function BugTypes() {
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
-            <p className="font-label text-[11px] text-secondary">The usual suspects</p>
+            <p className="font-label text-xs text-secondary">The usual suspects</p>
             <h2 id="bugs-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
               {CONCEPTS.length} kinds of bugs, on file
             </h2>

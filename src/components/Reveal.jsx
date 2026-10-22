@@ -11,7 +11,7 @@ export default function Reveal({ label, className = '', children }) {
         variant="ghost"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className={`px-3 py-1.5 text-[11px] ${className}`}
+        className={`px-3 py-1.5 text-xs ${className}`}
       >
         {open ? `Hide ${label}` : `Show ${label}`}
       </PixelButton>

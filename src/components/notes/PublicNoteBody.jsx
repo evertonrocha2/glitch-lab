@@ -34,7 +34,7 @@ function CaseSummary({ summary }) {
           <span className="text-muted">{STATUS[summary.status] ?? summary.status}</span>
         </p>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{summary.errorType}</p>
-        {summary.message && <p className="mt-1 font-mono text-[13px] leading-snug wrap-break-word text-ink/75">{summary.message}</p>}
+        {summary.message && <p className="mt-1 font-mono text-sm leading-snug wrap-break-word text-ink/75">{summary.message}</p>}
       </div>
     </figure>
   )

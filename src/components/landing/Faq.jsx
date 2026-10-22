@@ -92,7 +92,7 @@ export default function Faq() {
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 border-b-2 border-ink bg-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1.6fr] lg:py-24">
         <div>
-          <p className="font-label text-[11px] text-secondary">Questions</p>
+          <p className="font-label text-xs text-secondary">Questions</p>
           <h2 id="faq-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
             Before you start
           </h2>

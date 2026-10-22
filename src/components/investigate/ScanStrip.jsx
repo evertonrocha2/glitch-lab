@@ -1,4 +1,4 @@
-const chip = 'border-2 px-1.5 py-0.5 font-mono text-[11px] leading-none'
+const chip = 'border-2 px-1.5 py-0.5 font-mono text-xs leading-none'
 const baseName = (path) => path.split('/').pop()
 
 // What we can already tell from the error, before any AI: type, language, and where it points.

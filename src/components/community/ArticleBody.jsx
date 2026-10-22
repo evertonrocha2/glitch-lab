@@ -5,8 +5,9 @@ import { parseBody, splitInline } from '../../../shared/community.js'
 function Inline({ text }) {
   return splitInline(text).map((part, index) =>
     part.code ? (
+      // Same font as the sentence around it: code names only get weight, never a font switch.
       // biome-ignore lint/suspicious/noArrayIndexKey: pieces of one fixed paragraph
-      <code key={index} className="border border-line bg-mist px-1 py-px font-mono text-[0.9em] text-primary-strong">
+      <code key={index} className="font-sans font-semibold text-ink">
         {part.text}
       </code>
     ) : (
@@ -20,7 +21,7 @@ export default function ArticleBody({ body }) {
   const blocks = parseBody(body)
   if (!blocks.length) return <p className="text-muted">Nothing written yet.</p>
   return (
-    <div className="space-y-5 text-[17px] leading-relaxed text-ink">
+    <div className="space-y-5 text-lg leading-relaxed text-ink">
       {blocks.map((block, index) =>
         block.type === 'code' ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: blocks of one fixed body

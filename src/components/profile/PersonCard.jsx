@@ -36,11 +36,11 @@ export default function PersonCard({ person, headingLevel = 2, className = '' })
       {languages.length > 0 && (
         <ul aria-label="Languages" className="mt-auto flex flex-wrap gap-1.5 pt-3">
           {languages.slice(0, MAX_LANGUAGES).map((id) => (
-            <li key={id} className="border border-ink bg-white px-1.5 py-0.5 font-mono text-[11px] text-ink">
+            <li key={id} className="border border-ink bg-white px-1.5 py-0.5 font-mono text-xs text-ink">
               {labelOf(LANGUAGES, id)}
             </li>
           ))}
-          {languages.length > MAX_LANGUAGES && <li className="px-1 py-0.5 font-mono text-[11px] text-muted">+{languages.length - MAX_LANGUAGES}</li>}
+          {languages.length > MAX_LANGUAGES && <li className="px-1 py-0.5 font-mono text-xs text-muted">+{languages.length - MAX_LANGUAGES}</li>}
         </ul>
       )}
     </PixelCard>

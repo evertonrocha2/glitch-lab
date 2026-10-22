@@ -2,7 +2,7 @@ import PixelCard from './pixel/PixelCard.jsx'
 import Reveal from './Reveal.jsx'
 
 const codeClass =
-  'whitespace-pre-wrap wrap-break-word border-2 border-ink bg-mist p-4 font-mono text-[13px] leading-relaxed text-ink'
+  'whitespace-pre-wrap wrap-break-word border-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink'
 
 export default function ResultCards({ analysis }) {
   const { explicacao, causa, correcao, exercicio, pistas, local } = analysis
@@ -32,7 +32,7 @@ export default function ResultCards({ analysis }) {
           {local && (
             <p className="mt-4 border-2 border-dashed border-secondary/50 bg-secondary-soft px-3 py-2 text-sm text-ink">
               <span className="font-label text-[10px] text-secondary">Likely spot</span>{' '}
-              <span className="font-mono text-[13px]">{local}</span>
+              <span className="font-mono text-sm">{local}</span>
             </p>
           )}
         </PixelCard>

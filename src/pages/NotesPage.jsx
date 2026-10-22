@@ -46,7 +46,7 @@ function NoteList({ notes, showPublic }) {
               <span className="block truncate font-semibold text-ink">{note.title || 'Untitled'}</span>
               <span className="block text-xs text-muted">
                 {count ? `${count} ${count === 1 ? 'case' : 'cases'} · ` : ''}edited {timeAgo(note.updatedAt)}
-                {showPublic && note.isPublic && <span className="ml-1.5 bg-secondary px-1 py-0.5 font-label text-[9px] leading-none text-white">Public</span>}
+                {showPublic && note.isPublic && <span className="ml-1.5 bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">Public</span>}
               </span>
             </NavLink>
           </li>

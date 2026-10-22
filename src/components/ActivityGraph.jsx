@@ -96,12 +96,12 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
             className="block h-auto w-full"
           >
             {monthLabels(activity.start).map(({ week, month }) => (
-              <text key={`${week}-${month}`} x={LEFT + week * STEP} y={10} className="fill-muted font-label text-[9px]">
+              <text key={`${week}-${month}`} x={LEFT + week * STEP} y={10} className="fill-muted font-label text-[10px]">
                 {month}
               </text>
             ))}
             {WEEKDAYS.map(([row, label]) => (
-              <text key={label} x={0} y={TOP + row * STEP + CELL - 2} className="fill-muted font-label text-[9px]">
+              <text key={label} x={0} y={TOP + row * STEP + CELL - 2} className="fill-muted font-label text-[10px]">
                 {label}
               </text>
             ))}
@@ -136,7 +136,7 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
           )}
         </div>
 
-        <div aria-hidden="true" className="mt-3 flex items-center justify-end gap-1.5 font-label text-[9px] text-muted">
+        <div aria-hidden="true" className="mt-3 flex items-center justify-end gap-1.5 font-label text-[10px] text-muted">
           Less
           {LEVEL_FILL.map((fill) => (
             <span key={fill} className="size-[11px]" style={{ backgroundColor: fill }} />

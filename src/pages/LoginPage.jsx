@@ -102,7 +102,7 @@ export default function LoginPage() {
 
       <main className="mx-auto grid max-w-5xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:py-20">
         <div>
-          <p className="font-label text-[11px] text-secondary">
+          <p className="font-label text-xs text-secondary">
             &gt; login_<span className="motion-safe:animate-caret">█</span>
           </p>
           <h1 className="mt-4 font-pixel text-4xl font-bold leading-tight text-ink sm:text-5xl">Sign in to your case board</h1>

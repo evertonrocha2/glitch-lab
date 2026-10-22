@@ -77,7 +77,7 @@ function Cell({ cell, index, animate }) {
       style={animate ? { animationDelay: `${index * 90}ms` } : undefined}
       className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
     >
-      <span className={`font-label text-[9px] leading-tight ${LABEL_TONE[cell.status]}`}>{NAMES[cell.key]}</span>
+      <span className={`font-label text-[10px] leading-tight ${LABEL_TONE[cell.status]}`}>{NAMES[cell.key]}</span>
       <span className="flex items-end justify-between gap-1 text-xs leading-snug font-semibold wrap-break-word">
         <span className="min-w-0">{valueText(cell.value)}</span>
         {cell.direction && <YearArrow direction={cell.direction} className="size-4 shrink-0" />}
@@ -153,7 +153,7 @@ export function ErrorBoard({ state }) {
           </span>
           stderr
         </figcaption>
-        <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-ink wrap-break-word">{state.text}</pre>
+        <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink wrap-break-word">{state.text}</pre>
       </figure>
       <ul aria-label="Hints" className="grid gap-2 sm:grid-cols-2">
         {state.hints.map((hint) => (
@@ -184,7 +184,7 @@ export function SnippetBoard({ state }) {
         <span>snippet</span>
         <span>{hidden ? `${hidden} ${hidden === 1 ? 'line' : 'lines'} hidden` : 'all lines shown'}</span>
       </figcaption>
-      <ol aria-label="Code" className="overflow-x-auto py-3 font-mono text-[13px] leading-6">
+      <ol aria-label="Code" className="overflow-x-auto py-3 font-mono text-sm leading-6">
         {state.lines.map((line, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: lines are fixed for the day
           <li key={index} className="flex gap-3 pr-4">

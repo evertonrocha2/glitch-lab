@@ -12,7 +12,7 @@ import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
 
 const navClass = ({ isActive }) =>
-  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-[11px] transition-colors sm:text-xs ${
+  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors sm:text-xs ${
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
@@ -26,7 +26,7 @@ export default function AppShell({ children }) {
       <header className="border-b-2 border-ink bg-white">
         {/* Top row: the brand on the left, everything about you on the right. */}
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-[15px] font-bold text-ink sm:gap-2.5 sm:text-xl">
+          <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
             <PixelLogo className="size-5 shrink-0 sm:size-7" />
             <span className="truncate">Glitch Detective</span>
           </Link>

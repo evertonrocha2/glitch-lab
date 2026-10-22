@@ -36,7 +36,7 @@ export default function CaseCard({ item, onOpen }) {
           <span className="border border-line px-1.5 py-0.5 font-mono text-xs text-muted">{item.language}</span>
         </span>
         <span className="mt-2.5 block wrap-break-word font-pixel text-lg font-bold leading-tight text-ink">{type}</span>
-        <span className="mt-1 line-clamp-2 block wrap-break-word font-mono text-[13px] leading-snug text-ink/75">{message}</span>
+        <span className="mt-1 line-clamp-2 block wrap-break-word font-mono text-sm leading-snug text-ink/75">{message}</span>
         <span className="mt-3 flex items-center justify-between gap-2 border-t-2 border-dashed border-line pt-2.5 text-xs text-muted">
           <span className="flex items-center gap-2">
             <ProgressBlocks passed={item.passedCount} />

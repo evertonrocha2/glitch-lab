@@ -80,7 +80,7 @@ function ModeTabs({ modes, active, onPick }) {
                 </>
               )}
             </span>
-            <span className={`mt-0.5 block text-[11px] ${selected ? 'text-white/80' : 'text-muted'}`}>{note}</span>
+            <span className={`mt-0.5 block text-xs ${selected ? 'text-white/80' : 'text-muted'}`}>{note}</span>
           </button>
         )
       })}

@@ -23,7 +23,7 @@ export default function Compare() {
     <section id="why" aria-labelledby="why-title" className="scroll-mt-4 border-b-2 border-ink bg-white">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="max-w-2xl">
-          <p className="font-label text-[11px] text-secondary">Why not just ask a chatbot?</p>
+          <p className="font-label text-xs text-secondary">Why not just ask a chatbot?</p>
           <h2 id="why-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
             A chatbot fixes the bug. We fix the habit.
           </h2>

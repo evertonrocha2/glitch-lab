@@ -93,7 +93,7 @@ export default function ArticlesPage() {
               type="button"
               aria-pressed={sort === option.id}
               onClick={() => setFilter({ sort: option.id })}
-              className={`px-3 py-2 font-label text-[11px] transition-colors sm:text-xs ${sort === option.id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
+              className={`px-3 py-2 font-label text-xs transition-colors sm:text-xs ${sort === option.id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
             >
               {option.label}
             </button>

@@ -15,7 +15,7 @@ export default function LevelLadder() {
       <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/2 opacity-20" />
       <div className="relative mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:py-24">
         <div>
-          <p className="font-label text-[11px] text-primary">Level up</p>
+          <p className="font-label text-xs text-primary">Level up</p>
           <h2 id="levels-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
             From Rookie to Bug Whisperer
           </h2>

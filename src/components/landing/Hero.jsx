@@ -10,7 +10,7 @@ export default function Hero() {
       />
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 py-14 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:py-20">
         <div>
-          <p className="font-label text-[11px] text-secondary">
+          <p className="font-label text-xs text-secondary">
             &gt; debugging gym for students<span className="motion-safe:animate-caret">_</span>
           </p>
           <h1 className="mt-5 font-pixel text-[2.1rem] font-bold leading-[1.08] text-ink sm:text-5xl lg:text-[3.3rem]">

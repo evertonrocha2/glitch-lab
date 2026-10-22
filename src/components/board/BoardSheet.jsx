@@ -30,7 +30,7 @@ function ProgressPanel({ progress }) {
       <li className="grid grid-cols-3 gap-[2px] bg-ink">
         {numbers.map((item) => (
           <span key={item.label} className="bg-white px-3 py-2">
-            <span className="block font-label text-[9px] text-muted">{item.label}</span>
+            <span className="block font-label text-[10px] text-muted">{item.label}</span>
             <strong className="block font-label text-sm whitespace-nowrap text-ink">{item.value}</strong>
           </span>
         ))}
@@ -86,17 +86,17 @@ function SheetCard({ item }) {
           </span>
         </div>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{type}</p>
-        {message && <p className="mt-1 line-clamp-2 font-mono text-[13px] leading-snug wrap-break-word text-ink/75">{message}</p>}
+        {message && <p className="mt-1 line-clamp-2 font-mono text-sm leading-snug wrap-break-word text-ink/75">{message}</p>}
         {item.analysis?.causa && (
           <div className="mt-3 border-t-2 border-dashed border-line pt-2.5">
             <p className="font-label text-[10px] text-primary">Why it broke</p>
-            <p className="mt-1 line-clamp-3 text-[13px] leading-snug wrap-break-word text-ink">{item.analysis.causa}</p>
+            <p className="mt-1 line-clamp-3 text-sm leading-snug wrap-break-word text-ink">{item.analysis.causa}</p>
           </div>
         )}
         {clues.length > 0 && (
           <div className="mt-2.5">
             <p className="font-label text-[10px] text-secondary">Clues</p>
-            <ol className="mt-1 space-y-0.5 text-[13px] leading-snug text-ink/85">
+            <ol className="mt-1 space-y-0.5 text-sm leading-snug text-ink/85">
               {clues.map((clue, index) => (
                 <li key={clue} className="flex gap-2">
                   <span aria-hidden="true" className="font-label text-[10px] leading-[1.55] text-secondary">
@@ -123,7 +123,7 @@ function ColumnSection({ column, items }) {
             <StepIcon kind={column.icon} className="h-4 w-auto" />
             {column.title}
           </h2>
-          <span className="text-[13px] text-muted">{column.hint}</span>
+          <span className="text-sm text-muted">{column.hint}</span>
         </div>
         <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-label text-lg leading-8 text-ink">{pad(items.length)}</span>
       </header>
@@ -169,9 +169,9 @@ function NotesSection({ notes }) {
               <div className="h-full border-2 border-ink bg-white px-4 py-3 shadow-pixel-muted">
                 <p className="font-pixel text-lg leading-tight font-bold wrap-break-word text-ink">{note.title || 'Untitled'}</p>
                 {text ? (
-                  <p className="mt-1.5 line-clamp-3 text-[13px] leading-snug wrap-break-word whitespace-pre-line text-ink/80">{text}</p>
+                  <p className="mt-1.5 line-clamp-3 text-sm leading-snug wrap-break-word whitespace-pre-line text-ink/80">{text}</p>
                 ) : (
-                  <p className="mt-1.5 text-[13px] text-muted">Nothing written yet.</p>
+                  <p className="mt-1.5 text-sm text-muted">Nothing written yet.</p>
                 )}
                 {linked > 0 && <p className="mt-2 font-label text-[10px] text-muted">{plural(linked, 'case')} linked</p>}
               </div>
@@ -186,7 +186,7 @@ function NotesSection({ notes }) {
 // A print-ready picture of the whole board, for the PNG and PDF exports: fixed width, white, Pixel Lab look.
 export default function BoardSheet({ cases, notes, progress, date }) {
   return (
-    <div className="w-250 bg-white font-sans text-[15px] text-ink">
+    <div className="w-250 bg-white font-sans text-base text-ink">
       <header data-sheet-block className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-12 py-6">

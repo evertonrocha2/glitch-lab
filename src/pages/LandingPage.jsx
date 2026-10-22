@@ -36,7 +36,7 @@ export default function LandingPage() {
         <Faq />
         <section id="try" aria-labelledby="try-title" className="scroll-mt-4 bg-mist">
           <div className="mx-auto max-w-3xl px-5 py-20 sm:px-8 lg:py-24">
-            <p className="font-label text-[11px] text-primary">Your turn</p>
+            <p className="font-label text-xs text-primary">Your turn</p>
             <h2 id="try-title" className="mt-4 font-pixel text-3xl font-bold text-ink sm:text-[2.6rem]">
               Investigate your error
             </h2>

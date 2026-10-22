@@ -30,7 +30,7 @@ export default function HowItWorks() {
     <section id="how" aria-labelledby="how-title" className="scroll-mt-4 border-b-2 border-ink bg-mist">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="max-w-2xl">
-          <p className="font-label text-[11px] text-muted">How it works</p>
+          <p className="font-label text-xs text-muted">How it works</p>
           <h2 id="how-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
             Fixes are easy to copy. Understanding isn't.
           </h2>
@@ -43,7 +43,7 @@ export default function HowItWorks() {
           {STEPS.map((step, index) => (
             <PixelCard as="li" key={step.title} tone={step.tone} className="p-6">
               <div className={`flex items-center justify-between ${step.label}`}>
-                <p className="font-label text-[11px]">Step {index + 1}</p>
+                <p className="font-label text-xs">Step {index + 1}</p>
                 <StepIcon kind={step.icon} className="h-7 w-auto" />
               </div>
               <h3 className="mt-5 font-pixel text-xl font-bold text-ink">{step.title}</h3>

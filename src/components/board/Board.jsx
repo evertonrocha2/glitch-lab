@@ -52,7 +52,7 @@ export default function Board({ cases, onOpen }) {
                   <StepIcon kind={column.icon} className="h-4 w-auto" />
                   {column.title}
                 </h2>
-                <p className="mt-1 text-[13px] text-muted">{column.hint}</p>
+                <p className="mt-1 text-sm text-muted">{column.hint}</p>
               </div>
               <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-label text-lg leading-8 text-ink">
                 {String(items.length).padStart(2, '0')}

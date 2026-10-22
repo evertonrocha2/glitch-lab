@@ -81,14 +81,14 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
           {item.code && (
             <details className="mt-6 border-2 border-ink bg-white">
               <summary className="cursor-pointer px-4 py-2.5 font-label text-xs text-ink">Your code</summary>
-              <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-[13px] leading-relaxed text-ink">{item.code}</pre>
+              <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink">{item.code}</pre>
             </details>
           )}
 
           {item.files?.map((file) => (
             <details key={file.path} className="mt-3 border-2 border-ink bg-white">
               <summary className="cursor-pointer truncate px-4 py-2.5 font-mono text-xs text-ink">{file.path}</summary>
-              <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-[13px] leading-relaxed text-ink">{file.content}</pre>
+              <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink">{file.content}</pre>
             </details>
           ))}
 

@@ -44,8 +44,8 @@ export default function Leaderboard({ entries, you }) {
                 </span>
                 {(entry.firstSolver || entry.isYou) && (
                   <span className="mt-0.5 flex flex-wrap gap-1.5">
-                    {entry.firstSolver && <span className="bg-primary px-1 py-0.5 font-label text-[9px] leading-none text-white">First solver</span>}
-                    {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[9px] leading-none text-white">You</span>}
+                    {entry.firstSolver && <span className="bg-primary px-1 py-0.5 font-label text-[10px] leading-none text-white">First solver</span>}
+                    {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">You</span>}
                   </span>
                 )}
               </span>

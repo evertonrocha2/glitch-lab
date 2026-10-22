@@ -16,7 +16,7 @@ export default function StudyTimer() {
     >
       <span aria-hidden="true" className={`size-2.5 shrink-0 border border-ink ${running ? 'bg-primary motion-safe:animate-blink' : 'bg-white'}`} />
       <span className="flex flex-col">
-        <span className="font-label text-[9px] leading-tight text-secondary">{running ? 'Studying' : seconds > 0 ? 'Paused' : 'Study timer'}</span>
+        <span className="font-label text-[10px] leading-tight text-secondary">{running ? 'Studying' : seconds > 0 ? 'Paused' : 'Study timer'}</span>
         <span className="font-label text-lg leading-tight text-ink tabular-nums" data-testid="timer-clock">
           {formatClock(seconds)}
         </span>

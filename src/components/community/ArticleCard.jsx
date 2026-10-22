@@ -19,7 +19,7 @@ export function CountRow({ counts }) {
         {plural(counts.likes, 'like')}, {counts.valid} valid, {counts.bad} bad, {plural(counts.comments, 'comment')}
       </span>
       {items.map((item) => (
-        <span key={item.icon} aria-hidden="true" className="flex items-center gap-1 font-label text-[11px]">
+        <span key={item.icon} aria-hidden="true" className="flex items-center gap-1 font-label text-xs">
           <CommunityIcon name={item.icon} className={`size-3 ${item.tone}`} />
           {item.value}
         </span>

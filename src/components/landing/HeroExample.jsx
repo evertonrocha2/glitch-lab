@@ -21,10 +21,8 @@ export default function HeroExample() {
           TypeError: Cannot read properties of undefined (reading 'length')
         </p>
         <p className="mt-3 font-label text-[10px] text-primary">Why it broke</p>
-        <p className="mt-1 text-[15px] leading-relaxed text-ink">
-          <code className="font-mono text-[13px]">user.name</code> was never set. It is{' '}
-          <code className="font-mono text-[13px]">undefined</code>, and undefined has no{' '}
-          <code className="font-mono text-[13px]">.length</code> to read.
+        <p className="mt-1 text-base leading-relaxed text-ink">
+          user.name was never set. It is undefined, and undefined has no .length to read.
         </p>
       </PixelCard>
       <figcaption className="sr-only">Example of Glitch Detective explaining a JavaScript TypeError</figcaption>

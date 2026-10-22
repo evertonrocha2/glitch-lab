@@ -15,12 +15,12 @@ function MiniBoard() {
     <div className="grid grid-cols-3 gap-2">
       {columns.map((column) => (
         <div key={column.title} className="border-2 border-ink bg-mist p-1.5">
-          <p className="mb-1.5 font-label text-[9px] text-ink">{column.title}</p>
+          <p className="mb-1.5 font-label text-[10px] text-ink">{column.title}</p>
           <div className="space-y-1.5">
             {column.cards.map((card) => (
               <div key={card} className="flex overflow-hidden border-2 border-ink bg-white">
                 <span className={`w-1 shrink-0 ${column.stripe}`} />
-                <span className="truncate px-1.5 py-1 font-pixel text-[11px] font-bold text-ink">{card}</span>
+                <span className="truncate px-1.5 py-1 font-pixel text-xs font-bold text-ink">{card}</span>
               </div>
             ))}
           </div>
@@ -33,14 +33,14 @@ function MiniBoard() {
 function MiniGym() {
   return (
     <div className="space-y-2">
-      <div className="border-2 border-ink bg-white font-mono text-[11px] leading-relaxed">
+      <div className="border-2 border-ink bg-white font-mono text-xs leading-relaxed">
         <p className="px-2 text-muted">1 scores = [7, 9, 4]</p>
         <p className="bg-primary-soft px-2 text-ink">2 for i in range(1, len(scores) + 1):</p>
         <p className="px-2 text-muted">3 &nbsp;&nbsp;&nbsp;print(scores[i])</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[9px] text-secondary">Hint 1/3</span>
-        <span className="border-2 border-ink bg-primary px-1.5 py-0.5 font-label text-[9px] text-white">Passed 2/2</span>
+        <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">Hint 1/3</span>
+        <span className="border-2 border-ink bg-primary px-1.5 py-0.5 font-label text-[10px] text-white">Passed 2/2</span>
       </div>
     </div>
   )
@@ -55,10 +55,10 @@ function MiniNote() {
       </p>
       <div className="flex overflow-hidden border-2 border-ink">
         <span className="w-1 bg-secondary" />
-        <span className="px-1.5 py-1 font-pixel text-[11px] font-bold text-ink">TypeError</span>
+        <span className="px-1.5 py-1 font-pixel text-xs font-bold text-ink">TypeError</span>
       </div>
       <p className="flex items-center gap-1.5 text-xs text-muted line-through">
-        <span className="grid size-3 place-items-center bg-primary text-[8px] text-white no-underline">✓</span>
+        <span className="grid size-3 place-items-center bg-primary text-[10px] text-white no-underline">✓</span>
         Try optional chaining
       </p>
     </div>
@@ -115,7 +115,7 @@ function MiniExport() {
       <span className="font-label text-lg text-ink">→</span>
       <span className="flex flex-col gap-1">
         {['Notion', 'Obsidian', 'GitHub'].map((app) => (
-          <span key={app} className="border-2 border-ink bg-white px-1.5 py-0.5 font-label text-[9px] text-ink">
+          <span key={app} className="border-2 border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">
             {app}
           </span>
         ))}
@@ -152,7 +152,7 @@ function MiniTrail() {
             >
               <KindIcon kind={step.kind} accent={step.next ? 'secondary' : 'primary'} className="size-6" />
             </span>
-            <span className={`truncate font-label text-[9px] ${step.next ? 'text-secondary' : 'text-ink'}`}>{step.label}</span>
+            <span className={`truncate font-label text-[10px] ${step.next ? 'text-secondary' : 'text-ink'}`}>{step.label}</span>
           </span>
           {index < steps.length - 1 && (
             <span className="mt-5 h-1 w-3 shrink-0 bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_4px,transparent_4px_7px)] sm:w-8" />
@@ -214,7 +214,7 @@ export default function Features() {
     <section id="features" aria-labelledby="features-title" className="scroll-mt-4 border-b-2 border-ink bg-mist">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
         <div className="max-w-2xl">
-          <p className="font-label text-[11px] text-primary">Inside the app</p>
+          <p className="font-label text-xs text-primary">Inside the app</p>
           <h2 id="features-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
             Your detective kit
           </h2>

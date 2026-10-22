@@ -83,8 +83,8 @@ export default function Attachments({ files, selected, mentioned, skipped, readi
                   <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink" title={file.path}>
                     {file.path}
                   </span>
-                  {line && <span className="shrink-0 bg-primary px-1.5 py-0.5 font-label text-[9px] text-white">error · line {line}</span>}
-                  <span className="hidden shrink-0 text-[11px] text-muted sm:inline">{languageOfPath(file.path)}</span>
+                  {line && <span className="shrink-0 bg-primary px-1.5 py-0.5 font-label text-[10px] text-white">error · line {line}</span>}
+                  <span className="hidden shrink-0 text-xs text-muted sm:inline">{languageOfPath(file.path)}</span>
                   <button
                     type="button"
                     onClick={() => onRemove(file.path)}
