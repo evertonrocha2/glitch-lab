@@ -4,6 +4,7 @@ import BoardPage from './pages/BoardPage.jsx'
 import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import NotesPage from './pages/NotesPage.jsx'
 import ProgressPage from './pages/ProgressPage.jsx'
 
 export function RequireAuth({ children }) {
@@ -31,6 +32,15 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <GymPage />
+          </RequireAuth>
+        }
+      />
+      {/* One route for the list and an open note, so opening a note doesn't reload the list. */}
+      <Route
+        path="/notes/:id?"
+        element={
+          <RequireAuth>
+            <NotesPage />
           </RequireAuth>
         }
       />
