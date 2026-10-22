@@ -16,6 +16,7 @@
   --animate-blink: blink 1.2s steps(2, jump-none) infinite;
   --animate-caret: caret 1s steps(1, end) infinite;
   --animate-toast-in: toast-in 240ms steps(4, end) both;
+  --animate-marquee: marquee 40s linear infinite;
   /* Mostly still, then a short RGB-split jitter: the "glitch" in the name. */
   --animate-glitch: glitch 3.2s steps(1, end) infinite;
 
@@ -52,6 +53,12 @@
     }
     to {
       translate: 6px 0;
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      translate: -50% 0;
     }
   }
 
