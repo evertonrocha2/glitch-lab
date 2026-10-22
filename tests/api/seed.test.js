@@ -109,11 +109,11 @@ it('fills in the demo about-you fields with values the API would accept', async 
   expect(parseProfile(about)).toEqual({ value: about })
 })
 
-it('makes the demo note public-ready while the demo profile stays private', async () => {
+it('keeps the demo note and the demo profile private (demos can never share)', async () => {
   const store = await freshStore()
   const user = await store.createUser({ email: 'demo-z@demo.glitch', passwordHash: null, isDemo: true })
   await seedDemo(store, user.id, '2026-10-22')
   const [note] = await store.listNotes(user.id)
-  expect(note.isPublic).toBe(true)
+  expect(note.isPublic).toBe(false)
   expect((await store.getProfile(user.id)).isPublic).toBe(false)
 })

@@ -332,3 +332,10 @@ it('refuses a search that is too long or has odd characters', async () => {
   expect((await search('a,b(')).status).toBe(400)
   expect((await search('  Ada Lovelace_1-x.y ')).status).toBe(200)
 })
+
+it('finds a handle typed with its @', async () => {
+  await save({ handle: 'ada_at', isPublic: true })
+  const res = await GET(apiRequest('/api/profile?search=%40ada_at', { method: 'GET', token: null }))
+  expect(res.status).toBe(200)
+  expect((await res.json()).profiles.map((item) => item.handle)).toEqual(['ada_at'])
+})

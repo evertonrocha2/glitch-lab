@@ -91,14 +91,12 @@ function caseSummary(kase) {
 // A public note, read-only. getCase must only find the author's own cases, so a note that names
 // someone else's case id shows nothing about it.
 export async function publicNote(note, getCase) {
-  const blocks = await Promise.all(
-    note.blocks.map(async (block) => {
-      // Rebuilt field by field, like on save, so nothing extra rides along.
-      if (block.type === 'todo') return { id: block.id, type: 'todo', text: block.text, done: block.done }
-      if (block.type !== 'case') return { id: block.id, type: block.type, text: block.text }
-      const kase = await getCase(block.caseId)
-      return { id: block.id, type: 'case', case: kase ? caseSummary(kase) : null }
-    }),
-  )
+  const blocks = note.blocks.map((block) => {
+    // Rebuilt field by field, like on save, so nothing extra rides along.
+    if (block.type === 'todo') return { id: block.id, type: 'todo', text: block.text, done: block.done }
+    if (block.type !== 'case') return { id: block.id, type: block.type, text: block.text }
+    const kase = getCase(block.caseId)
+    return { id: block.id, type: 'case', case: kase ? caseSummary(kase) : null }
+  })
   return { id: note.id, title: note.title, updatedAt: note.updatedAt, blocks }
 }

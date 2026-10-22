@@ -5,6 +5,12 @@ import { parseNote, publicNote, publicNoteSummary } from './_lib/notes.js'
 import { profileCard } from './_lib/profile.js'
 import { getStore } from './_lib/store/index.js'
 
+// One read of the author's cases, however many case blocks the note has (the page is public).
+async function authorCases(store, userId) {
+  const byId = new Map((await store.listCases(userId)).map((kase) => [kase.id, kase]))
+  return (caseId) => byId.get(caseId) ?? null
+}
+
 const NOT_SHARED = 'No public note here.'
 const DEMO_SHARE = 'Sign up to share notes on a public profile.'
 
@@ -23,7 +29,7 @@ async function getPublic(params) {
     const note = id.length <= 64 ? await store.getNote(found.userId, id) : null
     if (!note?.isPublic) return fail(404, NOT_SHARED)
     response = ok({
-      note: await publicNote(note, (caseId) => store.getCase(found.userId, caseId)),
+      note: await publicNote(note, await authorCases(store, found.userId)),
       author: profileCard(found.profile, found.userId),
     })
   } else {

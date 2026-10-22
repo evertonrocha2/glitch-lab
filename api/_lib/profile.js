@@ -235,7 +235,8 @@ export function profileCard(stored, userId) {
 // null for anything else, so no wildcard or filter syntax ever reaches the store.
 export const SEARCH_MAX = 40
 export function parseSearch(raw) {
-  const query = raw.trim()
+  // Handles are shown as @handle everywhere, so people type the @ too.
+  const query = raw.trim().replace(/^@+/, '')
   if (query.length > SEARCH_MAX || !/^[\p{L}\p{N} _.-]*$/u.test(query)) return null
   return query
 }

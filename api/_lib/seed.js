@@ -107,8 +107,6 @@ async function seedPassedChallenge(store, userId, kase, hintsRevealed) {
 function demoNote(byConcept) {
   return {
     title: 'My debugging notebook',
-    // Ready to share, but nobody sees it: the demo profile can never go public.
-    isPublic: true,
     blocks: [
       { id: 'demo-1', type: 'heading', text: 'Things I keep getting wrong' },
       { id: 'demo-2', type: 'text', text: 'Reading a property of something that is not there yet. Check the object exists before going deeper.' },

@@ -19,7 +19,8 @@ export async function GET(request) {
     if (query === null) return fail(400, `Search with letters, numbers, spaces, _ . and -, up to ${SEARCH_MAX} characters.`)
     const found = await store.searchPublicProfiles(query, SEARCH_RESULTS)
     const response = ok({ profiles: found.map(({ userId, profile }) => profileCard(profile, userId)) })
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+    // Short, and no stale copies: a profile made private should drop out of search quickly.
+    response.headers.set('Cache-Control', 'public, s-maxage=15')
     return response
   }
 
