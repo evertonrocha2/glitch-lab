@@ -4,10 +4,11 @@ import { BADGES } from '../../shared/badges.js'
 import { DAILY_XP } from '../../shared/daily.js'
 import { COMMUNITY_XP, XP } from '../../shared/progress.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
+import ActivityGraph from '../components/ActivityGraph.jsx'
 import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
-import { formatDuration } from '../lib/day.js'
+import { formatDuration, localDay } from '../lib/day.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 const SEGMENTS = 20
@@ -124,6 +125,8 @@ export default function ProgressPage() {
               ))}
             </ul>
           </div>
+
+          {progress.activity && <ActivityGraph activity={progress.activity} today={localDay()} title="Your activity" className="mt-14" />}
 
           <section aria-labelledby="badges-title" className="mt-14">
             <div className="flex flex-wrap items-end justify-between gap-3">

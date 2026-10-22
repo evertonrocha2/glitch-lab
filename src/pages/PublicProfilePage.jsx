@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
+import ActivityGraph from '../components/ActivityGraph.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelBug from '../components/pixel/PixelBug.jsx'
@@ -151,6 +152,8 @@ export default function PublicProfilePage() {
                 )}
               </div>
             </div>
+
+            {profile.activity && <ActivityGraph activity={profile.activity} today={localDay()} className="mt-14" />}
 
             <PublicNotes handle={profile.handle} notes={notes} />
 
