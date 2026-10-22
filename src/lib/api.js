@@ -1,10 +1,13 @@
+import { currentLocale } from './i18n/I18nProvider.jsx'
+
 const GENERIC_MESSAGE = 'Something went wrong. Please try again.'
 
 // Thrown on 401 so pages can send the person back to the login screen.
 export class AuthError extends Error {}
 
 async function request(path, { method = 'GET', body, token, keepalive } = {}) {
-  const headers = {}
+  // The server answers (and asks the AI to write) in the reader's language.
+  const headers = { 'Accept-Language': currentLocale() }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
@@ -148,7 +151,9 @@ export async function getPublicProfile(handle, today, token) {
   const path = `/api/profile?handle=${encodeURIComponent(handle)}&today=${encodeURIComponent(today)}`
   let res
   try {
-    res = await fetch(path, { method: 'GET', headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const headers = { 'Accept-Language': currentLocale() }
+    if (token) headers.Authorization = `Bearer ${token}`
+    res = await fetch(path, { method: 'GET', headers })
   } catch {
     throw new Error('Could not reach the server. Check your connection.')
   }
@@ -162,7 +167,7 @@ export async function getPublicProfile(handle, today, token) {
 async function publicGet(path) {
   let res
   try {
-    res = await fetch(path, { method: 'GET', headers: {} })
+    res = await fetch(path, { method: 'GET', headers: { 'Accept-Language': currentLocale() } })
   } catch {
     throw new Error('Could not reach the server. Check your connection.')
   }

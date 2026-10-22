@@ -14,7 +14,7 @@ it("loads today's daily set", async () => {
   fetch.mockResolvedValue(Response.json(body))
   await expect(getDaily('t1')).resolves.toEqual(body)
   expect(fetch.mock.calls[0][0]).toBe('/api/challenge?daily=1')
-  expect(fetch.mock.calls[0][1].headers).toEqual({ Authorization: 'Bearer t1' })
+  expect(fetch.mock.calls[0][1].headers).toEqual({ 'Accept-Language': 'en', Authorization: 'Bearer t1' })
 })
 
 it("loads this week's global challenge", async () => {

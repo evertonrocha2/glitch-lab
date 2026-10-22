@@ -39,6 +39,7 @@ function localApi() {
           const headers = {}
           if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type']
           if (req.headers.authorization) headers.Authorization = req.headers.authorization
+          if (req.headers['accept-language']) headers['Accept-Language'] = req.headers['accept-language']
           const hasBody = !['GET', 'HEAD'].includes(req.method)
 
           const response = await handler(

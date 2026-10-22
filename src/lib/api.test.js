@@ -17,7 +17,7 @@ it('sends the token as a Bearer header', async () => {
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/analyze')
   expect(init.method).toBe('POST')
-  expect(init.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer dev:alice' })
+  expect(init.headers).toEqual({ 'Accept-Language': 'en', 'Content-Type': 'application/json', Authorization: 'Bearer dev:alice' })
   expect(JSON.parse(init.body)).toEqual({ error: 'E', code: 'C' })
 })
 
@@ -38,7 +38,7 @@ it('signs in without sending a token', async () => {
   await expect(signIn({ email: 'ada@example.com', password: 'pw' })).resolves.toEqual({ token: 't1', user: { id: 'u1' } })
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/auth?action=login')
-  expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+  expect(init.headers).toEqual({ 'Accept-Language': 'en', 'Content-Type': 'application/json' })
   expect(JSON.parse(init.body)).toEqual({ email: 'ada@example.com', password: 'pw' })
 })
 

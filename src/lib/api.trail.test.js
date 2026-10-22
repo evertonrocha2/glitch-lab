@@ -15,7 +15,7 @@ it('loads my trail page with my token', async () => {
   await expect(getTrail('t1')).resolves.toEqual(data)
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/trail')
-  expect(init.headers).toEqual({ Authorization: 'Bearer t1' })
+  expect(init.headers).toEqual({ 'Accept-Language': 'en', Authorization: 'Bearer t1' })
 })
 
 it('builds a new trail with my date', async () => {

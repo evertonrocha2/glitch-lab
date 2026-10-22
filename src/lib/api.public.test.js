@@ -24,7 +24,7 @@ it('lists public notes without a token', async () => {
   await expect(listPublicNotes('Ada Dev')).resolves.toEqual([{ id: 'n1' }])
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/notes?handle=Ada%20Dev')
-  expect(init.headers).toEqual({})
+  expect(init.headers).toEqual({ 'Accept-Language': 'en' })
 })
 
 it('opens one public note with its author', async () => {

@@ -15,7 +15,7 @@ it('loads my profile with my token', async () => {
   await expect(getMyProfile('2026-10-22', 't1')).resolves.toEqual(data)
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/profile?today=2026-10-22')
-  expect(init.headers).toEqual({ Authorization: 'Bearer t1' })
+  expect(init.headers).toEqual({ 'Accept-Language': 'en', Authorization: 'Bearer t1' })
 })
 
 it('saves profile changes with PUT', async () => {
@@ -37,7 +37,7 @@ it('loads a public profile without a token', async () => {
   await expect(getPublicProfile('Ada Dev', '2026-10-22')).resolves.toEqual({ profile: { handle: 'ada' }, preview: false })
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/profile?handle=Ada%20Dev&today=2026-10-22')
-  expect(init.headers).toEqual({})
+  expect(init.headers).toEqual({ 'Accept-Language': 'en' })
 })
 
 it('returns null for a profile that is missing or private', async () => {
