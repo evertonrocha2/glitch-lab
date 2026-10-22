@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { profileFromUser } from './profileShape.js'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { createLocalCommunity } from './community-local.js'
@@ -12,25 +13,7 @@ const copy = (value) => (value == null ? null : structuredClone(value))
 const PROFILE_FIELDS = ['handle', 'displayName', 'bio', 'avatar', 'featuredBadges', 'isPublic']
 // "About you" fields, added later still: same story.
 const ABOUT_FIELDS = ['role', 'headline', 'university', 'course', 'work', 'location', 'languages', 'links', 'openTo']
-const toProfile = (user) =>
-  copy({
-    handle: user.handle ?? null,
-    displayName: user.displayName ?? null,
-    bio: user.bio ?? '',
-    avatar: user.avatar ?? null,
-    featuredBadges: user.featuredBadges ?? [],
-    isPublic: user.isPublic ?? false,
-    role: user.role ?? null,
-    headline: user.headline ?? '',
-    university: user.university ?? '',
-    course: user.course ?? '',
-    work: user.work ?? '',
-    location: user.location ?? '',
-    languages: user.languages ?? [],
-    links: user.links ?? {},
-    openTo: user.openTo ?? [],
-    createdAt: user.createdAt,
-  })
+const toProfile = profileFromUser
 // Notes made before sharing existed are private.
 const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false })
 

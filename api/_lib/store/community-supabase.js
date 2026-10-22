@@ -1,4 +1,5 @@
 import { cleanQuery } from '../../../shared/community.js'
+import { PROFILE_COLUMNS, profileFromRow } from './profileShape.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
@@ -34,15 +35,7 @@ const toNotification = (row) =>
     createdAt: row.created_at,
   }
 
-const toProfile = (row) => ({
-  handle: row.handle ?? null,
-  displayName: row.display_name ?? null,
-  bio: row.bio ?? '',
-  avatar: row.avatar ?? null,
-  featuredBadges: row.featured_badges ?? [],
-  isPublic: row.is_public ?? false,
-  createdAt: row.created_at,
-})
+const toProfile = profileFromRow
 
 const defined = (object) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined))
 
@@ -170,7 +163,7 @@ export function createSupabaseCommunity(db) {
       const unique = [...new Set(userIds)]
       if (!unique.length) return {}
       const rows = unwrap(
-        await db.from('users').select('id, handle, display_name, bio, avatar, featured_badges, is_public, created_at').in('id', unique),
+        await db.from('users').select(PROFILE_COLUMNS).in('id', unique),
       )
       return Object.fromEntries((rows ?? []).map((row) => [row.id, toProfile(row)]))
     },

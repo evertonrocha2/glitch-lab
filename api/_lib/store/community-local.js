@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { profileFromUser } from './profileShape.js'
 import { cleanQuery } from '../../../shared/community.js'
 
 const now = () => new Date().toISOString()
@@ -6,16 +7,7 @@ const copy = (value) => (value == null ? null : structuredClone(value))
 const NO_REACTION = { liked: false, rating: null }
 
 // Profile fields as the main local store hands them out (accounts made before profiles default them).
-const toProfile = (user) =>
-  copy({
-    handle: user.handle ?? null,
-    displayName: user.displayName ?? null,
-    bio: user.bio ?? '',
-    avatar: user.avatar ?? null,
-    featuredBadges: user.featuredBadges ?? [],
-    isPublic: user.isPublic ?? false,
-    createdAt: user.createdAt,
-  })
+const toProfile = profileFromUser
 
 // Community articles, comments, reactions and notifications for the JSON file store.
 // Spread into createLocalStore, sharing its load and save so every write lands in the same file.

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { PROFILE_COLUMNS as SHARED_PROFILE_COLUMNS, profileFromRow } from './profileShape.js'
 import { createSupabaseCommunity } from './community-supabase.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
@@ -80,27 +81,8 @@ const toTrail = (row) =>
     createdAt: row.created_at,
   }
 
-const toProfile = (row) =>
-  row && {
-    handle: row.handle ?? null,
-    displayName: row.display_name ?? null,
-    bio: row.bio ?? '',
-    avatar: row.avatar ?? null,
-    featuredBadges: row.featured_badges ?? [],
-    isPublic: row.is_public ?? false,
-    role: row.role ?? null,
-    headline: row.headline ?? '',
-    university: row.university ?? '',
-    course: row.course ?? '',
-    work: row.work ?? '',
-    location: row.location ?? '',
-    languages: row.languages ?? [],
-    links: row.links ?? {},
-    openTo: row.open_to ?? [],
-    createdAt: row.created_at,
-  }
-const PROFILE_COLUMNS =
-  'id, handle, display_name, bio, avatar, featured_badges, is_public, role, headline, university, course, work, location, languages, links, open_to, created_at'
+const toProfile = profileFromRow
+const PROFILE_COLUMNS = SHARED_PROFILE_COLUMNS
 
 // ilike treats % and _ as wildcards (and PostgREST reads * as %): escape them so a search is plain text.
 const likePattern = (query) => `%${query.replace(/[\\%_*]/g, (char) => `\\${char}`)}%`
