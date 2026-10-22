@@ -1,18 +1,30 @@
 import { badgeById } from '../../../shared/badges.js'
 import { LANGUAGES, LINKS, labelOf, OPEN_TO, ROLES } from '../../../shared/profile.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 import BadgeIcon from '../pixel/BadgeIcon.jsx'
 import PixelAvatar from '../pixel/PixelAvatar.jsx'
 import PixelCard from '../pixel/PixelCard.jsx'
 
 const SEGMENTS = 16
 
+// Profile choices in the reader's language, falling back to the English label in shared/profile.js.
+const named = (t, key, fallback) => {
+  const text = t(key)
+  return text === key ? fallback : text
+}
+export const roleName = (t, id) => named(t, `app.role.${id}`, labelOf(ROLES, id))
+export const openToName = (t, id) => named(t, `app.openTo.${id}`, labelOf(OPEN_TO, id))
+export const linkName = (t, id) => named(t, `app.link.${id}`, labelOf(LINKS, id))
+
 function XpBar({ xp, levelXp, nextLevelXp }) {
   const share = nextLevelXp ? (xp - levelXp) / (nextLevelXp - levelXp) : 1
   const filled = Math.round(Math.min(Math.max(share, 0), 1) * SEGMENTS)
+  const t = useT()
   return (
     <div
       role="progressbar"
-      aria-label="Experience toward the next level"
+      aria-label={t('app.xpBar')}
       aria-valuemin={levelXp}
       aria-valuemax={nextLevelXp ?? xp}
       aria-valuenow={xp}
@@ -27,15 +39,16 @@ function XpBar({ xp, levelXp, nextLevelXp }) {
 }
 
 // "Software Engineering at Infnet", or whichever half was filled in.
-const studies = ({ course, university }) => (course && university ? `${course} at ${university}` : course || university)
+const studies = (t, { course, university }) => (course && university ? t('app.card.studies', { course, university }) : course || university)
 
 // Role, headline, school, job, place, languages, what they're open to and their links.
 // Every field is optional; a profile that filled in nothing shows nothing here.
 function AboutDetails({ profile, large }) {
+  const t = useT()
   const facts = [
-    ['Studies', studies(profile)],
-    ['Works', profile.work],
-    ['Based in', profile.location],
+    [t('app.card.studiesLabel'), studies(t, profile)],
+    [t('app.card.works'), profile.work],
+    [t('app.card.basedIn'), profile.location],
   ].filter(([, value]) => value)
   const languages = profile.languages ?? []
   const openTo = profile.openTo ?? []
@@ -54,7 +67,7 @@ function AboutDetails({ profile, large }) {
         </dl>
       )}
       {languages.length > 0 && (
-        <ul aria-label="Languages" className="flex flex-wrap gap-1.5">
+        <ul aria-label={t('app.card.languages')} className="flex flex-wrap gap-1.5">
           {languages.map((id) => (
             <li key={id} className="border-2 border-ink bg-white px-1.5 py-0.5 font-mono text-xs text-ink">
               {labelOf(LANGUAGES, id)}
@@ -64,18 +77,18 @@ function AboutDetails({ profile, large }) {
       )}
       {openTo.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 font-label text-[10px] text-muted">Open to</span>
-          <ul aria-label="Open to" className="contents">
+          <span className="mr-1 font-label text-[10px] text-muted">{t('app.card.openTo')}</span>
+          <ul aria-label={t('app.card.openTo')} className="contents">
             {openTo.map((id) => (
               <li key={id} className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">
-                {labelOf(OPEN_TO, id)}
+                {openToName(t, id)}
               </li>
             ))}
           </ul>
         </div>
       )}
       {links.length > 0 && (
-        <ul aria-label="Links" className="flex flex-wrap gap-2">
+        <ul aria-label={t('app.card.links')} className="flex flex-wrap gap-2">
           {links.map((link) => (
             <li key={link.id}>
               <a
@@ -84,9 +97,9 @@ function AboutDetails({ profile, large }) {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] text-ink shadow-pixel-ink transition-colors hover:bg-secondary hover:text-white"
               >
-                {link.label}
+                {linkName(t, link.id)}
                 <span aria-hidden="true">↗</span>
-                <span className="sr-only">(opens in a new tab)</span>
+                <span className="sr-only">{t('app.card.newTab')}</span>
               </a>
             </li>
           ))}
@@ -100,6 +113,8 @@ function AboutDetails({ profile, large }) {
 // "large" is the public page; the default is the editor's live preview.
 export default function ProfileCard({ profile, large = false, headingLevel = 2 }) {
   const Heading = `h${headingLevel}`
+  const t = useT()
+  const labels = useLabels()
   const featured = profile.featuredBadges.map(badgeById).filter(Boolean)
   return (
     <PixelCard className={`relative overflow-hidden ${large ? 'p-6 sm:p-8' : 'p-5'}`}>
@@ -114,11 +129,11 @@ export default function ProfileCard({ profile, large = false, headingLevel = 2 }
             {profile.handle ? (
               <p className="mt-1 break-all font-label text-xs text-secondary">@{profile.handle}</p>
             ) : (
-              <p className="mt-1 font-label text-[10px] text-muted">No handle yet</p>
+              <p className="mt-1 font-label text-[10px] text-muted">{t('app.card.noHandle')}</p>
             )}
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink">
-              <span className="bg-primary px-1.5 py-0.5 font-label text-[10px] leading-none text-white">Lv {profile.level}</span>
-              <span className="font-label text-xs">{profile.title}</span>
+              <span className="bg-primary px-1.5 py-0.5 font-label text-[10px] leading-none text-white">{t('app.card.levelChip', { level: profile.level })}</span>
+              <span className="font-label text-xs">{labels.level(profile.level) || profile.title}</span>
             </p>
           </div>
         </div>
@@ -127,7 +142,7 @@ export default function ProfileCard({ profile, large = false, headingLevel = 2 }
           <p className="mt-4 flex flex-wrap items-center gap-2">
             {profile.role && (
               <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">
-                {labelOf(ROLES, profile.role)}
+                {roleName(t, profile.role)}
               </span>
             )}
             {profile.headline && <span className={`break-words font-semibold text-ink ${large ? 'text-lg' : ''}`}>{profile.headline}</span>}
@@ -141,25 +156,28 @@ export default function ProfileCard({ profile, large = false, headingLevel = 2 }
         <div className="mt-5">
           <XpBar xp={profile.xp} levelXp={profile.levelXp} nextLevelXp={profile.nextLevelXp} />
           <p className="mt-1.5 font-label text-[10px] text-muted">
-            {profile.xp} XP{profile.nextLevelXp ? ` · ${profile.nextLevelXp - profile.xp} to level ${profile.level + 1}` : ' · top level'}
+            {profile.xp} XP
+            {profile.nextLevelXp
+              ? ` · ${t('app.card.toNext', { xp: profile.nextLevelXp - profile.xp, level: profile.level + 1 })}`
+              : ` · ${t('app.card.top')}`}
           </p>
         </div>
 
         <div className="mt-5 border-t-2 border-dashed border-line pt-4">
-          <p className="font-label text-[10px] text-muted">Featured badges</p>
+          <p className="font-label text-[10px] text-muted">{t('app.card.featured')}</p>
           {featured.length ? (
-            <ul aria-label="Featured badges" className="mt-3 grid grid-cols-3 gap-3">
+            <ul aria-label={t('app.card.featured')} className="mt-3 grid grid-cols-3 gap-3">
               {featured.map((badge, index) => (
                 <li key={badge.id} className="flex min-w-0 flex-col items-center text-center">
                   <span className={`grid place-items-center border-2 border-ink bg-primary-soft shadow-pixel-ink ${large ? 'size-20 sm:size-24' : 'size-14'}`}>
                     <BadgeIcon id={badge.id} accent={index % 2 ? 'secondary' : 'primary'} className={large ? 'size-14 sm:size-16' : 'size-9'} />
                   </span>
-                  <span className={`mt-2 font-pixel leading-tight text-ink ${large ? 'text-base sm:text-lg' : 'text-sm'}`}>{badge.name}</span>
+                  <span className={`mt-2 font-pixel leading-tight text-ink ${large ? 'text-base sm:text-lg' : 'text-sm'}`}>{labels.badgeName(badge.id)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-muted">No badges picked yet.</p>
+            <p className="mt-2 text-sm text-muted">{t('app.card.noFeatured')}</p>
           )}
         </div>
       </div>

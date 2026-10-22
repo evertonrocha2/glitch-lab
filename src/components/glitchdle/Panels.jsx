@@ -1,5 +1,7 @@
-import { DISTRIBUTION_SIZE, MODE_NAMES, MODES } from '../../../shared/riddle/game.js'
+import { DISTRIBUTION_SIZE, MODES } from '../../../shared/riddle/game.js'
 import { formatCountdown } from '../../lib/daily.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelCard from '../pixel/PixelCard.jsx'
 import { Check } from './Boards.jsx'
@@ -31,25 +33,25 @@ export function WinBurst() {
   )
 }
 
-const guessesText = (count) => `${count} ${count === 1 ? 'guess' : 'guesses'}`
-
 // The end of a mode: solved or out of guesses, the answer, sharing and the wait for tomorrow.
 export function ResultCard({ state, justWon, msLeft, onShare, copied }) {
+  const t = useT()
   return (
     <PixelCard tone={state.solved ? 'primary' : 'muted'} className="relative overflow-visible p-5">
       {justWon && <WinBurst />}
       <div role="status" className="relative">
-        <p className="font-label text-xs text-secondary">{state.solved ? 'Case cracked' : 'Out of guesses'}</p>
+        <p className="font-label text-xs text-secondary">{state.solved ? t('app.glitchdle.cracked') : t('app.glitchdle.outOfGuesses')}</p>
         <p className="mt-1 font-pixel text-2xl font-bold text-ink">
-          {state.solved ? `Solved in ${guessesText(state.guessCount)}!` : 'So close.'} It was <span className="text-primary">{state.answer.name}</span>.
+          {state.solved ? t('app.glitchdle.solvedIn', { guesses: t('app.glitchdle.guesses', { count: state.guessCount }) }) : t('app.glitchdle.soClose')}{' '}
+          {t('app.glitchdle.itWas')} <span className="text-primary">{state.answer.name}</span>.
         </p>
       </div>
       <div className="relative mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="font-label text-xs text-muted">
-          Next Glitchdle in <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
+          {t('app.glitchdle.nextGlitchdle')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
         </p>
         <PixelButton onClick={onShare} variant="secondary">
-          {copied ? 'Copied!' : 'Share result'}
+          {copied ? t('app.glitchdle.shareCopied') : t('app.glitchdle.share')}
         </PixelButton>
       </div>
     </PixelCard>
@@ -60,15 +62,17 @@ export function ResultCard({ state, justWon, msLeft, onShare, copied }) {
 export function StatsPanel({ stats, mode, todayGuesses }) {
   const bars = stats.distribution[mode]
   const most = Math.max(1, ...bars)
+  const t = useT()
+  const modeName = useLabels().glitchdleMode(mode)
   return (
     <PixelCard tone="secondary" className="p-5">
-      <h2 className="font-pixel text-xl font-bold text-ink">Your stats</h2>
-      <ul aria-label="Your Glitchdle numbers" className="mt-4 grid grid-cols-4 gap-[2px] border-2 border-ink bg-ink">
+      <h2 className="font-pixel text-xl font-bold text-ink">{t('app.glitchdle.stats')}</h2>
+      <ul aria-label={t('app.glitchdle.numbers')} className="mt-4 grid grid-cols-4 gap-[2px] border-2 border-ink bg-ink">
         {[
-          ['Played', stats.played],
-          ['Perfect', stats.perfectDays],
-          ['Streak', stats.streak],
-          ['Best', stats.longestStreak],
+          [t('app.glitchdle.played'), stats.played],
+          [t('app.glitchdle.perfect'), stats.perfectDays],
+          [t('app.glitchdle.streak'), stats.streak],
+          [t('app.glitchdle.best'), stats.longestStreak],
         ].map(([name, value]) => (
           <li key={name} className="min-w-0 bg-white px-2 py-2 text-center">
             <strong className="block font-label text-xl leading-none text-ink tabular-nums">{value}</strong>
@@ -76,12 +80,12 @@ export function StatsPanel({ stats, mode, todayGuesses }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-muted">A perfect day has all three modes solved. The streak counts perfect days in a row.</p>
-      <h3 className="mt-5 font-label text-xs text-ink">{MODE_NAMES[mode]} guess distribution</h3>
+      <p className="mt-2 text-xs text-muted">{t('app.glitchdle.statsHint')}</p>
+      <h3 className="mt-5 font-label text-xs text-ink">{t('app.glitchdle.distribution', { mode: modeName })}</h3>
       {bars.every((count) => count === 0) ? (
-        <p className="mt-2 border-2 border-dashed border-line px-3 py-3 text-xs text-muted">No {MODE_NAMES[mode]} solves yet. Your first one starts the chart.</p>
+        <p className="mt-2 border-2 border-dashed border-line px-3 py-3 text-xs text-muted">{t('app.glitchdle.noSolves', { mode: modeName })}</p>
       ) : (
-        <ol aria-label={`${MODE_NAMES[mode]} guess distribution`} className="mt-2 space-y-1">
+        <ol aria-label={t('app.glitchdle.distribution', { mode: modeName })} className="mt-2 space-y-1">
           {bars.map((count, index) => {
             const name = index === DISTRIBUTION_SIZE - 1 ? `${DISTRIBUTION_SIZE}+` : String(index + 1)
             const today = todayGuesses !== null && Math.min(todayGuesses, DISTRIBUTION_SIZE) - 1 === index
@@ -107,23 +111,25 @@ export function StatsPanel({ stats, mode, todayGuesses }) {
 
 // Today's numbers for every mode, demo accounts left out.
 export function CommunityPanel({ community, modes }) {
+  const t = useT()
+  const labels = useLabels()
   return (
     <PixelCard tone="primary" className="p-5">
-      <h2 className="font-pixel text-xl font-bold text-ink">Today's detectives</h2>
+      <h2 className="font-pixel text-xl font-bold text-ink">{t('app.glitchdle.community')}</h2>
       <table className="mt-4 w-full border-2 border-ink text-sm">
         <thead className="bg-mist font-label text-[10px] text-muted">
           <tr>
             <th scope="col" className="px-2 py-1.5 text-left font-normal">
-              Mode
+              {t('app.glitchdle.mode')}
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-normal">
-              Solved
+              {t('app.glitchdle.solvedCol')}
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-normal">
-              Avg guesses
+              {t('app.glitchdle.avgGuesses')}
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-normal">
-              You
+              {t('app.glitchdle.you')}
             </th>
           </tr>
         </thead>
@@ -134,7 +140,7 @@ export function CommunityPanel({ community, modes }) {
             return (
               <tr key={mode} className="border-t-2 border-line">
                 <th scope="row" className="px-2 py-2 text-left font-semibold text-ink">
-                  {MODE_NAMES[mode]}
+                  {labels.glitchdleMode(mode)}
                 </th>
                 <td className="px-2 py-2 text-right tabular-nums text-ink">
                   {numbers.solved}/{numbers.players}
@@ -148,7 +154,7 @@ export function CommunityPanel({ community, modes }) {
                   ) : mine.over ? (
                     <span className="text-muted">X</span>
                   ) : (
-                    <span className="text-muted">{mine.guessCount ? `${mine.guessCount} ${mine.guessCount === 1 ? 'try' : 'tries'}` : '-'}</span>
+                    <span className="text-muted">{mine.guessCount ? t('app.glitchdle.tries', { count: mine.guessCount }) : '-'}</span>
                   )}
                 </td>
               </tr>
@@ -156,7 +162,7 @@ export function CommunityPanel({ community, modes }) {
           })}
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-muted">Solved out of everyone who guessed today. Demo accounts don't count.</p>
+      <p className="mt-2 text-xs text-muted">{t('app.glitchdle.communityHint')}</p>
     </PixelCard>
   )
 }

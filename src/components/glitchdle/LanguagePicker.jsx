@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { searchLanguages } from '../../../shared/riddle/languages.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 
 const MAX_OPTIONS = 8
@@ -7,6 +8,7 @@ const MAX_OPTIONS = 8
 // The guess box: type to filter the languages, arrows to move, Enter to guess, Escape to close.
 // Languages already guessed stay in the list, greyed out, so nobody guesses one twice.
 export default function LanguagePicker({ mode, guessed = [], onGuess, busy = false }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
@@ -65,7 +67,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
     <div className="relative">
       <div className="flex gap-2">
         <label htmlFor={`${listId}-input`} className="sr-only">
-          Guess a language
+          {t('app.glitchdle.guessLabel')}
         </label>
         <input
           id={`${listId}-input`}
@@ -78,7 +80,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
           aria-activedescendant={showList && options[active] ? optionId(options[active].id) : undefined}
           autoComplete="off"
           spellCheck="false"
-          placeholder={mode === 'classic' ? 'Type a language...' : 'Which language is it?'}
+          placeholder={mode === 'classic' ? t('app.glitchdle.placeholderClassic') : t('app.glitchdle.placeholderOther')}
           value={query}
           readOnly={busy}
           onChange={(event) => {
@@ -92,14 +94,14 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
           className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2.5 font-mono text-sm text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel read-only:bg-mist"
         />
         <PixelButton onClick={submit} disabled={busy || !query.trim() || enabled.length === 0} className="shrink-0">
-          Guess
+          {t('app.glitchdle.guess')}
         </PixelButton>
       </div>
       {showList && (
         <ul
           id={listId}
           role="listbox"
-          aria-label="Languages"
+          aria-label={t('app.glitchdle.languages')}
           className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border-2 border-ink bg-white shadow-pixel-ink"
         >
           {options.map((item, index) => {
@@ -121,7 +123,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
               >
                 <span className="font-semibold">{item.name}</span>
                 <span className={`font-mono text-xs ${index === active && !used ? 'text-white/80' : 'text-muted'}`}>
-                  {used ? 'guessed' : item.year}
+                  {used ? t('app.glitchdle.guessed') : item.year}
                 </span>
               </li>
             )

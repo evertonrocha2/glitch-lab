@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { activityLevel, calendarDay, WEEKS } from '../../shared/activity.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../lib/i18n/format.js'
 
 // One purple, light to dark (checked: lightness rises step by step, and the lightest step still
 // stands out from white). Empty days use the neutral line gray, so "nothing" never reads as a level.
@@ -9,26 +11,20 @@ const GAP = 3
 const STEP = CELL + GAP
 const LEFT = 30
 const TOP = 18
-const WEEKDAYS = [
-  [1, 'Mon'],
-  [3, 'Wed'],
-  [5, 'Fri'],
-]
+// Rows 1, 3 and 5 (Monday, Wednesday, Friday): the calendar starts on a Sunday.
+const WEEKDAY_ROWS = [1, 3, 5]
+// Any Sunday will do to name the weekdays.
+const A_SUNDAY = '2023-01-01'
 
-const asDate = (day) => new Date(`${day}T00:00:00Z`)
-const longDate = (day) =>
-  asDate(day).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-const monthName = (day) => asDate(day).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short' })
-const activities = (count) => `${count} ${count === 1 ? 'activity' : 'activities'}`
-const days = (count) => `${count} ${count === 1 ? 'day' : 'days'}`
-const describe = (count, day) => `${count ? activities(count) : 'No activity'} on ${longDate(day)}`
+// "seg." -> "Seg", "out." -> "Out": short labels without the dot, capitalized, in any language.
+const short = (text) => text.replace(/\.$/, '').replace(/^\p{Ll}/u, (letter) => letter.toUpperCase())
 
 // Month labels sit over the first week that starts in that month.
-function monthLabels(start) {
+function monthLabels(start, format) {
   const labels = []
   let last = null
   for (let week = 0; week < WEEKS; week++) {
-    const month = monthName(calendarDay(start, week * 7))
+    const month = short(format.day(calendarDay(start, week * 7), { month: 'short' }))
     if (month !== last && week < WEEKS - 2) labels.push({ week, month })
     last = month
   }
@@ -36,19 +32,23 @@ function monthLabels(start) {
 }
 
 // Totals per month, for the table screen readers get instead of 371 squares.
-function monthTotals(activity, today) {
+function monthTotals(activity, today, format) {
   const totals = new Map()
   activity.days.forEach((count, index) => {
     const day = calendarDay(activity.start, index)
     if (day > today) return
-    const key = asDate(day).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' })
+    const key = format.day(day, { month: 'long', year: 'numeric' })
     totals.set(key, (totals.get(key) ?? 0) + count)
   })
   return [...totals]
 }
 
 // A GitHub-style year of activity: each square is a day, darker means more done that day.
-export default function ActivityGraph({ activity, today, title = 'Activity', className = '' }) {
+export default function ActivityGraph({ activity, today, title: titleProp, className = '' }) {
+  const t = useT()
+  const format = useFormat()
+  const title = titleProp ?? t('app.activity.title')
+  const longDate = (day) => format.day(day)
   const scroller = useRef(null)
   const [hover, setHover] = useState(null)
   const lastDay = today ?? calendarDay(activity.start, activity.days.length - 1)
@@ -60,7 +60,14 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
 
   const width = LEFT + WEEKS * STEP
   const height = TOP + 7 * STEP
-  const summary = `${activities(activity.total)} in the last year, on ${days(activity.activeDays)}`
+  const summary = activity.total
+    ? t('app.activity.summary', {
+        activities: t('app.activity.count', { count: activity.total }),
+        days: t('app.activity.days', { count: activity.activeDays }),
+      })
+    : t('app.activity.summaryNone')
+  const describe = (count, day) =>
+    t('app.activity.onDay', { what: count ? t('app.activity.count', { count }) : t('app.activity.none'), day: longDate(day) })
 
   function onMove(event) {
     const index = event.target.dataset?.index
@@ -78,7 +85,7 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
         </h2>
         <p className="text-sm text-muted">
           {summary}
-          {activity.best && <span className="hidden sm:inline"> · best day {longDate(activity.best.day)}</span>}
+          {activity.best && <span className="hidden sm:inline"> · {t('app.activity.best', { day: longDate(activity.best.day) })}</span>}
         </p>
       </div>
 
@@ -95,14 +102,14 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
             onMouseLeave={() => setHover(null)}
             className="block h-auto w-full"
           >
-            {monthLabels(activity.start).map(({ week, month }) => (
+            {monthLabels(activity.start, format).map(({ week, month }) => (
               <text key={`${week}-${month}`} x={LEFT + week * STEP} y={10} className="fill-muted font-label text-[10px]">
                 {month}
               </text>
             ))}
-            {WEEKDAYS.map(([row, label]) => (
-              <text key={label} x={0} y={TOP + row * STEP + CELL - 2} className="fill-muted font-label text-[10px]">
-                {label}
+            {WEEKDAY_ROWS.map((row) => (
+              <text key={row} x={0} y={TOP + row * STEP + CELL - 2} className="fill-muted font-label text-[10px]">
+                {short(format.day(calendarDay(A_SUNDAY, row), { weekday: 'short' }))}
               </text>
             ))}
             {activity.days.map((count, index) => {
@@ -137,24 +144,24 @@ export default function ActivityGraph({ activity, today, title = 'Activity', cla
         </div>
 
         <div aria-hidden="true" className="mt-3 flex items-center justify-end gap-1.5 font-label text-[10px] text-muted">
-          Less
+          {t('app.activity.less')}
           {LEVEL_FILL.map((fill) => (
             <span key={fill} className="size-[11px]" style={{ backgroundColor: fill }} />
           ))}
-          More
+          {t('app.activity.more')}
         </div>
       </div>
 
       <table className="sr-only">
-        <caption>{title} per month</caption>
+        <caption>{t('app.activity.caption', { title })}</caption>
         <thead>
           <tr>
-            <th scope="col">Month</th>
-            <th scope="col">Activities</th>
+            <th scope="col">{t('app.activity.month')}</th>
+            <th scope="col">{t('app.activity.activities')}</th>
           </tr>
         </thead>
         <tbody>
-          {monthTotals(activity, lastDay).map(([month, total]) => (
+          {monthTotals(activity, lastDay, format).map(([month, total]) => (
             <tr key={month}>
               <th scope="row">{month}</th>
               <td>{total}</td>

@@ -8,14 +8,15 @@ import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import { AVATAR_STYLES } from '../components/pixel/PixelAvatar.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
-import ProfileCard from '../components/profile/ProfileCard.jsx'
+import ProfileCard, { linkName, openToName, roleName } from '../components/profile/ProfileCard.jsx'
 import { AuthError, saveProfile } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { loadMyProfile, rememberMyProfile } from '../lib/profile/myProfile.js'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
 const LABEL = 'font-label text-xs text-ink'
-const HANDLE_RULES = 'Lowercase letters, numbers, _ and -. 3 to 20 characters.'
 
 const newSeed = () => Math.random().toString(36).slice(2, 10)
 
@@ -39,6 +40,22 @@ const draftFrom = (profile, earned) => ({
   openTo: profile.openTo ?? [],
 })
 
+// handleProblem and linkProblem (shared with the API) answer in English; these say the same in the reader's language.
+function handleMessage(t, handle) {
+  if (!handleProblem(handle)) return null
+  if (handle.length < PROFILE_LIMITS.handleMin) return t('app.profile.handleShort', { min: PROFILE_LIMITS.handleMin })
+  if (handle.length > PROFILE_LIMITS.handleMax) return t('app.profile.handleLong', { max: PROFILE_LIMITS.handleMax })
+  return t('app.profile.handleChars')
+}
+
+function linkMessage(t, kind, value) {
+  const problem = linkProblem(kind, value)
+  if (!problem) return null
+  if (value.length > PROFILE_LIMITS.link) return t('app.profile.linkLong', { max: PROFILE_LIMITS.link })
+  const site = LINKS.find((link) => link.id === kind)?.site
+  return problem.includes('https://') ? t('app.profile.linkHttps') : t('app.profile.linkSite', { site })
+}
+
 // Only the links that are filled in and pass the check (the preview shows these; the save sends them).
 const goodLinks = (links) =>
   Object.fromEntries(
@@ -50,12 +67,8 @@ const linksOk = (links) => Object.entries(links).every(([id, url]) => !url.trim(
 
 const toggle = (list, id) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id])
 
-const ABOUT_TEXT = [
-  { field: 'university', label: 'University', placeholder: 'Where you study' },
-  { field: 'course', label: 'Course', placeholder: 'Computer Science' },
-  { field: 'work', label: 'Job or company', placeholder: 'Intern at a startup' },
-  { field: 'location', label: 'Location', placeholder: 'City, country' },
-]
+// Labels and placeholders live under app.profile.<field> and app.profile.<field>Placeholder.
+const ABOUT_TEXT = ['university', 'course', 'work', 'location']
 const LINK_PLACEHOLDERS = { github: 'https://github.com/you', linkedin: 'https://www.linkedin.com/in/you', website: 'https://your.site' }
 
 function Chips({ label, hint, options, picked, max, onToggle }) {
@@ -89,21 +102,22 @@ function Chips({ label, hint, options, picked, max, onToggle }) {
 
 // "About you": what you do, where you study or work, your languages, links and what you're open to.
 function AboutFields({ draft, change }) {
+  const t = useT()
   return (
     <fieldset aria-labelledby="about-title" className="space-y-5 border-t-2 border-dashed border-line pt-5">
       <div>
         <h2 id="about-title" className="font-pixel text-xl font-bold text-ink">
-          About you
+          {t('app.profile.about')}
         </h2>
-        <p className="mt-1 text-sm text-muted">All optional. Shown on your public profile.</p>
+        <p className="mt-1 text-sm text-muted">{t('app.profile.aboutHint')}</p>
       </div>
 
       <div role="radiogroup" aria-labelledby="role-label">
         <p id="role-label" className={LABEL}>
-          What do you do?
+          {t('app.profile.role')}
         </p>
         <div className="mt-2.5 flex flex-wrap gap-2">
-          {[...ROLES, { id: null, label: 'Rather not say' }].map((role) => (
+          {[...ROLES.map((role) => ({ id: role.id, label: roleName(t, role.id) })), { id: null, label: t('app.profile.roleNone') }].map((role) => (
             <label key={role.id ?? 'none'} className="cursor-pointer">
               <input
                 type="radio"
@@ -123,7 +137,7 @@ function AboutFields({ draft, change }) {
       <div>
         <div className="flex items-baseline justify-between gap-3">
           <label htmlFor="headline" className={LABEL}>
-            Headline
+            {t('app.profile.headline')}
           </label>
           <span className="font-label text-[10px] text-muted">
             {draft.headline.length}/{PROFILE_LIMITS.headline}
@@ -133,23 +147,23 @@ function AboutFields({ draft, change }) {
           id="headline"
           value={draft.headline}
           maxLength={PROFILE_LIMITS.headline}
-          placeholder="Learning React at night"
+          placeholder={t('app.profile.headlinePlaceholder')}
           onChange={(event) => change({ headline: event.target.value })}
           className={`mt-2 ${INPUT}`}
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {ABOUT_TEXT.map(({ field, label, placeholder }) => (
+        {ABOUT_TEXT.map((field) => (
           <div key={field} className="min-w-0">
             <label htmlFor={`about-${field}`} className={LABEL}>
-              {label}
+              {t(`app.profile.${field}`)}
             </label>
             <input
               id={`about-${field}`}
               value={draft[field]}
               maxLength={PROFILE_LIMITS[field]}
-              placeholder={placeholder}
+              placeholder={t(`app.profile.${field}Placeholder`)}
               onChange={(event) => change({ [field]: event.target.value })}
               className={`mt-2 ${INPUT}`}
             />
@@ -158,24 +172,27 @@ function AboutFields({ draft, change }) {
       </div>
 
       <Chips
-        label="Languages you write"
-        hint={`${draft.languages.length}/${PROFILE_LIMITS.languages} picked`}
+        label={t('app.profile.languages')}
+        hint={t('app.profile.picked', { count: draft.languages.length, max: PROFILE_LIMITS.languages })}
         options={LANGUAGES}
         picked={draft.languages}
         max={PROFILE_LIMITS.languages}
         onToggle={(id) => change({ languages: toggle(draft.languages, id) })}
       />
 
-      <Chips label="Open to" options={OPEN_TO} picked={draft.openTo} onToggle={(id) => change({ openTo: toggle(draft.openTo, id) })} />
+      <Chips
+        label={t('app.profile.openTo')}
+        options={OPEN_TO.map((option) => ({ id: option.id, label: openToName(t, option.id) }))}
+        picked={draft.openTo} onToggle={(id) => change({ openTo: toggle(draft.openTo, id) })} />
 
       <div className="space-y-4">
         {LINKS.map((link) => {
           const value = draft.links[link.id]
-          const problem = value.trim() ? linkProblem(link.id, value.trim()) : null
+          const problem = value.trim() ? linkMessage(t, link.id, value.trim()) : null
           return (
             <div key={link.id}>
               <label htmlFor={`link-${link.id}`} className={LABEL}>
-                {link.label}
+                {linkName(t, link.id)}
               </label>
               <input
                 id={`link-${link.id}`}
@@ -205,18 +222,22 @@ function AboutFields({ draft, change }) {
 }
 
 function HandleHint({ handle }) {
-  if (!handle) return <p className="mt-1.5 text-xs text-muted">{HANDLE_RULES}</p>
-  const problem = handleProblem(handle)
+  const t = useT()
+  if (!handle) {
+    return <p className="mt-1.5 text-xs text-muted">{t('app.profile.handleRules', { min: PROFILE_LIMITS.handleMin, max: PROFILE_LIMITS.handleMax })}</p>
+  }
+  const problem = handleMessage(t, handle)
   return problem ? (
     <p className="mt-1.5 text-xs text-primary">{problem}</p>
   ) : (
-    <p className="mt-1.5 text-xs text-secondary">Looks good. Your link: /u/{handle}</p>
+    <p className="mt-1.5 text-xs text-secondary">{t('app.profile.handleOk', { handle })}</p>
   )
 }
 
 function ColorPicker({ value, onChange }) {
+  const t = useT()
   return (
-    <div role="radiogroup" aria-label="Avatar color" className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label={t('app.profile.avatarColor')} className="flex flex-wrap gap-2">
       {AVATAR_COLORS.map((color) => (
         <label key={color.id} className="cursor-pointer">
           <input
@@ -225,7 +246,7 @@ function ColorPicker({ value, onChange }) {
             value={color.id}
             checked={value === color.id}
             onChange={() => onChange(color.id)}
-            aria-label={color.name}
+            aria-label={t(`app.color.${color.id}`)}
             className="peer sr-only"
           />
           <span
@@ -240,12 +261,14 @@ function ColorPicker({ value, onChange }) {
 
 function BadgePicker({ earned, picked, onToggle }) {
   const full = picked.length >= PROFILE_LIMITS.featured
+  const t = useT()
+  const labels = useLabels()
   return (
     <fieldset>
-      <legend className={LABEL}>Featured badges</legend>
-      <p className="mt-1 text-xs text-muted">Pick up to {PROFILE_LIMITS.featured} of the badges you have earned.</p>
+      <legend className={LABEL}>{t('app.profile.featured')}</legend>
+      <p className="mt-1 text-xs text-muted">{t('app.profile.featuredHint', { max: PROFILE_LIMITS.featured })}</p>
       {earned.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">Earn a badge to feature it here.</p>
+        <p className="mt-3 text-sm text-muted">{t('app.profile.featuredNone')}</p>
       ) : (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {earned.map((badge) => {
@@ -262,7 +285,7 @@ function BadgePicker({ earned, picked, onToggle }) {
                 }`}
               >
                 <BadgeIcon id={badge.id} className="size-7 shrink-0" />
-                <span className="min-w-0 font-pixel text-sm leading-tight text-ink">{badge.name}</span>
+                <span className="min-w-0 font-pixel text-sm leading-tight text-ink">{labels.badgeName(badge.id)}</span>
               </button>
             )
           })}
@@ -274,6 +297,7 @@ function BadgePicker({ earned, picked, onToggle }) {
 
 function PublicLink({ handle }) {
   const [copied, setCopied] = useState(false)
+  const t = useT()
   const url = `${window.location.origin}/u/${handle}`
 
   async function copy() {
@@ -288,15 +312,15 @@ function PublicLink({ handle }) {
   return (
     <div className="mt-6 border-2 border-ink bg-secondary-soft p-4">
       <label htmlFor="public-link" className={LABEL}>
-        Your public link
+        {t('app.profile.publicLink')}
       </label>
       <div className="mt-2 flex flex-wrap gap-2">
         <input id="public-link" readOnly value={url} onFocus={(event) => event.target.select()} className={`${INPUT} min-w-0 basis-full font-mono text-sm sm:basis-0 sm:flex-1`} />
         <PixelButton variant="secondary" onClick={copy}>
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('app.profile.copied') : t('app.profile.copy')}
         </PixelButton>
         <PixelButton as={Link} variant="ghost" to={`/u/${handle}`}>
-          Open
+          {t('app.profile.open')}
         </PixelButton>
       </div>
     </div>
@@ -312,6 +336,7 @@ export default function ProfilePage() {
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
   const userId = user.id
+  const t = useT()
 
   useEffect(() => {
     let live = true
@@ -364,7 +389,7 @@ export default function ProfilePage() {
   const preview = draft && {
     ...data.progress,
     ...draft,
-    displayName: draft.displayName.trim() || draft.handle || 'Detective',
+    displayName: draft.displayName.trim() || draft.handle || t('app.profile.fallbackName'),
     handle: draft.handle && !handleProblem(draft.handle) ? draft.handle : null,
     links: goodLinks(draft.links),
   }
@@ -372,12 +397,12 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <p className="font-label text-xs text-secondary">
-        &gt; your badge<span className="motion-safe:animate-caret">_</span>
+        &gt; {t('app.profile.kicker')}<span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your profile</h1>
-      <p className="mt-2 text-muted">Pick a name, a pixel face and the badges you are proudest of. Share it when you're ready.</p>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('app.profile.title')}</h1>
+      <p className="mt-2 text-muted">{t('app.profile.lead')}</p>
       <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
-        Find detectives
+        {t('app.progress.findPeople')}
       </Link>
 
       {message && (
@@ -389,25 +414,25 @@ export default function ProfilePage() {
       {!draft ? (
         !message && (
           <p role="status" className="mt-10 font-label text-xs text-muted">
-            Loading your profile...
+            {t('app.profile.loading')}
           </p>
         )
       ) : (
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
           <section aria-labelledby="preview-title" className="lg:sticky lg:top-6 lg:order-last">
             <h2 id="preview-title" className="mb-3 font-label text-xs text-primary">
-              How others see you
+              {t('app.profile.previewTitle')}
             </h2>
             <ProfileCard profile={preview} headingLevel={3} />
             <p className="mt-3 text-xs text-muted">
-              {saved.isPublic && saved.handle ? 'Your profile is public.' : 'Only you can see this until you make it public.'}
+              {saved.isPublic && saved.handle ? t('app.profile.isPublic') : t('app.profile.isPrivate')}
             </p>
           </section>
 
           <PixelCard tone="secondary" as="form" onSubmit={save} className="space-y-6 p-5 sm:p-7">
             <div>
               <label htmlFor="display-name" className={LABEL}>
-                Display name
+                {t('app.profile.displayName')}
               </label>
               <input
                 id="display-name"
@@ -421,7 +446,7 @@ export default function ProfilePage() {
 
             <div>
               <label htmlFor="handle" className={LABEL}>
-                Handle
+                {t('app.profile.handle')}
               </label>
               <div className="mt-2 flex items-stretch">
                 <span aria-hidden="true" className="grid place-items-center border-2 border-r-0 border-ink bg-mist px-3 font-label text-xs text-muted">
@@ -434,7 +459,7 @@ export default function ProfilePage() {
                   autoCapitalize="none"
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="bug_hunter"
+                  placeholder={t('app.profile.handlePlaceholder')}
                   onChange={(event) => change({ handle: event.target.value.toLowerCase() })}
                   aria-describedby="handle-hint"
                   aria-invalid={!handleOk}
@@ -449,7 +474,7 @@ export default function ProfilePage() {
             <div>
               <div className="flex items-baseline justify-between gap-3">
                 <label htmlFor="bio" className={LABEL}>
-                  Bio
+                  {t('app.profile.bio')}
                 </label>
                 <span className="font-label text-[10px] text-muted">
                   {draft.bio.length}/{PROFILE_LIMITS.bio}
@@ -460,7 +485,7 @@ export default function ProfilePage() {
                 rows={3}
                 value={draft.bio}
                 maxLength={PROFILE_LIMITS.bio}
-                placeholder="What are you learning right now?"
+                placeholder={t('app.profile.bioPlaceholder')}
                 onChange={(event) => change({ bio: event.target.value })}
                 className={`mt-2 resize-none ${INPUT}`}
               />
@@ -469,11 +494,11 @@ export default function ProfilePage() {
             <AboutFields draft={draft} change={change} />
 
             <div>
-              <p className={LABEL}>Avatar</p>
+              <p className={LABEL}>{t('app.profile.avatar')}</p>
               <div className="mt-3 flex flex-wrap items-center gap-4">
                 <ColorPicker value={draft.avatar.color} onChange={(color) => change({ avatar: { ...draft.avatar, color } })} />
                 <PixelButton variant="ghost" onClick={() => change({ avatar: { ...draft.avatar, seed: newSeed() } })}>
-                  Shuffle
+                  {t('app.profile.shuffle')}
                 </PixelButton>
               </div>
             </div>
@@ -489,21 +514,21 @@ export default function ProfilePage() {
                   className="mt-0.5 size-5 shrink-0 accent-primary"
                 />
                 <span>
-                  <span className="block font-label text-xs text-ink">Make my profile public</span>
+                  <span className="block font-label text-xs text-ink">{t('app.profile.makePublic')}</span>
                   <span className="mt-1 block text-sm text-muted">
-                    Anyone with the link sees your name, level, study time and badges. Never your email, cases or notes.
+                    {t('app.profile.makePublicHint')}
                   </span>
                 </span>
               </label>
-              {needsHandle && <p className="mt-2 text-xs text-primary">Pick a handle to share your profile.</p>}
+              {needsHandle && <p className="mt-2 text-xs text-primary">{t('app.profile.needsHandle')}</p>}
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <PixelButton type="submit" disabled={status === 'saving' || !handleOk || needsHandle || !linksOk(draft.links)}>
-                {status === 'saving' ? 'Saving...' : 'Save profile'}
+                {status === 'saving' ? t('app.profile.saving') : t('app.profile.save')}
               </PixelButton>
               <span role="status" className="font-label text-xs text-secondary">
-                {status === 'saved' ? 'Saved.' : ''}
+                {status === 'saved' ? t('app.profile.saved') : ''}
               </span>
             </div>
 

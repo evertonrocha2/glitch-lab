@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { ASSISTANT_LIMITS, pageKind, SUGGESTIONS } from '../../../shared/assistant.js'
+import { ASSISTANT_LIMITS, pageKind } from '../../../shared/assistant.js'
 import { AuthError, startChallenge } from '../../lib/api.js'
 import { useAssistant } from '../../lib/assistant/AssistantProvider.jsx'
 import { pageFromLocation } from '../../lib/assistant/conversation.js'
 import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useStudyTimer } from '../../lib/timer/StudyTimerProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelLogo from '../pixel/PixelLogo.jsx'
 import { AssistantBubble, UserBubble } from './AssistantMessage.jsx'
 import DetectiveAvatar from './DetectiveAvatar.jsx'
+import { suggestionsFor } from './names.js'
 import ThinkingSteps from './ThinkingSteps.jsx'
 
 const FOCUSABLE = 'button:not([disabled]), a[href], textarea:not([disabled]), input:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
@@ -23,6 +25,7 @@ function Dialog() {
   const { messages, pending, error, close } = assistant
   const { getToken, signOut } = useAuth()
   const timer = useStudyTimer()
+  const t = useT()
   const navigate = useNavigate()
   const location = useLocation()
   const page = pageFromLocation(location.pathname, assistant.focus)
@@ -103,7 +106,7 @@ function Dialog() {
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Clicking the dimmed page closes the panel; keyboard users have Escape and the Close button. */}
-      <button type="button" tabIndex={-1} aria-label="Close the assistant" onClick={close} className="absolute inset-0 cursor-default bg-ink/40" />
+      <button type="button" tabIndex={-1} aria-label={t('app.assistant.closeBackdrop')} onClick={close} className="absolute inset-0 cursor-default bg-ink/40" />
       <aside
         ref={panel}
         role="dialog"
@@ -121,11 +124,11 @@ function Dialog() {
           </span>
           <span className="min-w-0 flex-1">
             <h2 id="assistant-title" className="font-pixel text-xl leading-tight font-bold">
-              Ask the detective
+              {t('app.assistant.title')}
             </h2>
-            <span className="block text-xs text-white/85">Five specialists, one answer</span>
+            <span className="block text-xs text-white/85">{t('app.assistant.subtitle')}</span>
           </span>
-          <PixelButton variant="ghost" onClick={close} aria-label="Close" title="Close (Esc)" className="size-10 shrink-0 p-0 text-lg">
+          <PixelButton variant="ghost" onClick={close} aria-label={t('app.assistant.close')} title={t('app.assistant.closeTitle')} className="size-10 shrink-0 p-0 text-lg">
             {/* A pixel X: the pixel font draws "×" too small to see. */}
             <svg aria-hidden="true" viewBox="0 0 7 7" shapeRendering="crispEdges" className="size-3.5 fill-current">
               {[0, 1, 2, 3, 4, 5, 6].map((step) => (
@@ -138,22 +141,19 @@ function Dialog() {
           </PixelButton>
         </header>
 
-        <div ref={log} role="log" aria-live="polite" aria-label="Conversation" className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+        <div ref={log} role="log" aria-live="polite" aria-label={t('app.assistant.log')} className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
           {empty && (
             <div className="space-y-4">
               <div className="flex items-start gap-2.5">
                 <DetectiveAvatar />
                 <div className="min-w-0 flex-1 border-2 border-ink bg-white p-3 text-sm shadow-pixel">
-                  <p>
-                    Hi! I can look at your cases, your gym challenges, your notes and your progress, or explain how the app works.
-                    I won't hand you fixes, but I'll point you the right way.
-                  </p>
+                  <p>{t('app.assistant.hello')}</p>
                 </div>
               </div>
               <div>
-                <p className="font-label text-[10px] text-muted">Try asking</p>
-                <ul aria-label="Suggested questions" className="mt-2 flex flex-wrap gap-2">
-                  {SUGGESTIONS[pageKind(location.pathname)].map((text) => (
+                <p className="font-label text-[10px] text-muted">{t('app.assistant.tryAsking')}</p>
+                <ul aria-label={t('app.assistant.suggestions')} className="mt-2 flex flex-wrap gap-2">
+                  {suggestionsFor(t, pageKind(location.pathname)).map((text) => (
                     <li key={text}>
                       <button
                         type="button"
@@ -184,7 +184,7 @@ function Dialog() {
               <p>{error || actionError}</p>
               {error && (
                 <PixelButton variant="secondary" onClick={() => assistant.retry(page)} className="mt-2.5 px-2.5 py-1.5 text-[10px]">
-                  Try again
+                  {t('app.assistant.retry')}
                 </PixelButton>
               )}
             </div>
@@ -199,7 +199,7 @@ function Dialog() {
           }}
         >
           <label htmlFor="assistant-question" className="sr-only">
-            Your question
+            {t('app.assistant.question')}
           </label>
           <div className="flex items-end gap-2">
             <textarea
@@ -208,7 +208,7 @@ function Dialog() {
               rows={2}
               value={draft}
               maxLength={ASSISTANT_LIMITS.content}
-              placeholder="Ask about your cases, the gym, notes..."
+              placeholder={t('app.assistant.placeholder')}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -219,13 +219,13 @@ function Dialog() {
               className="min-h-11 flex-1 resize-none border-2 border-ink bg-white px-2.5 py-2 text-sm text-ink placeholder:text-muted focus-visible:rounded-none focus-visible:outline-offset-0"
             />
             <PixelButton type="submit" disabled={!draft.trim() || Boolean(pending)} className="px-3 py-2.5">
-              Send
+              {t('app.assistant.send')}
             </PixelButton>
           </div>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">Enter sends. Shift+Enter adds a line. Alt+A opens and closes me.</p>
+            <p className="text-xs text-muted">{t('app.assistant.keys')}</p>
             <PixelButton variant="ghost" onClick={assistant.newChat} disabled={empty} className="shrink-0 px-2.5 py-1.5 text-[10px]">
-              New chat
+              {t('app.assistant.newChat')}
             </PixelButton>
           </div>
         </form>
@@ -254,13 +254,14 @@ export default function AssistantPanel() {
 // The header button that opens it.
 export function AssistantButton() {
   const { open } = useAssistant()
+  const t = useT()
   return (
-    <PixelButton variant="primary" onClick={open} aria-label="Ask the detective" aria-keyshortcuts="Alt+A Control+/" className="px-1.5 py-1.5 sm:px-3 sm:py-2">
+    <PixelButton variant="primary" onClick={open} aria-label={t('app.assistant.open')} aria-keyshortcuts="Alt+A Control+/" className="px-1.5 py-1.5 sm:px-3 sm:py-2">
       <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
         <PixelLogo className="size-3.5" />
       </span>
       {/* Phones and tablets show just the icon so the top row fits; the name stays "Ask the detective". */}
-      <span className="hidden lg:inline">Ask the detective</span>
+      <span className="hidden lg:inline">{t('app.assistant.open')}</span>
     </PixelButton>
   )
 }
