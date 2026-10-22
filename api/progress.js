@@ -2,6 +2,7 @@ import { computeProgress } from '../shared/progress.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { POST as addStudyTime } from './_lib/handlers/study.js'
 import { ok, requireUser } from './_lib/http.js'
+import { loadDaily } from './_lib/puzzles/solved.js'
 import { getStore } from './_lib/store/index.js'
 
 // POST: the study timer reports time (shares this function to stay under Vercel's free-plan limit).
@@ -21,5 +22,7 @@ export async function GET(request) {
     store.listStudyTime(userId),
   ])
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
-  return ok({ progress: computeProgress({ cases, challenges, notes, study, today }) })
+  // Daily and global puzzles passed, for their XP, the daily streak and their badges.
+  const daily = await loadDaily(store, userId, challenges)
+  return ok({ progress: computeProgress({ cases, challenges, notes, study, today, daily }) })
 }

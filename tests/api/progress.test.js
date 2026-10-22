@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET } from '../../api/progress.js'
 import { apiRequest, useTempStore } from './helpers.js'
-import { CASE, challengeFor, SECRET } from './store-contract.js'
+import { CASE, challengeFor, PUZZLE_SECRET, puzzleFor, SECRET } from './store-contract.js'
 
 let store
 
@@ -44,4 +44,19 @@ it("falls back to the server's day when today is missing or wrong", async () => 
 
 it('asks for sign in', async () => {
   expect((await GET(apiRequest('/api/progress', { method: 'GET', token: null }))).status).toBe(401)
+})
+
+it('adds daily and global puzzles to my progress, without counting them as gym passes', async () => {
+  const solvePuzzle = async (fields) => {
+    const puzzle = await store.createPuzzle(puzzleFor(fields.day, fields), PUZZLE_SECRET)
+    const challenge = await store.createChallenge('alice', { caseId: null, puzzleId: puzzle.id, brokenCode: 'x', symptom: 'y', language: 'python', hints: ['a', 'b', 'c'] }, PUZZLE_SECRET)
+    await store.updateChallenge('alice', challenge.id, { status: 'passed', attempts: 1 })
+  }
+  await solvePuzzle({ day: '2026-10-21', difficulty: 'medium' })
+  await solvePuzzle({ day: '2026-10-22', difficulty: 'hard' })
+  await solvePuzzle({ day: '2026-10-19', kind: 'global', difficulty: 'hard' })
+
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress).toMatchObject({ xp: 35 + 50 + 100, dailyStreak: 2 })
+  expect(earned(progress)).toEqual(['global-ace'])
 })

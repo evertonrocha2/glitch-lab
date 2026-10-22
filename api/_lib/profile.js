@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { badgeById } from '../../shared/badges.js'
 import { AVATAR_COLORS, defaultDisplayName, handleProblem, normalizeHandle, PROFILE_LIMITS } from '../../shared/profile.js'
 import { computeProgress } from '../../shared/progress.js'
+import { loadDaily } from './puzzles/solved.js'
 
 const INVALID = { status: 400, message: 'Invalid request.' }
 const tooLong = (what, max) => ({ status: 413, message: `Too long. Keep your ${what} under ${max + 1} characters.` })
@@ -91,8 +92,9 @@ export async function summarize(store, userId, today) {
     store.listNotes(userId),
     store.listStudyTime(userId),
   ])
+  const daily = await loadDaily(store, userId, challenges)
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today }),
+    progress: computeProgress({ cases, challenges, notes, study, today, daily }),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,
