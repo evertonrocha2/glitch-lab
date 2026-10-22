@@ -59,6 +59,20 @@ const toPuzzle = (row) =>
     createdAt: row.created_at,
   }
 
+const toRiddle = (row) =>
+  row && { id: row.id, day: row.day, mode: row.mode, answer: row.answer, payload: row.payload ?? {}, source: row.source, createdAt: row.created_at }
+
+const toRiddleResult = (row) =>
+  row && {
+    userId: row.user_id,
+    day: row.day,
+    mode: row.mode,
+    guesses: row.guesses ?? [],
+    solved: row.solved,
+    solvedAt: row.solved_at ?? null,
+    updatedAt: row.updated_at,
+  }
+
 const toNote = (row) =>
   row && {
     id: row.id,
@@ -251,6 +265,61 @@ export function createSupabaseStore({ url, serviceKey }) {
           .order('passed_at', { ascending: true }),
       )
       return (rows ?? []).map((row) => ({ userId: row.user_id, attempts: row.attempts, startedAt: row.created_at, passedAt: row.passed_at }))
+    },
+
+    // Glitchdle. One riddle per (day, mode): null when that slot is already taken.
+    async createRiddle({ day, mode, answer, payload = {}, source = 'dataset' }) {
+      const inserted = await db.from('riddles').insert({ day, mode, answer, payload, source }).select().single()
+      if (inserted.error?.code === UNIQUE_VIOLATION) return null
+      return toRiddle(unwrap(inserted))
+    },
+
+    async listRiddles({ day, since } = {}) {
+      let query = db.from('riddles').select('*')
+      if (day !== undefined) query = query.eq('day', day)
+      if (since !== undefined) query = query.gte('day', since)
+      const rows = unwrap(await query.order('day', { ascending: true }))
+      return (rows ?? []).map(toRiddle)
+    },
+
+    async getRiddleResult(userId, day, mode) {
+      return toRiddleResult(unwrap(await db.from('riddle_results').select('*').eq('user_id', userId).eq('day', day).eq('mode', mode).maybeSingle()))
+    },
+
+    // guess_count is the version check: the write only lands if I still had expectedCount guesses.
+    async saveRiddleResult(userId, { day, mode, guesses, solved }, expectedCount) {
+      const stamp = new Date().toISOString()
+      const fields = { guesses, guess_count: guesses.length, solved: Boolean(solved), updated_at: stamp, ...(solved ? { solved_at: stamp } : {}) }
+      if (expectedCount === 0) {
+        const inserted = await db.from('riddle_results').insert({ user_id: userId, day, mode, ...fields }).select().single()
+        if (inserted.error?.code === UNIQUE_VIOLATION) return null
+        return toRiddleResult(unwrap(inserted))
+      }
+      const row = unwrap(
+        await db
+          .from('riddle_results')
+          .update(fields)
+          .eq('user_id', userId)
+          .eq('day', day)
+          .eq('mode', mode)
+          .eq('guess_count', expectedCount)
+          .select()
+          .maybeSingle(),
+      )
+      return toRiddleResult(row)
+    },
+
+    async listRiddleResults(userId) {
+      const rows = unwrap(await db.from('riddle_results').select('*').eq('user_id', userId).order('day', { ascending: true }))
+      return (rows ?? []).map(toRiddleResult)
+    },
+
+    // Demo accounts play but don't count, like on the leaderboard.
+    async riddleDayResults(day) {
+      const rows = unwrap(
+        await db.from('riddle_results').select('user_id, mode, guess_count, solved, users!inner(is_demo)').eq('day', day).eq('users.is_demo', false),
+      )
+      return (rows ?? []).map((row) => ({ userId: row.user_id, mode: row.mode, guessCount: row.guess_count, solved: row.solved }))
     },
 
     async createNote(userId, { title, blocks, isPublic = false }) {

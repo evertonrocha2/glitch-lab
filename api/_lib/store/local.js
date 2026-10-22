@@ -45,6 +45,10 @@ export function createLocalStore({ file }) {
   // Daily and global puzzles came later too; their secrets sit apart like challenge secrets.
   const puzzlesOf = (data) => (data.puzzles ??= [])
   const puzzleSecretsOf = (data) => (data.puzzleSecrets ??= {})
+  // Glitchdle: one riddle per day and mode, and one result per player, day and mode.
+  const riddlesOf = (data) => (data.riddles ??= [])
+  const riddleResultsOf = (data) => (data.riddleResults ??= [])
+  const ownResult = (data, userId, day, mode) => riddleResultsOf(data).find((item) => item.userId === userId && item.day === day && item.mode === mode)
 
   return {
     // Emails are stored lowercase, so "Ada@X.com" and "ada@x.com" are the same account. null when taken.
@@ -180,6 +184,60 @@ export function createLocalStore({ file }) {
         .filter((item) => item.puzzleId === puzzleId && item.status === 'passed' && item.passedAt && !demos.has(item.userId))
         .map((item) => ({ userId: item.userId, attempts: item.attempts, startedAt: item.createdAt, passedAt: item.passedAt }))
         .sort((a, b) => a.passedAt.localeCompare(b.passedAt))
+    },
+
+    // Glitchdle. One riddle per (day, mode): null when that slot is already taken. The answer stays
+    // on the server; the API decides what a player may see.
+    async createRiddle({ day, mode, answer, payload = {}, source = 'dataset' }) {
+      const data = await load()
+      const riddles = riddlesOf(data)
+      if (riddles.some((item) => item.day === day && item.mode === mode)) return null
+      const created = { id: randomUUID(), day, mode, answer, payload, source, createdAt: now() }
+      riddles.push(created)
+      await save()
+      return copy(created)
+    },
+
+    // Filters are optional: day (exact) or since (that day or later). Oldest day first.
+    async listRiddles({ day, since } = {}) {
+      const riddles = riddlesOf(await load()).filter((item) => (day === undefined || item.day === day) && (since === undefined || item.day >= since))
+      return copy(riddles.sort((a, b) => a.day.localeCompare(b.day)))
+    },
+
+    async getRiddleResult(userId, day, mode) {
+      return copy(ownResult(await load(), userId, day, mode))
+    },
+
+    // Writes my guesses for a day and mode. expectedCount is how many guesses I had when I read
+    // them: if another request saved in between, nothing is written and the answer is null.
+    async saveRiddleResult(userId, { day, mode, guesses, solved }, expectedCount) {
+      const data = await load()
+      const found = ownResult(data, userId, day, mode)
+      if ((found?.guesses.length ?? 0) !== expectedCount) return null
+      const stamp = now()
+      const result = found ?? { userId, day, mode, guesses: [], solved: false, solvedAt: null }
+      result.guesses = [...guesses]
+      result.solved = Boolean(solved)
+      if (result.solved && !result.solvedAt) result.solvedAt = stamp
+      result.updatedAt = stamp
+      if (!found) riddleResultsOf(data).push(result)
+      await save()
+      return copy(result)
+    },
+
+    async listRiddleResults(userId) {
+      const results = riddleResultsOf(await load()).filter((item) => item.userId === userId)
+      return copy(results.sort((a, b) => a.day.localeCompare(b.day)))
+    },
+
+    // Everyone's results for a day, for the community numbers: [{ userId, mode, guessCount, solved }].
+    // Demo accounts play but don't count, like on the leaderboard.
+    async riddleDayResults(day) {
+      const data = await load()
+      const demos = new Set((data.users ?? []).filter((user) => user.isDemo).map((user) => user.id))
+      return riddleResultsOf(data)
+        .filter((item) => item.day === day && !demos.has(item.userId))
+        .map((item) => ({ userId: item.userId, mode: item.mode, guessCount: item.guesses.length, solved: item.solved }))
     },
 
     async createNote(userId, { title, blocks, isPublic = false }) {

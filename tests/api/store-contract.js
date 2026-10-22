@@ -393,6 +393,60 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.puzzleSolves(puzzle.id)).toEqual([])
     })
 
+    // Glitchdle riddles are shared too: each test picks a far-future day of its own.
+    it('keeps one riddle per day and mode, answer included, for the server only', async () => {
+      const day = randomDay()
+      const riddle = await store.createRiddle({ day, mode: 'error', answer: 'python', payload: { text: 'KeyError' }, source: 'ai' })
+      expect(riddle).toMatchObject({ day, mode: 'error', answer: 'python', payload: { text: 'KeyError' }, source: 'ai' })
+      expect(riddle.id).toEqual(expect.any(String))
+      expect(await store.createRiddle({ day, mode: 'error', answer: 'rust', payload: {} })).toBeNull()
+      const classic = await store.createRiddle({ day, mode: 'classic', answer: 'rust' })
+      expect(classic).toMatchObject({ payload: {}, source: 'dataset' })
+      const before = await store.createRiddle({ day: `${day.slice(0, 8)}01`, mode: 'classic', answer: 'go' })
+
+      expect((await store.listRiddles({ day })).map((item) => item.mode).sort()).toEqual(['classic', 'error'])
+      const since = (await store.listRiddles({ since: day })).map((item) => item.id)
+      expect(since).toEqual(expect.arrayContaining([riddle.id, classic.id]))
+      expect(since).not.toContain(before.id)
+    })
+
+    it("saves a player's guesses per day and mode, refusing a stale write", async () => {
+      const day = randomDay()
+      expect(await store.getRiddleResult(ids.alice, day, 'classic')).toBeNull()
+      const first = await store.saveRiddleResult(ids.alice, { day, mode: 'classic', guesses: ['go'], solved: false }, 0)
+      expect(first).toMatchObject({ userId: ids.alice, day, mode: 'classic', guesses: ['go'], solved: false, solvedAt: null })
+      // A second request that also read zero guesses lost the race.
+      expect(await store.saveRiddleResult(ids.alice, { day, mode: 'classic', guesses: ['c'], solved: false }, 0)).toBeNull()
+      expect(await store.saveRiddleResult(ids.alice, { day, mode: 'classic', guesses: ['go', 'c'], solved: false }, 2)).toBeNull()
+
+      const solved = await store.saveRiddleResult(ids.alice, { day, mode: 'classic', guesses: ['go', 'rust'], solved: true }, 1)
+      expect(solved).toMatchObject({ guesses: ['go', 'rust'], solved: true, solvedAt: expect.any(String) })
+      expect(await store.getRiddleResult(ids.alice, day, 'classic')).toEqual(solved)
+      expect(await store.getRiddleResult(ids.bob, day, 'classic')).toBeNull()
+      expect(await store.getRiddleResult(ids.alice, day, 'error')).toBeNull()
+
+      await store.saveRiddleResult(ids.alice, { day: `${day.slice(0, 8)}01`, mode: 'error', guesses: ['c'], solved: true }, 0)
+      await store.saveRiddleResult(ids.bob, { day, mode: 'snippet', guesses: ['c'], solved: true }, 0)
+      const mine = await store.listRiddleResults(ids.alice)
+      expect(mine.map((item) => [item.day, item.mode])).toEqual([
+        [`${day.slice(0, 8)}01`, 'error'],
+        [day, 'classic'],
+      ])
+    })
+
+    it("lists a day's results for the community numbers, without demo accounts", async () => {
+      const day = randomDay()
+      const demo = await store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })
+      await store.saveRiddleResult(ids.alice, { day, mode: 'classic', guesses: ['go', 'c', 'rust'], solved: true }, 0)
+      await store.saveRiddleResult(ids.bob, { day, mode: 'classic', guesses: ['go'], solved: false }, 0)
+      await store.saveRiddleResult(demo.id, { day, mode: 'classic', guesses: ['rust'], solved: true }, 0)
+      const results = await store.riddleDayResults(day)
+      expect(results.sort((a, b) => b.guessCount - a.guessCount)).toEqual([
+        { userId: ids.alice, mode: 'classic', guessCount: 3, solved: true },
+        { userId: ids.bob, mode: 'classic', guessCount: 1, solved: false },
+      ])
+    })
+
     // Community articles are shared by everyone and outlive each test on Supabase,
     // so every search here narrows itself with a tag or word made up for that test.
     const marker = () => `m${crypto.randomUUID().slice(0, 8)}`

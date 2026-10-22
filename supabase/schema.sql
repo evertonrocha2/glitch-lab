@@ -271,3 +271,37 @@ as $$
   where a.id = p_article;
 $$;
 revoke execute on function public.refresh_article_counts(uuid) from public, anon, authenticated;
+
+-- Glitchdle: a programming-language riddle a day in three modes, the same for everyone.
+-- The cron (or the first player of a day it missed) writes one row per day and mode; the unique
+-- slot makes writing a day twice a no-op. `answer` is a language id from shared/riddle/languages.js
+-- and never leaves the server before a player solves the mode. `payload` holds what the mode shows
+-- (the error message, or the snippet and its reveal order).
+create table if not exists public.riddles (
+  id uuid primary key default gen_random_uuid(),
+  day date not null,
+  mode text not null check (mode in ('classic', 'error', 'snippet')),
+  answer text not null,
+  payload jsonb not null default '{}',
+  source text not null default 'dataset' check (source in ('dataset', 'ai')),
+  created_at timestamptz not null default now(),
+  unique (day, mode)
+);
+
+-- One row per player, day and mode: the language ids guessed, in order. guess_count mirrors the
+-- list's length so a guess is saved only if no other guess landed in between.
+create table if not exists public.riddle_results (
+  user_id uuid not null references public.users (id) on delete cascade,
+  day date not null,
+  mode text not null check (mode in ('classic', 'error', 'snippet')),
+  guesses jsonb not null default '[]',
+  guess_count int not null default 0 check (guess_count between 0 and 30),
+  solved boolean not null default false,
+  solved_at timestamptz,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, day, mode)
+);
+create index if not exists riddle_results_day on public.riddle_results (day, mode);
+
+alter table public.riddles enable row level security;
+alter table public.riddle_results enable row level security;
