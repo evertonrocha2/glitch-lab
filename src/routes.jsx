@@ -5,7 +5,9 @@ import GymPage from './pages/GymPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotesPage from './pages/NotesPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
 import ProgressPage from './pages/ProgressPage.jsx'
+import PublicProfilePage from './pages/PublicProfilePage.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -52,6 +54,16 @@ export function AppRoutes() {
           </RequireAuth>
         }
       />
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <ProfilePage />
+          </RequireAuth>
+        }
+      />
+      {/* Public: works signed out. */}
+      <Route path="/u/:handle" element={<PublicProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
