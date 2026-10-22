@@ -10,6 +10,8 @@ import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { formatDuration, localDay } from '../lib/day.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 const SEGMENTS = 20
@@ -18,10 +20,11 @@ function XpBar({ progress }) {
   const { xp, levelXp, nextLevelXp } = progress
   const share = nextLevelXp ? (xp - levelXp) / (nextLevelXp - levelXp) : 1
   const filled = Math.round(share * SEGMENTS)
+  const t = useT()
   return (
     <div
       role="progressbar"
-      aria-label="Experience toward the next level"
+      aria-label={t('app.xpBar')}
       aria-valuemin={levelXp}
       aria-valuemax={nextLevelXp ?? xp}
       aria-valuenow={xp}
@@ -35,26 +38,29 @@ function XpBar({ progress }) {
   )
 }
 
+// [message key under app.progress.earn, XP]
 const EARN = [
-  ['Investigate an error', XP.case],
-  ['Pass a gym challenge', XP.pass],
-  ['...without hints', `+${XP.cleanPass}`],
-  ['Solve a case', XP.solved],
-  ['Write a note', XP.note],
-  ['Study one minute', XP.studyMinute],
-  ['Finish a trail mission', `${Math.min(...Object.values(MISSION_XP))}-${Math.max(...Object.values(MISSION_XP))}`],
-  ['...and the whole trail', `+${TRAIL_BONUS_XP}`],
-  ['Solve a daily: easy, medium, hard', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
-  ['Solve the weekly global challenge', DAILY_XP.global],
-  ['Solve a Glitchdle mode (fewer guesses, more XP)', `${RIDDLE_XP.at(-1).xp}-${RIDDLE_XP[0].xp}`],
-  ['Publish an article', COMMUNITY_XP.article],
-  ['Get a valid rating', COMMUNITY_XP.validReceived],
-  ['Get a like', COMMUNITY_XP.likeReceived],
-  ['Comment on an article', COMMUNITY_XP.comment],
+  ['case', XP.case],
+  ['pass', XP.pass],
+  ['cleanPass', `+${XP.cleanPass}`],
+  ['solved', XP.solved],
+  ['note', XP.note],
+  ['studyMinute', XP.studyMinute],
+  ['mission', `${Math.min(...Object.values(MISSION_XP))}-${Math.max(...Object.values(MISSION_XP))}`],
+  ['trail', `+${TRAIL_BONUS_XP}`],
+  ['daily', `${DAILY_XP.easy} / ${DAILY_XP.medium} / ${DAILY_XP.hard}`],
+  ['global', DAILY_XP.global],
+  ['glitchdle', `${RIDDLE_XP.at(-1).xp}-${RIDDLE_XP[0].xp}`],
+  ['article', COMMUNITY_XP.article],
+  ['validRating', COMMUNITY_XP.validReceived],
+  ['like', COMMUNITY_XP.likeReceived],
+  ['comment', COMMUNITY_XP.comment],
 ]
 
 export default function ProgressPage() {
   const { progress, refresh } = useProgress()
+  const t = useT()
+  const labels = useLabels()
 
   useEffect(() => {
     refresh()
@@ -66,17 +72,17 @@ export default function ProgressPage() {
   return (
     <AppShell>
       <p className="font-label text-xs text-secondary">
-        &gt; detective file<span className="motion-safe:animate-caret">_</span>
+        &gt; {t('app.progress.kicker')}<span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your progress</h1>
-      <p className="mt-2 text-muted">Every case, fix, note and minute of study earns XP. Badges mark the milestones.</p>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('app.progress.title')}</h1>
+      <p className="mt-2 text-muted">{t('app.progress.lead')}</p>
       <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
-        Find detectives
+        {t('app.progress.findPeople')}
       </Link>
 
       {!progress ? (
         <p role="status" className="mt-10 font-label text-xs text-muted">
-          Loading your progress...
+          {t('app.progress.loading')}
         </p>
       ) : (
         <>
@@ -84,42 +90,42 @@ export default function ProgressPage() {
             <PixelCard className="relative overflow-hidden p-6 sm:p-8">
               <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/3 opacity-25" />
               <div className="relative">
-                <p className="font-label text-xs text-primary">Level {progress.level}</p>
-                <h2 className="mt-2 font-pixel text-4xl font-bold text-ink">{progress.title}</h2>
+                <p className="font-label text-xs text-primary">{t('app.progress.level', { level: progress.level })}</p>
+                <h2 className="mt-2 font-pixel text-4xl font-bold text-ink">{labels.level(progress.level)}</h2>
                 <p className="mt-1 text-muted">
                   <strong className="font-label text-ink">{progress.xp} XP</strong>
                   {progress.nextLevelXp
-                    ? ` · ${progress.nextLevelXp - progress.xp} XP to level ${progress.level + 1}`
-                    : ' · Top level reached'}
+                    ? ` · ${t('app.progress.toNext', { xp: progress.nextLevelXp - progress.xp, level: progress.level + 1 })}`
+                    : ` · ${t('app.progress.top')}`}
                 </p>
                 <div className="mt-5">
                   <XpBar progress={progress} />
                 </div>
                 <div className="mt-6 border-t-2 border-dashed border-line pt-4">
-                  <p className="font-label text-[10px] text-muted">Badges on your file</p>
+                  <p className="font-label text-[10px] text-muted">{t('app.progress.onFile')}</p>
                   {earnedCount ? (
-                    <ul aria-label="Earned badges" className="mt-3 flex flex-wrap gap-2">
+                    <ul aria-label={t('app.progress.earnedList')} className="mt-3 flex flex-wrap gap-2">
                       {BADGES.filter((badge) => earnedIds.has(badge.id)).map((badge, index) => (
-                        <li key={badge.id} title={badge.name} className="grid size-10 place-items-center border-2 border-ink bg-white">
+                        <li key={badge.id} title={labels.badgeName(badge.id)} className="grid size-10 place-items-center border-2 border-ink bg-white">
                           <BadgeIcon id={badge.id} accent={index % 2 ? 'secondary' : 'primary'} className="size-7" />
-                          <span className="sr-only">{badge.name}</span>
+                          <span className="sr-only">{labels.badgeName(badge.id)}</span>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-2 text-sm text-muted">None yet. Investigate your first error to earn one.</p>
+                    <p className="mt-2 text-sm text-muted">{t('app.progress.noBadges')}</p>
                   )}
                 </div>
               </div>
             </PixelCard>
 
-            <ul aria-label="Study summary" className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink lg:grid-cols-1">
+            <ul aria-label={t('app.progress.summary')} className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink lg:grid-cols-1">
               {[
-                { label: 'Streak', value: `${progress.streak}d`, tone: 'text-primary', note: 'days in a row' },
-                { label: 'Today', value: formatDuration(progress.todaySeconds), tone: 'text-secondary', note: 'studied' },
-                { label: 'Total', value: formatDuration(progress.totalSeconds), tone: 'text-ink', note: 'studied' },
+                { id: 'streak', label: t('app.progress.streak'), value: `${progress.streak}d`, tone: 'text-primary', note: t('app.progress.streakNote') },
+                { id: 'today', label: t('app.progress.today'), value: formatDuration(progress.todaySeconds), tone: 'text-secondary', note: t('app.progress.studied') },
+                { id: 'total', label: t('app.progress.total'), value: formatDuration(progress.totalSeconds), tone: 'text-ink', note: t('app.progress.studied') },
               ].map((item) => (
-                <li key={item.label} className="bg-white px-4 py-3">
+                <li key={item.id} className="bg-white px-4 py-3">
                   <span className="font-label text-xs text-muted">{item.label}</span>
                   <strong className={`mt-1 block whitespace-nowrap font-label text-lg leading-none pt-1 sm:text-2xl ${item.tone}`}>{item.value}</strong>
                   <span className="text-xs text-muted">{item.note}</span>
@@ -128,15 +134,15 @@ export default function ProgressPage() {
             </ul>
           </div>
 
-          {progress.activity && <ActivityGraph activity={progress.activity} today={localDay()} title="Your activity" className="mt-14" />}
+          {progress.activity && <ActivityGraph activity={progress.activity} today={localDay()} title={t('app.progress.activity')} className="mt-14" />}
 
           <section aria-labelledby="badges-title" className="mt-14">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <h2 id="badges-title" className="font-pixel text-2xl font-bold text-ink">
-                Badges
+                {t('app.progress.badges')}
               </h2>
               <p className="font-label text-xs text-muted">
-                {earnedCount}/{BADGES.length} earned
+                {t('app.progress.earnedCount', { earned: earnedCount, total: BADGES.length })}
               </p>
             </div>
             <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -153,12 +159,12 @@ export default function ProgressPage() {
                     <span className={`relative grid size-16 place-items-center border-2 ${earned ? 'border-ink bg-primary-soft' : 'border-muted/50 bg-white'}`}>
                       <BadgeIcon id={badge.id} earned={earned} accent={index % 2 ? 'secondary' : 'primary'} className="size-11" />
                     </span>
-                    <strong className={`relative mt-3 font-pixel text-lg leading-tight ${earned ? 'text-ink' : 'text-muted'}`}>{badge.name}</strong>
-                    <span className="relative mt-1 text-xs text-muted">{badge.how}</span>
+                    <strong className={`relative mt-3 font-pixel text-lg leading-tight ${earned ? 'text-ink' : 'text-muted'}`}>{labels.badgeName(badge.id)}</strong>
+                    <span className="relative mt-1 text-xs text-muted">{labels.badgeHow(badge.id)}</span>
                     <span
                       className={`relative mt-3 px-1.5 py-0.5 font-label text-[10px] ${earned ? 'bg-primary text-white' : 'border border-muted/50 text-muted'}`}
                     >
-                      {earned ? 'Earned' : 'Locked'}
+                      {earned ? t('app.progress.earned') : t('app.progress.locked')}
                     </span>
                   </li>
                 )
@@ -168,13 +174,13 @@ export default function ProgressPage() {
 
           <section aria-labelledby="xp-title" className="mt-14 max-w-xl">
             <h2 id="xp-title" className="font-label text-sm text-primary">
-              How to earn XP
+              {t('app.progress.howXp')}
             </h2>
             <ul className="mt-4 divide-y-2 divide-dashed divide-line border-2 border-ink bg-white">
-              {EARN.map(([label, points]) => (
-                <li key={label} className="flex items-center justify-between px-4 py-2.5 text-sm text-ink">
-                  <span>{label}</span>
-                  <strong className="font-label text-xs text-secondary">{points} XP</strong>
+              {EARN.map(([id, points]) => (
+                <li key={id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-ink">
+                  <span>{t(`app.progress.earn.${id}`)}</span>
+                  <strong className="shrink-0 font-label text-xs text-secondary">{points} XP</strong>
                 </li>
               ))}
             </ul>
