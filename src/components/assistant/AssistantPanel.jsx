@@ -112,12 +112,12 @@ function Dialog() {
         onKeyDown={onKeyDown}
         className="relative flex h-full w-full flex-col border-ink bg-mist sm:w-105 sm:border-r-2 sm:shadow-[6px_0_0_var(--color-primary)] motion-safe:animate-panel-in"
       >
-        <header className="flex items-center gap-3 border-b-2 border-ink bg-primary px-4 py-3 text-white">
-          <span className="grid size-9 shrink-0 place-items-center border-2 border-ink bg-white">
+        <header className="flex items-center gap-2 border-b-2 border-ink bg-primary px-4 py-3 text-white sm:gap-3">
+          <span className="hidden size-9 shrink-0 place-items-center border-2 border-ink bg-white sm:grid">
             <DetectiveAvatar className="size-7 border-0" />
           </span>
           <span className="min-w-0 flex-1">
-            <h2 id="assistant-title" className="font-pixel text-xl leading-tight font-bold">
+            <h2 id="assistant-title" className="whitespace-nowrap font-pixel text-base leading-tight font-bold sm:text-xl">
               Ask the detective
             </h2>
             <span className="block truncate font-label text-[9px] text-white/80">Five specialists, one answer</span>
@@ -242,11 +242,11 @@ export default function AssistantPanel() {
 export function AssistantButton() {
   const { open } = useAssistant()
   return (
-    <PixelButton variant="primary" onClick={open} aria-label="Ask the detective" aria-keyshortcuts="Alt+A Control+/" className="px-2.5 py-2 sm:px-3">
+    <PixelButton variant="primary" onClick={open} aria-label="Ask the detective" aria-keyshortcuts="Alt+A Control+/" className="px-2 py-1.5 sm:px-3 sm:py-2">
       <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
         <PixelLogo className="size-3.5" />
       </span>
-      <span className="sm:hidden">Ask</span>
+      {/* Phones show just the icon so the button fits the nav row; the name stays "Ask the detective". */}
       <span className="hidden sm:inline">Ask the detective</span>
     </PixelButton>
   )

@@ -25,12 +25,11 @@ export default function AppShell({ children }) {
             <span>Glitch Detective</span>
           </Link>
           <div className="flex items-center gap-3 sm:order-last sm:gap-4">
-            <AssistantButton />
             <PixelButton variant="ghost" onClick={signOut} className="px-2.5 py-2 sm:px-3">
               Sign out
             </PixelButton>
           </div>
-          <nav aria-label="Main" className="flex w-full items-center gap-5 sm:ml-auto sm:w-auto">
+          <nav aria-label="Main" className="flex flex-auto items-center gap-5 sm:ml-auto sm:flex-none">
             <NavLink to="/board" className={navClass}>
               Board
             </NavLink>
@@ -49,6 +48,8 @@ export default function AppShell({ children }) {
               )}
             </NavLink>
           </nav>
+          {/* Phones: end of the nav row. Wider screens: just before Sign out (that group is order-last). */}
+          <AssistantButton />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
