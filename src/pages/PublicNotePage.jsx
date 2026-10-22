@@ -7,15 +7,16 @@ import PixelCard from '../components/pixel/PixelCard.jsx'
 import PersonCard from '../components/profile/PersonCard.jsx'
 import PublicHeader from '../components/profile/PublicHeader.jsx'
 import { getPublicNote } from '../lib/api.js'
-
-const longDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../lib/i18n/format.js'
 
 function NotShared() {
+  const t = useT()
   return (
     <PixelCard tone="muted" className="mx-auto max-w-lg p-8 text-center">
       <PixelBug className="mx-auto h-12 w-auto" />
-      <h1 className="mt-6 font-pixel text-3xl font-bold text-ink">This note is not shared</h1>
-      <p className="mt-3 text-muted">It may be private, or the link may have a typo.</p>
+      <h1 className="mt-6 font-pixel text-3xl font-bold text-ink">{t('landing.note.notSharedTitle')}</h1>
+      <p className="mt-3 text-muted">{t('landing.note.notSharedBody')}</p>
     </PixelCard>
   )
 }
@@ -23,6 +24,8 @@ function NotShared() {
 // One note a detective shared on their profile. Read-only, works signed out.
 export default function PublicNotePage() {
   const { handle, id } = useParams()
+  const t = useT()
+  const format = useFormat()
   const [state, setState] = useState({ status: 'loading' })
 
   useEffect(() => {
@@ -45,13 +48,13 @@ export default function PublicNotePage() {
 
       <main className="mx-auto max-w-3xl px-5 pt-8 pb-20 sm:px-8 sm:pt-12">
         <Link to={`/u/${handle}`} className="inline-block break-all font-label text-xs text-ink hover:text-primary">
-          &lt; Back to @{handle}
+          {t('landing.note.back', { handle })}
         </Link>
 
         <div className="mt-6">
           {state.status === 'loading' && (
             <p role="status" className="font-label text-xs text-muted">
-              Opening the note...
+              {t('landing.note.loading')}
             </p>
           )}
           {state.status === 'error' && <ErrorNotice message={state.message} />}
@@ -61,13 +64,14 @@ export default function PublicNotePage() {
         {note && (
           <>
             <p className="font-label text-xs text-secondary">
-              &gt; shared note<span className="motion-safe:animate-caret">_</span>
+              {t('landing.note.kicker')}
+              <span className="motion-safe:animate-caret">_</span>
             </p>
             <PixelCard as="article" className="mt-4 p-5 sm:p-10">
-              <h1 className="font-pixel text-3xl leading-[1.1] font-bold wrap-break-word text-ink sm:text-[40px]">{note.title || 'Untitled'}</h1>
+              <h1 className="font-pixel text-3xl leading-[1.1] font-bold wrap-break-word text-ink sm:text-[40px]">{note.title || t('landing.profile.untitled')}</h1>
               <p className="mt-3 font-label text-[10px] text-muted">
-                Updated {longDate(note.updatedAt)}
-                {cases ? ` · ${cases} ${cases === 1 ? 'case' : 'cases'}` : ''}
+                {t('landing.note.updated', { date: format.date(note.updatedAt) })}
+                {cases ? ` · ${t('landing.note.cases', { count: cases })}` : ''}
               </p>
               <div aria-hidden="true" className="mt-6 mb-6 h-0.5 bg-ink" />
               <PublicNoteBody blocks={note.blocks} />
@@ -75,7 +79,7 @@ export default function PublicNotePage() {
 
             <section aria-labelledby="author-title" className="mt-10 max-w-md">
               <h2 id="author-title" className="mb-3 font-label text-xs text-primary">
-                Written by
+                {t('landing.note.writtenBy')}
               </h2>
               <PersonCard person={author} headingLevel={3} />
             </section>

@@ -92,3 +92,16 @@ it('shows the error when the note cannot load', async () => {
   renderAt('/u/ada_dev/notes/n1')
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server.')
 })
+
+it('speaks Brazilian Portuguese, the case summary included', async () => {
+  renderAt('/u/ada_dev/notes/n1', { locale: 'pt-BR' })
+  await screen.findByRole('heading', { name: 'Reading undefined', level: 1 })
+  expect(screen.getByText(/Atualizada em 21 de out\. de 2026 · 2 casos/)).toBeInTheDocument()
+  expect(screen.getByRole('list', { name: 'Tarefas' })).toBeInTheDocument()
+  const kase = screen.getByRole('figure', { name: 'Caso: TypeError' })
+  expect(within(kase).getByText('Lendo undefined')).toBeInTheDocument()
+  expect(within(kase).getByText('Resolvido')).toBeInTheDocument()
+  expect(screen.getByText('Este caso é privado.')).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Escrita por' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /Voltar para @ada_dev/ })).toHaveAttribute('href', '/u/ada_dev')
+})
