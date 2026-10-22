@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { MAX_STUDY_SECONDS_PER_DAY, POST } from '../../api/study.js'
+import { MAX_STUDY_SECONDS_PER_DAY } from '../../api/_lib/handlers/study.js'
+import { POST } from '../../api/progress.js'
 import { apiRequest, useTempStore } from './helpers.js'
 
 let store
@@ -15,7 +16,7 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-const add = (body, token) => POST(apiRequest('/api/study', { body, token }))
+const add = (body, token) => POST(apiRequest('/api/progress', { body, token }))
 
 it("adds study time to the student's day", async () => {
   await add({ seconds: 60, day: '2026-10-22' })

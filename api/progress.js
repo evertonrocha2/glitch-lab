@@ -1,7 +1,11 @@
 import { computeProgress } from '../shared/progress.js'
 import { clientDay, serverDay } from './_lib/days.js'
+import { POST as addStudyTime } from './_lib/handlers/study.js'
 import { ok, requireUser } from './_lib/http.js'
 import { getStore } from './_lib/store/index.js'
+
+// POST: the study timer reports time (shares this function to stay under Vercel's free-plan limit).
+export const POST = addStudyTime
 
 // XP, level, streak and badges, worked out fresh from what the student has done.
 export async function GET(request) {

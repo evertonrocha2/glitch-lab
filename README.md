@@ -49,7 +49,7 @@ React + Tailwind (Vite)  ──>  /api/* (Vercel Functions)  ──>  Gemini
 
 - Accounts: passwords hashed with scrypt, sessions signed with HMAC and valid for 7 days. Emails are unique and case-insensitive. After 10 wrong passwords an email is locked for the day.
 
-- `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`, `api/notes.js`, `api/study.js`, `api/progress.js`: one function per route, each checking the signed-in user first.
+- `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`, `api/notes.js`, `api/progress.js`, `api/auth.js`: one function per route, each checking the signed-in user first (sign in, sign up and the demo share `api/auth.js`, so the app stays under the 12 functions of the Vercel free plan).
 - `shared/progress.js`: XP, levels, streaks and badges are worked out from what you've done, never stored, so they can't drift out of sync.
 - `api/_lib/ai`, `api/_lib/store`, `api/_lib/auth`: swappable layers. The same contract tests run against the local store and Supabase.
 - `supabase/schema.sql`: tables with Row Level Security on and no client policies. The browser can't read any row directly.

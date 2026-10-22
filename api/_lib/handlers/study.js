@@ -1,6 +1,6 @@
-import { clientDay } from './_lib/days.js'
-import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { getStore } from './_lib/store/index.js'
+import { clientDay } from '../days.js'
+import { fail, ok, readJson, requireUser } from '../http.js'
+import { getStore } from '../store/index.js'
 
 // The timer reports about once a minute; 10 minutes covers a slow or sleeping tab.
 export const MAX_STUDY_SECONDS_PER_REPORT = 600

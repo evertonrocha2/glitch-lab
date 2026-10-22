@@ -37,7 +37,7 @@ it('signs in without sending a token', async () => {
   fetch.mockResolvedValue(Response.json({ token: 't1', user: { id: 'u1' } }))
   await expect(signIn({ email: 'ada@example.com', password: 'pw' })).resolves.toEqual({ token: 't1', user: { id: 'u1' } })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/login')
+  expect(url).toBe('/api/auth?action=login')
   expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
   expect(JSON.parse(init.body)).toEqual({ email: 'ada@example.com', password: 'pw' })
 })
@@ -89,7 +89,7 @@ it('reports study time, with keepalive when the tab is closing', async () => {
   fetch.mockResolvedValue(Response.json({ todaySeconds: 120 }))
   await expect(addStudyTime({ seconds: 60, day: '2026-10-22' }, 'tok', { keepalive: true })).resolves.toBe(120)
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/study')
+  expect(url).toBe('/api/progress')
   expect(init.keepalive).toBe(true)
   expect(JSON.parse(init.body)).toEqual({ seconds: 60, day: '2026-10-22' })
 })

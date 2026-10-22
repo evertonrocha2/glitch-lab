@@ -1,7 +1,7 @@
-import { MAX_WRONG_PASSWORDS_PER_DAY, sessionResponse } from './_lib/accounts.js'
-import { verifyPassword } from './_lib/auth/password.js'
-import { fail, readJson } from './_lib/http.js'
-import { getStore } from './_lib/store/index.js'
+import { MAX_WRONG_PASSWORDS_PER_DAY, sessionResponse } from '../accounts.js'
+import { verifyPassword } from '../auth/password.js'
+import { fail, readJson } from '../http.js'
+import { getStore } from '../store/index.js'
 
 const WRONG = 'Wrong email or password.'
 

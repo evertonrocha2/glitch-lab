@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET as listCases } from '../../api/cases.js'
-import { POST as demo } from '../../api/demo.js'
-import { POST as login } from '../../api/login.js'
-import { POST as register } from '../../api/register.js'
+import { POST as auth } from '../../api/auth.js'
+import { POST as demo } from '../../api/_lib/handlers/demo.js'
+import { POST as login } from '../../api/_lib/handlers/login.js'
+import { POST as register } from '../../api/_lib/handlers/register.js'
 import { apiRequest, useTempStore } from './helpers.js'
 
 const send = (handler, path, body) => handler(apiRequest(path, { body, token: null }))
@@ -106,4 +107,12 @@ it("lines the demo's study streak up with the visitor's own date", async () => {
   } finally {
     vi.useRealTimers()
   }
+})
+
+it('routes sign in, sign up and demo through one auth function', async () => {
+  const call = (action, body) => auth(apiRequest(`/api/auth?action=${action}`, { body, token: null }))
+  expect((await call('register', { email: 'one@example.com', password: 'correct horse' })).status).toBe(201)
+  expect((await call('login', { email: 'one@example.com', password: 'correct horse' })).status).toBe(200)
+  expect((await call('demo', {})).status).toBe(201)
+  expect((await call('nope', {})).status).toBe(404)
 })

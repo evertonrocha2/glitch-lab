@@ -1,7 +1,7 @@
-import { credentialsProblem, sessionResponse } from './_lib/accounts.js'
-import { hashPassword } from './_lib/auth/password.js'
-import { fail, readJson } from './_lib/http.js'
-import { getStore } from './_lib/store/index.js'
+import { credentialsProblem, sessionResponse } from '../accounts.js'
+import { hashPassword } from '../auth/password.js'
+import { fail, readJson } from '../http.js'
+import { getStore } from '../store/index.js'
 
 export async function POST(request) {
   const body = await readJson(request)

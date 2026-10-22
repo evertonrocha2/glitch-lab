@@ -23,16 +23,16 @@ async function request(path, { method = 'GET', body, token, keepalive } = {}) {
 
 // Each returns the signed session: { token, user }.
 export function signIn({ email, password }) {
-  return request('/api/login', { method: 'POST', body: { email, password } })
+  return request('/api/auth?action=login', { method: 'POST', body: { email, password } })
 }
 
 export function signUp({ email, password }) {
-  return request('/api/register', { method: 'POST', body: { email, password } })
+  return request('/api/auth?action=register', { method: 'POST', body: { email, password } })
 }
 
 // today: the visitor's date, so the sample study streak matches their clock.
 export function startDemo(today) {
-  return request('/api/demo', { method: 'POST', body: { today } })
+  return request('/api/auth?action=demo', { method: 'POST', body: { today } })
 }
 
 // files and context are optional extras from the form.
@@ -80,7 +80,7 @@ export async function deleteNote(id, token) {
 
 // keepalive lets the last report go out while the tab is closing. Returns today's total in seconds.
 export async function addStudyTime({ seconds, day }, token, { keepalive = false } = {}) {
-  return (await request('/api/study', { method: 'POST', body: { seconds, day }, token, keepalive })).todaySeconds
+  return (await request('/api/progress', { method: 'POST', body: { seconds, day }, token, keepalive })).todaySeconds
 }
 
 export async function getProgress(today, token) {

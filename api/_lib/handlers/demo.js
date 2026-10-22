@@ -1,8 +1,8 @@
-import { sessionResponse } from './_lib/accounts.js'
-import { clientDay, serverDay } from './_lib/days.js'
-import { readJson } from './_lib/http.js'
-import { seedDemo } from './_lib/seed.js'
-import { getStore } from './_lib/store/index.js'
+import { sessionResponse } from '../accounts.js'
+import { clientDay, serverDay } from '../days.js'
+import { readJson } from '../http.js'
+import { seedDemo } from '../seed.js'
+import { getStore } from '../store/index.js'
 
 // One click for judges: a brand-new demo account (no password, so nobody can take it over)
 // with the sample board already filled in.
