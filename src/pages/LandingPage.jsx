@@ -1,7 +1,13 @@
 import { useNavigate } from 'react-router'
 import ErrorForm from '../components/ErrorForm.jsx'
+import BugTypes from '../components/landing/BugTypes.jsx'
+import Compare from '../components/landing/Compare.jsx'
+import Faq from '../components/landing/Faq.jsx'
+import Features from '../components/landing/Features.jsx'
 import Hero from '../components/landing/Hero.jsx'
 import HowItWorks from '../components/landing/HowItWorks.jsx'
+import LevelLadder from '../components/landing/LevelLadder.jsx'
+import Marquee from '../components/landing/Marquee.jsx'
 import SiteFooter from '../components/landing/SiteFooter.jsx'
 import SiteHeader from '../components/landing/SiteHeader.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
@@ -21,8 +27,14 @@ export default function LandingPage() {
       <SiteHeader />
       <main>
         <Hero />
+        <Marquee />
         <HowItWorks />
-        <section id="try" aria-labelledby="try-title" className="scroll-mt-4 bg-white">
+        <Compare />
+        <Features />
+        <BugTypes />
+        <LevelLadder />
+        <Faq />
+        <section id="try" aria-labelledby="try-title" className="scroll-mt-4 bg-mist">
           <div className="mx-auto max-w-3xl px-5 py-20 sm:px-8 lg:py-24">
             <p className="font-label text-[11px] text-primary">Your turn</p>
             <h2 id="try-title" className="mt-4 font-pixel text-3xl font-bold text-ink sm:text-[2.6rem]">

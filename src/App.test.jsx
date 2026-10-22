@@ -43,3 +43,19 @@ it('keeps the pasted error and goes to the board', async () => {
   expect(currentLocation()).toBe('/login?next=%2Fboard')
   expect(takeDraft()).toEqual({ error: 'ReferenceError: x is not defined', code: '' })
 })
+
+it('presents the features, the comparison, bug types, ranks and answers', async () => {
+  renderAt('/')
+  const features = within(screen.getByRole('list', { name: 'Features' })).getAllByRole('heading', { level: 3 })
+  expect(features).toHaveLength(7)
+  expect(within(screen.getByRole('list', { name: 'A chatbot compared with Glitch Detective' })).getAllByRole('listitem').length).toBeGreaterThan(3)
+  expect(within(screen.getByRole('list', { name: 'Bug types' })).getAllByRole('listitem')).toHaveLength(12)
+  const ranks = within(screen.getByRole('list', { name: 'Detective ranks' })).getAllByRole('listitem')
+  expect(ranks[0]).toHaveTextContent('Rookie')
+  expect(ranks.at(-1)).toHaveTextContent('Bug Whisperer')
+
+  const question = screen.getByText('Will it just give me the answer?')
+  expect(question.closest('details')).not.toHaveAttribute('open')
+  await userEvent.click(question)
+  expect(question.closest('details')).toHaveAttribute('open')
+})
