@@ -69,7 +69,7 @@ it('writes the board in Portuguese when given a Portuguese t', () => {
   const md = boardToMarkdown({ cases: CASES, notes: [NOTE], progress, date: '2026-10-22', t })
   expect(md).toContain('# Board do Glitch Detective\n\nExportado em 2026-10-22')
   expect(md).toContain('**Nível 2 · Detetive Júnior** · 145 XP · 3 dias de sequência · 1h 05m de estudo')
-  expect(md).toContain('Conquistas: Primeira pista')
+  expect(md).toContain('Medalhas: Primeira pista')
   expect(md).toContain('## Novo (0)\n\n_Nada aqui._')
   expect(md).toContain('## Treinando (1)')
   expect(md).toContain('**Seu código**')

@@ -260,7 +260,7 @@ export default {
     'board.sheet.streak': 'Sequência',
     'board.sheet.days': { one: '{count} dia', other: '{count} dias' },
     'board.sheet.daysZero': '0 dias',
-    'board.sheet.badges': 'Conquistas',
+    'board.sheet.badges': 'Medalhas',
     'board.sheet.openOfKind': { one: '{count} caso aberto desse tipo', other: '{count} casos abertos desse tipo' },
     'board.sheet.nothingOpen': 'Nada aberto agora.',
     'board.sheet.whyItBroke': 'Por que quebrou',
@@ -298,7 +298,7 @@ export default {
     'board.md.streak': { one: '{count} dia de sequência', other: '{count} dias de sequência' },
     'board.md.streakZero': '0 dias de sequência',
     'board.md.studied': '{time} de estudo',
-    'board.md.badges': 'Conquistas: {list}',
+    'board.md.badges': 'Medalhas: {list}',
     'board.md.badgesNone': 'nenhuma ainda',
 
     // Gym
@@ -310,7 +310,7 @@ export default {
     'board.gym.title': 'Conserte o bug',
     'board.gym.training': 'Treinando',
     'board.gym.leadCase': 'Este código tem um bug do mesmo tipo do seu caso. Edite até funcionar e envie. A IA confere sua correção.',
-    'board.gym.leadDaily': 'O puzzle de hoje, igual para todo mundo. Este código tem um bug. Edite até funcionar e envie. A IA confere sua correção.',
+    'board.gym.leadDaily': 'O desafio de hoje, igual para todo mundo. Este código tem um bug. Edite até funcionar e envie. A IA confere sua correção.',
     'board.gym.leadGlobal':
       'O desafio global da semana: ele esconde mais de um bug, e consertar o primeiro revela o próximo. Seu tempo conta a partir de quando você começou.',
     'board.gym.loading': 'Carregando seu desafio...',
@@ -331,7 +331,7 @@ export default {
     'board.hints.empty': 'Tente sozinho primeiro. As dicas ficam mais diretas a cada vez.',
 
     // Daily
-    'board.daily.prompt': '> casos diários',
+    'board.daily.prompt': '> desafios diários',
     'board.daily.title': 'Desafios diários',
     'board.daily.lead': 'Três bugs novos por dia, os mesmos para todo detetive. Uma nova leva chega à meia-noite, horário de Brasília.',
     'board.daily.loading': 'Carregando os desafios de hoje...',
@@ -344,12 +344,12 @@ export default {
     'board.daily.nextNote': 'para chegar',
     'board.daily.list': 'Desafios de hoje',
     'board.daily.alsoToday': 'Também hoje',
-    'board.daily.glitchdleLead': 'Adivinhe a linguagem de programação do dia pelas características, por um erro e por um snippet escondido.',
+    'board.daily.glitchdleLead': 'Adivinhe a linguagem de programação do dia pelas características, por um erro e por um trecho escondido.',
     'board.daily.play': 'Jogar >',
     'board.global.week': 'Semana de {date}',
     'board.global.title': 'Desafio global',
     'board.global.endsIn': 'Termina em {time}',
-    'board.global.lead': 'Um puzzle mais difícil por semana para todo detetive, com mais de um bug dentro. O relógio corre a partir do momento em que você começa.',
+    'board.global.lead': 'Um desafio mais difícil por semana para todo detetive, com mais de um bug dentro. O relógio corre a partir do momento em que você começa.',
     'board.global.tag': 'Semanal · difícil',
     'board.global.solved': { one: '{count} detetive resolveu', other: '{count} detetives resolveram' },
     'board.global.solvedZero': 'Ninguém resolveu ainda',

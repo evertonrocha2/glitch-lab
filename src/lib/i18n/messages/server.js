@@ -155,7 +155,7 @@ const ptBR = {
 
   'server.pasteError': 'Cole uma mensagem de erro primeiro.',
   'server.tooLongErrorCode': 'Muito longo. Deixe o erro com menos de {error} caracteres e o código com menos de {code}.',
-  'server.tooLongContext': 'Muito longo. Deixe "o que você estava fazendo" com menos de {max} caracteres.',
+  'server.tooLongContext': 'Muito longo. Deixe "O que você estava tentando fazer?" com menos de {max} caracteres.',
   'server.attachFiles': 'Anexe até {max} arquivos.',
   'server.tooLongFile': 'Muito longo. Deixe cada arquivo com menos de {max} caracteres.',
   'server.tooLongFiles': 'Muito longo. Deixe todos os arquivos juntos com menos de {max} caracteres.',
@@ -203,7 +203,7 @@ const ptBR = {
   'server.useUpTo': 'Use até {max} caracteres.',
   'server.handleChars': 'Use só letras minúsculas, números, _ e -.',
   'server.tooLongField': 'Muito longo. Deixe {what} com menos de {max} caracteres.',
-  'server.tooManyBadges': 'Escolha até {max} badges.',
+  'server.tooManyBadges': 'Escolha até {max} medalhas.',
   'server.tooManyLanguages': 'Escolha até {max} linguagens.',
   'server.linkProblem': 'Esse link {label} não serve. {problem}',
   'server.linkTooLong': 'Use um link mais curto (até {max} caracteres).',

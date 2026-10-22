@@ -16,7 +16,7 @@ const DEFAULT_LABELS = {
     open_case: 'Abrir o caso',
     open_note: 'Abrir a nota',
     train_case: 'Treinar este caso',
-    start_timer: 'Iniciar o timer de estudo',
+    start_timer: 'Iniciar o cronômetro de estudo',
     go: 'Ir para lá',
   },
 }

@@ -57,7 +57,7 @@ export function pageSlices(totalHeight, pageHeight, breaks = []) {
 }
 
 export function exportNoteMarkdown({ note, cases }) {
-  downloadText(noteFileName(note.title, 'md'), noteToMarkdown(note, cases))
+  downloadText(noteFileName(note.title, 'md'), noteToMarkdown(note, cases, 1, (key, vars) => translate(currentLocale(), key, vars)))
 }
 
 export function downloadBlob(fileName, blob) {

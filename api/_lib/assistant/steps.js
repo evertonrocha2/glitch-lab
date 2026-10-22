@@ -5,14 +5,14 @@ import { SPECIALISTS, specialistName } from '../../../shared/assistant.js'
 const PT_BR = {
   names: {
     board: 'Analista do board',
-    gym: 'Coach do gym',
+    gym: 'Treinador do gym',
     notes: 'Guardião das notas',
     study: 'Planejador de estudos',
     guide: 'Guia do app',
   },
   doing: {
     board: 'está olhando seus casos',
-    gym: 'está vendo seus desafios do gym',
+    gym: 'está conferindo seus desafios do gym',
     notes: 'está lendo suas notas',
     study: 'está olhando seu progresso',
     guide: 'está vendo como o app funciona',
