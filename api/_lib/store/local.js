@@ -7,6 +7,19 @@ const now = () => new Date().toISOString()
 // Hand out copies so callers can't edit the store by accident.
 const copy = (value) => (value == null ? null : structuredClone(value))
 
+// Profile fields sit on the user; accounts made before profiles existed simply don't have them yet.
+const PROFILE_FIELDS = ['handle', 'displayName', 'bio', 'avatar', 'featuredBadges', 'isPublic']
+const toProfile = (user) =>
+  copy({
+    handle: user.handle ?? null,
+    displayName: user.displayName ?? null,
+    bio: user.bio ?? '',
+    avatar: user.avatar ?? null,
+    featuredBadges: user.featuredBadges ?? [],
+    isPublic: user.isPublic ?? false,
+    createdAt: user.createdAt,
+  })
+
 // Development only: the whole database is one JSON file (default .data/db.json).
 export function createLocalStore({ file }) {
   let loading
@@ -176,6 +189,31 @@ export function createLocalStore({ file }) {
         .filter(([slot]) => slot.startsWith(prefix))
         .map(([slot, seconds]) => ({ day: slot.slice(prefix.length), seconds }))
         .sort((a, b) => a.day.localeCompare(b.day))
+    },
+
+    async getProfile(userId) {
+      const found = (await load()).users?.find((user) => user.id === userId)
+      return found ? toProfile(found) : null
+    },
+
+    // { profile }, { conflict: 'handle' } when another account has that handle, or null for no such user.
+    async updateProfile(userId, patch) {
+      const users = (await load()).users ?? []
+      const found = users.find((user) => user.id === userId)
+      if (!found) return null
+      const handle = typeof patch.handle === 'string' ? patch.handle.toLowerCase() : patch.handle
+      if (handle && users.some((user) => user.id !== userId && user.handle === handle)) return { conflict: 'handle' }
+      for (const field of PROFILE_FIELDS) {
+        if (patch[field] !== undefined) found[field] = field === 'handle' ? handle : structuredClone(patch[field])
+      }
+      await save()
+      return { profile: toProfile(found) }
+    },
+
+    async findPublicProfile(handle) {
+      const normalized = handle.toLowerCase()
+      const found = (await load()).users?.find((user) => user.handle === normalized && user.isPublic)
+      return found ? { userId: found.id, profile: toProfile(found) } : null
     },
 
     async countUsage(key, day) {

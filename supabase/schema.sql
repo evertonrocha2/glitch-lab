@@ -113,3 +113,14 @@ as $$
   returning seconds;
 $$;
 revoke execute on function public.add_study_time(uuid, date, int, int) from public, anon, authenticated;
+
+-- Profiles: a handle, name, bio, pixel avatar and featured badges, all on the account row.
+-- "add column if not exists" so this block also upgrades a database made before profiles existed.
+-- Handles are saved lowercase; the index on lower(handle) keeps them unique whatever the case.
+alter table public.users add column if not exists handle text check (handle ~ '^[a-z0-9_-]{3,20}$');
+alter table public.users add column if not exists display_name text check (char_length(display_name) <= 40);
+alter table public.users add column if not exists bio text not null default '' check (char_length(bio) <= 160);
+alter table public.users add column if not exists avatar jsonb;
+alter table public.users add column if not exists featured_badges jsonb not null default '[]';
+alter table public.users add column if not exists is_public boolean not null default false;
+create unique index if not exists users_handle_unique on public.users (lower(handle));

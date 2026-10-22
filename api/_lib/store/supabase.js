@@ -43,6 +43,18 @@ const toChallenge = (row) =>
 const toNote = (row) =>
   row && { id: row.id, userId: row.user_id, title: row.title, blocks: row.blocks, createdAt: row.created_at, updatedAt: row.updated_at }
 
+const toProfile = (row) =>
+  row && {
+    handle: row.handle ?? null,
+    displayName: row.display_name ?? null,
+    bio: row.bio ?? '',
+    avatar: row.avatar ?? null,
+    featuredBadges: row.featured_badges ?? [],
+    isPublic: row.is_public ?? false,
+    createdAt: row.created_at,
+  }
+const PROFILE_COLUMNS = 'id, handle, display_name, bio, avatar, featured_badges, is_public, created_at'
+
 // Drops undefined keys so partial updates only touch what was given.
 const defined = (object) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined))
 
@@ -172,6 +184,34 @@ export function createSupabaseStore({ url, serviceKey }) {
     async listStudyTime(userId) {
       const rows = unwrap(await db.from('study_time').select('day, seconds').eq('user_id', userId).order('day', { ascending: true }))
       return rows ?? []
+    },
+
+    async getProfile(userId) {
+      return toProfile(unwrap(await db.from('users').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle()))
+    },
+
+    // { profile }, { conflict: 'handle' } when another account has that handle, or null for no such user.
+    async updateProfile(userId, { handle, displayName, bio, avatar, featuredBadges, isPublic }) {
+      const patch = defined({
+        handle: typeof handle === 'string' ? handle.toLowerCase() : handle,
+        display_name: displayName,
+        bio,
+        avatar,
+        featured_badges: featuredBadges,
+        is_public: isPublic,
+      })
+      const result = await db.from('users').update(patch).eq('id', userId).select(PROFILE_COLUMNS).maybeSingle()
+      // Emails never change here, so the only unique column this update can hit is the handle.
+      if (result.error?.code === UNIQUE_VIOLATION) return { conflict: 'handle' }
+      const row = unwrap(result)
+      return row ? { profile: toProfile(row) } : null
+    },
+
+    async findPublicProfile(handle) {
+      const row = unwrap(
+        await db.from('users').select(PROFILE_COLUMNS).eq('handle', handle.toLowerCase()).eq('is_public', true).maybeSingle(),
+      )
+      return row ? { userId: row.id, profile: toProfile(row) } : null
     },
 
     async countUsage(key, day) {
