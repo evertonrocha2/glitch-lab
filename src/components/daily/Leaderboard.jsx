@@ -1,8 +1,7 @@
 import { Link } from 'react-router'
 import { formatSolveTime } from '../../lib/daily.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelAvatar from '../pixel/PixelAvatar.jsx'
-
-const attemptsText = (count) => `${count} attempt${count === 1 ? '' : 's'}`
 
 function Avatar({ entry }) {
   if (entry.avatar) return <PixelAvatar seed={entry.avatar.seed} color={entry.avatar.color} className="size-8" />
@@ -17,14 +16,15 @@ function Avatar({ entry }) {
 // Top solvers of the global challenge: fastest from start to pass, then fewer attempts.
 // Names and pictures only for public profiles; the API already blanks out everyone else.
 export default function Leaderboard({ entries, you }) {
+  const t = useT()
   const meOutside = you && !entries.some((entry) => entry.isYou)
   return (
     <div>
-      <h3 className="font-label text-xs text-ink">Leaderboard</h3>
+      <h3 className="font-label text-xs text-ink">{t('board.leaderboard.title')}</h3>
       {entries.length === 0 ? (
-        <p className="mt-3 border-2 border-dashed border-muted/60 bg-white p-4 text-sm text-muted">Nobody has solved it yet. Be the first.</p>
+        <p className="mt-3 border-2 border-dashed border-muted/60 bg-white p-4 text-sm text-muted">{t('board.leaderboard.empty')}</p>
       ) : (
-        <ol aria-label="Leaderboard" className="mt-3 border-2 border-ink bg-white shadow-pixel-ink">
+        <ol aria-label={t('board.leaderboard.title')} className="mt-3 border-2 border-ink bg-white shadow-pixel-ink">
           {entries.map((entry) => (
             <li
               key={entry.rank}
@@ -44,23 +44,21 @@ export default function Leaderboard({ entries, you }) {
                 </span>
                 {(entry.firstSolver || entry.isYou) && (
                   <span className="mt-0.5 flex flex-wrap gap-1.5">
-                    {entry.firstSolver && <span className="bg-primary px-1 py-0.5 font-label text-[10px] leading-none text-white">First solver</span>}
-                    {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">You</span>}
+                    {entry.firstSolver && <span className="bg-primary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('board.leaderboard.firstSolver')}</span>}
+                    {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('board.leaderboard.you')}</span>}
                   </span>
                 )}
               </span>
               <span className="shrink-0 text-right">
                 <strong className="block font-mono text-sm text-ink">{formatSolveTime(entry.seconds)}</strong>
-                <span className="text-xs text-muted">{attemptsText(entry.attempts)}</span>
+                <span className="text-xs text-muted">{t('board.puzzle.attempts', { count: entry.attempts })}</span>
               </span>
             </li>
           ))}
         </ol>
       )}
       {meOutside && (
-        <p className="mt-3 text-sm text-ink">
-          You are #{you.rank} with {formatSolveTime(you.seconds)}.
-        </p>
+        <p className="mt-3 text-sm text-ink">{t('board.leaderboard.yourRank', { rank: you.rank, time: formatSolveTime(you.seconds) })}</p>
       )}
     </div>
   )
