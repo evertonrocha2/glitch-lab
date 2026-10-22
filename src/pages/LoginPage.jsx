@@ -6,6 +6,7 @@ import PixelCard from '../components/pixel/PixelCard.jsx'
 import LanguageSelect from '../components/LanguageSelect.jsx'
 import PixelLogo from '../components/pixel/PixelLogo.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
 
 // Only paths inside this site: "//evil.example" would leave it.
 function safeNext(next) {
@@ -16,6 +17,7 @@ const fieldClass =
   'mt-2 w-full border-2 border-ink bg-white px-3 py-2.5 text-ink transition-shadow duration-150 focus:shadow-pixel focus-visible:outline-none'
 
 function PasswordForm({ auth, run, busy }) {
+  const t = useT()
   const [creating, setCreating] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,13 +31,13 @@ function PasswordForm({ auth, run, busy }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="login-email" className="font-label text-xs text-ink">
-          Email
+          {t('landing.login.email')}
         </label>
         <input id="login-email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className={fieldClass} />
       </div>
       <div>
         <label htmlFor="login-password" className="font-label text-xs text-ink">
-          Password
+          {t('landing.login.password')}
         </label>
         <input
           id="login-password"
@@ -50,16 +52,16 @@ function PasswordForm({ auth, run, busy }) {
         />
         {creating && (
           <p id="login-password-rule" className="mt-1.5 text-xs text-muted">
-            At least 8 characters.
+            {t('landing.login.passwordRule')}
           </p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-4">
         <PixelButton type="submit" disabled={busy}>
-          {creating ? 'Create account' : 'Sign in'}
+          {t(creating ? 'landing.login.create' : 'landing.login.signIn')}
         </PixelButton>
         <button type="button" onClick={() => setCreating(!creating)} className="text-sm text-muted underline underline-offset-4 hover:text-ink">
-          {creating ? 'I already have an account' : 'Create an account'}
+          {t(creating ? 'landing.login.haveAccount' : 'landing.login.wantAccount')}
         </button>
       </div>
     </form>
@@ -68,6 +70,7 @@ function PasswordForm({ auth, run, busy }) {
 
 export default function LoginPage() {
   const auth = useAuth()
+  const t = useT()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
@@ -107,9 +110,9 @@ export default function LoginPage() {
           <p className="font-label text-xs text-secondary">
             &gt; login_<span className="motion-safe:animate-caret">█</span>
           </p>
-          <h1 className="mt-4 font-pixel text-4xl font-bold leading-tight text-ink sm:text-5xl">Sign in to your case board</h1>
+          <h1 className="mt-4 font-pixel text-4xl font-bold leading-tight text-ink sm:text-5xl">{t('landing.login.title')}</h1>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-muted">
-            Your board keeps every error you investigate, with the why and the fix, so you can study it and train on it in the gym.
+            {t('landing.login.body')}
           </p>
           <div aria-hidden="true" className="relative mt-10 hidden h-44 max-w-md overflow-hidden border-2 border-ink bg-white shadow-pixel-ink lg:block">
             <div className="dither-primary absolute inset-0 opacity-50" />
@@ -124,9 +127,9 @@ export default function LoginPage() {
           <div className="space-y-6">
             <PasswordForm auth={auth} run={run} busy={busy} />
             <div className="border-t-2 border-dashed border-line pt-5">
-              <p className="mb-3 text-sm text-muted">Judging or just curious? Skip the sign up.</p>
+              <p className="mb-3 text-sm text-muted">{t('landing.login.demoPitch')}</p>
               <PixelButton variant="secondary" onClick={() => run(auth.signInDemo)} disabled={busy}>
-                Use demo account
+                {t('landing.login.demo')}
               </PixelButton>
             </div>
           </div>

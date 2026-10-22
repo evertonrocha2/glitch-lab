@@ -77,3 +77,12 @@ it('ignores a next that would leave the site', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Use demo account' }))
   await waitFor(() => expect(currentLocation()).toBe('/board'))
 })
+
+it('speaks Brazilian Portuguese', () => {
+  renderAt('/login', { locale: 'pt-BR' })
+  expect(screen.getByRole('heading', { level: 1, name: 'Entre no seu board de casos' })).toBeInTheDocument()
+  expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
+  expect(screen.getByLabelText('Senha')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Usar conta demo' })).toBeInTheDocument()
+})
