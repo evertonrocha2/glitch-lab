@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MISSION_XP, missionDone, TRAIL_BONUS_XP, TRAIL_KINDS, trailSummary, trailView, trailXp } from '../../shared/trails.js'
+import { MISSION_XP, missionDone, TRAIL_BONUS_XP, TRAIL_KINDS, trailSummary, trailView, trailViews, trailXp } from '../../shared/trails.js'
 
 const START = '2026-10-20T12:00:00.000Z'
 const BEFORE = '2026-10-19T09:00:00.000Z'
@@ -142,4 +142,25 @@ it('lists every kind with its xp', () => {
   expect(TRAIL_KINDS.map((kind) => kind.id)).toEqual(['train', 'note', 'study', 'investigate', 'reflect'])
   expect(MISSION_XP).toEqual({ train: 40, note: 15, study: 20, investigate: 15, reflect: 10 })
   expect(TRAIL_BONUS_XP).toBe(100)
+})
+
+describe('trails over time', () => {
+  const at = (iso) => iso
+  const trainTrail = (id, createdAt) => ({ id, title: 'T', summary: '', createdAt, done: [], missions: [{ id: 'm1', kind: 'train', title: 'Train', description: 'x', caseId: 'c1' }] })
+  const data = (challenges) => ({ cases: [], notes: [], study: [], challenges })
+
+  it('counts a pass during the trail even when the challenge was opened before it', () => {
+    const trail = trainTrail('t1', at('2026-10-20T10:00:00.000Z'))
+    const challenge = { caseId: 'c1', status: 'passed', createdAt: '2026-10-19T09:00:00.000Z', passedAt: '2026-10-21T09:00:00.000Z' }
+    expect(trailView(trail, data([challenge])).complete).toBe(true)
+  })
+
+  it('freezes an older trail when a new one starts, so one pass pays once', () => {
+    const old = trainTrail('t1', at('2026-10-20T10:00:00.000Z'))
+    const current = trainTrail('t2', at('2026-10-21T10:00:00.000Z'))
+    const pass = { caseId: 'c1', status: 'passed', createdAt: '2026-10-21T11:00:00.000Z', passedAt: '2026-10-21T11:30:00.000Z' }
+    const views = trailViews([current, old], data([pass]))
+    expect(views.get('t2').complete).toBe(true)
+    expect(views.get('t1').complete).toBe(false)
+  })
 })

@@ -1,5 +1,5 @@
 import { computeProgress } from '../shared/progress.js'
-import { trailSummary, trailView } from '../shared/trails.js'
+import { trailSummary, trailView, trailViews } from '../shared/trails.js'
 import { generateJson } from './_lib/ai/index.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
@@ -25,9 +25,11 @@ async function loadData(store, userId) {
 // The newest trail is the active one, worked out against the data; older ones come back short.
 function trailPage({ trails, ...data }) {
   const [active, ...older] = trails
+  // Each older trail is frozen when the next one starts, so it keeps the progress it had.
+  const views = trailViews(trails, data)
   return {
-    trail: active ? trailView(active, data) : null,
-    history: older.slice(0, HISTORY).map((trail) => trailSummary(trailView(trail, data))),
+    trail: active ? views.get(active.id) : null,
+    history: older.slice(0, HISTORY).map((trail) => trailSummary(views.get(trail.id))),
     sources: { cases: data.cases.length, notes: data.notes.length },
   }
 }
@@ -78,6 +80,8 @@ export async function PUT(request) {
   const mission = trail.missions.find((item) => item.id === missionId)
   if (!mission) return fail(404, 'Mission not found.')
   if (mission.kind !== 'reflect') return fail(400, 'This mission ticks itself when you do it.')
+  const [newest] = await store.listTrails(auth.user.id)
+  if (newest?.id !== trailId) return fail(409, 'This trail is finished. Tick missions on your current trail.')
 
   const updated = await store.setMissionDone(auth.user.id, trailId, missionId, done)
   const { trails, ...data } = await loadData(store, auth.user.id)

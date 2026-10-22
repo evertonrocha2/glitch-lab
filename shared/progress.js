@@ -1,5 +1,5 @@
 import { BADGES } from './badges.js'
-import { trailView } from './trails.js'
+import { trailViews as viewTrails } from './trails.js'
 import { dailySummary } from './daily.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
@@ -58,7 +58,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
   const solved = cases.filter((item) => item.status === 'solved').length
   const totalSeconds = study.reduce((sum, entry) => sum + entry.seconds, 0)
   const { current, longest } = streaks(study, today)
-  const trailViews = trails.map((trail) => trailView(trail, { cases, challenges, notes, study }))
+  const trailViews = [...viewTrails(trails, { cases, challenges, notes, study }).values()]
 
   const xp =
     cases.length * XP.case +

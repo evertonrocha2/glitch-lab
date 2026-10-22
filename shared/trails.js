@@ -18,7 +18,14 @@ export const kindLabel = (id) => TRAIL_KINDS.find((kind) => kind.id === id)?.lab
 // The trail's first day. Study days are the student's local date, so this can be off by a few hours: fine.
 const startDay = (trail) => trail.createdAt.slice(0, 10)
 
-const studiedSeconds = (trail, study) => study.filter((entry) => entry.day >= startDay(trail)).reduce((sum, entry) => sum + entry.seconds, 0)
+// A trail counts activity from its start until the next trail starts (until, ms; null = still active).
+// Without that end, one gym pass would tick the same mission on every old trail and pay XP each time.
+const studiedSeconds = (trail, study, until = null) => {
+  const lastDay = until === null ? null : new Date(until).toISOString().slice(0, 10)
+  return study
+    .filter((entry) => entry.day >= startDay(trail) && (lastDay === null || entry.day < lastDay))
+    .reduce((sum, entry) => sum + entry.seconds, 0)
+}
 
 // Study missions share the same clock, so each one needs its own minutes on top of the ones before it.
 function studyGoalSeconds(mission, trail) {
@@ -31,22 +38,23 @@ function studyGoalSeconds(mission, trail) {
   return total
 }
 
-// Supabase and the JSON file write timestamps differently, so compare times, not strings.
-const atOrAfter = (iso, since) => Date.parse(iso) >= since
-
-export function missionDone(mission, trail, { cases, challenges, notes, study }) {
+export function missionDone(mission, trail, { cases, challenges, notes, study }, until = null) {
   const since = Date.parse(trail.createdAt)
+  // Supabase and the JSON file write timestamps differently, so compare times, not strings.
+  const inWindow = (iso) => {
+    const time = Date.parse(iso)
+    return time >= since && (until === null || time < until)
+  }
   switch (mission.kind) {
     case 'train':
-      return challenges.some((item) => item.caseId === mission.caseId && item.status === 'passed' && atOrAfter(item.createdAt, since))
+      // When it was passed, not opened: a challenge started before the trail still counts once passed during it.
+      return challenges.some((item) => item.caseId === mission.caseId && item.status === 'passed' && inWindow(item.passedAt ?? item.createdAt))
     case 'note':
-      return notes.some(
-        (note) => atOrAfter(note.updatedAt, since) && note.blocks.some((block) => block.type === 'case' && block.caseId === mission.caseId),
-      )
+      return notes.some((note) => inWindow(note.updatedAt) && note.blocks.some((block) => block.type === 'case' && block.caseId === mission.caseId))
     case 'study':
-      return studiedSeconds(trail, study) >= studyGoalSeconds(mission, trail)
+      return studiedSeconds(trail, study, until) >= studyGoalSeconds(mission, trail)
     case 'investigate':
-      return cases.some((item) => atOrAfter(item.createdAt, since) && (!mission.concept || item.concept === mission.concept))
+      return cases.some((item) => inWindow(item.createdAt) && (!mission.concept || item.concept === mission.concept))
     case 'reflect':
       return trail.done.includes(mission.id)
     default:
@@ -56,11 +64,11 @@ export function missionDone(mission, trail, { cases, challenges, notes, study })
 
 // What the page shows: each mission with its status (done / next / todo), plus counts and XP.
 // data is { cases, challenges, notes, study } for the same student.
-export function trailView(trail, data) {
+export function trailView(trail, data, until = null) {
   let nextFound = false
-  const studied = studiedSeconds(trail, data.study)
+  const studied = studiedSeconds(trail, data.study, until)
   const missions = trail.missions.map((mission) => {
-    const done = missionDone(mission, trail, data)
+    const done = missionDone(mission, trail, data, until)
     const status = done ? 'done' : nextFound ? 'todo' : 'next'
     if (!done) nextFound = true
     const view = { ...mission, xp: MISSION_XP[mission.kind] ?? 0, status }
@@ -89,6 +97,12 @@ export function trailView(trail, data) {
 }
 
 export const trailXp = (trail, data) => trailView(trail, data).xp
+
+// Views for every trail, each closed when the next one starts. Map of trail id -> view.
+export function trailViews(trails, data) {
+  const ordered = [...trails].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+  return new Map(ordered.map((trail, index) => [trail.id, trailView(trail, data, ordered[index + 1] ? Date.parse(ordered[index + 1].createdAt) : null)]))
+}
 
 // The short form for older trails.
 export const trailSummary = ({ id, title, createdAt, doneCount, total, complete }) => ({ id, title, createdAt, doneCount, total, complete })

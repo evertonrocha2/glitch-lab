@@ -187,7 +187,8 @@ it('shows the newest trail as active, older ones as short history, and works out
   const { trail, history } = await (await getTrail()).json()
   expect(trail).toMatchObject({ id: active.id, title: 'New trail', doneCount: 1, xp: 40 })
   expect(trail.missions.map((mission) => mission.status)).toEqual(['done', 'next'])
-  expect(history).toEqual([{ id: old.id, title: 'Old trail', createdAt: old.createdAt, doneCount: 1, total: 2, complete: false }])
+  // The pass came after the new trail started, so the old, frozen trail doesn't get it too.
+  expect(history).toEqual([{ id: old.id, title: 'Old trail', createdAt: old.createdAt, doneCount: 0, total: 2, complete: false }])
   // Bob sees none of it.
   expect((await (await getTrail({ token: 'dev:bob' })).json()).trail).toBeNull()
 })
@@ -294,4 +295,12 @@ describe('parseTrail', () => {
     expect(() => parseTrail({ title: 'T', missions: 'nope' }, cases)).toThrow()
     expect(() => parseTrail(base(ok), cases)).toThrow()
   })
+})
+
+it('only lets the current trail be ticked by hand', async () => {
+  const missions = [{ id: 'm1', kind: 'reflect', title: 'Think', description: 'x', xp: 10 }]
+  const old = await store.createTrail('alice', { title: 'Old', summary: '', missions, createdAt: '2026-01-01T00:00:00.000Z' })
+  await store.createTrail('alice', { title: 'New', summary: '', missions })
+  const res = await PUT(apiRequest('/api/trail', { method: 'PUT', body: { trailId: old.id, missionId: 'm1', done: true } }))
+  expect(res.status).toBe(409)
 })
