@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { giveawayIn } from '../../api/_lib/riddle/clues.js'
 import { answersFor, datasetPayload } from '../../api/_lib/riddle/schedule.js'
 import { GET } from '../../api/challenge.js'
 import { languageById } from '../../shared/riddle/languages.js'
@@ -50,7 +51,7 @@ it('refuses a call without the cron secret and writes no riddle', async () => {
 
 it("writes today's and tomorrow's riddles, with a fresh AI error that names nothing", async () => {
   // Fresh errors are checked against the day's real answer; this one must be clean for both days.
-  for (const day of [TODAY, TOMORROW]) expect(FRESH).not.toMatch(new RegExp(languageById(answersFor(day).error).name, 'i'))
+  for (const day of [TODAY, TOMORROW]) expect(giveawayIn(FRESH, languageById(answersFor(day).error))).toBeNull()
   const body = await (await runCron()).json()
   expect(body.riddle.today).toBe(TODAY)
   expect(body.riddle.created).toHaveLength(6)

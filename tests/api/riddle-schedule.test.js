@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { answersFor, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../api/_lib/riddle/schedule.js'
 import { addDays } from '../../shared/daily.js'
 import { LAUNCH_DAY, MODES } from '../../shared/riddle/game.js'
@@ -59,4 +59,14 @@ it('reveals snippet lines in a fixed shuffle, closing braces last, blanks never'
   expect(order.slice().sort()).toEqual([0, 1, 3, 4])
   expect(order.at(-1)).toBe(4)
   expect(revealOrder(['end', 'puts 1', 'x = 2', '  end'], 'a').slice(2).sort()).toEqual([0, 3])
+})
+
+it('needs the server secret to work out the answers, so the public code alone gives nothing away', () => {
+  const days = Array.from({ length: 30 }, (_, index) => `2026-11-${String(index + 1).padStart(2, '0')}`)
+  vi.stubEnv('GLITCHDLE_SECRET', 'one-secret')
+  const first = days.map((day) => answersFor(day).classic)
+  vi.stubEnv('GLITCHDLE_SECRET', 'another-secret')
+  const second = days.map((day) => answersFor(day).classic)
+  vi.unstubAllEnvs()
+  expect(first).not.toEqual(second)
 })

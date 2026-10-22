@@ -22,18 +22,29 @@ export function hash(text) {
   return value
 }
 
+// The code is public, so the date alone would let anyone work out tomorrow's answers: every choice
+// also mixes in a server secret. Production sets one of these; tests and local dev use the fallback.
+const secret = () => process.env.GLITCHDLE_SECRET || process.env.CRON_SECRET || process.env.AUTH_SECRET || 'glitchdle-local'
+const seeded = (text) => hash(`${secret()}:${text}`)
+
+// LANGUAGES is append-only: reordering it would reshuffle every future answer.
 const IDS = LANGUAGES.map((item) => item.id)
 const LAUNCH = dayNumber(LAUNCH_DAY)
-// Answers from the launch day on, worked out once and kept: day number - LAUNCH -> { mode: id }.
-const walked = []
+// Answers from the launch day on, worked out once per secret: day number - LAUNCH -> { mode: id }.
+let walked = []
+let walkedWith = null
 
 function pick(day, mode, taken) {
   const candidates = IDS.filter((id) => !taken.has(id))
-  return candidates[hash(`${day}:${mode}`) % candidates.length]
+  return candidates[seeded(`${day}:${mode}`) % candidates.length]
 }
 
 // Walks forward from the launch day so each day can skip what the days before it used.
 function walkTo(index) {
+  if (walkedWith !== secret()) {
+    walked = []
+    walkedWith = secret()
+  }
   while (walked.length <= index) {
     const today = walked.length
     const day = dayString(LAUNCH + today)
@@ -70,7 +81,7 @@ export function revealOrder(lines, seed) {
     if (line.trim() === '') return
     ;(TRIVIAL.test(line) ? trivial : useful).push(index)
   })
-  let state = hash(seed) || 1
+  let state = seeded(seed) || 1
   const next = () => {
     // xorshift32
     state ^= state << 13
@@ -91,9 +102,9 @@ export function revealOrder(lines, seed) {
 // a snippet and its reveal order for Snippet mode. Classic needs nothing.
 export function datasetPayload(day, mode, answer) {
   const samples = SAMPLES[answer]
-  if (mode === 'error') return { text: samples.errors[hash(`${day}:error:sample`) % samples.errors.length] }
+  if (mode === 'error') return { text: samples.errors[seeded(`${day}:error:sample`) % samples.errors.length] }
   if (mode === 'snippet') {
-    const lines = samples.snippets[hash(`${day}:snippet:sample`) % samples.snippets.length].split('\n')
+    const lines = samples.snippets[seeded(`${day}:snippet:sample`) % samples.snippets.length].split('\n')
     return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
   }
   return {}
