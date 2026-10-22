@@ -1,7 +1,8 @@
 import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
-import { kindLabel, trailView } from '../../../shared/trails.js'
+import { kindLabel, trailViews } from '../../../shared/trails.js'
+import { loadDaily } from '../puzzles/solved.js'
 import { serverDay } from '../days.js'
 import { APP_GUIDE } from './guide.js'
 import { clip, firstLines } from './text.js'
@@ -132,15 +133,18 @@ async function notesContext({ store, userId, page, needs }) {
 async function studyContext({ store, userId, needs }) {
   const parts = []
   if (!needs.includes('progress') && !needs.includes('study_plan')) return ''
-  const [cases, challenges, notes, study, trails] = await Promise.all([
+  const [cases, challenges, notes, study, trails, community] = await Promise.all([
     store.listCases(userId),
     store.listChallenges(userId),
     store.listNotes(userId),
     store.listStudyTime(userId),
     store.listTrails(userId),
+    store.communityStats(userId),
   ])
   if (needs.includes('progress')) {
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails })
+    // The same inputs as /api/progress, so the assistant never quotes a different XP.
+    const daily = await loadDaily(store, userId, challenges)
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(
@@ -156,7 +160,7 @@ async function studyContext({ store, userId, needs }) {
   if (needs.includes('study_plan')) {
     // The newest study trail is the active one; its missions are checked against the data above.
     if (trails.length) {
-      const view = trailView(trails[0], { cases, challenges, notes, study })
+      const view = trailViews(trails, { cases, challenges, notes, study }).get(trails[0].id)
       parts.push(
         `Study trail (/trail): "${clip(view.title, 80)}", ${view.doneCount}/${view.total} missions done, ${view.xp} of ${view.xpTotal} XP.`,
         ...view.missions.map((mission) => `- [${mission.status}] ${kindLabel(mission.kind)}: ${clip(mission.title, 80)}`),
