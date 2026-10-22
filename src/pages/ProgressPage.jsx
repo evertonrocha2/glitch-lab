@@ -78,6 +78,21 @@ export default function ProgressPage() {
                 <div className="mt-5">
                   <XpBar progress={progress} />
                 </div>
+                <div className="mt-6 border-t-2 border-dashed border-line pt-4">
+                  <p className="font-label text-[10px] text-muted">Badges on your file</p>
+                  {earnedCount ? (
+                    <ul aria-label="Earned badges" className="mt-3 flex flex-wrap gap-2">
+                      {BADGES.filter((badge) => earnedIds.has(badge.id)).map((badge, index) => (
+                        <li key={badge.id} title={badge.name} className="grid size-10 place-items-center border-2 border-ink bg-white">
+                          <BadgeIcon id={badge.id} accent={index % 2 ? 'secondary' : 'primary'} className="size-7" />
+                          <span className="sr-only">{badge.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted">None yet. Investigate your first error to earn one.</p>
+                  )}
+                </div>
               </div>
             </PixelCard>
 
