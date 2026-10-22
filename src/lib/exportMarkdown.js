@@ -1,13 +1,10 @@
-import { badgeById } from '../../shared/badges.js'
-import { conceptLabel } from '../../shared/concepts.js'
 import { formatDuration } from './day.js'
+import { translate } from './i18n/I18nProvider.jsx'
+import { badgeName, conceptName, levelTitle, statusName } from './i18n/labels.js'
 
-const COLUMNS = [
-  { status: 'new', title: 'New' },
-  { status: 'training', title: 'Training' },
-  { status: 'solved', title: 'Solved' },
-]
-const STATUS = { new: 'New', training: 'Training', solved: 'Solved' }
+const COLUMNS = ['new', 'training', 'solved']
+// Headings and labels follow `t` (from useT()); without one the file is written in English.
+const ENGLISH = (key, vars) => translate('en', key, vars)
 
 // A fence longer than any run of backticks inside, so code with ``` in it can't break out.
 function fence(code, language = '') {
@@ -17,9 +14,10 @@ function fence(code, language = '') {
 }
 
 const firstLine = (text) => text.split('\n')[0]
-const caseSummary = (item) => `${conceptLabel(item.concept)} · ${item.language} · ${STATUS[item.status]} (${Math.min(item.passedCount, 2)}/2)`
+const caseSummary = (item, t) =>
+  `${conceptName(t, item.concept)} · ${item.language} · ${statusName(t, item.status)} (${Math.min(item.passedCount, 2)}/2)`
 
-function blockToMarkdown(block, casesById, depth) {
+function blockToMarkdown(block, casesById, depth, t) {
   switch (block.type) {
     case 'heading':
       return `${'#'.repeat(depth + 1)} ${block.text}`
@@ -27,7 +25,7 @@ function blockToMarkdown(block, casesById, depth) {
       return `- [${block.done ? 'x' : ' '}] ${block.text}`
     case 'case': {
       const item = casesById.get(block.caseId)
-      return item ? `> **Case:** ${firstLine(item.error)}\n> ${caseSummary(item)}` : '> **Case:** (no longer on the board)'
+      return item ? `> **${t('board.md.case')}** ${firstLine(item.error)}\n> ${caseSummary(item, t)}` : `> **${t('board.md.case')}** ${t('board.md.caseGone')}`
     }
     default:
       return block.text
@@ -35,53 +33,55 @@ function blockToMarkdown(block, casesById, depth) {
 }
 
 // depth is the heading level of the note title: 1 alone, 2 inside the board export.
-export function noteToMarkdown(note, cases, depth = 1) {
+export function noteToMarkdown(note, cases, depth = 1, t = ENGLISH) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
-  const parts = [`${'#'.repeat(depth)} ${note.title || 'Untitled'}`]
+  const parts = [`${'#'.repeat(depth)} ${note.title || t('board.md.untitled')}`]
   for (const block of note.blocks) {
     if (block.type === 'text' && block.text.trim() === '') continue
-    parts.push(blockToMarkdown(block, casesById, depth))
+    parts.push(blockToMarkdown(block, casesById, depth, t))
   }
   return `${parts.join('\n\n')}\n`
 }
 
-function caseToMarkdown(item) {
+function caseToMarkdown(item, t) {
   const { explicacao, causa, correcao, exercicio, pistas, local } = item.analysis
-  const parts = [`### ${firstLine(item.error)}`, `*${caseSummary(item)}*`]
+  const parts = [`### ${firstLine(item.error)}`, `*${caseSummary(item, t)}*`]
   if (item.error.includes('\n')) parts.push(fence(item.error))
-  if (item.context) parts.push(`**You were trying to:** ${item.context}`)
-  if (pistas?.length) parts.push(`**Clues**\n\n${pistas.map((clue, index) => `${index + 1}. ${clue}`).join('\n')}`)
-  if (local) parts.push(`**Likely spot:** ${local}`)
-  if (item.code) parts.push('**Your code**', fence(item.code, item.language))
+  if (item.context) parts.push(`**${t('board.md.tryingTo')}** ${item.context}`)
+  if (pistas?.length) parts.push(`**${t('board.md.clues')}**\n\n${pistas.map((clue, index) => `${index + 1}. ${clue}`).join('\n')}`)
+  if (local) parts.push(`**${t('board.md.likelySpot')}** ${local}`)
+  if (item.code) parts.push(`**${t('board.md.yourCode')}**`, fence(item.code, item.language))
   for (const file of item.files ?? []) parts.push(`**${file.path}**`, fence(file.content))
-  parts.push(`**What happened.** ${explicacao}`, `**Why it broke.** ${causa}`, '**Fix**', fence(correcao))
-  parts.push('**Practice**', fence(exercicio.enunciado), '**Answer**', fence(exercicio.resposta))
+  parts.push(`**${t('board.md.whatHappened')}** ${explicacao}`, `**${t('board.md.whyItBroke')}** ${causa}`, `**${t('board.md.fix')}**`, fence(correcao))
+  parts.push(`**${t('board.md.practice')}**`, fence(exercicio.enunciado), `**${t('board.md.answer')}**`, fence(exercicio.resposta))
   return parts.join('\n\n')
 }
 
-function progressLine(progress) {
+function progressLine(progress, t) {
   if (!progress) return null
-  const earned = progress.badges.filter((badge) => badge.earned).map((badge) => badgeById(badge.id)?.name ?? badge.id)
+  const earned = progress.badges.filter((badge) => badge.earned).map((badge) => badgeName(t, badge.id))
+  const level = t('board.md.level', { level: progress.level, title: levelTitle(t, progress.level) || progress.title })
+  const streak = progress.streak === 0 ? t('board.md.streakZero') : t('board.md.streak', { count: progress.streak })
   return [
-    `**Level ${progress.level} · ${progress.title}** · ${progress.xp} XP · ${progress.streak}-day streak · ${formatDuration(progress.totalSeconds)} studied`,
-    `Badges: ${earned.length ? earned.join(', ') : 'none yet'}`,
+    `**${level}** · ${progress.xp} XP · ${streak} · ${t('board.md.studied', { time: formatDuration(progress.totalSeconds) })}`,
+    t('board.md.badges', { list: earned.length ? earned.join(', ') : t('board.md.badgesNone') }),
   ].join('\n\n')
 }
 
 // The whole board as one Markdown file. Notion, Obsidian and GitHub all read it.
-export function boardToMarkdown({ cases, notes, progress, email, date }) {
-  const parts = ['# Glitch Detective board', `Exported ${date}${email ? ` · ${email}` : ''}`]
-  const summary = progressLine(progress)
+export function boardToMarkdown({ cases, notes, progress, email, date, t = ENGLISH }) {
+  const parts = [`# ${t('board.md.title')}`, `${t('board.md.exported', { date })}${email ? ` · ${email}` : ''}`]
+  const summary = progressLine(progress, t)
   if (summary) parts.push(summary)
-  for (const column of COLUMNS) {
-    const items = cases.filter((item) => item.status === column.status)
-    parts.push(`## ${column.title} (${items.length})`)
-    if (items.length === 0) parts.push('_Nothing here._')
-    for (const item of items) parts.push(caseToMarkdown(item))
+  for (const status of COLUMNS) {
+    const items = cases.filter((item) => item.status === status)
+    parts.push(`## ${statusName(t, status)} (${items.length})`)
+    if (items.length === 0) parts.push(`_${t('board.md.nothingHere')}_`)
+    for (const item of items) parts.push(caseToMarkdown(item, t))
   }
   if (notes.length) {
-    parts.push('## Notes')
-    for (const note of notes) parts.push(noteToMarkdown(note, cases, 3).trimEnd())
+    parts.push(`## ${t('board.md.notes')}`)
+    for (const note of notes) parts.push(noteToMarkdown(note, cases, 3, t).trimEnd())
   }
   return `${parts.join('\n\n')}\n`
 }

@@ -211,3 +211,33 @@ it('says so when a board file could not be made', async () => {
   await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
   expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't make the PDF. Try again.")
 })
+
+it('speaks Portuguese: board, stats, card and drawer', async () => {
+  vi.mocked(listCases).mockResolvedValue([makeCase({ status: 'training', passedCount: 1 })])
+  renderAt('/board', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByRole('heading', { level: 1, name: 'Seu board de casos' })).toBeInTheDocument()
+  expect(screen.getByText('1/2 desafios')).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Treinando' })).toHaveTextContent('Praticando no gym')
+  const stats = screen.getByRole('list', { name: 'Resumo do board' })
+  expect(within(stats).getByText('Ponto fraco')).toBeInTheDocument()
+  expect(within(stats).getByText('1 caso aberto desse tipo')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: /1 de 2 desafios concluídos/ }))
+  const drawer = screen.getByRole('dialog')
+  expect(within(drawer).getByText('O que aconteceu')).toBeInTheDocument()
+  expect(within(drawer).getByText(/^· aberto (há|ontem)/)).toBeInTheDocument()
+  await userEvent.click(within(drawer).getByRole('button', { name: 'Mostrar a correção' }))
+  expect(within(drawer).getByRole('button', { name: 'Esconder a correção' })).toBeInTheDocument()
+  expect(within(drawer).getByRole('button', { name: 'Treinar' })).toBeInTheDocument()
+  expect(within(drawer).getByRole('button', { name: 'Escrever uma nota sobre isso' })).toBeInTheDocument()
+})
+
+it('hands the reader language to the board export', async () => {
+  vi.mocked(exportBoardPdf).mockRejectedValue(new Error('canvas tainted'))
+  vi.mocked(listCases).mockResolvedValue([makeCase()])
+  renderAt('/board', { user: 'alice', locale: 'pt-BR' })
+  await userEvent.click(await screen.findByRole('button', { name: /Export|Exportar/ }))
+  await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
+  expect(exportBoardPdf).toHaveBeenCalledWith(expect.objectContaining({ locale: 'pt-BR' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Não deu para gerar o PDF. Tente de novo.')
+})

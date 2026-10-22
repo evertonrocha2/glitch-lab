@@ -1,6 +1,7 @@
-import { conceptLabel } from '../../../shared/concepts.js'
 import { DAILY_XP } from '../../../shared/daily.js'
 import { languageName } from '../../lib/daily.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelCard from '../pixel/PixelCard.jsx'
 
@@ -11,11 +12,11 @@ export const DIFFICULTY_STYLES = {
   hard: { chip: 'bg-primary text-white', tone: 'primary', button: 'primary' },
 }
 
-const ACTIONS = { new: 'Solve', open: 'Continue', passed: 'Review' }
+const ACTIONS = { new: 'board.puzzle.solve', open: 'board.puzzle.continue', passed: 'board.puzzle.review' }
 export const xpFor = (puzzle) => (puzzle.kind === 'global' ? DAILY_XP.global : DAILY_XP[puzzle.difficulty])
-const attemptsText = (count) => `${count} attempt${count === 1 ? '' : 's'}`
 
 export function PuzzleStatus({ puzzle }) {
+  const t = useT()
   if (puzzle.status === 'passed') {
     return (
       <span className="inline-flex items-center gap-1.5 border-2 border-secondary bg-white px-1.5 py-0.5 font-label text-[10px] text-secondary">
@@ -26,34 +27,42 @@ export function PuzzleStatus({ puzzle }) {
           <rect x="3" y="1" width="1" height="1" />
           <rect x="4" y="0" width="1" height="1" />
         </svg>
-        Solved
+        {t('board.puzzle.solved')}
       </span>
     )
   }
   if (puzzle.status === 'open') {
-    return <span className="text-xs text-ink">{puzzle.attempts ? `In progress, ${attemptsText(puzzle.attempts)}` : 'In progress'}</span>
+    return (
+      <span className="text-xs text-ink">
+        {puzzle.attempts
+          ? t('board.puzzle.inProgressAttempts', { attempts: t('board.puzzle.attempts', { count: puzzle.attempts }) })
+          : t('board.puzzle.inProgress')}
+      </span>
+    )
   }
-  return <span className="text-xs text-muted">Not started</span>
+  return <span className="text-xs text-muted">{t('board.puzzle.notStarted')}</span>
 }
 
 // Language and bug type, as small tags.
 export function PuzzleTags({ puzzle }) {
+  const labels = useLabels()
   return (
     <p className="flex flex-wrap items-center gap-2 text-xs">
       <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-muted">{languageName(puzzle.language)}</span>
-      <span className="bg-mist px-1.5 py-0.5 font-semibold text-ink">{conceptLabel(puzzle.concept)}</span>
+      <span className="bg-mist px-1.5 py-0.5 font-semibold text-ink">{labels.concept(puzzle.concept)}</span>
     </p>
   )
 }
 
 export function StartButton({ puzzle, onStart, busy, variant, className = '' }) {
-  const action = ACTIONS[puzzle.status] ?? ACTIONS.new
+  const t = useT()
+  const action = t(ACTIONS[puzzle.status] ?? ACTIONS.new)
   return (
     <PixelButton
       variant={puzzle.status === 'passed' ? 'ghost' : variant}
       onClick={() => onStart(puzzle)}
       disabled={busy}
-      aria-label={`${action} ${puzzle.title}`}
+      aria-label={t('board.puzzle.action', { action, title: puzzle.title })}
       className={className}
     >
       {action}
@@ -63,12 +72,13 @@ export function StartButton({ puzzle, onStart, busy, variant, className = '' }) 
 
 // One daily puzzle: what it is about, never its code. "Solve" opens it in the gym.
 export default function PuzzleCard({ puzzle, onStart, busy }) {
+  const labels = useLabels()
   const style = DIFFICULTY_STYLES[puzzle.difficulty] ?? DIFFICULTY_STYLES.medium
   return (
     <PixelCard tone={puzzle.status === 'passed' ? 'muted' : style.tone} className="relative flex h-full flex-col overflow-hidden p-5">
       {puzzle.difficulty === 'hard' && <span aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/3 opacity-15" />}
       <div className="relative flex items-center justify-between gap-2">
-        <span className={`px-1.5 py-0.5 font-label text-[10px] ${style.chip}`}>{puzzle.difficulty}</span>
+        <span className={`px-1.5 py-0.5 font-label text-[10px] ${style.chip}`}>{labels.difficulty(puzzle.difficulty).toLowerCase()}</span>
         <span className="font-label text-[10px] text-muted">+{xpFor(puzzle)} XP</span>
       </div>
       <h3 className="relative mt-3 font-pixel text-xl font-bold leading-tight text-ink">{puzzle.title}</h3>

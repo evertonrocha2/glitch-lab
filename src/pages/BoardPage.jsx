@@ -16,17 +16,15 @@ import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { splitError } from '../lib/caseInfo.js'
 import { saveDraft, takeDraft } from '../lib/draft.js'
 import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../lib/exportBoard.js'
+import { useI18n } from '../lib/i18n/I18nProvider.jsx'
 import { mentionsCase, newBlock } from '../lib/notes/blocks.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
-const EXPORTS = {
-  md: { run: exportBoardMarkdown, name: 'Markdown file' },
-  png: { run: exportBoardImage, name: 'image' },
-  pdf: { run: exportBoardPdf, name: 'PDF' },
-}
+const EXPORTS = { md: exportBoardMarkdown, png: exportBoardImage, pdf: exportBoardPdf }
 
 export default function BoardPage() {
   const { user, getToken, signOut } = useAuth()
+  const { locale, t } = useI18n()
   const { progress, refresh: refreshProgress } = useProgress()
   const [params, setParams] = useSearchParams()
   const [notes, setNotes] = useState([])
@@ -150,7 +148,7 @@ export default function BoardPage() {
       setWriting(true)
       try {
         const blocks = [newBlock('case', { caseId: item.id }), newBlock('text')]
-        const note = await createNote({ title: `Notes on ${splitError(item.error).type}`, blocks }, await getToken())
+        const note = await createNote({ title: t('board.page.noteTitle', { type: splitError(item.error).type }), blocks }, await getToken())
         refreshProgress()
         navigate(`/notes/${note.id}`)
       } catch (err) {
@@ -162,16 +160,15 @@ export default function BoardPage() {
         setWriting(false)
       }
     },
-    [writing, getToken, navigate, recoverFromAuth, refreshProgress],
+    [writing, getToken, navigate, recoverFromAuth, refreshProgress, t],
   )
 
   async function exportBoard(format) {
-    const { run, name } = EXPORTS[format]
     setMessage('')
     try {
-      await run({ cases: cases ?? [], notes, progress, email: user?.email })
+      await EXPORTS[format]({ cases: cases ?? [], notes, progress, email: user?.email, locale })
     } catch {
-      setMessage(`Couldn't make the ${name}. Try again.`)
+      setMessage(t(`board.export.failed.${format}`))
     }
   }
 
@@ -186,16 +183,17 @@ export default function BoardPage() {
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
           <p className="font-label text-xs text-secondary">
-            &gt; case board<span className="motion-safe:animate-caret">_</span>
+            {t('board.page.prompt')}
+            <span className="motion-safe:animate-caret">_</span>
           </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your case board</h1>
-          <p className="mt-2 text-muted">Open a card to study it. Press Train this to practice it in the gym.</p>
+          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('board.page.title')}</h1>
+          <p className="mt-2 text-muted">{t('board.page.lead')}</p>
         </div>
         {hasCases && !investigating && (
           <div className="flex flex-wrap gap-3">
             <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
             <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
-              {formOpen ? 'Hide the form' : 'New investigation'}
+              {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
             </PixelButton>
           </div>
         )}
@@ -203,7 +201,7 @@ export default function BoardPage() {
 
       {showForm && (
         <PixelCard className="mt-8 p-5 sm:p-6">
-          <h2 className="mb-5 font-label text-sm text-primary">Investigate a new error</h2>
+          <h2 className="mb-5 font-label text-sm text-primary">{t('board.page.formTitle')}</h2>
           <ErrorForm
             key={formKey}
             onSubmit={investigate}
@@ -216,7 +214,7 @@ export default function BoardPage() {
 
       {investigating && (
         <div className="mt-6">
-          <Working label="Investigating your error" />
+          <Working label={t('board.page.investigating')} />
         </div>
       )}
       {message && (
@@ -228,11 +226,11 @@ export default function BoardPage() {
       <div className="mt-12">
         {cases === null && (
           <p role="status" className="font-label text-xs text-muted">
-            Loading your cases...
+            {t('board.page.loading')}
           </p>
         )}
         {cases?.length === 0 && !investigating && (
-          <p className="mb-5 font-pixel text-lg text-ink">No cases yet. Paste your first error above.</p>
+          <p className="mb-5 font-pixel text-lg text-ink">{t('board.page.empty')}</p>
         )}
         {hasCases && (
           <div className="mb-8">

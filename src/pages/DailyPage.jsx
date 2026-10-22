@@ -8,6 +8,8 @@ import ErrorNotice from '../components/ErrorNotice.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatCountdown } from '../lib/daily.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../lib/i18n/format.js'
 
 // Ticks once a second for the countdowns.
 function useNow() {
@@ -19,28 +21,28 @@ function useNow() {
   return now
 }
 
-const weekLabel = (monday) => new Date(`${monday}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-
 function GlobalChallenge({ data, now, onStart, starting }) {
+  const t = useT()
+  const { day } = useFormat()
   const { puzzle, solvedCount, leaderboard, you } = data
   return (
     <section aria-labelledby="global-title" className="mt-16">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-label text-xs text-secondary">Week of {weekLabel(data.week)}</p>
+          <p className="font-label text-xs text-secondary">{t('board.global.week', { date: day(data.week, { month: 'short', day: 'numeric' }) })}</p>
           <h2 id="global-title" className="mt-1 font-pixel text-2xl font-bold text-ink sm:text-3xl">
-            Global challenge
+            {t('board.global.title')}
           </h2>
         </div>
-        <p className="font-label text-xs text-muted">Ends in {formatCountdown(Date.parse(data.endsAt) - now)}</p>
+        <p className="font-label text-xs text-muted">{t('board.global.endsIn', { time: formatCountdown(Date.parse(data.endsAt) - now) })}</p>
       </div>
-      <p className="mt-2 max-w-2xl text-muted">One harder puzzle a week for every detective, with more than one bug inside. The clock runs from the moment you start.</p>
+      <p className="mt-2 max-w-2xl text-muted">{t('board.global.lead')}</p>
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="relative overflow-hidden border-2 border-ink bg-white shadow-pixel-secondary">
           <span aria-hidden="true" className="dither-secondary absolute inset-y-0 right-0 w-1/2 opacity-25" />
           <div className="relative flex items-center justify-between gap-3 border-b-2 border-ink bg-secondary px-5 py-2 font-label text-xs text-white">
-            <span>Weekly · hard</span>
+            <span>{t('board.global.tag')}</span>
             <span>+{xpFor(puzzle)} XP</span>
           </div>
           <div className="relative p-5 sm:p-6">
@@ -57,7 +59,7 @@ function GlobalChallenge({ data, now, onStart, starting }) {
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1">
                 <p className="font-label text-xs text-ink">
-                  {solvedCount} {solvedCount === 1 ? 'detective' : 'detectives'} solved it
+                  {solvedCount === 0 ? t('board.global.solvedZero') : t('board.global.solved', { count: solvedCount })}
                 </p>
                 <PuzzleStatus puzzle={puzzle} />
               </div>
@@ -75,6 +77,7 @@ function GlobalChallenge({ data, now, onStart, starting }) {
 const TEASER_CELLS = ['bg-primary', 'bg-white', 'bg-secondary', 'bg-white', 'bg-primary', 'bg-white', 'bg-secondary', 'bg-primary', 'bg-primary']
 
 function GlitchdleTeaser({ day }) {
+  const t = useT()
   return (
     <Link
       to="/glitchdle"
@@ -87,12 +90,12 @@ function GlitchdleTeaser({ day }) {
         ))}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-label text-[10px] text-secondary">Also today</span>
+        <span className="block font-label text-[10px] text-secondary">{t('board.daily.alsoToday')}</span>
         <span className="mt-0.5 block font-pixel text-xl font-bold text-ink group-hover:text-primary">Glitchdle #{gameNumber(day)}</span>
-        <span className="mt-0.5 block text-sm text-muted">Guess the programming language of the day from its traits, an error and a hidden snippet.</span>
+        <span className="mt-0.5 block text-sm text-muted">{t('board.daily.glitchdleLead')}</span>
       </span>
       <span aria-hidden="true" className="hidden font-label text-xs text-primary sm:block">
-        Play &gt;
+        {t('board.daily.play')}
       </span>
     </Link>
   )
@@ -101,6 +104,7 @@ function GlitchdleTeaser({ day }) {
 // Three puzzles a day (the same for everyone) and one global challenge a week, with a leaderboard.
 export default function DailyPage() {
   const { getToken, signOut } = useAuth()
+  const t = useT()
   const navigate = useNavigate()
   const [daily, setDaily] = useState(null)
   const [global, setGlobal] = useState(null)
@@ -163,11 +167,12 @@ export default function DailyPage() {
   return (
     <AppShell>
       <p className="font-label text-xs text-secondary">
-        &gt; daily cases<span className="motion-safe:animate-caret">_</span>
+        {t('board.daily.prompt')}
+        <span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Daily challenges</h1>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('board.daily.title')}</h1>
       <p className="mt-2 max-w-2xl text-muted">
-        Three fresh bugs every day, the same for every detective. A new set lands at midnight, Brasilia time.
+        {t('board.daily.lead')}
       </p>
 
       {message && (
@@ -178,17 +183,17 @@ export default function DailyPage() {
 
       {!daily && !message && (
         <p role="status" className="mt-10 font-label text-xs text-muted">
-          Loading today's challenges...
+          {t('board.daily.loading')}
         </p>
       )}
 
       {daily && (
         <>
-          <ul aria-label="Daily summary" className="mt-8 grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink sm:max-w-xl">
+          <ul aria-label={t('board.daily.summary')} className="mt-8 grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink sm:max-w-xl">
             {[
-              { label: 'Streak', value: `${daily.streak}d`, tone: 'text-primary', note: 'days in a row' },
-              { label: 'Today', value: `${solvedToday}/${daily.puzzles.length}`, tone: 'text-secondary', note: 'solved' },
-              { label: 'Next set', value: formatCountdown(Date.parse(daily.nextResetAt) - now), tone: 'text-ink', note: 'to go' },
+              { label: t('board.daily.streak'), value: `${daily.streak}d`, tone: 'text-primary', note: t('board.daily.streakNote') },
+              { label: t('board.daily.today'), value: `${solvedToday}/${daily.puzzles.length}`, tone: 'text-secondary', note: t('board.daily.todayNote') },
+              { label: t('board.daily.next'), value: formatCountdown(Date.parse(daily.nextResetAt) - now), tone: 'text-ink', note: t('board.daily.nextNote') },
             ].map((item) => (
               <li key={item.label} className="min-w-0 bg-white px-3 py-3 sm:px-4">
                 <span className="font-label text-[10px] text-muted sm:text-xs">{item.label}</span>
@@ -198,7 +203,7 @@ export default function DailyPage() {
             ))}
           </ul>
 
-          <ul aria-label="Today's challenges" className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3">
+          <ul aria-label={t('board.daily.list')} className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3">
             {daily.puzzles.map((puzzle) => (
               <li key={puzzle.id}>
                 <PuzzleCard puzzle={puzzle} onStart={start} busy={starting !== null} />

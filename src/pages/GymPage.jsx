@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { conceptLabel } from '../../shared/concepts.js'
 import { LIMITS } from '../../shared/limits.js'
 import AppShell from '../components/AppShell.jsx'
 import CodeEditor from '../components/CodeEditor.jsx'
@@ -12,10 +11,14 @@ import Working from '../components/pixel/Working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { saveGymDraft, takeGymDraft } from '../lib/draft.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 export default function GymPage() {
   const { id } = useParams()
+  const t = useT()
+  const labels = useLabels()
   const { getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
   const [challenge, setChallenge] = useState(null)
@@ -98,30 +101,32 @@ export default function GymPage() {
   const passed = result?.passed === true || challenge?.status === 'passed'
   // Daily and global puzzles have no case: they get their title and lead back to the daily page.
   const puzzle = challenge?.puzzle ?? null
-  const back = puzzle ? { to: '/daily', label: 'daily', page: 'the daily page' } : { to: '/board', label: 'board', page: 'the board' }
+  const back = puzzle ? { to: '/daily', text: t('board.gym.backDaily') } : { to: '/board', text: t('board.gym.backBoard') }
+  const prompt = { daily: 'board.gym.promptDaily', global: 'board.gym.promptGlobal' }[puzzle?.kind] ?? 'board.gym.promptGym'
 
   return (
     <AppShell>
       <Link to={back.to} className="font-label text-xs text-ink hover:text-primary">
-        &lt; Back to {back.label}
+        &lt; {back.text}
       </Link>
       <p className="mt-6 font-label text-xs text-secondary">
-        &gt; {puzzle ? `${puzzle.kind} challenge` : 'gym'}
+        &gt; {t(prompt)}
         <span className="motion-safe:animate-caret">_</span>
       </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{puzzle ? puzzle.title : 'Fix the bug'}</h1>
+      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{puzzle ? puzzle.title : t('board.gym.title')}</h1>
       {challenge?.concept && (
         <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
-          Training
-          <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{conceptLabel(challenge.concept)}</span>
-          {puzzle && <span className="border border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">{puzzle.difficulty}</span>}
+          {t('board.gym.training')}
+          <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(challenge.concept)}</span>
+          {puzzle && (
+            <span className="border border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">{labels.difficulty(puzzle.difficulty).toLowerCase()}</span>
+          )}
         </p>
       )}
       <p className="mt-2 max-w-2xl text-muted">
-        {!puzzle && 'This code has one bug of the same kind as your case. Edit it until it works, then submit. The AI checks your fix.'}
-        {puzzle?.kind === 'daily' && "Today's puzzle, the same for everyone. This code has one bug. Edit it until it works, then submit. The AI checks your fix."}
-        {puzzle?.kind === 'global' &&
-          "This week's global challenge: it hides more than one bug, and fixing the first shows you the next. Your time runs from when you started."}
+        {!puzzle && t('board.gym.leadCase')}
+        {puzzle?.kind === 'daily' && t('board.gym.leadDaily')}
+        {puzzle?.kind === 'global' && t('board.gym.leadGlobal')}
       </p>
 
       {message && (
@@ -132,17 +137,17 @@ export default function GymPage() {
 
       {!challenge && !message && (
         <p role="status" className="mt-8 font-label text-xs text-muted">
-          Loading your challenge...
+          {t('board.gym.loading')}
         </p>
       )}
 
       {challenge?.status === 'passed' && !result && (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
           <p className="text-ink">
-            {puzzle ? 'You already fixed this one. Head back to the daily page for the next one.' : 'You already fixed this one. Head back to the board to train again.'}
+            {puzzle ? t('board.gym.doneDaily') : t('board.gym.doneCase')}
           </p>
           <PixelButton as={Link} to={back.to} variant="secondary">
-            Back to {back.label}
+            {back.text}
           </PixelButton>
         </div>
       )}
@@ -152,7 +157,7 @@ export default function GymPage() {
           <form onSubmit={submit} className="space-y-6">
             <section aria-labelledby="symptom-title" className="border-2 border-ink bg-primary-soft">
               <h2 id="symptom-title" className="border-b-2 border-ink bg-primary px-4 py-2 font-label text-xs text-white">
-                What you see when you run it
+                {t('board.gym.symptom')}
               </h2>
               <p className="flex gap-2.5 px-4 py-3 font-mono text-sm leading-relaxed text-ink">
                 <span aria-hidden="true" className="select-none font-bold text-primary">
@@ -165,7 +170,7 @@ export default function GymPage() {
             <div>
               <div className="flex items-center justify-between gap-3">
                 <label htmlFor="fix-input" className="font-label text-xs text-ink">
-                  Your fix
+                  {t('board.gym.yourFix')}
                 </label>
                 <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{challenge.language}</span>
               </div>
@@ -176,10 +181,10 @@ export default function GymPage() {
 
             {!passed && (
               <PixelButton type="submit" variant="secondary" disabled={checking || code.trim() === ''} className="px-5 py-3">
-                Submit fix
+                {t('board.gym.submit')}
               </PixelButton>
             )}
-            {checking && <Working label="Checking your fix" />}
+            {checking && <Working label={t('board.gym.checking')} />}
             {result && <FixResult result={result} back={back} />}
           </form>
 

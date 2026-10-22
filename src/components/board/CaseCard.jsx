@@ -1,5 +1,7 @@
-import { conceptLabel } from '../../../shared/concepts.js'
-import { splitError, timeAgo } from '../../lib/caseInfo.js'
+import { splitError } from '../../lib/caseInfo.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../../lib/i18n/format.js'
+import { useLabels } from '../../lib/i18n/labels.js'
 
 export const firstLine = (text) => text.split('\n')[0]
 
@@ -19,14 +21,16 @@ export function ProgressBlocks({ passed }) {
 }
 
 export default function CaseCard({ item, onOpen }) {
+  const t = useT()
+  const { timeAgo } = useFormat()
   const { type, message } = splitError(item.error)
-  const concept = conceptLabel(item.concept)
+  const concept = useLabels().concept(item.concept)
 
   return (
     <button
       type="button"
       onClick={() => onOpen(item)}
-      aria-label={`${firstLine(item.error)}. ${concept}, ${item.language}. ${item.passedCount} of ${CHALLENGES_TO_SOLVE} challenges passed.`}
+      aria-label={t('board.card.label', { error: firstLine(item.error), concept, language: item.language, passed: item.passedCount, total: CHALLENGES_TO_SOLVE })}
       className="flex w-full overflow-hidden border-2 border-ink bg-white text-left shadow-pixel-muted transition-[translate,box-shadow] duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pixel"
     >
       <span aria-hidden="true" className={`w-1.5 shrink-0 ${STRIPE[item.status]}`} />
@@ -40,9 +44,7 @@ export default function CaseCard({ item, onOpen }) {
         <span className="mt-3 flex items-center justify-between gap-2 border-t-2 border-dashed border-line pt-2.5 text-xs text-muted">
           <span className="flex items-center gap-2">
             <ProgressBlocks passed={item.passedCount} />
-            <span>
-              {item.passedCount}/{CHALLENGES_TO_SOLVE} challenges
-            </span>
+            <span>{t('board.card.challenges', { passed: item.passedCount, total: CHALLENGES_TO_SOLVE })}</span>
           </span>
           <span>{timeAgo(item.createdAt)}</span>
         </span>
