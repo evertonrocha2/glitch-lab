@@ -176,3 +176,27 @@ it('calls out the global challenge', async () => {
   expect(await screen.findByRole('heading', { name: 'The big one' })).toBeInTheDocument()
   expect(screen.getByText(/more than one bug/)).toBeInTheDocument()
 })
+
+it('speaks Portuguese in the gym', async () => {
+  renderAt('/gym/ch1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByLabelText('Sua correção')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Conserte o bug' })).toBeInTheDocument()
+  expect(screen.getByText('O que aparece quando você roda')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Pedir uma dica (0/3)' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Enviar correção' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '< Voltar ao board' })).toBeInTheDocument()
+})
+
+it('names a daily puzzle in Portuguese and says how the fix went', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge())
+  vi.mocked(checkFix).mockResolvedValue({ passed: false, feedback: 'Quase lá.', case: null })
+  renderAt('/gym/ch1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByText('médio')).toBeInTheDocument()
+  expect(screen.getByText('Erro de um a mais')).toBeInTheDocument()
+  expect(screen.getByText(/desafio diário/)).toBeInTheDocument()
+  await userEvent.type(screen.getByLabelText('Sua correção'), '# fixed')
+  await userEvent.click(screen.getByRole('button', { name: 'Enviar correção' }))
+  expect(await screen.findByText('Ainda não')).toBeInTheDocument()
+  expect(screen.getByText('Ajuste sua correção e envie de novo.')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '< Voltar aos diários' })).toHaveAttribute('href', '/daily')
+})

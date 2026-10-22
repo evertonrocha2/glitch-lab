@@ -168,6 +168,29 @@ it("links to today's Glitchdle", async () => {
   expect(currentLocation()).toBe('/glitchdle')
 })
 
+it('speaks Portuguese: puzzles, summary, global challenge and leaderboard', async () => {
+  renderAt('/daily', { user: 'alice', locale: 'pt-BR' })
+  const items = within(await screen.findByRole('list', { name: 'Desafios de hoje' })).getAllByRole('listitem')
+  expect(screen.getByRole('heading', { level: 1, name: 'Desafios diários' })).toBeInTheDocument()
+  expect(within(items[0]).getByText('fácil')).toBeInTheDocument()
+  expect(within(items[0]).getByText('Resolvido')).toBeInTheDocument()
+  expect(within(items[0]).getByRole('button', { name: 'Revisar: The missing last item' })).toBeInTheDocument()
+  expect(within(items[1]).getByText('Em andamento, 2 tentativas')).toBeInTheDocument()
+  expect(within(items[2]).getByText('Referência compartilhada')).toBeInTheDocument()
+  expect(within(items[2]).getByRole('button', { name: 'Resolver: The cart that remembers' })).toBeInTheDocument()
+  const stats = screen.getByRole('list', { name: 'Resumo do dia' })
+  expect(within(stats).getByText('dias seguidos')).toBeInTheDocument()
+
+  const section = screen.getByRole('region', { name: 'Desafio global' })
+  expect(within(section).getByText('3 detetives resolveram')).toBeInTheDocument()
+  expect(within(section).getByText(/^Semana de 19/)).toBeInTheDocument()
+  expect(within(section).getByText(/^Termina em 3d/)).toBeInTheDocument()
+  const rows = within(within(section).getByRole('list', { name: 'Ranking' })).getAllByRole('listitem')
+  expect(within(rows[1]).getByText('Você')).toBeInTheDocument()
+  expect(within(rows[2]).getByText('Primeiro a resolver')).toBeInTheDocument()
+  expect(within(rows[0]).getByText('4 tentativas')).toBeInTheDocument()
+})
+
 it('asks for sign in', () => {
   renderAt('/daily')
   expect(currentLocation()).toBe('/login?next=%2Fdaily')

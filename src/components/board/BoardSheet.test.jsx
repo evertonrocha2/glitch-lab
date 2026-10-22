@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
+import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import { makeCase } from '../../test/fixtures.js'
 import BoardSheet from './BoardSheet.jsx'
 
@@ -102,4 +103,23 @@ it('leaves out the notes and the progress when there are none', () => {
   sheet({ notes: [], progress: null })
   expect(screen.queryByRole('region', { name: 'Notes' })).toBeNull()
   expect(screen.queryByRole('list', { name: 'Progress' })).toBeNull()
+})
+
+it('prints in Portuguese inside a Portuguese provider', () => {
+  render(
+    <I18nProvider locale="pt-BR">
+      <BoardSheet cases={CASES} notes={NOTES} progress={PROGRESS} date="22 de out. de 2026" />
+    </I18nProvider>,
+  )
+  expect(screen.getByRole('heading', { level: 1, name: 'Board de casos' })).toBeInTheDocument()
+  expect(screen.getByText('Exportado em 22 de out. de 2026')).toBeInTheDocument()
+  const level = screen.getByRole('list', { name: 'Progresso' })
+  expect(level).toHaveTextContent('Nível 2')
+  expect(level).toHaveTextContent('Detetive Júnior')
+  expect(level).toHaveTextContent('3 dias')
+  expect(screen.getByRole('region', { name: 'Treinando' })).toHaveTextContent('Praticando no gym')
+  expect(screen.getAllByText('Por que quebrou')).toHaveLength(CASES.length)
+  expect(screen.getByText('Sem título')).toBeInTheDocument()
+  expect(screen.getByText('1 caso vinculado')).toBeInTheDocument()
+  expect(screen.getByText('Feito com Glitch Detective')).toBeInTheDocument()
 })
