@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { splitError, timeAgo } from '../../lib/caseInfo.js'
 import PixelButton from '../pixel/PixelButton.jsx'
@@ -12,7 +13,7 @@ const STATUS = {
 }
 
 // A side panel to study one case, with the way into the gym at the bottom.
-export default function CaseDrawer({ item, onClose, onTrain, training }) {
+export default function CaseDrawer({ item, onClose, onTrain, training, notes = [], onWriteNote, writing = false }) {
   const panel = useRef(null)
   const { type, message } = splitError(item.error)
   const status = STATUS[item.status]
@@ -97,6 +98,28 @@ export default function CaseDrawer({ item, onClose, onTrain, training }) {
               {training ? 'Preparing your challenge...' : solved ? 'Practice again' : 'Train this'}
             </PixelButton>
           </div>
+
+          <section aria-labelledby="case-notes-title" className="mt-8 border-2 border-ink bg-white p-5 shadow-pixel">
+            <h3 id="case-notes-title" className="font-label text-xs text-primary">
+              Notes
+            </h3>
+            {notes.length > 0 ? (
+              <ul className="mt-3 space-y-1.5">
+                {notes.map((note) => (
+                  <li key={note.id}>
+                    <Link to={`/notes/${note.id}`} className="font-semibold text-ink underline decoration-2 underline-offset-4 hover:text-primary">
+                      {note.title || 'Untitled'}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-ink">Write what you learned in your own words. It sticks better than reading it.</p>
+            )}
+            <PixelButton variant="ghost" onClick={() => onWriteNote(item)} disabled={writing || !onWriteNote} className="mt-4">
+              {writing ? 'Opening a note...' : 'Write a note about this'}
+            </PixelButton>
+          </section>
         </div>
       </aside>
     </div>
