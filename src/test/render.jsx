@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router'
+import { AssistantProvider } from '../lib/assistant/AssistantProvider.jsx'
 import { AuthProvider } from '../lib/auth/AuthProvider.jsx'
 import { ProgressProvider } from '../lib/progress/ProgressProvider.jsx'
 import { StudyTimerProvider } from '../lib/timer/StudyTimerProvider.jsx'
@@ -20,10 +21,12 @@ export function renderAt(path, { user } = {}) {
     <AuthProvider>
       <ProgressProvider>
         <StudyTimerProvider>
-          <MemoryRouter initialEntries={[path]}>
-            <AppRoutes />
-            <LocationProbe />
-          </MemoryRouter>
+          <AssistantProvider>
+            <MemoryRouter initialEntries={[path]}>
+              <AppRoutes />
+              <LocationProbe />
+            </MemoryRouter>
+          </AssistantProvider>
         </StudyTimerProvider>
       </ProgressProvider>
     </AuthProvider>,
