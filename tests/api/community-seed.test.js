@@ -21,7 +21,8 @@ it('fills the articles area with sample articles by a public sample author', asy
   expect(articles.length).toBeLessThanOrEqual(3)
   expect(articles.some((item) => item.commentCount > 0)).toBe(true)
   expect(articles.some((item) => item.likeCount > 0 && item.validCount > 0)).toBe(true)
-  for (const item of articles) expect(item.body).not.toMatch(/—/)
+  // No em dashes in the sample copy (U+2014).
+  for (const item of articles) expect(item.body).not.toMatch(new RegExp(String.fromCharCode(0x2014)))
 })
 
 it('gives each demo one notification to open, and never seeds the samples twice', async () => {
