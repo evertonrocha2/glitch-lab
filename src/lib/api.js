@@ -116,3 +116,56 @@ export async function getPublicProfile(handle, today) {
   if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
   return data.profile
 }
+
+// Community articles. Reading works signed out (token may be null); everything else needs a token.
+const COMMUNITY = '/api/community?resource='
+
+// { articles, page, hasMore }. Only the filters that are set go in the URL.
+export function listArticles({ q, tag, author, sort, page } = {}, token) {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries({ q, tag, author, sort, page })) {
+    if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
+  }
+  const query = params.toString()
+  return request(`${COMMUNITY}articles${query ? `&${query}` : ''}`, { token })
+}
+
+// { article, comments, reaction } (reaction is null when signed out).
+export function getArticle(id, token) {
+  return request(`${COMMUNITY}articles&id=${encodeURIComponent(id)}`, { token })
+}
+
+export async function createArticle({ title, body, tags, caseId }, token) {
+  return (await request(`${COMMUNITY}articles`, { method: 'POST', body: { title, body, tags, caseId }, token })).article
+}
+
+export async function updateArticle(id, fields, token) {
+  return (await request(`${COMMUNITY}articles`, { method: 'PUT', body: { id, ...fields }, token })).article
+}
+
+export async function deleteArticle(id, token) {
+  await request(`${COMMUNITY}articles&id=${encodeURIComponent(id)}`, { method: 'DELETE', token })
+}
+
+export async function addArticleComment(articleId, body, token) {
+  return (await request(`${COMMUNITY}comments`, { method: 'POST', body: { articleId, body }, token })).comment
+}
+
+export async function deleteArticleComment(id, token) {
+  await request(`${COMMUNITY}comments&id=${encodeURIComponent(id)}`, { method: 'DELETE', token })
+}
+
+// { like?: boolean, rating?: 'valid' | 'bad' | null }. Returns { reaction, counts }.
+export function reactToArticle(articleId, { like, rating }, token) {
+  return request(`${COMMUNITY}reactions`, { method: 'POST', body: { articleId, like, rating }, token })
+}
+
+// { notifications, unread }
+export function listNotifications(token) {
+  return request(`${COMMUNITY}notifications`, { token })
+}
+
+// One notification by id, or all of them when id is null. Returns the new unread count.
+export async function markNotificationsRead(id, token) {
+  return (await request(`${COMMUNITY}notifications`, { method: 'POST', body: id ? { id } : { all: true }, token })).unread
+}
