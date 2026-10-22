@@ -111,6 +111,15 @@
     @apply bg-white font-sans text-ink antialiased;
   }
 
+  /* Pixelify Sans draws a broken "fi" ligature ("Desafios" came out as "DesaAos"): pixel type never joins letters. */
+  .font-pixel,
+  .font-label {
+    font-variant-ligatures: none;
+    font-feature-settings:
+      "liga" 0,
+      "clig" 0;
+  }
+
   button:not(:disabled) {
     cursor: pointer;
   }
