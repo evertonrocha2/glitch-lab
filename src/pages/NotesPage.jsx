@@ -98,11 +98,15 @@ export default function NotesPage() {
   }
 
   const save = useCallback(
-    async (noteId, fields) => {
+    async (noteId, fields, options) => {
+      // Update the list right away: reopening this note before the save returns must show these edits.
+      setNotes((current) => current?.map((note) => (note.id === noteId ? { ...note, ...fields } : note)) ?? current)
       try {
-        const saved = await updateNote(noteId, fields, await getToken())
-        // The note just edited moves to the top of the list.
-        setNotes((current) => [saved, ...(current ?? []).filter((note) => note.id !== noteId)])
+        const saved = await updateNote(noteId, fields, await getToken(), options)
+        // The note just edited moves to the top, unless it was deleted while this save was on its way.
+        setNotes((current) =>
+          current?.some((note) => note.id === noteId) ? [saved, ...current.filter((note) => note.id !== noteId)] : current,
+        )
         refreshProgress()
       } catch (err) {
         if (err instanceof AuthError) await signOut()
@@ -170,7 +174,7 @@ export default function NotesPage() {
                   key={open.id}
                   note={open}
                   cases={cases}
-                  onSave={(fields) => save(open.id, fields)}
+                  onSave={(fields, options) => save(open.id, fields, options)}
                   onDelete={() => remove(open.id)}
                   onExport={exportNote}
                 />

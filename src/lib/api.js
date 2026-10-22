@@ -30,8 +30,9 @@ export function signUp({ email, password }) {
   return request('/api/register', { method: 'POST', body: { email, password } })
 }
 
-export function startDemo() {
-  return request('/api/demo', { method: 'POST', body: {} })
+// today: the visitor's date, so the sample study streak matches their clock.
+export function startDemo(today) {
+  return request('/api/demo', { method: 'POST', body: { today } })
 }
 
 export async function analyzeError({ error, code }, token) {
@@ -68,8 +69,8 @@ export async function createNote({ title, blocks }, token) {
   return (await request('/api/notes', { method: 'POST', body: { title, blocks }, token })).note
 }
 
-export async function updateNote(id, { title, blocks }, token) {
-  return (await request('/api/notes', { method: 'PUT', body: { id, title, blocks }, token })).note
+export async function updateNote(id, { title, blocks }, token, { keepalive = false } = {}) {
+  return (await request('/api/notes', { method: 'PUT', body: { id, title, blocks }, token, keepalive })).note
 }
 
 export async function deleteNote(id, token) {

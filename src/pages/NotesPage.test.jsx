@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createNote, deleteNote, listCases, listNotes, updateNote } from '../lib/api.js'
@@ -106,4 +106,56 @@ it('deletes a note after confirming', async () => {
 it('says when a note does not exist', async () => {
   renderAt('/notes/missing', { user: 'alice' })
   expect(await screen.findByText('This note is gone. Pick another one.')).toBeInTheDocument()
+})
+
+it('saves unsent edits when I switch to another note, and shows them when I come back', async () => {
+  const OTHER = { id: 'n2', title: 'Second', blocks: [{ id: 'z', type: 'text', text: '' }], updatedAt: NOTE.updatedAt }
+  vi.mocked(listNotes).mockResolvedValue([NOTE, OTHER])
+  let finish
+  vi.mocked(updateNote).mockImplementation(
+    (id, fields) =>
+      new Promise((resolve) => {
+        finish = () => resolve({ ...NOTE, id, ...fields })
+      }),
+  )
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Note title' }), '!')
+  await userEvent.click(screen.getByRole('link', { name: /Second/ }))
+  expect(updateNote).toHaveBeenCalledWith('n1', expect.objectContaining({ title: 'Undefined again!' }), 'token-alice', undefined)
+
+  // Back before the server answered: the list already has the new title.
+  await userEvent.click(screen.getByRole('link', { name: /Undefined again!/ }))
+  expect(screen.getByRole('textbox', { name: 'Note title' })).toHaveValue('Undefined again!')
+  finish()
+})
+
+it("shows the server's reason when a save is refused", async () => {
+  vi.mocked(updateNote).mockRejectedValue(new Error('Too long. A note holds up to 200 blocks.'))
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Text' }), '!')
+  expect(await screen.findByText('Too long. A note holds up to 200 blocks.', {}, { timeout: 2000 })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+})
+
+it('caps a block at the length the server accepts', async () => {
+  renderAt('/notes/n1', { user: 'alice' })
+  expect(await screen.findByRole('textbox', { name: 'Text' })).toHaveAttribute('maxLength', '2000')
+})
+
+it('keeps a deleted note gone even if a save comes back after the delete', async () => {
+  let finish
+  vi.mocked(updateNote).mockImplementation(
+    (id, fields) =>
+      new Promise((resolve) => {
+        finish = () => resolve({ ...NOTE, id, ...fields })
+      }),
+  )
+  renderAt('/notes/n1', { user: 'alice' })
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Note title' }), '!')
+  await waitFor(() => expect(updateNote).toHaveBeenCalled(), { timeout: 2000 })
+  await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
+  await waitFor(() => expect(currentLocation()).toBe('/notes'))
+  await act(async () => finish())
+  expect(screen.queryByRole('link', { name: /Undefined again/ })).toBeNull()
 })

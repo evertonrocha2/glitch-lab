@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conceptLabel } from '../../../shared/concepts.js'
+import { NOTE_LIMITS } from '../../../shared/limits.js'
 import { splitError } from '../../lib/caseInfo.js'
 import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, updateBlock } from '../../lib/notes/blocks.js'
 import PixelButton from '../pixel/PixelButton.jsx'
@@ -43,6 +44,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
   const [focusId, setFocusId] = useState(null)
   const [status, setStatus] = useState('saved')
   const [confirming, setConfirming] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const fields = useRef(new Map())
   const saved = useRef(JSON.stringify({ title: note.title, blocks: initialBlocks }))
   const latest = useRef({ title, blocks })
@@ -62,7 +64,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
         await onSaveRef.current(snapshot)
         saved.current = json
         setStatus(JSON.stringify(latest.current) === json ? 'saved' : 'unsaved')
-      } catch {
+      } catch (err) {
+        setSaveError(err.message)
         setStatus('error')
       }
     })
@@ -76,13 +79,27 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
     return () => clearTimeout(timer)
   }, [title, blocks, flush])
 
-  // Leaving the note saves whatever the timer hadn't sent yet.
-  useEffect(
-    () => () => {
-      if (JSON.stringify(latest.current) !== saved.current) onSaveRef.current(latest.current).catch(() => {})
-    },
-    [],
-  )
+  // Leaving the note saves whatever the timer hadn't sent yet, in line after any save still running.
+  useEffect(() => () => flush(), [flush])
+
+  // Closing the tab skips React's cleanup: send the last edits with keepalive so they still arrive,
+  // and warn before leaving a note the server keeps refusing.
+  const failing = useRef(false)
+  failing.current = status === 'error'
+  useEffect(() => {
+    const onHide = () => {
+      if (JSON.stringify(latest.current) !== saved.current) onSaveRef.current(latest.current, { keepalive: true }).catch(() => {})
+    }
+    const onBeforeUnload = (event) => {
+      if (failing.current) event.preventDefault()
+    }
+    window.addEventListener('pagehide', onHide)
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [])
 
   useEffect(() => {
     if (!focusId) return
@@ -100,6 +117,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
     else fields.current.delete(id)
   }
 
+  // placeCase can add two blocks (the case and a line after it).
+  const full = blocks.length + 2 > NOTE_LIMITS.blocks
   const casesById = new Map(cases.map((item) => [item.id, item]))
   const items = !menu ? [] : menu.kind === 'slash' ? BLOCK_TYPES : matchCases(cases, menu.query, conceptLabel).map(caseOption)
   const active = Math.min(menu?.active ?? 0, Math.max(items.length - 1, 0))
@@ -115,6 +134,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
       }
       setBlocks((current) => current.map((block) => (block.id === menu.blockId ? { ...newBlock(item.key), id: block.id } : block)))
       setFocusId(menu.blockId)
+      setMenu(null)
+      return
+    }
+    if (full) {
       setMenu(null)
       return
     }
@@ -167,6 +190,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
     // Headings and to-dos are one line: Enter starts the next block instead of a line break.
     if (event.key === 'Enter' && block.type !== 'text') {
       event.preventDefault()
+      if (full) return
       const next = newBlock(block.type === 'todo' ? 'todo' : 'text')
       setBlocks((current) => insertAfter(current, block.id, next))
       setFocusId(next.id)
@@ -183,6 +207,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
   }
 
   function append(type) {
+    if (full) return
     const block = newBlock(type)
     setBlocks((current) => [...current, block])
     setFocusId(block.id)
@@ -213,6 +238,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
       onChange: (event) => changeText(block, event.target.value, event.target.selectionStart),
       onKeyDown: (event) => keyDown(event, block),
       onBlur: closeMenuFor(block.id),
+      maxLength: NOTE_LIMITS.text,
       'aria-controls': open ? MENU_ID : undefined,
       'aria-activedescendant': open ? `${MENU_ID}-${active}` : undefined,
     }
@@ -269,7 +295,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p aria-live="polite" className="flex items-center gap-2 font-label text-[10px] text-muted">
           <span aria-hidden="true" className={`size-2 border border-ink ${status === 'saved' ? 'bg-primary' : status === 'error' ? 'bg-ink' : 'bg-white'}`} />
-          {SAVE_TEXT[status]}
+          {status === 'error' ? saveError || SAVE_TEXT.error : SAVE_TEXT[status]}
           {status === 'error' && (
             <button type="button" onClick={flush} className="text-primary underline underline-offset-2">
               Retry
@@ -341,13 +367,19 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
           ['heading', '+ Heading'],
           ['todo', '+ To-do'],
         ].map(([type, label]) => (
-          <PixelButton key={type} variant="ghost" onClick={() => append(type)} className="px-2.5 py-1.5">
+          <PixelButton key={type} variant="ghost" onClick={() => append(type)} disabled={full} className="px-2.5 py-1.5">
             {label}
           </PixelButton>
         ))}
-        <PixelButton variant="secondary" onClick={() => setMenu({ blockId: APPEND, kind: 'case', start: 0, query: '', active: 0 })} className="px-2.5 py-1.5">
+        <PixelButton
+          variant="secondary"
+          onClick={() => setMenu({ blockId: APPEND, kind: 'case', start: 0, query: '', active: 0 })}
+          disabled={full}
+          className="px-2.5 py-1.5"
+        >
           @ Case
         </PixelButton>
+        {full && <span className="text-xs text-muted">This note is full. Start a new one to keep going.</span>}
         {menuFor(APPEND, {
           search: menu?.query ?? '',
           onSearch: (query) => setMenu((current) => ({ ...current, query, active: 0 })),
