@@ -4,18 +4,20 @@ import { ATTRIBUTES, label } from '../../../shared/riddle/languages.js'
 // (lists that overlap), white is a miss.
 export const STATUS = {
   match: { cell: 'bg-primary text-white', swatch: 'bg-primary', word: 'Match' },
-  partial: { cell: 'bg-secondary text-white', swatch: 'bg-secondary', word: 'Close' },
+  partial: { cell: 'bg-secondary-soft text-secondary', swatch: 'bg-secondary-soft', word: 'Close' },
   miss: { cell: 'bg-white text-ink', swatch: 'bg-white', word: 'Miss' },
 }
 
+const LABEL_TONE = { match: 'text-white/80', partial: 'text-secondary/80', miss: 'text-muted' }
 const NAMES = Object.fromEntries(ATTRIBUTES.map((item) => [item.key, item.name]))
 const valueText = (value) => (Array.isArray(value) ? value.map(label).join(', ') : typeof value === 'number' ? String(value) : label(value))
 
-// A 5x5 pixel arrow: up means the answer appeared later.
-export function YearArrow({ direction, className = 'size-3' }) {
-  const rows = direction === 'higher' ? ['..#..', '.###.', '#####', '..#..', '..#..'] : ['..#..', '..#..', '#####', '.###.', '..#..']
+// A 7x7 pixel arrow: up means the answer appeared later.
+const ARROW_UP = ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '..###..']
+export function YearArrow({ direction, className = 'size-4' }) {
+  const rows = direction === 'higher' ? ARROW_UP : [...ARROW_UP].reverse()
   return (
-    <svg viewBox="0 0 5 5" shapeRendering="crispEdges" aria-hidden="true" className={`${className} fill-current`}>
+    <svg viewBox="0 0 7 7" shapeRendering="crispEdges" aria-hidden="true" className={`${className} fill-current`}>
       {rows.flatMap((row, y) => [...row].map((char, x) => (char === '#' ? <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" /> : null)))}
     </svg>
   )
@@ -60,7 +62,7 @@ export function Legend() {
         </li>
       ))}
       <li className="flex items-center gap-1.5">
-        <YearArrow direction="higher" className="size-3 text-ink" />
+        <YearArrow direction="higher" className="size-3.5 text-ink" />
         Answer is newer
       </li>
     </ul>
@@ -75,10 +77,10 @@ function Cell({ cell, index, animate }) {
       style={animate ? { animationDelay: `${index * 90}ms` } : undefined}
       className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
     >
-      <span className={`font-label text-[9px] leading-tight ${cell.status === 'miss' ? 'text-muted' : 'text-white/80'}`}>{NAMES[cell.key]}</span>
+      <span className={`font-label text-[9px] leading-tight ${LABEL_TONE[cell.status]}`}>{NAMES[cell.key]}</span>
       <span className="flex items-end justify-between gap-1 text-xs leading-snug font-semibold wrap-break-word">
         <span className="min-w-0">{valueText(cell.value)}</span>
-        {cell.direction && <YearArrow direction={cell.direction} className="mb-0.5 size-3 shrink-0" />}
+        {cell.direction && <YearArrow direction={cell.direction} className="size-4 shrink-0" />}
       </span>
       <span className="sr-only">
         ({style.word}

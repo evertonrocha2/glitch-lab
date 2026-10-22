@@ -66,7 +66,7 @@ it('shows the game number, countdown, modes and my Classic board', async () => {
   expect(await screen.findByRole('heading', { name: 'Glitchdle #1' })).toBeInTheDocument()
   expect(screen.getByText(/^[45]:\d{2}:\d{2}$/)).toBeInTheDocument()
   const tabs = within(screen.getByRole('tablist', { name: 'Game modes' })).getAllByRole('tab')
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Classic1 tries', 'Errornew', 'Snippetnew'])
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Classic1 try', 'Errornew', 'Snippetnew'])
   expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
 
   const guesses = within(await board()).getByRole('list', { name: 'Your guesses' })
@@ -159,7 +159,7 @@ it("shows my stats and today's community numbers", async () => {
   const numbers = await screen.findByRole('list', { name: 'Your Glitchdle numbers' })
   expect(numbers).toHaveTextContent('1Played')
   const table = screen.getByRole('table')
-  expect(within(table).getByRole('row', { name: /Classic/ })).toHaveTextContent('3/45.31...')
+  expect(within(table).getByRole('row', { name: /Classic/ })).toHaveTextContent('3/45.31 try')
 })
 
 it('says what went wrong and reloads the board when a guess is refused', async () => {

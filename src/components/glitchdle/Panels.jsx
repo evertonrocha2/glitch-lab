@@ -78,25 +78,29 @@ export function StatsPanel({ stats, mode, todayGuesses }) {
       </ul>
       <p className="mt-2 text-xs text-muted">A perfect day has all three modes solved. The streak counts perfect days in a row.</p>
       <h3 className="mt-5 font-label text-xs text-ink">{MODE_NAMES[mode]} guess distribution</h3>
-      <ol aria-label={`${MODE_NAMES[mode]} guess distribution`} className="mt-2 space-y-1">
-        {bars.map((count, index) => {
-          const name = index === DISTRIBUTION_SIZE - 1 ? `${DISTRIBUTION_SIZE}+` : String(index + 1)
-          const today = todayGuesses !== null && Math.min(todayGuesses, DISTRIBUTION_SIZE) - 1 === index
-          return (
-            <li key={name} className="flex items-center gap-2 text-xs">
-              <span className="w-6 shrink-0 text-right font-mono text-muted">{name}</span>
-              <span className="flex-1">
-                <span
-                  className={`flex h-5 min-w-6 items-center justify-end px-1.5 font-label text-[10px] ${today ? 'bg-primary text-white' : count ? 'bg-secondary text-white' : 'bg-mist text-muted'}`}
-                  style={{ width: `${Math.max(8, (count / most) * 100)}%` }}
-                >
-                  {count}
+      {bars.every((count) => count === 0) ? (
+        <p className="mt-2 border-2 border-dashed border-line px-3 py-3 text-xs text-muted">No {MODE_NAMES[mode]} solves yet. Your first one starts the chart.</p>
+      ) : (
+        <ol aria-label={`${MODE_NAMES[mode]} guess distribution`} className="mt-2 space-y-1">
+          {bars.map((count, index) => {
+            const name = index === DISTRIBUTION_SIZE - 1 ? `${DISTRIBUTION_SIZE}+` : String(index + 1)
+            const today = todayGuesses !== null && Math.min(todayGuesses, DISTRIBUTION_SIZE) - 1 === index
+            return (
+              <li key={name} className="flex items-center gap-2 text-xs">
+                <span className="w-6 shrink-0 text-right font-mono text-muted">{name}</span>
+                <span className="flex-1">
+                  <span
+                    className={`flex h-5 min-w-6 items-center justify-end px-1.5 font-label text-[10px] ${today ? 'bg-primary text-white' : count ? 'bg-secondary text-white' : 'bg-mist text-muted'}`}
+                    style={{ width: `${Math.max(8, (count / most) * 100)}%` }}
+                  >
+                    {count}
+                  </span>
                 </span>
-              </span>
-            </li>
-          )
-        })}
-      </ol>
+              </li>
+            )
+          })}
+        </ol>
+      )}
     </PixelCard>
   )
 }
@@ -144,7 +148,7 @@ export function CommunityPanel({ community, modes }) {
                   ) : mine.over ? (
                     <span className="text-muted">X</span>
                   ) : (
-                    <span className="text-muted">{mine.guessCount ? `${mine.guessCount}...` : '-'}</span>
+                    <span className="text-muted">{mine.guessCount ? `${mine.guessCount} ${mine.guessCount === 1 ? 'try' : 'tries'}` : '-'}</span>
                   )}
                 </td>
               </tr>

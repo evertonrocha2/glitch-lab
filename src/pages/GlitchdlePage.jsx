@@ -35,6 +35,8 @@ const shareModes = (modes) =>
     }),
   )
 
+const tries = (count) => `${count} ${count === 1 ? 'try' : 'tries'}`
+
 function ModeTabs({ modes, active, onPick }) {
   const tabs = useRef([])
   function onKeyDown(event, index) {
@@ -50,7 +52,7 @@ function ModeTabs({ modes, active, onPick }) {
       {MODES.map((mode, index) => {
         const state = modes[mode]
         const selected = mode === active
-        const note = state.solved ? `${state.guessCount} ${state.guessCount === 1 ? 'guess' : 'guesses'}` : state.over ? 'missed' : state.guessCount ? `${state.guessCount} tries` : 'new'
+        const note = state.solved ? `${state.guessCount} ${state.guessCount === 1 ? 'guess' : 'guesses'}` : state.over ? 'missed' : state.guessCount ? tries(state.guessCount) : 'new'
         return (
           <button
             key={mode}
