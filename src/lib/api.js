@@ -116,3 +116,37 @@ export async function getPublicProfile(handle, today) {
   if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
   return data.profile
 }
+
+// Public pages (notes on a profile, people search) work signed out: no token, and 404 means "not shared".
+async function publicGet(path) {
+  let res
+  try {
+    res = await fetch(path, { method: 'GET', headers: {} })
+  } catch {
+    throw new Error('Could not reach the server. Check your connection.')
+  }
+  if (res.status === 404) return null
+  const data = await res.json().catch(() => null)
+  if (!res.ok || !data) throw new Error(data?.message || GENERIC_MESSAGE)
+  return data
+}
+
+// Shows or hides a note on your public profile. Returns the saved note.
+export async function setNotePublic(id, isPublic, token) {
+  return (await request('/api/notes', { method: 'PUT', body: { id, isPublic }, token })).note
+}
+
+// [{ id, title, updatedAt, excerpt, blockCount }], or null when the profile isn't public.
+export async function listPublicNotes(handle) {
+  return (await publicGet(`/api/notes?handle=${encodeURIComponent(handle)}`))?.notes ?? null
+}
+
+// { note, author } for one shared note, or null when it isn't shared.
+export function getPublicNote(handle, id) {
+  return publicGet(`/api/notes?handle=${encodeURIComponent(handle)}&id=${encodeURIComponent(id)}`)
+}
+
+// Up to 20 public profile cards whose handle or name matches. An empty query lists the newest.
+export async function searchProfiles(query) {
+  return (await publicGet(`/api/profile?search=${encodeURIComponent(query)}`))?.profiles ?? []
+}
