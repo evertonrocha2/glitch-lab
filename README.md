@@ -34,6 +34,17 @@ Glitch Detective uses AI the other way around: **it hides the answer and trains 
 - Every AI call has a time limit and one retry when the model is busy. Each account has a daily AI limit, so the free quota survives a demo.
 - The AI layer is provider-agnostic (`generateJson`), so other models can be added without touching the endpoints.
 
+## Ask the detective (an orchestration of agents)
+
+A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) where you can ask about anything in the app. One question runs through a small team of agents in `api/assistant.js` and `api/_lib/assistant/`:
+
+1. **Router agent** picks 1 or 2 specialists and the data each needs, knowing which page (and which case, note or challenge) you're on. If it fails, a keyword and page based choice takes over.
+2. **Context loaders** read only what each specialist needs, only for you, trimmed to a budget. The gym loader never reads challenge secrets and only sees the hints you've revealed.
+3. **Specialists run in parallel**: Board analyst, Gym coach, Notes keeper, Study planner, App guide. Your content is fenced off as data, and every one of them is a tutor: no full fixes for gym challenges, just nudges.
+4. **Merge and check**: two answers are stacked (no third slow AI call), and suggested actions (open a case or note, train a case, start the timer, go to a page) are checked on the server: ids must be yours, pages from an allowlist.
+
+One question counts as one AI call on the daily limit. The chat lives in the browser session only.
+
 ## Try it
 
 Open the app and press **Use demo account**. Each visitor gets their own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak and a few badges, so you can try everything without waiting for the AI.
