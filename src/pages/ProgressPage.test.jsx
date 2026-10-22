@@ -27,6 +27,12 @@ beforeEach(() => {
   vi.mocked(getProgress).mockReset()
 })
 
+it('links to the people search', async () => {
+  vi.mocked(getProgress).mockResolvedValue(progressWith([]))
+  renderAt('/progress', { user: 'alice' })
+  expect(await screen.findByRole('link', { name: 'Find detectives' })).toHaveAttribute('href', '/people')
+})
+
 it('shows the level, xp, streak and study time', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   renderAt('/progress', { user: 'alice' })

@@ -1,6 +1,17 @@
 import { createHash } from 'node:crypto'
 import { badgeById } from '../../shared/badges.js'
-import { AVATAR_COLORS, defaultDisplayName, handleProblem, normalizeHandle, PROFILE_LIMITS } from '../../shared/profile.js'
+import {
+  AVATAR_COLORS,
+  defaultDisplayName,
+  handleProblem,
+  LANGUAGES,
+  LINKS,
+  linkProblem,
+  normalizeHandle,
+  OPEN_TO,
+  PROFILE_LIMITS,
+  ROLES,
+} from '../../shared/profile.js'
 import { computeProgress } from '../../shared/progress.js'
 
 const INVALID = { status: 400, message: 'Invalid request.' }
@@ -57,11 +68,82 @@ export function parseProfile(body) {
     if (typeof body.isPublic !== 'boolean') return INVALID
     value.isPublic = body.isPublic
   }
-  return { value }
+  const aboutProblem = parseAbout(body, value)
+  return aboutProblem ?? { value }
 }
 
+// One line of text: no line breaks or control characters. Blank means "not filled in".
+const ONE_LINE = /[\u0000-\u001f\u007f]/
+const ABOUT_TEXT = [
+  ['headline', 'headline'],
+  ['university', 'university'],
+  ['course', 'course'],
+  ['work', 'job'],
+  ['location', 'location'],
+]
+
+// A list of ids from a fixed set, without repeats. null when anything in it is unknown.
+function pickIds(list, allowed) {
+  if (!Array.isArray(list) || !list.every((id) => isText(id) && allowed.some((item) => item.id === id))) return null
+  return [...new Set(list)]
+}
+
+// Fills the "About you" fields into value. Returns { status, message } on the first problem, else null.
+function parseAbout(body, value) {
+  if (body.role !== undefined) {
+    if (body.role !== null && !ROLES.some((role) => role.id === body.role)) return INVALID
+    value.role = body.role
+  }
+  for (const [field, what] of ABOUT_TEXT) {
+    if (body[field] === undefined) continue
+    if (!isText(body[field]) || ONE_LINE.test(body[field])) return INVALID
+    const text = body[field].trim()
+    if (text.length > PROFILE_LIMITS[field]) return tooLong(what, PROFILE_LIMITS[field])
+    value[field] = text
+  }
+  if (body.languages !== undefined) {
+    const languages = pickIds(body.languages, LANGUAGES)
+    if (!languages) return INVALID
+    if (languages.length > PROFILE_LIMITS.languages) return { status: 400, message: `Pick up to ${PROFILE_LIMITS.languages} languages.` }
+    value.languages = languages
+  }
+  if (body.openTo !== undefined) {
+    value.openTo = pickIds(body.openTo, OPEN_TO)
+    if (!value.openTo) return INVALID
+  }
+  if (body.links !== undefined) {
+    const { links } = body
+    if (!links || typeof links !== 'object' || Array.isArray(links)) return INVALID
+    value.links = {}
+    for (const [kind, raw] of Object.entries(links)) {
+      const link = LINKS.find((item) => item.id === kind)
+      if (!link || !isText(raw)) return INVALID
+      const url = raw.trim()
+      if (!url) continue
+      const problem = linkProblem(kind, url)
+      if (problem) return { status: 400, message: `That ${link.label} link won't work. ${problem}` }
+      value.links[kind] = new URL(url).href
+    }
+  }
+  return null
+}
+
+// "About you" before anything is filled in.
+const EMPTY_ABOUT = { role: null, headline: '', university: '', course: '', work: '', location: '', languages: [], links: {}, openTo: [] }
+const aboutOf = (profile) => ({
+  role: profile.role ?? null,
+  headline: profile.headline ?? '',
+  university: profile.university ?? '',
+  course: profile.course ?? '',
+  work: profile.work ?? '',
+  location: profile.location ?? '',
+  languages: profile.languages ?? [],
+  links: profile.links ?? {},
+  openTo: profile.openTo ?? [],
+})
+
 // A brand-new account (or a dev session with no account row) has nothing stored yet.
-const EMPTY = { handle: null, displayName: null, bio: '', avatar: null, featuredBadges: [], isPublic: false, createdAt: null }
+const EMPTY = { handle: null, displayName: null, bio: '', avatar: null, featuredBadges: [], isPublic: false, ...EMPTY_ABOUT, createdAt: null }
 
 // The default picture comes from the user id, hashed so a public profile never shows the id itself.
 export const defaultSeed = (userId) => createHash('sha256').update(userId).digest('hex').slice(0, 12)
@@ -80,6 +162,7 @@ export function ownProfile(stored, user) {
     avatar: avatarOf(profile, user.id),
     featuredBadges: profile.featuredBadges,
     isPublic: profile.isPublic,
+    ...aboutOf(profile),
   }
 }
 
@@ -124,5 +207,31 @@ export function publicProfile(stored, userId, { progress, counts }) {
     badges,
     featuredBadges: stored.featuredBadges.filter((id) => badges.includes(id)),
     memberSince: stored.createdAt,
+    ...aboutOf(stored),
   }
+}
+
+// A small card for search results and note bylines: who they are, no stats (those cost a lookup each).
+export function profileCard(stored, userId) {
+  const { role, headline, university, work, location, languages } = aboutOf(stored)
+  return {
+    handle: stored.handle,
+    displayName: stored.displayName ?? stored.handle,
+    avatar: avatarOf(stored, userId),
+    role,
+    headline,
+    university,
+    work,
+    location,
+    languages,
+  }
+}
+
+// What a search may hold: letters, numbers, spaces and _ . -, up to 40 characters.
+// null for anything else, so no wildcard or filter syntax ever reaches the store.
+export const SEARCH_MAX = 40
+export function parseSearch(raw) {
+  const query = raw.trim()
+  if (query.length > SEARCH_MAX || !/^[\p{L}\p{N} _.-]*$/u.test(query)) return null
+  return query
 }

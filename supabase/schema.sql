@@ -126,3 +126,18 @@ alter table public.users add column if not exists is_public boolean not null def
 create unique index if not exists users_handle_unique on public.users (lower(handle));
 -- Handles are stored lowercase, so lookups use a plain equality and need this index.
 create index if not exists users_handle on public.users (handle);
+
+-- "About you" on the profile, and notes shared on it. Same "if not exists" upgrade style.
+-- The API checks every value (fixed lists for role, languages and open_to; https links); the
+-- checks here only cap sizes. A note is shown to others only when it AND its owner's profile are public.
+alter table public.users add column if not exists role text check (role in ('student', 'developer', 'career-changer', 'teacher', 'other'));
+alter table public.users add column if not exists headline text not null default '' check (char_length(headline) <= 80);
+alter table public.users add column if not exists university text not null default '' check (char_length(university) <= 80);
+alter table public.users add column if not exists course text not null default '' check (char_length(course) <= 80);
+alter table public.users add column if not exists work text not null default '' check (char_length(work) <= 80);
+alter table public.users add column if not exists location text not null default '' check (char_length(location) <= 60);
+alter table public.users add column if not exists languages jsonb not null default '[]';
+alter table public.users add column if not exists links jsonb not null default '{}';
+alter table public.users add column if not exists open_to jsonb not null default '[]';
+alter table public.notes add column if not exists is_public boolean not null default false;
+create index if not exists notes_user_public on public.notes (user_id) where is_public;

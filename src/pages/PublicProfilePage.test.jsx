@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { getPublicProfile } from '../lib/api.js'
+import { getPublicProfile, listPublicNotes } from '../lib/api.js'
 import { renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
@@ -9,6 +9,7 @@ vi.mock('../lib/api.js', () => ({
   addStudyTime: vi.fn(),
   getMyProfile: vi.fn().mockResolvedValue(null),
   getPublicProfile: vi.fn(),
+  listPublicNotes: vi.fn(),
 }))
 
 const PUBLIC = {
@@ -29,8 +30,69 @@ const PUBLIC = {
   memberSince: '2026-10-01T12:00:00Z',
 }
 
+const ABOUT = {
+  role: 'student',
+  headline: 'Learning React at night',
+  university: 'Infnet',
+  course: 'Software Engineering',
+  work: 'Support at Acme',
+  location: 'Rio de Janeiro',
+  languages: ['javascript', 'cpp'],
+  links: { github: 'https://github.com/ada', linkedin: 'https://www.linkedin.com/in/ada' },
+  openTo: ['mentoring', 'jobs'],
+}
+
+const NOTES = [
+  { id: 'n1', title: 'Reading undefined', updatedAt: '2026-10-21T12:00:00Z', excerpt: 'Check the object first.', blockCount: 4 },
+  { id: 'n2', title: '', updatedAt: '2026-10-20T12:00:00Z', excerpt: '', blockCount: 1 },
+]
+
 beforeEach(() => {
   vi.mocked(getPublicProfile).mockReset().mockResolvedValue(PUBLIC)
+  vi.mocked(listPublicNotes).mockReset().mockResolvedValue([])
+})
+
+it('shows who they are: role, headline, school, job, languages, links and open-to', async () => {
+  vi.mocked(getPublicProfile).mockResolvedValue({ ...PUBLIC, ...ABOUT })
+  renderAt('/u/ada_dev')
+  await screen.findByRole('heading', { name: 'Ada', level: 1 })
+  expect(screen.getByText('Student')).toBeInTheDocument()
+  expect(screen.getByText('Learning React at night')).toBeInTheDocument()
+  expect(screen.getByText('Software Engineering at Infnet')).toBeInTheDocument()
+  expect(screen.getByText('Support at Acme')).toBeInTheDocument()
+  expect(screen.getByText('Rio de Janeiro')).toBeInTheDocument()
+  expect(within(screen.getByRole('list', { name: 'Languages' })).getByText('C++')).toBeInTheDocument()
+  expect(within(screen.getByRole('list', { name: 'Open to' })).getAllByRole('listitem')).toHaveLength(2)
+  const links = within(screen.getByRole('list', { name: 'Links' })).getAllByRole('link')
+  expect(links.map((link) => link.getAttribute('href'))).toEqual(['https://github.com/ada', 'https://www.linkedin.com/in/ada'])
+  for (const link of links) {
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  }
+})
+
+it('lists their public notes, each linking to its own page', async () => {
+  vi.mocked(listPublicNotes).mockResolvedValue(NOTES)
+  renderAt('/u/ada_dev')
+  const section = await screen.findByRole('region', { name: 'Notes' })
+  expect(vi.mocked(listPublicNotes).mock.lastCall[0]).toBe('ada_dev')
+  const links = await within(section).findAllByRole('link')
+  expect(links).toHaveLength(2)
+  expect(links[0]).toHaveAttribute('href', '/u/ada_dev/notes/n1')
+  expect(links[0]).toHaveTextContent('Reading undefined')
+  expect(links[0]).toHaveTextContent('Check the object first.')
+  expect(links[1]).toHaveTextContent('Untitled')
+})
+
+it('says when there are no public notes yet', async () => {
+  renderAt('/u/ada_dev')
+  expect(await screen.findByText('No public notes yet.')).toBeInTheDocument()
+})
+
+it('links to the people search from the header', async () => {
+  renderAt('/u/ada_dev')
+  await screen.findByRole('heading', { name: 'Ada', level: 1 })
+  expect(screen.getByRole('link', { name: 'People' })).toHaveAttribute('href', '/people')
 })
 
 it('shows a public profile to a signed-out visitor', async () => {

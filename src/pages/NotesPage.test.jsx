@@ -1,9 +1,10 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { createNote, deleteNote, listCases, listNotes, updateNote } from '../lib/api.js'
+import { createNote, deleteNote, getMyProfile, listCases, listNotes, setNotePublic, updateNote } from '../lib/api.js'
 import { noteToMarkdown } from '../lib/exportMarkdown.js'
 import { exportNoteImage, exportNotePdf } from '../lib/exportNote.js'
+import { forgetMyProfiles } from '../lib/profile/myProfile.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
@@ -15,6 +16,8 @@ vi.mock('../lib/api.js', () => ({
   createNote: vi.fn(),
   updateNote: vi.fn(),
   deleteNote: vi.fn(),
+  getMyProfile: vi.fn(),
+  setNotePublic: vi.fn(),
 }))
 
 // The image and PDF need a real browser to draw; jsdom only checks they are asked for.
@@ -47,6 +50,75 @@ beforeEach(() => {
   vi.mocked(deleteNote).mockReset().mockResolvedValue()
   vi.mocked(exportNoteImage).mockReset().mockResolvedValue()
   vi.mocked(exportNotePdf).mockReset().mockResolvedValue()
+  forgetMyProfiles()
+  vi.mocked(getMyProfile).mockReset().mockResolvedValue(myProfile({ handle: 'ada_dev', isPublic: true }))
+  vi.mocked(setNotePublic).mockReset().mockImplementation(async (id, isPublic) => ({ ...NOTE, id, isPublic }))
+})
+
+function myProfile(fields) {
+  return {
+    profile: { handle: null, displayName: 'Ada', bio: '', avatar: { seed: 'a', color: 'violet' }, featuredBadges: [], isPublic: false, ...fields },
+    earnedBadges: [],
+    progress: { level: 1, title: 'Rookie', xp: 0, levelXp: 0, nextLevelXp: 100 },
+  }
+}
+
+const shareToggle = () => screen.findByRole('switch', { name: /Public on my profile/ })
+
+it('shares a note on my public profile and links to it', async () => {
+  renderAt('/notes/n1', { user: 'alice' })
+  const toggle = await shareToggle()
+  await waitFor(() => expect(toggle).toBeEnabled())
+  expect(toggle).not.toBeChecked()
+  expect(screen.getByText('Only you can see this note.')).toBeInTheDocument()
+
+  await userEvent.click(toggle)
+  expect(setNotePublic).toHaveBeenCalledWith('n1', true, 'token-alice')
+  expect(toggle).toBeChecked()
+  expect(await screen.findByRole('link', { name: 'View public page' })).toHaveAttribute('href', '/u/ada_dev/notes/n1')
+  // The list marks it too.
+  expect(screen.getByRole('link', { name: /Undefined again/ })).toHaveTextContent('Public')
+
+  await userEvent.click(toggle)
+  expect(setNotePublic).toHaveBeenLastCalledWith('n1', false, 'token-alice')
+  await waitFor(() => expect(toggle).not.toBeChecked())
+})
+
+it('keeps the toggle off with a hint while my profile is private', async () => {
+  vi.mocked(getMyProfile).mockResolvedValue(myProfile({ handle: 'ada_dev', isPublic: false }))
+  renderAt('/notes/n1', { user: 'alice' })
+  expect(await screen.findByText(/Make your profile public to share notes/)).toBeInTheDocument()
+  expect(await shareToggle()).toBeDisabled()
+  expect(screen.getByRole('link', { name: 'Go to your profile' })).toHaveAttribute('href', '/profile')
+})
+
+it('never lets a demo account share a note', async () => {
+  localStorage.setItem('gd:session', JSON.stringify({ token: 'token-demo', user: { id: 'demo', email: 'demo@demo.glitch', isDemo: true } }))
+  renderAt('/notes/n1')
+  expect(await screen.findByText(/Demo accounts can't share notes/)).toBeInTheDocument()
+  expect(await shareToggle()).toBeDisabled()
+})
+
+it('lets me take a note down even after my profile went private', async () => {
+  vi.mocked(listNotes).mockResolvedValue([{ ...NOTE, isPublic: true }])
+  vi.mocked(getMyProfile).mockResolvedValue(myProfile({ handle: 'ada_dev', isPublic: false }))
+  renderAt('/notes/n1', { user: 'alice' })
+  const toggle = await shareToggle()
+  await screen.findByText(/Make your profile public to share notes/)
+  expect(toggle).toBeChecked()
+  expect(toggle).toBeEnabled()
+  await userEvent.click(toggle)
+  expect(setNotePublic).toHaveBeenCalledWith('n1', false, 'token-alice')
+})
+
+it('puts the toggle back and says why when sharing fails', async () => {
+  vi.mocked(setNotePublic).mockRejectedValue(new Error('Sign up to share notes on a public profile.'))
+  renderAt('/notes/n1', { user: 'alice' })
+  const toggle = await shareToggle()
+  await waitFor(() => expect(toggle).toBeEnabled())
+  await userEvent.click(toggle)
+  expect(await screen.findByText('Sign up to share notes on a public profile.')).toBeInTheDocument()
+  expect(toggle).not.toBeChecked()
 })
 
 const savedBlocks = () => vi.mocked(updateNote).mock.lastCall[1].blocks

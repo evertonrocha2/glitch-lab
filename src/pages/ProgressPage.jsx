@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import { XP } from '../../shared/progress.js'
 import AppShell from '../components/AppShell.jsx'
@@ -56,6 +57,9 @@ export default function ProgressPage() {
       </p>
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Your progress</h1>
       <p className="mt-2 text-muted">Every case, fix, note and minute of study earns XP. Badges mark the milestones.</p>
+      <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
+        Find detectives
+      </Link>
 
       {!progress ? (
         <p role="status" className="mt-10 font-label text-xs text-muted">

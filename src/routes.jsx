@@ -8,6 +8,8 @@ import NotesPage from './pages/NotesPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import ProgressPage from './pages/ProgressPage.jsx'
 import PublicProfilePage from './pages/PublicProfilePage.jsx'
+import PeoplePage from './pages/PeoplePage.jsx'
+import PublicNotePage from './pages/PublicNotePage.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -64,6 +66,8 @@ export function AppRoutes() {
       />
       {/* Public: works signed out. */}
       <Route path="/u/:handle" element={<PublicProfilePage />} />
+      <Route path="/u/:handle/notes/:id" element={<PublicNotePage />} />
+      <Route path="/people" element={<PeoplePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -105,6 +105,8 @@ async function seedPassedChallenge(store, userId, kase, hintsRevealed) {
 function demoNote(byConcept) {
   return {
     title: 'My debugging notebook',
+    // Ready to share, but nobody sees it: the demo profile can never go public.
+    isPublic: true,
     blocks: [
       { id: 'demo-1', type: 'heading', text: 'Things I keep getting wrong' },
       { id: 'demo-2', type: 'text', text: 'Reading a property of something that is not there yet. Check the object exists before going deeper.' },
@@ -122,6 +124,16 @@ const DEMO_PROFILE = {
   displayName: 'Demo Detective',
   bio: 'Learning to read error messages one case at a time.',
   featuredBadges: ['case-closed', 'sharp-eye', 'on-a-roll'],
+  // "About you", so judges see a filled-in card. Links stay empty: they would point at real people.
+  role: 'student',
+  headline: 'Learning JavaScript and Python at night',
+  university: 'Glitch Academy',
+  course: 'Software Engineering',
+  work: 'Support analyst',
+  location: 'Rio de Janeiro',
+  languages: ['javascript', 'python', 'sql'],
+  links: {},
+  openTo: ['study-buddies', 'mentoring'],
 }
 
 const DAY_MS = 24 * 3_600_000

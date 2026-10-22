@@ -41,7 +41,15 @@ const toChallenge = (row) =>
   }
 
 const toNote = (row) =>
-  row && { id: row.id, userId: row.user_id, title: row.title, blocks: row.blocks, createdAt: row.created_at, updatedAt: row.updated_at }
+  row && {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    blocks: row.blocks,
+    isPublic: row.is_public ?? false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
 
 const toProfile = (row) =>
   row && {
@@ -51,9 +59,22 @@ const toProfile = (row) =>
     avatar: row.avatar ?? null,
     featuredBadges: row.featured_badges ?? [],
     isPublic: row.is_public ?? false,
+    role: row.role ?? null,
+    headline: row.headline ?? '',
+    university: row.university ?? '',
+    course: row.course ?? '',
+    work: row.work ?? '',
+    location: row.location ?? '',
+    languages: row.languages ?? [],
+    links: row.links ?? {},
+    openTo: row.open_to ?? [],
     createdAt: row.created_at,
   }
-const PROFILE_COLUMNS = 'id, handle, display_name, bio, avatar, featured_badges, is_public, created_at'
+const PROFILE_COLUMNS =
+  'id, handle, display_name, bio, avatar, featured_badges, is_public, role, headline, university, course, work, location, languages, links, open_to, created_at'
+
+// ilike treats % and _ as wildcards (and PostgREST reads * as %): escape them so a search is plain text.
+const likePattern = (query) => `%${query.replace(/[\\%_*]/g, (char) => `\\${char}`)}%`
 
 // Drops undefined keys so partial updates only touch what was given.
 const defined = (object) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined))
@@ -154,8 +175,8 @@ export function createSupabaseStore({ url, serviceKey }) {
       return row && { solution: row.solution, bugExplanation: row.bug_explanation }
     },
 
-    async createNote(userId, { title, blocks }) {
-      return toNote(unwrap(await db.from('notes').insert({ user_id: userId, title, blocks }).select().single()))
+    async createNote(userId, { title, blocks, isPublic = false }) {
+      return toNote(unwrap(await db.from('notes').insert({ user_id: userId, title, blocks, is_public: isPublic }).select().single()))
     },
 
     async listNotes(userId) {
@@ -167,8 +188,8 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toNote(unwrap(await db.from('notes').select('*').eq('id', id).eq('user_id', userId).maybeSingle()))
     },
 
-    async updateNote(userId, id, { title, blocks }) {
-      const patch = defined({ title, blocks, updated_at: new Date().toISOString() })
+    async updateNote(userId, id, { title, blocks, isPublic }) {
+      const patch = defined({ title, blocks, is_public: isPublic, updated_at: new Date().toISOString() })
       return toNote(unwrap(await db.from('notes').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle()))
     },
 
@@ -191,7 +212,7 @@ export function createSupabaseStore({ url, serviceKey }) {
     },
 
     // { profile }, { conflict: 'handle' } when another account has that handle, or null for no such user.
-    async updateProfile(userId, { handle, displayName, bio, avatar, featuredBadges, isPublic }) {
+    async updateProfile(userId, { handle, displayName, bio, avatar, featuredBadges, isPublic, role, headline, university, course, work, location, languages, links, openTo }) {
       const patch = defined({
         handle: typeof handle === 'string' ? handle.toLowerCase() : handle,
         display_name: displayName,
@@ -199,6 +220,15 @@ export function createSupabaseStore({ url, serviceKey }) {
         avatar,
         featured_badges: featuredBadges,
         is_public: isPublic,
+        role,
+        headline,
+        university,
+        course,
+        work,
+        location,
+        languages,
+        links,
+        open_to: openTo,
       })
       const result = await db.from('users').update(patch).eq('id', userId).select(PROFILE_COLUMNS).maybeSingle()
       // Emails never change here, so the only unique column this update can hit is the handle.
@@ -212,6 +242,22 @@ export function createSupabaseStore({ url, serviceKey }) {
         await db.from('users').select(PROFILE_COLUMNS).eq('handle', handle.toLowerCase()).eq('is_public', true).maybeSingle(),
       )
       return row ? { userId: row.id, profile: toProfile(row) } : null
+    },
+
+    // Public profiles whose handle or name holds the query (any case), newest members first.
+    // Two simple queries instead of one "or" filter, so the query text never needs PostgREST escaping.
+    async searchPublicProfiles(query, limit) {
+      const base = () =>
+        db.from('users').select(PROFILE_COLUMNS).eq('is_public', true).not('handle', 'is', null).order('created_at', { ascending: false }).limit(limit)
+      if (!query) return (unwrap(await base()) ?? []).map((row) => ({ userId: row.id, profile: toProfile(row) }))
+      const pattern = likePattern(query)
+      const [byHandle, byName] = await Promise.all([base().ilike('handle', pattern), base().ilike('display_name', pattern)])
+      const rows = new Map()
+      for (const row of [...(unwrap(byHandle) ?? []), ...(unwrap(byName) ?? [])]) rows.set(row.id, row)
+      return [...rows.values()]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, limit)
+        .map((row) => ({ userId: row.id, profile: toProfile(row) }))
     },
 
     async countUsage(key, day) {

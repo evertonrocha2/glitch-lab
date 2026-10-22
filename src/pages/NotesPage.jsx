@@ -5,11 +5,12 @@ import ErrorNotice from '../components/ErrorNotice.jsx'
 import NoteEditor from '../components/notes/NoteEditor.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
-import { AuthError, createNote, deleteNote, listCases, listNotes, updateNote } from '../lib/api.js'
+import { AuthError, createNote, deleteNote, listCases, listNotes, setNotePublic, updateNote } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { timeAgo } from '../lib/caseInfo.js'
 import { exportNoteImage, exportNoteMarkdown, exportNotePdf } from '../lib/exportNote.js'
 import { newBlock } from '../lib/notes/blocks.js'
+import { useMyProfile } from '../lib/profile/myProfile.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
 
 const EXPORTS = {
@@ -20,7 +21,15 @@ const EXPORTS = {
 
 const caseCount = (note) => note.blocks.filter((block) => block.type === 'case').length
 
-function NoteList({ notes }) {
+// Whether notes can go on your public profile: never for demos, only once the profile is public.
+function sharingFor(user, profile) {
+  if (user.isDemo) return { status: 'demo' }
+  if (!profile) return { status: 'loading' }
+  if (!profile.isPublic || !profile.handle) return { status: 'private' }
+  return { status: 'ready', handle: profile.handle }
+}
+
+function NoteList({ notes, showPublic }) {
   if (notes.length === 0) return <p className="text-sm text-muted">No notes yet.</p>
   return (
     <ul className="space-y-2">
@@ -37,6 +46,7 @@ function NoteList({ notes }) {
               <span className="block truncate font-semibold text-ink">{note.title || 'Untitled'}</span>
               <span className="block text-xs text-muted">
                 {count ? `${count} ${count === 1 ? 'case' : 'cases'} · ` : ''}edited {timeAgo(note.updatedAt)}
+                {showPublic && note.isPublic && <span className="ml-1.5 bg-secondary px-1 py-0.5 font-label text-[9px] leading-none text-white">Public</span>}
               </span>
             </NavLink>
           </li>
@@ -50,7 +60,8 @@ function NoteList({ notes }) {
 export default function NotesPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getToken, signOut } = useAuth()
+  const { user, getToken, signOut } = useAuth()
+  const myProfile = useMyProfile()
   const { refresh: refreshProgress } = useProgress()
   const [notes, setNotes] = useState(null)
   const [cases, setCases] = useState([])
@@ -133,6 +144,16 @@ export default function NotesPage() {
     }
   }
 
+  async function share(noteId, isPublic) {
+    try {
+      const saved = await setNotePublic(noteId, isPublic, await getToken())
+      setNotes((current) => current?.map((note) => (note.id === noteId ? { ...note, isPublic: saved.isPublic } : note)) ?? current)
+    } catch (err) {
+      if (err instanceof AuthError) await signOut()
+      throw err
+    }
+  }
+
   async function exportNote(note, format) {
     const { run, name } = EXPORTS[format]
     setMessage('')
@@ -144,6 +165,7 @@ export default function NotesPage() {
   }
 
   const open = notes?.find((note) => note.id === id)
+  const sharing = sharingFor(user, myProfile?.profile)
 
   return (
     <AppShell>
@@ -173,7 +195,7 @@ export default function NotesPage() {
       ) : (
         <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label="Notes" className={id ? 'hidden lg:block' : ''}>
-            <NoteList notes={notes} />
+            <NoteList notes={notes} showPublic={sharing.status === 'ready'} />
           </nav>
 
           <section className={id ? '' : 'hidden lg:block'}>
@@ -191,6 +213,8 @@ export default function NotesPage() {
                   onSave={(fields, options) => save(open.id, fields, options)}
                   onDelete={() => remove(open.id)}
                   onExport={exportNote}
+                  sharing={sharing}
+                  onShare={(isPublic) => share(open.id, isPublic)}
                 />
               </PixelCard>
             ) : (

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { computeProgress } from '../../shared/progress.js'
+import { parseProfile } from '../../api/_lib/profile.js'
 import { seedDemo } from '../../api/_lib/seed.js'
 import { createLocalStore } from '../../api/_lib/store/local.js'
 
@@ -69,4 +70,28 @@ it('gives the demo a profile that features badges it really earned', async () =>
   })
   const earned = progress.badges.filter((badge) => badge.earned).map((badge) => badge.id)
   for (const id of profile.featuredBadges) expect(earned).toContain(id)
+})
+
+it('fills in the demo about-you fields with values the API would accept', async () => {
+  const store = await freshStore()
+  const user = await store.createUser({ email: 'demo-y@demo.glitch', passwordHash: null, isDemo: true })
+  await seedDemo(store, user.id, '2026-10-22')
+
+  const profile = await store.getProfile(user.id)
+  const about = { role: profile.role, headline: profile.headline, university: profile.university, course: profile.course, work: profile.work, location: profile.location, languages: profile.languages, links: profile.links, openTo: profile.openTo }
+  expect(about.role).toEqual(expect.any(String))
+  expect(about.headline.length).toBeGreaterThan(0)
+  expect(about.languages.length).toBeGreaterThan(0)
+  expect(about.openTo.length).toBeGreaterThan(0)
+  // The same rules a real person's edits go through.
+  expect(parseProfile(about)).toEqual({ value: about })
+})
+
+it('makes the demo note public-ready while the demo profile stays private', async () => {
+  const store = await freshStore()
+  const user = await store.createUser({ email: 'demo-z@demo.glitch', passwordHash: null, isDemo: true })
+  await seedDemo(store, user.id, '2026-10-22')
+  const [note] = await store.listNotes(user.id)
+  expect(note.isPublic).toBe(true)
+  expect((await store.getProfile(user.id)).isPublic).toBe(false)
 })
