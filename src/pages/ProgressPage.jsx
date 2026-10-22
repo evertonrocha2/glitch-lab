@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { BADGES } from '../../shared/badges.js'
-import { XP } from '../../shared/progress.js'
+import { COMMUNITY_XP, XP } from '../../shared/progress.js'
 import AppShell from '../components/AppShell.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
@@ -37,6 +37,10 @@ const EARN = [
   ['Solve a case', XP.solved],
   ['Write a note', XP.note],
   ['Study one minute', XP.studyMinute],
+  ['Publish an article', COMMUNITY_XP.article],
+  ['Get a valid rating', COMMUNITY_XP.validReceived],
+  ['Get a like', COMMUNITY_XP.likeReceived],
+  ['Comment on an article', COMMUNITY_XP.comment],
 ]
 
 export default function ProgressPage() {
