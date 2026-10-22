@@ -7,6 +7,7 @@ import PixelButton from '../pixel/PixelButton.jsx'
 import BlockMenu from './BlockMenu.jsx'
 import CaseBlock from './CaseBlock.jsx'
 import ExportMenu from './ExportMenu.jsx'
+import ShareToggle from './ShareToggle.jsx'
 
 export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
@@ -36,7 +37,8 @@ function caseOption(item) {
 }
 
 // A Notion-style page: a title and a list of blocks. Saves on its own a moment after you stop typing.
-export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) {
+// With onShare, a switch puts the note on your public profile (sharing says whether that's allowed).
+export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare }) {
   const [initialBlocks] = useState(() => (note.blocks.length ? note.blocks : [newBlock('text')]))
   const [title, setTitle] = useState(note.title)
   const [blocks, setBlocks] = useState(initialBlocks)
@@ -321,6 +323,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport }) 
           )}
         </div>
       </div>
+
+      {onShare && <ShareToggle noteId={note.id} isPublic={Boolean(note.isPublic)} sharing={sharing} onShare={onShare} />}
 
       <textarea
         rows={1}
