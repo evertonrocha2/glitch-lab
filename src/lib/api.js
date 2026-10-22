@@ -62,6 +62,21 @@ export function checkFix(challengeId, code, token) {
   return request('/api/check', { method: 'POST', body: { challengeId, code }, token })
 }
 
+// Daily challenges: { day, nextResetAt, streak, puzzles: [card with status, challengeId, attempts] }.
+export function getDaily(token) {
+  return request('/api/challenge?daily=1', { token })
+}
+
+// This week's global challenge: { week, endsAt, puzzle, solvedCount, leaderboard, you }.
+export function getGlobalChallenge(token) {
+  return request('/api/challenge?global=1', { token })
+}
+
+// Starts a daily or global puzzle (or resumes it) and returns its gym challenge.
+export async function startPuzzle(puzzleId, token) {
+  return (await request('/api/challenge', { method: 'POST', body: { daily: true, puzzleId }, token })).challenge
+}
+
 export async function listNotes(token) {
   return (await request('/api/notes', { token })).notes
 }
