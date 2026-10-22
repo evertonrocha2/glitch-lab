@@ -86,6 +86,7 @@ const DEMO_CASES = [
   },
 ]
 
+import { seedCommunity } from './community/seed.js'
 import { serverDay } from './days.js'
 
 // Minutes studied 3, 2 and 1 days ago: a 3-day streak, and one day long enough for Deep focus.
@@ -152,5 +153,7 @@ export async function seedDemo(store, userId, today = serverDay()) {
   }
   // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
   if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, DEMO_PROFILE)
+  // Sample community articles (made once for everyone) and one notification for this demo to open.
+  await seedCommunity(store, userId)
   return true
 }
