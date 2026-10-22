@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { createLocalCommunity } from './community-local.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
 const now = () => new Date().toISOString()
@@ -227,5 +228,8 @@ export function createLocalStore({ file }) {
       await save()
       return data.usage[slot]
     },
+
+    // Articles, comments, reactions and notifications: see community-local.js.
+    ...createLocalCommunity({ load, save }),
   }
 }

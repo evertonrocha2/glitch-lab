@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createSupabaseCommunity } from './community-supabase.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
@@ -222,5 +223,8 @@ export function createSupabaseStore({ url, serviceKey }) {
     async addUsage(key, day) {
       return unwrap(await db.rpc('increment_usage', { p_key: key, p_day: day }))
     },
+
+    // Articles, comments, reactions and notifications: see community-supabase.js.
+    ...createSupabaseCommunity(db),
   }
 }
