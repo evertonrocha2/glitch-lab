@@ -1,16 +1,22 @@
-import { ATTRIBUTES, label } from '../../../shared/riddle/languages.js'
+import { LABELS } from '../../../shared/riddle/languages.js'
+import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../../lib/i18n/labels.js'
 
 // The three Glitchdle boards. Grading stays in the palette: purple is a match, blue is close
 // (lists that overlap), white is a miss.
 export const STATUS = {
-  match: { cell: 'bg-primary text-white', swatch: 'bg-primary', word: 'Match' },
-  partial: { cell: 'bg-secondary-soft text-secondary', swatch: 'bg-secondary-soft', word: 'Close' },
-  miss: { cell: 'bg-white text-ink', swatch: 'bg-white', word: 'Miss' },
+  match: { cell: 'bg-primary text-white', swatch: 'bg-primary' },
+  partial: { cell: 'bg-secondary-soft text-secondary', swatch: 'bg-secondary-soft' },
+  miss: { cell: 'bg-white text-ink', swatch: 'bg-white' },
 }
 
 const LABEL_TONE = { match: 'text-white/80', partial: 'text-secondary/80', miss: 'text-muted' }
-const NAMES = Object.fromEntries(ATTRIBUTES.map((item) => [item.key, item.name]))
-const valueText = (value) => (Array.isArray(value) ? value.map(label).join(', ') : typeof value === 'number' ? String(value) : label(value))
+const valueText = (trait, value) => (Array.isArray(value) ? value.map(trait).join(', ') : typeof value === 'number' ? String(value) : trait(value))
+
+// The server names the Error hints in English ("File extension", "Syntax family"); the syntax hint's
+// value is an English trait label too. Both are matched back to their ids and named in the reader's language.
+const HINT_KEYS = { 'File extension': 'extension', 'Syntax family': 'syntax' }
+const TRAIT_IDS = Object.fromEntries(Object.entries(LABELS).map(([id, text]) => [text, id]))
 
 // A 7x7 pixel arrow: up means the answer appeared later.
 const ARROW_UP = ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '..###..']
@@ -49,12 +55,13 @@ export function Cross({ className = 'size-2.5' }) {
 }
 
 export function Legend() {
+  const t = useT()
   return (
-    <ul aria-label="What the colors mean" className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+    <ul aria-label={t('app.glitchdle.legend')} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
       {[
-        ['match', 'Same'],
-        ['partial', 'Some in common'],
-        ['miss', 'Different'],
+        ['match', t('app.glitchdle.legend.match')],
+        ['partial', t('app.glitchdle.legend.partial')],
+        ['miss', t('app.glitchdle.legend.miss')],
       ].map(([status, text]) => (
         <li key={status} className="flex items-center gap-1.5">
           <span aria-hidden="true" className={`size-3 border-2 border-ink ${STATUS[status].swatch}`} />
@@ -63,7 +70,7 @@ export function Legend() {
       ))}
       <li className="flex items-center gap-1.5">
         <YearArrow direction="higher" className="size-3.5 text-ink" />
-        Answer is newer
+        {t('app.glitchdle.legend.newer')}
       </li>
     </ul>
   )
@@ -71,19 +78,21 @@ export function Legend() {
 
 function Cell({ cell, index, animate }) {
   const style = STATUS[cell.status]
-  const hint = cell.direction ? `, the answer appeared ${cell.direction === 'higher' ? 'later' : 'earlier'}` : ''
+  const t = useT()
+  const labels = useLabels()
+  const hint = cell.direction ? t(cell.direction === 'higher' ? 'app.glitchdle.later' : 'app.glitchdle.earlier') : ''
   return (
     <div
       style={animate ? { animationDelay: `${index * 90}ms` } : undefined}
       className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
     >
-      <span className={`font-label text-[10px] leading-tight ${LABEL_TONE[cell.status]}`}>{NAMES[cell.key]}</span>
+      <span className={`font-label text-[10px] leading-tight ${LABEL_TONE[cell.status]}`}>{t(`app.glitchdle.attr.${cell.key}`)}</span>
       <span className="flex items-end justify-between gap-1 text-xs leading-snug font-semibold wrap-break-word">
-        <span className="min-w-0">{valueText(cell.value)}</span>
+        <span className="min-w-0">{valueText(labels.trait, cell.value)}</span>
         {cell.direction && <YearArrow direction={cell.direction} className="size-4 shrink-0" />}
       </span>
       <span className="sr-only">
-        ({style.word}
+        ({t(`app.glitchdle.status.${cell.status}`)}
         {hint})
       </span>
     </div>
@@ -92,18 +101,19 @@ function Cell({ cell, index, animate }) {
 
 // Classic: one card per guess, newest on top, each attribute graded against the answer.
 export function ClassicBoard({ guesses, animateId }) {
+  const t = useT()
   if (guesses.length === 0) {
-    return <p className="border-2 border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted">Your guesses show up here, newest on top.</p>
+    return <p className="border-2 border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted">{t('app.glitchdle.empty')}</p>
   }
   return (
-    <ol aria-label="Your guesses" className="space-y-3">
+    <ol aria-label={t('app.glitchdle.yourGuesses')} className="space-y-3">
       {guesses.map((guess) => (
         <li key={guess.id} aria-label={guess.name} className="border-2 border-ink bg-ink shadow-pixel-muted">
           <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5">
             <span className="font-pixel text-lg font-bold text-ink">{guess.name}</span>
             {guess.correct && (
               <span className="flex items-center gap-1 font-label text-[10px] text-primary">
-                <Check /> Solved
+                <Check /> {t('app.glitchdle.solved')}
               </span>
             )}
           </div>
@@ -120,9 +130,10 @@ export function ClassicBoard({ guesses, animateId }) {
 
 // Error and Snippet: just the names, crossed or ticked, newest first.
 export function GuessList({ guesses, animateId }) {
+  const t = useT()
   if (guesses.length === 0) return null
   return (
-    <ol aria-label="Your guesses" className="flex flex-wrap gap-2">
+    <ol aria-label={t('app.glitchdle.yourGuesses')} className="flex flex-wrap gap-2">
       {guesses.map((guess) => (
         <li
           key={guess.id}
@@ -132,7 +143,7 @@ export function GuessList({ guesses, animateId }) {
         >
           {guess.correct ? <Check /> : <Cross />}
           <span>{guess.name}</span>
-          <span className="sr-only">{guess.correct ? '(right)' : '(wrong)'}</span>
+          <span className="sr-only">{guess.correct ? t('app.glitchdle.right') : t('app.glitchdle.wrong')}</span>
         </li>
       ))}
     </ol>
@@ -142,6 +153,8 @@ export function GuessList({ guesses, animateId }) {
 // Error: the message as a terminal would print it, plus the hints it has unlocked.
 export function ErrorBoard({ state }) {
   const locked = 2 - state.hints.length
+  const t = useT()
+  const labels = useLabels()
   return (
     <div className="space-y-4">
       <figure className="overflow-hidden border-2 border-ink bg-white shadow-pixel">
@@ -155,19 +168,21 @@ export function ErrorBoard({ state }) {
         </figcaption>
         <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap text-ink wrap-break-word">{state.text}</pre>
       </figure>
-      <ul aria-label="Hints" className="grid gap-2 sm:grid-cols-2">
+      <ul aria-label={t('app.glitchdle.hints')} className="grid gap-2 sm:grid-cols-2">
         {state.hints.map((hint) => (
           <li key={hint.label} className="border-2 border-ink bg-secondary-soft px-3 py-2">
-            <span className="block font-label text-[10px] text-secondary">{hint.label}</span>
-            <span className="font-mono text-sm font-semibold text-ink">{hint.value}</span>
+            <span className="block font-label text-[10px] text-secondary">
+              {HINT_KEYS[hint.label] ? t(`app.glitchdle.hint.${HINT_KEYS[hint.label]}`) : hint.label}
+            </span>
+            <span className="font-mono text-sm font-semibold text-ink">{TRAIT_IDS[hint.value] ? labels.trait(TRAIT_IDS[hint.value]) : hint.value}</span>
           </li>
         ))}
         {Array.from({ length: locked }, (_, index) => (
           <li key={`locked-${index}`} className="border-2 border-dashed border-line bg-white px-3 py-2 text-xs text-muted">
-            <span className="block font-label text-[10px]">Hint {state.hints.length + index + 1} locked</span>
+            <span className="block font-label text-[10px]">{t('app.glitchdle.hintLocked', { number: state.hints.length + index + 1 })}</span>
             {index === 0 && state.nextHintIn
-              ? `Unlocks after ${state.nextHintIn} more wrong ${state.nextHintIn === 1 ? 'guess' : 'guesses'}`
-              : 'Unlocks later'}
+              ? t('app.glitchdle.unlocksAfter', { count: state.nextHintIn })
+              : t('app.glitchdle.unlocksLater')}
           </li>
         ))}
       </ul>
@@ -178,13 +193,14 @@ export function ErrorBoard({ state }) {
 // Snippet: the code with the hidden lines as dither bars as long as the real line.
 export function SnippetBoard({ state }) {
   const hidden = state.lines.filter((line) => line.hidden).length
+  const t = useT()
   return (
     <figure className="overflow-hidden border-2 border-ink bg-white shadow-pixel">
       <figcaption className="flex items-center justify-between gap-2 border-b-2 border-ink bg-mist px-3 py-1.5 font-label text-[10px] text-muted">
-        <span>snippet</span>
-        <span>{hidden ? `${hidden} ${hidden === 1 ? 'line' : 'lines'} hidden` : 'all lines shown'}</span>
+        <span>{t('app.glitchdle.snippet')}</span>
+        <span>{hidden ? t('app.glitchdle.linesHidden', { count: hidden }) : t('app.glitchdle.allShown')}</span>
       </figcaption>
-      <ol aria-label="Code" className="overflow-x-auto py-3 font-mono text-sm leading-6">
+      <ol aria-label={t('app.glitchdle.code')} className="overflow-x-auto py-3 font-mono text-sm leading-6">
         {state.lines.map((line, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: lines are fixed for the day
           <li key={index} className="flex gap-3 pr-4">
@@ -194,7 +210,7 @@ export function SnippetBoard({ state }) {
             {line.hidden ? (
               <span className="flex min-w-0 flex-1 items-center">
                 <span className="dither-hidden block h-3.5 max-w-full" style={{ width: `${Math.max(2, line.width)}ch` }} />
-                <span className="sr-only">Hidden line</span>
+                <span className="sr-only">{t('app.glitchdle.hiddenLine')}</span>
               </span>
             ) : (
               <code className="whitespace-pre text-ink">{line.text || ' '}</code>

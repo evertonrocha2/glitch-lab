@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { MAX_GUESSES, MODE_NAMES, MODES, shareText } from '../../shared/riddle/game.js'
+import { MAX_GUESSES, MODES, shareText } from '../../shared/riddle/game.js'
 import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import { Check, ClassicBoard, ErrorBoard, GuessList, Legend, SnippetBoard } from '../components/glitchdle/Boards.jsx'
@@ -8,13 +8,9 @@ import { CommunityPanel, ResultCard, StatsPanel } from '../components/glitchdle/
 import { AuthError, getRiddle, guessRiddle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatCountdown } from '../lib/daily.js'
+import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { useLabels } from '../lib/i18n/labels.js'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
-
-const INTRO = {
-  classic: 'Guess the language of the day. Every guess shows how its traits compare with the answer.',
-  error: 'Which language printed this error? Hints unlock after 3 and 6 wrong guesses.',
-  snippet: 'Most of the code is hidden. Each wrong guess shows one more line.',
-}
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now())
@@ -35,10 +31,10 @@ const shareModes = (modes) =>
     }),
   )
 
-const tries = (count) => `${count} ${count === 1 ? 'try' : 'tries'}`
-
 function ModeTabs({ modes, active, onPick }) {
   const tabs = useRef([])
+  const t = useT()
+  const labels = useLabels()
   function onKeyDown(event, index) {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
     if (!step) return
@@ -48,11 +44,17 @@ function ModeTabs({ modes, active, onPick }) {
     tabs.current[next]?.focus()
   }
   return (
-    <div role="tablist" aria-label="Game modes" className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink">
+    <div role="tablist" aria-label={t('app.glitchdle.modes')} className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink">
       {MODES.map((mode, index) => {
         const state = modes[mode]
         const selected = mode === active
-        const note = state.solved ? `${state.guessCount} ${state.guessCount === 1 ? 'guess' : 'guesses'}` : state.over ? 'missed' : state.guessCount ? tries(state.guessCount) : 'new'
+        const note = state.solved
+          ? t('app.glitchdle.guesses', { count: state.guessCount })
+          : state.over
+            ? t('app.glitchdle.missed')
+            : state.guessCount
+              ? t('app.glitchdle.tries', { count: state.guessCount })
+              : t('app.glitchdle.new')
         return (
           <button
             key={mode}
@@ -70,13 +72,13 @@ function ModeTabs({ modes, active, onPick }) {
             className={`min-w-0 px-2 py-2.5 text-left transition-colors sm:px-4 ${selected ? 'bg-primary text-white' : 'bg-white text-ink hover:bg-primary-soft'}`}
           >
             <span className="flex items-center gap-1.5 font-label text-xs sm:text-sm">
-              {MODE_NAMES[mode]}
+              {labels.glitchdleMode(mode)}
               {state.solved && (
                 <>
                   <span className={`grid size-4 place-items-center border-2 ${selected ? 'border-white' : 'border-primary text-primary'}`}>
                     <Check className="size-2" />
                   </span>
-                  <span className="sr-only">(solved)</span>
+                  <span className="sr-only">{t('app.glitchdle.solvedSr')}</span>
                 </>
               )}
             </span>
@@ -92,6 +94,7 @@ function ModeTabs({ modes, active, onPick }) {
 export default function GlitchdlePage() {
   const { getToken, signOut } = useAuth()
   const { refresh } = useProgress()
+  const t = useT()
   const [game, setGame] = useState(null)
   const [mode, setMode] = useState(null)
   const [message, setMessage] = useState('')
@@ -162,7 +165,7 @@ export default function GlitchdlePage() {
       await navigator.clipboard.writeText(text)
       setCopied(true)
     } catch {
-      setMessage("Couldn't reach the clipboard. Copy it by hand:\n" + text)
+      setMessage(`${t('app.glitchdle.clipboard')}\n${text}`)
     }
   }
 
@@ -178,14 +181,11 @@ export default function GlitchdlePage() {
             &gt; glitchdle<span className="motion-safe:animate-caret">_</span>
           </p>
           <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Glitchdle{game ? ` #${game.number}` : ''}</h1>
-          <p className="mt-2 max-w-2xl text-muted">
-            Name today's programming language from its traits, an error it printed and a hidden snippet. The same riddle for every detective, new at
-            midnight, Brasilia time.
-          </p>
+          <p className="mt-2 max-w-2xl text-muted">{t('app.glitchdle.lead')}</p>
         </div>
         {game && (
           <p className="border-2 border-ink bg-white px-3 py-2 font-label text-xs text-muted shadow-pixel-muted">
-            Next in <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
+            {t('app.glitchdle.nextIn')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
           </p>
         )}
       </div>
@@ -198,7 +198,7 @@ export default function GlitchdlePage() {
 
       {!game && !message && (
         <p role="status" className="mt-10 font-label text-xs text-muted">
-          Loading today's Glitchdle...
+          {t('app.glitchdle.loading')}
         </p>
       )}
 
@@ -213,10 +213,10 @@ export default function GlitchdlePage() {
 
           <section id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`} className="mt-6 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="max-w-2xl text-sm text-ink">{INTRO[mode]}</p>
+              <p className="max-w-2xl text-sm text-ink">{t(`app.glitchdle.intro.${mode}`)}</p>
               {!state.over && (
                 <p className="font-label text-[10px] text-muted">
-                  {state.guessesLeft}/{MAX_GUESSES} guesses left
+                  {t('app.glitchdle.guessesLeft', { left: state.guessesLeft, max: MAX_GUESSES })}
                 </p>
               )}
             </div>
