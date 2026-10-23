@@ -4,7 +4,7 @@ import { linkParts } from '../../../../shared/messages.js'
 // Links leave the site in a new tab and tell the next page nothing about this one.
 export default function MessageText({ body, linkClassName = 'underline underline-offset-2' }) {
   return (
-    <span className="whitespace-pre-wrap wrap-break-word">
+    <span className="whitespace-pre-wrap wrap-anywhere">
       {linkParts(body).map((part, index) =>
         part.type === 'link' ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: the pieces of one fixed text

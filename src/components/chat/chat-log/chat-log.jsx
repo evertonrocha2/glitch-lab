@@ -109,7 +109,7 @@ export default function ChatLog({ messages, hasMore, loadingOlder, onLoadOlder, 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </p>
-      <div ref={box} onScroll={onScroll} role="region" tabIndex={0} aria-label={label} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 focus:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--color-secondary)] sm:px-4">
+      <div ref={box} onScroll={onScroll} role="region" tabIndex={0} aria-label={label} className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-3 focus:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--color-secondary)] sm:px-4">
         {hasMore && (
           <div className="mb-3 text-center">
             <PixelButton variant="ghost" onClick={onLoadOlder} disabled={loadingOlder} className="px-3 py-2">

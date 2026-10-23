@@ -68,7 +68,7 @@ export default function MessagesPage() {
           </h2>
           <Inbox state={inbox} activeId={id} />
         </section>
-        <div className={`h-[calc(100dvh-11rem)] min-h-[22rem] md:h-[36rem] ${id ? '' : 'hidden md:block'}`}>
+        <div className={`h-[calc(100dvh-17rem)] min-h-[22rem] md:h-[36rem] ${id ? '' : 'hidden md:block'}`}>
           {id ? (
             <Conversation key={id} id={id} onChange={loadInbox} />
           ) : (
