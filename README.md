@@ -2,7 +2,11 @@
 
 > Paste the error. Understand why. Practice so it never happens again.
 
-A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Lab).
+A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Detective). In English and Brazilian Portuguese.
+
+**Live:** https://hackaton-glitch-detective.vercel.app (press *Use demo account*). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
+
+**How it all works** (hosting, cron, layers, flows), in Portuguese: [docs/como-funciona.md](docs/como-funciona.md).
 
 ## Why not just paste the error into ChatGPT?
 
@@ -18,13 +22,18 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 4. **Write it down.** A Notion-style notebook: headings, text, to-dos, and your cases as blocks. Type **@** to drop a case into the page, **/** for other blocks. Every case links to the notes that mention it. Notes save on their own.
 5. **Track your study time.** A pixel stopwatch sits on every page. It keeps running through reloads and counts each day on your own clock.
 6. **Follow a study trail.** Press *Build my study trail* and the AI reads your cases and notes, finds your weak spot and lays out 5 to 7 missions on a pixel path: train a case in the gym, write a note about a case, study with the timer, investigate a new error, or reflect. Missions tick themselves when you do them (only *reflect* is ticked by hand). Each one earns XP, and finishing the trail adds a 100 XP bonus and the *Trailblazer* badge.
-7. **Level up.** Cases, passed challenges, notes, study minutes, trail missions, daily puzzles, Glitchdle and community activity earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 18 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
+7. **Level up.** Cases, passed challenges, notes, study minutes, trail missions, daily puzzles, Glitchdle, line hunt, reviews, interrogations, duels, events and community activity earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 26 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
 8. **Take it with you.** Export the whole board or one note as Markdown, a PNG image or an A4 PDF in the same pixel look (pages never cut a card in half).
 9. **Show who you are.** A profile with a pixel avatar, bio, what you do, university, job, languages and links, featured badges, and public notes. Make it public at `/u/<handle>` and find other detectives at `/people`.
 10. **Ask the detective.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
 11. **Daily and global challenges.** Three puzzles a day for everyone and a weekly global one with a leaderboard, fed by a daily cron.
 12. **Glitchdle.** A Loldle-style riddle a day: name the programming language from its traits, an error it printed, or a hidden snippet.
-13. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. The API lives in `server/modules/articles` (`/api/articles`, `/api/comments`, `/api/notifications`). Demo accounts can read, but not publish, comment, like or rate.
+13. **Line hunt.** A timed daily game (`/hunt`): 8 snippets, 20 seconds each, tap the line that holds the bug. The server times every answer, the same set goes to everyone, and there's a leaderboard and a free practice mode.
+14. **Interrogate the bug.** From any case, a Socratic coach walks you through the 6 steps of debugging (reproduce, read the error, hypothesis, isolate, fix, prevent). It answers each step with feedback and one guiding question, and a server-side guard stops it from handing over the fix before step 5. Export the finished interrogation as a note.
+15. **Spaced review.** Every bug type you've met comes back after 1, 3, 7, 14 and 30 days as quick cards built from your own cases: what causes this error, which line is wrong, pick the fix. No AI call, so it's instant. A skill map on the Progress page shows your mastery per bug type and points at the weakest one.
+16. **Duel (1v1).** A 5-round quiz race against a friend (room code), a random opponent or the Glitch Bot. The fastest right answer scores more, the server times every answer, and leaving the tab is detected and shown to both players. Moves reach the other player in about 50 ms through Supabase Realtime, with polling as a fallback.
+17. **Events.** Anyone can host a community event, like a backend battle: people send entries with repo, video and demo links, everyone votes, the host picks the podium. Taking part, placing and hosting earn XP, counted only for real events (3+ different people, at least an hour long).
+18. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. The API lives in `server/modules/articles` (`/api/articles`, `/api/comments`, `/api/notifications`). Demo accounts can read, but not publish, comment, like or rate.
 
 ## How AI is used
 
@@ -82,10 +91,23 @@ Open the app and press **Use demo account**. Each visitor gets their own board, 
 
 ```
 React + Tailwind (Vite, on Vercel)  ──>  /api/* (Express on Render)  ──>  Gemini
-                                              │
-                                    auth: email + password, signed sessions
-                                    store: Supabase Postgres (dev: a local JSON file)
+          │                                   │
+          │                         auth: email + password, signed sessions
+          │                         store: Supabase Postgres (dev: a local JSON file)
+          └── duels live ──> Supabase Realtime
+
+GitHub Actions, daily at 03:00 UTC ──> POST /api/cron/daily (today's and tomorrow's content)
 ```
+
+| Piece | Where | What it does |
+|---|---|---|
+| Site | Vercel | Serves the built React app and forwards `/api/*` to Render (`vercel.json`) |
+| API | Render (`render.yaml` blueprint) | Express app, `node server/index.js`, health check at `/healthz` |
+| Daily cron | GitHub Actions (`.github/workflows/daily-cron.yml`) | Wakes the API and calls the cron with `CRON_SECRET` |
+| Data | Supabase | Postgres with RLS on everything, plus Realtime broadcast for duels |
+| AI | Gemini | Every call through `generateJson` with a JSON schema, a time limit and a daily quota |
+
+The front end keeps every page and component in its own kebab-case folder (`src/pages/hunt-page/hunt-page.jsx`, `src/components/hunt/code-lines/code-lines.jsx`), with the test next to it. Every API call goes through `src/lib/api.js`.
 
 - Accounts: passwords hashed with scrypt, sessions signed with HMAC and valid for 7 days. Emails are unique and case-insensitive. After 10 wrong passwords an email is locked for the day.
 
@@ -116,7 +138,7 @@ For production, create a Supabase project, run `supabase/schema.sql`, then set t
 bun run test
 ```
 
-700+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, XP and badges, the timer, the note editor, the export, and every page.
+1,150+ tests cover the API (validation, limits, AI failures, secrets never leaking, other users' data), both stores, auth, XP and badges, the timer, the note editor, the export, and every page.
 
 ## Built with
 
