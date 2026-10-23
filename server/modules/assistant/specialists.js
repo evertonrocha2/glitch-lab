@@ -85,7 +85,8 @@ export const SPECIALIST_SCHEMA = {
 export function buildSpecialistPrompt({ messages, page, focus, data, partner, boundary = createBoundary() }) {
   return [
     describePage(page),
-    focus && `The router asked you to focus on: ${focus}`,
+    // The router's focus is an AI answer about the student's words, so it is data too.
+    focus && `The router asked you to focus on:\n${fence('router_focus', focus, boundary)}`,
     partner && `The ${specialistName(partner)} answers another part of this question at the same time. Only cover your part.`,
     '',
     'Conversation so far:',

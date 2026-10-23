@@ -86,7 +86,7 @@ it('routes to one specialist and returns its reply with checked actions', async 
   expect(await store.countUsage('alice', today())).toBe(1)
 
   const boardPrompt = promptOf(sent()[1])
-  expect(boardPrompt).toContain('The router asked you to focus on: weak spot')
+  expect(boardPrompt).toMatch(/The router asked you to focus on:\n<<<DATA router_focus GLB-[0-9a-f]{16}>>>\nweak spot/)
   expect(boardPrompt).toContain(mine.id)
   expect(boardPrompt).not.toContain(theirs.id)
 })
