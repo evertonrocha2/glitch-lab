@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { CONCEPTS } from '../../shared/concepts.js'
-import { buildPuzzlePrompt } from '../../api/_lib/prompts/puzzle.js'
-import { LANGUAGES_BY_CONCEPT, parsePuzzle, planSlot } from '../../api/_lib/puzzles/generate.js'
+import { buildPuzzlePrompt } from '../../server/modules/daily/puzzle.prompt.js'
+import { LANGUAGES_BY_CONCEPT, parsePuzzle, planSlot } from '../../server/modules/daily/puzzle-generate.js'
 import { AI_PUZZLE } from './puzzle-fixtures.js'
 
 const parse = (data, options = {}) => parsePuzzle(data, { kind: 'daily', recentTitles: [], ...options })

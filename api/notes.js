@@ -1,9 +1,9 @@
 import { NOTE_LIMITS } from '../shared/limits.js'
 import { handleProblem, normalizeHandle } from '../shared/profile.js'
-import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { parseNote, publicNote, publicNoteSummary } from './_lib/notes.js'
-import { profileCard } from './_lib/profile.js'
-import { getStore } from './_lib/store/index.js'
+import { fail, ok, readJson, requireUser } from '../server/core/http.js'
+import { parseNote, publicNote, publicNoteSummary } from '../server/modules/notes/notes.model.js'
+import { profileCard } from '../server/modules/profile/profile.model.js'
+import { getStore } from '../server/infra/database/index.js'
 
 // One read of the author's cases, however many case blocks the note has (the page is public).
 async function authorCases(store, userId) {

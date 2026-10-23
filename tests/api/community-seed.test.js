@@ -3,9 +3,9 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { seedCommunity } from '../../api/_lib/community/seed.js'
-import { seedDemo } from '../../api/_lib/seed.js'
-import { createLocalStore } from '../../api/_lib/store/local.js'
+import { seedCommunity } from '../../server/modules/articles/articles.seed.js'
+import { seedDemo } from '../../server/modules/demo/demo.seed.js'
+import { createLocalStore } from '../../server/infra/database/local/index.js'
 
 const freshStore = async () => createLocalStore({ file: join(await mkdtemp(join(tmpdir(), 'gd-community-seed-')), 'db.json') })
 const demoUser = (store) => store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })

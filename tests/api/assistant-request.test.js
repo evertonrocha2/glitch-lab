@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { parseAssistantRequest } from '../../api/_lib/assistant/request.js'
+import { parseAssistantRequest } from '../../server/modules/assistant/request.js'
 
 const ask = (content = 'What is my weak spot?') => ({ role: 'user', content })
 

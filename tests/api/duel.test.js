@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { MAX_FOCUS_EVENTS } from '../../api/_lib/duel/play.js'
+import { MAX_FOCUS_EVENTS } from '../../server/modules/duels/duels.service.js'
 import { GET, POST } from '../../api/challenge.js'
 import { GET as PROGRESS } from '../../api/progress.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'

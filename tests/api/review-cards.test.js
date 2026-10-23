@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { buildCard, changedLine, fixDistractors, nearMisses, poolSamples, publicCard, seededRandom } from '../../api/_lib/review/cards.js'
-import { POOL } from '../../api/_lib/puzzles/pool.js'
+import { buildCard, changedLine, fixDistractors, nearMisses, poolSamples, publicCard, seededRandom } from '../../server/modules/review/cards.js'
+import { POOL } from '../../server/modules/daily/puzzle-pool.js'
 import { REVIEW_CONCEPTS } from '../../shared/review.js'
 
 const OFF_BY_ONE = {

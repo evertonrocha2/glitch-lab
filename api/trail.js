@@ -1,14 +1,14 @@
 import { computeProgress } from '../shared/progress.js'
 import { trailSummary, trailView, trailViews } from '../shared/trails.js'
-import { generateJson } from './_lib/ai/index.js'
-import { clientDay, serverDay } from './_lib/days.js'
-import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { localeOf } from './_lib/locale.js'
-import { buildTrailPrompt, TRAIL_SCHEMA, trailSystem } from './_lib/prompts/trail.js'
-import { aiFailure, dailyLimitReached } from './_lib/responses.js'
-import { getStore } from './_lib/store/index.js'
-import { parseTrail, trailFacts } from './_lib/trails.js'
-import { takeAiCall } from './_lib/usage.js'
+import { generateJson } from '../server/infra/ai/index.js'
+import { clientDay, serverDay } from '../server/core/days.js'
+import { fail, ok, readJson, requireUser } from '../server/core/http.js'
+import { localeOf } from '../server/core/locale.js'
+import { buildTrailPrompt, TRAIL_SCHEMA, trailSystem } from '../server/modules/trails/trail.prompt.js'
+import { aiFailure, dailyLimitReached } from '../server/infra/ai/failure.js'
+import { getStore } from '../server/infra/database/index.js'
+import { parseTrail, trailFacts } from '../server/modules/trails/trails.model.js'
+import { takeAiCall } from '../server/infra/ai/quota.js'
 
 const HISTORY = 5
 

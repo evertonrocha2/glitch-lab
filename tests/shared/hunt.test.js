@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { codeKey, huntSnippetProblem } from '../../api/_lib/hunt/daily.js'
+import { codeKey, huntSnippetProblem } from '../../server/modules/hunt/hunt-daily.js'
 import { CONCEPTS } from '../../shared/concepts.js'
 import { BASE_POINTS, compareRuns, HUNT_ROUNDS, huntSummary, huntXp, MAX_HUNT_XP, MAX_SCORE, ROUND_MS, roundPoints, SPEED_POINTS } from '../../shared/hunt/game.js'
 import { HUNT_POOL } from '../../shared/hunt/snippets.js'

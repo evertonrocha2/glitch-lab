@@ -3,11 +3,11 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { parseProfile } from '../../api/_lib/profile.js'
-import { seedDemo } from '../../api/_lib/seed.js'
+import { parseProfile } from '../../server/modules/profile/profile.model.js'
+import { seedDemo } from '../../server/modules/demo/demo.seed.js'
 import { computeProgress } from '../../shared/progress.js'
 import { trailView } from '../../shared/trails.js'
-import { createLocalStore } from '../../api/_lib/store/local.js'
+import { createLocalStore } from '../../server/infra/database/local/index.js'
 
 const freshStore = async () => createLocalStore({ file: join(await mkdtemp(join(tmpdir(), 'gd-seed-')), 'db.json') })
 

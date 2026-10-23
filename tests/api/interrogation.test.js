@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET as getProgress } from '../../api/progress.js'
 import { GET, POST } from '../../api/hint.js'
-import { DAILY_AI_LIMIT } from '../../api/_lib/usage.js'
+import { DAILY_AI_LIMIT } from '../../server/infra/ai/quota.js'
 import { INTERROGATION_STEPS, INTERROGATION_XP } from '../../shared/interrogation.js'
 import { apiRequest, geminiAnswer, useTempStore } from './helpers.js'
 

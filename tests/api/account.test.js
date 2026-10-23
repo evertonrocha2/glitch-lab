@@ -2,9 +2,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET as listCases } from '../../api/cases.js'
 import { POST as auth } from '../../api/auth.js'
-import { POST as demo } from '../../api/_lib/handlers/demo.js'
-import { POST as login } from '../../api/_lib/handlers/login.js'
-import { POST as register } from '../../api/_lib/handlers/register.js'
+import { POST as demo } from '../../server/modules/auth/demo.js'
+import { POST as login } from '../../server/modules/auth/auth.service.js'
+import { POST as register } from '../../server/modules/auth/register.js'
 import { apiRequest, useTempStore } from './helpers.js'
 
 const send = (handler, path, body) => handler(apiRequest(path, { body, token: null }))

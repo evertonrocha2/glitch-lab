@@ -1,7 +1,7 @@
-import { ok, requireUser } from './_lib/http.js'
-import { localeOf } from './_lib/locale.js'
-import { seedDemo } from './_lib/seed.js'
-import { getStore } from './_lib/store/index.js'
+import { ok, requireUser } from '../server/core/http.js'
+import { localeOf } from '../server/core/locale.js'
+import { seedDemo } from '../server/modules/demo/demo.seed.js'
+import { getStore } from '../server/infra/database/index.js'
 
 export async function GET(request) {
   const auth = await requireUser(request)

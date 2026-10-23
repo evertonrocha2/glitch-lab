@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { CONTEXT_BUDGET, CONTEXT_LOADERS, loadContext } from '../../api/_lib/assistant/context.js'
-import { DATA_NEEDS } from '../../api/_lib/assistant/agents.js'
+import { CONTEXT_BUDGET, CONTEXT_LOADERS, loadContext } from '../../server/modules/assistant/context.js'
+import { DATA_NEEDS } from '../../server/modules/assistant/agents.js'
 import { useTempStore } from './helpers.js'
 import { CASE, challengeFor, SECRET } from './store-contract.js'
 

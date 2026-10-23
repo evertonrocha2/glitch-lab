@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe } from 'vitest'
-import { createSupabaseStore } from '../../api/_lib/store/supabase.js'
+import { createSupabaseStore } from '../../server/infra/database/supabase/index.js'
 import { storeContract } from './store-contract.js'
 
 // Runs against a real Supabase project only when test credentials are set; skipped otherwise.

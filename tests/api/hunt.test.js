@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { buildSet } from '../../api/_lib/hunt/daily.js'
+import { buildSet } from '../../server/modules/hunt/hunt-daily.js'
 import { GET, POST } from '../../api/challenge.js'
 import { ANSWER_GRACE_MS, BASE_POINTS, HUNT_ROUNDS, ROUND_MS, SPEED_POINTS } from '../../shared/hunt/game.js'
 import { HUNT_POOL } from '../../shared/hunt/snippets.js'

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest'
-import { buildRouterPrompt, parseRoute, ROUTER_SCHEMA, routeQuestion } from '../../api/_lib/assistant/router.js'
+import { buildRouterPrompt, parseRoute, ROUTER_SCHEMA, routeQuestion } from '../../server/modules/assistant/router.js'
 
 const ask = (content) => [{ role: 'user', content }]
 

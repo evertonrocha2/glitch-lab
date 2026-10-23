@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { CONCEPTS } from '../../shared/concepts.js'
-import { pickFromPool, POOL, poolEntryFor, poolText } from '../../api/_lib/puzzles/pool.js'
+import { pickFromPool, POOL, poolEntryFor, poolText } from '../../server/modules/daily/puzzle-pool.js'
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 

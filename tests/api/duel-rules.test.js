@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { buildResult, leftDuring, outcomeAt, phaseAt, scoreRound, timeline } from '../../api/_lib/duel/clock.js'
-import { DUEL_BUGS } from '../../api/_lib/duel/bugs.js'
-import { botPlan, buildRounds, OPTION_COUNT, optionsFor } from '../../api/_lib/duel/questions.js'
-import { POOL } from '../../api/_lib/puzzles/pool.js'
+import { buildResult, leftDuring, outcomeAt, phaseAt, scoreRound, timeline } from '../../server/modules/duels/clock.js'
+import { DUEL_BUGS } from '../../server/modules/duels/bugs.js'
+import { botPlan, buildRounds, OPTION_COUNT, optionsFor } from '../../server/modules/duels/questions.js'
+import { POOL } from '../../server/modules/daily/puzzle-pool.js'
 import { CONCEPTS } from '../../shared/concepts.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'
 import { languageById } from '../../shared/riddle/languages.js'

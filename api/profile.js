@@ -1,9 +1,9 @@
 import { handleProblem, normalizeHandle } from '../shared/profile.js'
-import { clientDay, serverDay } from './_lib/days.js'
-import { getUser } from './_lib/auth.js'
-import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { earnedIds, ownProfile, parseProfile, parseSearch, profileCard, publicProfile, SEARCH_MAX, summarize } from './_lib/profile.js'
-import { getStore } from './_lib/store/index.js'
+import { clientDay, serverDay } from '../server/core/days.js'
+import { getUser } from '../server/core/middlewares/auth.js'
+import { fail, ok, readJson, requireUser } from '../server/core/http.js'
+import { earnedIds, ownProfile, parseProfile, parseSearch, profileCard, publicProfile, SEARCH_MAX, summarize } from '../server/modules/profile/profile.model.js'
+import { getStore } from '../server/infra/database/index.js'
 
 const NOT_FOUND = 'No public profile here.'
 const SEARCH_RESULTS = 20

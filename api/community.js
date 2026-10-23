@@ -1,9 +1,9 @@
-import * as articles from './_lib/community/articles.js'
-import * as comments from './_lib/community/comments.js'
-import * as notifications from './_lib/community/notifications.js'
-import * as reactions from './_lib/community/reactions.js'
-import { fail } from './_lib/http.js'
-import { EVENT_RESOURCES } from './_lib/events/index.js'
+import * as articles from '../server/modules/articles/articles.service.js'
+import * as comments from '../server/modules/articles/comments.service.js'
+import * as notifications from '../server/modules/articles/notifications.service.js'
+import * as reactions from '../server/modules/articles/reactions.service.js'
+import { fail } from '../server/core/http.js'
+import { EVENT_RESOURCES } from '../server/modules/events/index.js'
 
 // Community articles in one function (Vercel's free plan allows 12): ?resource= picks the handler.
 const RESOURCES = { articles, comments, reactions, notifications }

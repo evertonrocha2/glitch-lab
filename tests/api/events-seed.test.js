@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import { eventStatus, VOTING_MS } from '../../shared/events.js'
-import { seedDemo } from '../../api/_lib/seed.js'
-import { createLocalStore } from '../../api/_lib/store/local.js'
+import { seedDemo } from '../../server/modules/demo/demo.seed.js'
+import { createLocalStore } from '../../server/infra/database/local/index.js'
 
 const freshStore = async () => createLocalStore({ file: join(await mkdtemp(join(tmpdir(), 'gd-events-seed-')), 'db.json') })
 const demoUser = (store) => store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })

@@ -3,8 +3,8 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { createLocalStore } from '../../api/_lib/store/local.js'
-import { DAILY_AI_LIMIT, takeAiCall } from '../../api/_lib/usage.js'
+import { createLocalStore } from '../../server/infra/database/local/index.js'
+import { DAILY_AI_LIMIT, takeAiCall } from '../../server/infra/ai/quota.js'
 
 const alice = { id: 'alice', email: 'alice@dev.local', isDemo: false }
 const demo = { id: 'demo', email: 'demo@dev.local', isDemo: true }

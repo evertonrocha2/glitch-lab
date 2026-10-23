@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { languageRule, localeOf } from '../../api/_lib/locale.js'
+import { languageRule, localeOf } from '../../server/core/locale.js'
 
 const withLanguage = (value) => new Request('http://localhost/api/x', { headers: value ? { 'Accept-Language': value } : {} })
 

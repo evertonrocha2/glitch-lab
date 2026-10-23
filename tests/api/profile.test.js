@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GET, PUT } from '../../api/profile.js'
-import { createToken } from '../../api/_lib/auth/session.js'
+import { createToken } from '../../server/infra/security/session.js'
 import { apiRequest, useTempStore } from './helpers.js'
 import { ABOUT, CASE, challengeFor, EMPTY_ABOUT, SECRET } from './store-contract.js'
 

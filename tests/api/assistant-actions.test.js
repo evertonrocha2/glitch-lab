@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { validateActions } from '../../api/_lib/assistant/actions.js'
+import { validateActions } from '../../server/modules/assistant/actions.js'
 import { useTempStore } from './helpers.js'
 import { CASE, challengeFor, SECRET } from './store-contract.js'
 

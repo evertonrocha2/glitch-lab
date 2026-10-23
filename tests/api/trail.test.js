@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { parseTrail } from '../../api/_lib/trails.js'
+import { parseTrail } from '../../server/modules/trails/trails.model.js'
 import { GET, POST, PUT } from '../../api/trail.js'
 import { apiRequest, geminiAnswer, useTempStore } from './helpers.js'
 import { CASE, challengeFor, SECRET } from './store-contract.js'

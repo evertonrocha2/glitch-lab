@@ -1,6 +1,6 @@
-import { fail, ok, readJson, requireUser } from './_lib/http.js'
-import { answerInterrogation, getInterrogation } from './_lib/interrogation/handler.js'
-import { getStore } from './_lib/store/index.js'
+import { fail, ok, readJson, requireUser } from '../server/core/http.js'
+import { answerInterrogation, getInterrogation } from '../server/modules/interrogation/interrogation.service.js'
+import { getStore } from '../server/infra/database/index.js'
 
 // ?mode=interrogate is the guided debugging coach (see _lib/interrogation/handler.js). It shares this
 // function to stay under Vercel's free-plan limit.

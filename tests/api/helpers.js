@@ -2,8 +2,8 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { vi } from 'vitest'
-import { createToken } from '../../api/_lib/auth/session.js'
-import { getStore, resetStore } from '../../api/_lib/store/index.js'
+import { createToken } from '../../server/infra/security/session.js'
+import { getStore, resetStore } from '../../server/infra/database/index.js'
 
 // Points the API at a fresh JSON store in a temp folder and returns it.
 export async function useTempStore() {

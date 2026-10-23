@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from 'vitest'
-import { hashPassword, verifyPassword } from '../../api/_lib/auth/password.js'
-import { createToken, SESSION_DAYS, verifyToken } from '../../api/_lib/auth/session.js'
-import { credentialsProblem } from '../../api/_lib/accounts.js'
+import { hashPassword, verifyPassword } from '../../server/infra/security/password.js'
+import { createToken, SESSION_DAYS, verifyToken } from '../../server/infra/security/session.js'
+import { credentialsProblem } from '../../server/modules/auth/credentials.js'
 
 const ALICE = { id: 'alice', email: 'alice@test.dev', isDemo: false }
 

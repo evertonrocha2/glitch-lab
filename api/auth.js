@@ -1,7 +1,7 @@
-import { POST as demo } from './_lib/handlers/demo.js'
-import { POST as login } from './_lib/handlers/login.js'
-import { POST as register } from './_lib/handlers/register.js'
-import { fail } from './_lib/http.js'
+import { POST as demo } from '../server/modules/auth/demo.js'
+import { POST as login } from '../server/modules/auth/auth.service.js'
+import { POST as register } from '../server/modules/auth/register.js'
+import { fail } from '../server/core/http.js'
 
 // One function for sign in, sign up and the demo account: Vercel's free plan allows 12 functions.
 const ACTIONS = { login, register, demo }

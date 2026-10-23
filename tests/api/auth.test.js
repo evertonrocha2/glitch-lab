@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { getUser } from '../../api/_lib/auth.js'
-import { createToken } from '../../api/_lib/auth/session.js'
-import { requireUser } from '../../api/_lib/http.js'
+import { getUser } from '../../server/core/middlewares/auth.js'
+import { createToken } from '../../server/infra/security/session.js'
+import { requireUser } from '../../server/core/http.js'
 
 const withToken = (token) =>
   new Request('http://localhost/api/cases', { headers: token ? { Authorization: `Bearer ${token}` } : {} })

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { MAX_STUDY_SECONDS_PER_DAY } from '../../api/_lib/handlers/study.js'
+import { MAX_STUDY_SECONDS_PER_DAY } from '../../server/modules/progress/study.service.js'
 import { POST } from '../../api/progress.js'
 import { apiRequest, useTempStore } from './helpers.js'
 

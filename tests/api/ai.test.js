@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { AiError, generateJson } from '../../api/_lib/ai/index.js'
+import { AiError, generateJson } from '../../server/infra/ai/index.js'
 import { neverAnswers } from './helpers.js'
 
 const ARGS = { system: 'be nice', prompt: 'explain', schema: { type: 'OBJECT' } }

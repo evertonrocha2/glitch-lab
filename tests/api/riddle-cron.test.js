@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { giveawayIn } from '../../api/_lib/riddle/clues.js'
-import { answersFor, datasetPayload } from '../../api/_lib/riddle/schedule.js'
+import { giveawayIn } from '../../server/modules/glitchdle/clues.js'
+import { answersFor, datasetPayload } from '../../server/modules/glitchdle/schedule.js'
 import { GET } from '../../api/challenge.js'
 import { languageById } from '../../shared/riddle/languages.js'
 import { apiRequest, geminiAnswer, useTempStore } from './helpers.js'

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { answersFor, datasetPayload } from '../../api/_lib/riddle/schedule.js'
+import { answersFor, datasetPayload } from '../../server/modules/glitchdle/schedule.js'
 import { GET, POST } from '../../api/challenge.js'
 import { MAX_GUESSES } from '../../shared/riddle/game.js'
 import { LANGUAGES } from '../../shared/riddle/languages.js'

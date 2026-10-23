@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { pickFromPool } from '../../api/_lib/puzzles/pool.js'
+import { pickFromPool } from '../../server/modules/daily/puzzle-pool.js'
 import { GET } from '../../api/challenge.js'
 import { apiRequest, geminiAnswer, useTempStore } from './helpers.js'
 import { AI_PUZZLE } from './puzzle-fixtures.js'

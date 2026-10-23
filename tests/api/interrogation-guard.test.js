@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { fixLines, guardReply, revealsFix } from '../../api/_lib/interrogation/guard.js'
+import { fixLines, guardReply, revealsFix } from '../../server/modules/interrogation/guard.js'
 
 const CODE = 'const user = {}\nconsole.log(user.name.length)'
 const FIX = 'Check that user.name exists first:\nif (user.name) console.log(user.name.length)'

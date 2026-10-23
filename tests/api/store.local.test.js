@@ -3,7 +3,7 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { createLocalStore } from '../../api/_lib/store/local.js'
+import { createLocalStore } from '../../server/infra/database/local/index.js'
 import { CASE, storeContract } from './store-contract.js'
 
 const tempFile = async () => join(await mkdtemp(join(tmpdir(), 'gd-store-')), 'db.json')

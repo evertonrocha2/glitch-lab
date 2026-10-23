@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { parseAnalysis } from '../../api/_lib/analysis.js'
-import { RESPONSE_SCHEMA } from '../../api/_lib/prompts/analyze.js'
+import { parseAnalysis } from '../../server/modules/cases/analysis.js'
+import { RESPONSE_SCHEMA } from '../../server/modules/cases/analyze.prompt.js'
 import { CONCEPTS, conceptLabel } from '../../shared/concepts.js'
 
 const ANALYSIS = { explicacao: 'a', causa: 'b', correcao: 'c', exercicio: { enunciado: 'd', resposta: 'e' } }

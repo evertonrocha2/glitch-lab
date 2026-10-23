@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { errorProblem, giveawayIn } from '../../api/_lib/riddle/clues.js'
+import { errorProblem, giveawayIn } from '../../server/modules/glitchdle/clues.js'
 import {
   ATTRIBUTES,
   DOMAINS,

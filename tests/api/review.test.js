@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { pickFromPool, POOL } from '../../api/_lib/puzzles/pool.js'
+import { pickFromPool, POOL } from '../../server/modules/daily/puzzle-pool.js'
 import { GET, POST } from '../../api/progress.js'
 import { REVIEW_XP, REVIEW_XP_CARDS_PER_DAY } from '../../shared/review.js'
 import { apiRequest, useTempStore } from './helpers.js'

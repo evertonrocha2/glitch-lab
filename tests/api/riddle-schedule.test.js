@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest'
-import { answersFor, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../api/_lib/riddle/schedule.js'
+import { answersFor, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../server/modules/glitchdle/schedule.js'
 import { addDays } from '../../shared/daily.js'
 import { LAUNCH_DAY, MODES } from '../../shared/riddle/game.js'
 import { languageById } from '../../shared/riddle/languages.js'
