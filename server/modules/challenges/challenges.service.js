@@ -1,5 +1,6 @@
 import { conceptLabel } from '../../../shared/concepts.js'
 import { LIMITS } from '../../../shared/limits.js'
+import { isQuestion } from '../../../shared/question.js'
 import { AppError, badRequest, conflict, notFound } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
@@ -19,6 +20,15 @@ function parseVerdict(data) {
   return { passed: data.passed, feedback: data.feedback }
 }
 
+// A doubt not tied to one language still needs code to train on: JavaScript, the one most
+// students meet first.
+const QUESTION_FALLBACK_LANGUAGE = 'javascript'
+const challengeLanguage = (kase) => (isQuestion(kase) && (!kase.language || kase.language === 'unknown') ? QUESTION_FALLBACK_LANGUAGE : kase.language)
+
+// What a question case trains: its topic, the doubt as asked and the card's summary.
+const questionOf = (kase) =>
+  isQuestion(kase) ? { topic: kase.topic || conceptLabel(kase.concept), question: kase.question, summary: kase.analysis.explicacao, conceptName: kase.concept === 'other' ? null : conceptLabel(kase.concept) } : null
+
 // Starts a gym challenge for one of my cases, or resumes the open one (no AI call, no quota).
 // { challenge, created }: created tells a new challenge (201) from the open one (200).
 export async function startChallenge({ store, ai }, user, body, locale) {
@@ -30,17 +40,18 @@ export async function startChallenge({ store, ai }, user, body, locale) {
   if (open) return { challenge: toPublicChallenge(open, kase.concept), created: false }
 
   await spendAiCall(store, user)
+  const language = challengeLanguage(kase)
   // Hints and the bug explanation in the reader's language; the symptom stays the real error text.
   const parsed = await withAi(async () => {
     const answer = await ai.generateJson({
       system: challengeSystem(locale),
-      prompt: buildChallengePrompt({ conceptName: conceptLabel(kase.concept), language: kase.language, error: kase.error, why: kase.analysis.causa }, locale),
+      prompt: buildChallengePrompt({ conceptName: conceptLabel(kase.concept), language, error: kase.error, why: kase.analysis.causa, question: questionOf(kase) }, locale),
       schema: CHALLENGE_SCHEMA,
     })
     return parseChallenge(answer)
   })
 
-  const record = await store.createChallenge(user.id, { caseId: kase.id, language: kase.language, ...parsed.challenge }, parsed.secret)
+  const record = await store.createChallenge(user.id, { caseId: kase.id, language, ...parsed.challenge }, parsed.secret)
   if (kase.status === 'new') await store.updateCase(user.id, kase.id, { status: 'training' })
   return { challenge: toPublicChallenge(record, kase.concept), created: true }
 }
