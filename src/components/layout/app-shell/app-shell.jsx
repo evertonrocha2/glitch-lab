@@ -36,11 +36,11 @@ export default function AppShell({ children }) {
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <AssistantButton />
             <NotificationBell />
-            <Link to="/profile" aria-label={t('app.shell.profile')} className="block shrink-0 transition-transform hover:-translate-y-0.5">
+            <Link to="/profile" aria-label={t('app.shell.profile')} className="flex shrink-0 transition-transform hover:-translate-y-0.5">
               {avatar ? (
                 <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-10" />
               ) : (
-                <span aria-hidden="true" className="block size-10 border-2 border-ink bg-mist" />
+                <span aria-hidden="true" className="block size-10 border-2 border-ink bg-line motion-safe:animate-skeleton" />
               )}
             </Link>
             {/* Phones show just an exit icon; the name stays "Sign out". */}
@@ -82,13 +82,18 @@ export default function AppShell({ children }) {
               </NavLink>
               <NavLink to="/progress" className={navClass}>
                 {t('app.nav.progress')}{' '}
-                {progress && (
+                {progress ? (
                   <>
                     <span aria-hidden="true" className="bg-secondary px-1 py-0.5 text-[10px] leading-none text-white">
                       {t('app.nav.levelChip', { level: progress.level })}
                     </span>
                     <span className="sr-only">{t('app.nav.levelSr', { level: progress.level })}</span>
                   </>
+                ) : (
+                  // Until the level loads, a gray chip of the same size holds its place in the row.
+                  <span aria-hidden="true" className="bg-line px-1 py-0.5 text-[10px] leading-none text-transparent motion-safe:animate-skeleton">
+                    {t('app.nav.levelChip', { level: 1 })}
+                  </span>
                 )}
               </NavLink>
               </nav>
