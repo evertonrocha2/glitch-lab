@@ -7,6 +7,7 @@ import CaseDrawer from '../components/board/CaseDrawer.jsx'
 import ErrorForm from '../components/ErrorForm.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import ExportMenu from '../components/notes/ExportMenu.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import Working from '../components/pixel/Working.jsx'
@@ -180,24 +181,22 @@ export default function BoardPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="font-label text-xs text-secondary">
-            {t('board.page.prompt')}
-            <span className="motion-safe:animate-caret">_</span>
-          </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('board.page.title')}</h1>
-          <p className="mt-2 text-muted">{t('board.page.lead')}</p>
-        </div>
-        {hasCases && !investigating && (
-          <div className="flex flex-wrap gap-3">
-            <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
-            <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
-              {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
-            </PixelButton>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        kicker={t('board.page.prompt')}
+        title={t('board.page.title')}
+        lead={t('board.page.lead')}
+        actions={
+          hasCases &&
+          !investigating && (
+            <>
+              <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
+              <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+                {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
+              </PixelButton>
+            </>
+          )
+        }
+      />
 
       {showForm && (
         <PixelCard className="mt-8 p-5 sm:p-6">
@@ -223,7 +222,7 @@ export default function BoardPage() {
         </div>
       )}
 
-      <div className="mt-12">
+      <div className="mt-8">
         {cases === null && (
           <p role="status" className="font-label text-xs text-muted">
             {t('board.page.loading')}
