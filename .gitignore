@@ -8,3 +8,6 @@ docs/superpowers/
 .data/
 .claude/settings.local.json
 .claude/worktrees/
+
+# Temporary local screenshot helpers (they log into the demo); never ship them.
+public/__*
