@@ -5,6 +5,7 @@ import AppShell from '../components/AppShell.jsx'
 import Leaderboard from '../components/daily/Leaderboard.jsx'
 import PuzzleCard, { PuzzleStatus, PuzzleTags, StartButton, xpFor } from '../components/daily/PuzzleCard.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatCountdown } from '../lib/daily.js'
@@ -26,7 +27,7 @@ function GlobalChallenge({ data, now, onStart, starting }) {
   const { day } = useFormat()
   const { puzzle, solvedCount, leaderboard, you } = data
   return (
-    <section aria-labelledby="global-title" className="mt-16">
+    <section aria-labelledby="global-title" className="mt-14">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="font-label text-xs text-secondary">{t('board.global.week', { date: day(data.week, { month: 'short', day: 'numeric' }) })}</p>
@@ -81,7 +82,7 @@ function GlitchdleTeaser({ day }) {
   return (
     <Link
       to="/glitchdle"
-      className="group mt-10 flex items-center gap-4 border-2 border-ink bg-white p-4 shadow-pixel transition-transform hover:-translate-y-0.5 sm:max-w-xl sm:gap-5 sm:p-5"
+      className="group order-last flex items-center gap-4 border-2 border-ink bg-white p-4 shadow-pixel transition-transform hover:-translate-y-0.5 sm:gap-5 sm:p-5 lg:order-none"
     >
       <span aria-hidden="true" className="grid size-14 shrink-0 grid-cols-3 gap-[2px] border-2 border-ink bg-ink">
         {TEASER_CELLS.map((color, index) => (
@@ -166,30 +167,25 @@ export default function DailyPage() {
 
   return (
     <AppShell>
-      <p className="font-label text-xs text-secondary">
-        {t('board.daily.prompt')}
-        <span className="motion-safe:animate-caret">_</span>
-      </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('board.daily.title')}</h1>
-      <p className="mt-2 max-w-2xl text-muted">
-        {t('board.daily.lead')}
-      </p>
+      <PageHeader kicker={t('board.daily.prompt')} title={t('board.daily.title')} lead={t('board.daily.lead')} />
 
       {message && (
-        <div className="mt-6">
+        <div className="mt-8">
           <ErrorNotice message={message} />
         </div>
       )}
 
       {!daily && !message && (
-        <p role="status" className="mt-10 font-label text-xs text-muted">
+        <p role="status" className="mt-8 font-label text-xs text-muted">
           {t('board.daily.loading')}
         </p>
       )}
 
       {daily && (
-        <>
-          <ul aria-label={t('board.daily.summary')} className="mt-8 grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink sm:max-w-xl">
+        // Desktop: today's counters and the Glitchdle side by side, over the three cases.
+        // Phones: the counters, then the cases, then the Glitchdle.
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
+          <ul aria-label={t('board.daily.summary')} className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink">
             {[
               { label: t('board.daily.streak'), value: `${daily.streak}d`, tone: 'text-primary', note: t('board.daily.streakNote') },
               { label: t('board.daily.today'), value: `${solvedToday}/${daily.puzzles.length}`, tone: 'text-secondary', note: t('board.daily.todayNote') },
@@ -203,16 +199,16 @@ export default function DailyPage() {
             ))}
           </ul>
 
-          <ul aria-label={t('board.daily.list')} className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3">
+          <GlitchdleTeaser day={daily.day} />
+
+          <ul aria-label={t('board.daily.list')} className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3 lg:col-span-2">
             {daily.puzzles.map((puzzle) => (
               <li key={puzzle.id}>
                 <PuzzleCard puzzle={puzzle} onStart={start} busy={starting !== null} />
               </li>
             ))}
           </ul>
-
-          <GlitchdleTeaser day={daily.day} />
-        </>
+        </div>
       )}
 
       {global && <GlobalChallenge data={global} now={now} onStart={start} starting={starting} />}
