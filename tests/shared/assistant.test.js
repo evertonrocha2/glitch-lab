@@ -40,3 +40,9 @@ it('suggests prompts for every kind of page', () => {
   expect(SUGGESTIONS.board).toContain('What is my weak spot?')
   expect(SUGGESTIONS.gym).toContain('Give me a hint without spoiling it')
 })
+
+it('understands Portuguese keywords too', () => {
+  expect(pickSpecialists('O que posso fazer aqui?', { path: '/board' })).toEqual(['guide'])
+  expect(pickSpecialists('Me dá uma dica do desafio', { path: '/board' })).toEqual(['gym'])
+  expect(pickSpecialists('Resuma minhas notas', { path: '/board' })).toEqual(['notes'])
+})

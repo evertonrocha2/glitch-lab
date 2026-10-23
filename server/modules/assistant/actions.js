@@ -20,9 +20,26 @@ const DEFAULT_LABELS = {
     go: 'Ir para lá',
   },
 }
-// Pages an answer may send the student to. Gym pages are checked against the student's challenges.
-const PAGES = ['/board', '/notes', '/progress', '/trail']
+// Pages an answer may send the student to. Gym and interrogation pages are checked against the
+// student's own challenges and cases.
+export const GO_PAGES = [
+  '/board',
+  '/notes',
+  '/trail',
+  '/progress',
+  '/daily',
+  '/glitchdle',
+  '/hunt',
+  '/duel',
+  '/articles',
+  '/articles/new',
+  '/events',
+  '/events/new',
+  '/profile',
+  '/people',
+]
 const GYM_PAGE = /^\/gym\/([\w-]{1,64})$/
+const INTERROGATE_PAGE = /^\/interrogate\/([\w-]{1,64})$/
 
 const isId = (value) => typeof value === 'string' && value !== '' && value.length <= 64
 
@@ -39,9 +56,11 @@ async function resolve(store, userId, { type, target }) {
     case 'start_timer':
       return { target: '' }
     case 'go': {
-      if (PAGES.includes(target)) return { target, href: target }
+      if (GO_PAGES.includes(target)) return { target, href: target }
       const gym = typeof target === 'string' ? GYM_PAGE.exec(target) : null
-      return gym && (await store.getChallenge(userId, gym[1])) ? { target, href: target } : null
+      if (gym) return (await store.getChallenge(userId, gym[1])) ? { target, href: target } : null
+      const interrogate = typeof target === 'string' ? INTERROGATE_PAGE.exec(target) : null
+      return interrogate && (await store.getCase(userId, interrogate[1])) ? { target, href: target } : null
     }
     default:
       return null

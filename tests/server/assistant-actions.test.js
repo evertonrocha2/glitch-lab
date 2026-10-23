@@ -81,3 +81,17 @@ it('keeps at most three, skips repeats and shortens labels', async () => {
 it('accepts a missing list', async () => {
   expect(await check(undefined)).toEqual([])
 })
+
+it('links to every page the guide talks about, and to interrogations of my own cases only', async () => {
+  const actions = await check([
+    { type: 'go', target: '/hunt', label: 'Hunt' },
+    { type: 'go', target: `/interrogate/${theirs.id}`, label: 'x' },
+    { type: 'go', target: `/interrogate/${mine.id}`, label: 'Interrogate it' },
+    { type: 'go', target: '/profile', label: 'Profile' },
+  ])
+  expect(actions).toEqual([
+    { type: 'go', target: '/hunt', label: 'Hunt', href: '/hunt' },
+    { type: 'go', target: `/interrogate/${mine.id}`, label: 'Interrogate it', href: `/interrogate/${mine.id}` },
+    { type: 'go', target: '/profile', label: 'Profile', href: '/profile' },
+  ])
+})

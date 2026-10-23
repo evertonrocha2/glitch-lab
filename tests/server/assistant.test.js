@@ -192,3 +192,33 @@ it('says which specialist could not answer in Portuguese', async () => {
   const body = await (await ask('como uso meu board?', undefined, { locale: 'pt-BR' })).json()
   expect(body.steps).toContain('Analista do board não conseguiu responder desta vez')
 })
+
+it('answers "what can I do here?" on the profile page with the guide, which gets that page first', async () => {
+  answerAs({
+    router: { specialists: [{ name: 'guide', needs: ['app_guide'], focus: 'the profile page' }] },
+    'App guide': {
+      reply: 'Aqui você edita seu perfil. Escolha um handle e deixe o perfil público.',
+      actions: [{ type: 'go', target: '/people', label: 'Ver pessoas' }],
+    },
+  })
+  const res = await ask('O que posso fazer aqui?', { path: '/profile' }, { locale: 'pt-BR' })
+  const body = await res.json()
+  expect(res.status).toBe(200)
+  expect(body.agents).toEqual(['guide'])
+  expect(body.actions).toEqual([{ type: 'go', target: '/people', label: 'Ver pessoas', href: '/people' }])
+
+  const [router, guide] = sent()
+  expect(promptOf(router)).toContain('Current page: /profile (Your profile)')
+  expect(promptOf(guide)).toContain('Current page: /profile (Your profile)')
+  expect(promptOf(guide)).toContain('The student is on this page now. Your profile:')
+  expect(promptOf(guide)).toContain('Make my profile public')
+  expect(systemOf(guide)).toContain('never say you could not find it')
+  expect(systemOf(guide)).toMatch(/Brazilian Portuguese/)
+})
+
+it('sends a profile-page question to the guide by keywords when the router fails', async () => {
+  answerAs({ router: geminiAnswer('not json'), 'App guide': { reply: 'Aqui você edita seu perfil.', actions: [] } })
+  const body = await (await ask('O que posso fazer aqui?', { path: '/profile' }, { locale: 'pt-BR' })).json()
+  expect(body.agents).toEqual(['guide'])
+  expect(promptOf(sent()[1])).toContain('The student is on this page now. Your profile:')
+})

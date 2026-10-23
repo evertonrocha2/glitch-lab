@@ -24,13 +24,13 @@ export function pageKind(path) {
 // The specialist that knows the page the student is looking at.
 const PAGE_SPECIALIST = { board: 'board', gym: 'gym', notes: 'notes', progress: 'study', other: 'guide' }
 
-// Word starts, so "hint" also matches "hints" and "spoil" matches "spoiling".
+// Word starts, so "hint" also matches "hints" and "spoil" matches "spoiling". English, then Portuguese.
 const KEYWORDS = {
-  board: ['case', 'board', 'bug', 'error', 'weak', 'explain', 'why', 'concept', 'typeerror', 'undefined'],
-  gym: ['gym', 'challenge', 'hint', 'exercise', 'train', 'stuck', 'spoil', 'attempt'],
-  notes: ['note', 'notebook', 'summar', 'wrote', 'write'],
-  study: ['xp', 'level', 'streak', 'badge', 'progress', 'plan', 'minute', 'hour', 'study', 'timer', 'next'],
-  guide: ['how do', 'how can', 'how to', 'where', 'shortcut', 'feature', 'export', 'button', 'page', 'app'],
+  board: ['case', 'board', 'bug', 'error', 'weak', 'explain', 'why', 'concept', 'typeerror', 'undefined', 'caso', 'erro', 'ponto fraco', 'explic'],
+  gym: ['gym', 'challenge', 'hint', 'exercise', 'train', 'stuck', 'spoil', 'attempt', 'desafio', 'dica', 'exerc', 'trein', 'travad'],
+  notes: ['note', 'notebook', 'summar', 'wrote', 'write', 'nota', 'anota', 'resum', 'escrev'],
+  study: ['xp', 'level', 'streak', 'badge', 'progress', 'plan', 'minute', 'hour', 'study', 'timer', 'next', 'nível', 'sequência', 'conquista', 'planej', 'minuto', 'estud', 'cronômetro', 'próxim'],
+  guide: ['how do', 'how can', 'how to', 'where', 'shortcut', 'feature', 'export', 'button', 'page', 'app', 'what can i', 'como uso', 'como faço', 'onde', 'atalho', 'botão', 'página', 'aqui', 'o que posso'],
 }
 
 // Used when the router agent fails, and by the panel to guess who is working while it waits.

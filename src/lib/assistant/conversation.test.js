@@ -24,6 +24,7 @@ it('describes the page for the API', () => {
   expect(pageFromLocation('/gym/ch1', null)).toEqual({ path: '/gym/ch1', challengeId: 'ch1' })
   expect(pageFromLocation('/notes/n1', null)).toEqual({ path: '/notes/n1', noteId: 'n1' })
   expect(pageFromLocation('/notes', null)).toEqual({ path: '/notes' })
+  expect(pageFromLocation('/interrogate/c7', null)).toEqual({ path: '/interrogate/c7', caseId: 'c7' })
 })
 
 it('splits a reply into paragraphs, lists and code blocks', () => {

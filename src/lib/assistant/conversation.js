@@ -32,8 +32,10 @@ export function pageFromLocation(pathname, focus) {
   const page = { path: pathname }
   const gym = /^\/gym\/([^/]+)$/.exec(pathname)
   const note = /^\/notes\/([^/]+)$/.exec(pathname)
+  const interrogation = /^\/interrogate\/([^/]+)$/.exec(pathname)
   if (gym) page.challengeId = gym[1]
   if (note) page.noteId = note[1]
+  if (interrogation) page.caseId = interrogation[1]
   if (focus?.caseId) page.caseId = focus.caseId
   return page
 }
