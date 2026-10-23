@@ -16,6 +16,11 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
+      # OpenRouter first, Gemini when it fails (no credits, outage): see server/infra/ai/index.js.
+      - key: AI_PROVIDER
+        value: openrouter,gemini
+      - key: OPENROUTER_MODEL
+        value: anthropic/claude-haiku-5.5
       - key: GEMINI_MODEL
         value: gemini-3.8-flash
       - key: AUTH_SECRET
@@ -24,6 +29,8 @@ services:
         generateValue: true
       # The same value as the GitHub secret CRON_SECRET, so only the daily workflow can run the cron.
       - key: CRON_SECRET
+        sync: false
+      - key: OPENROUTER_API_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false

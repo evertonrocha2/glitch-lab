@@ -33,6 +33,6 @@ export function checkEnv() {
   if (!env.authSecret) result.errors.push('AUTH_SECRET is not set')
   if (!env.supabase) result.errors.push('No database configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
   if (!env.cronSecret) result.warnings.push('CRON_SECRET is not set, so the daily cron is refused')
-  if (!process.env.GEMINI_API_KEY) result.warnings.push('GEMINI_API_KEY is not set, so every AI feature answers 500')
+  if (!process.env.GEMINI_API_KEY && !process.env.OPENROUTER_API_KEY) result.warnings.push('No AI key is set (GEMINI_API_KEY or OPENROUTER_API_KEY), so every AI feature answers 500')
   return result
 }
