@@ -535,3 +535,133 @@ create index if not exists hunt_runs_day on public.hunt_runs (day) where finishe
 
 alter table public.hunt_days enable row level security;
 alter table public.hunt_runs enable row level security;
+
+-- Direct messages (1:1) and communities. "if not exists" so this block can run again on a database
+-- that already has the rest. The API checks every rule (membership, blocks, limits, demo accounts);
+-- the checks here only cap sizes. Realtime only carries "changed" nudges, never a message.
+-- Who can start a conversation with me.
+alter table public.users add column if not exists allow_messages text not null default 'everyone' check (allow_messages in ('everyone', 'nobody'));
+
+-- One conversation per pair of people: pair_key is both user ids, sorted, joined with ':'.
+-- The last message is copied here so the inbox is one query.
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  pair_key text not null unique,
+  member_ids uuid[] not null,
+  last_message_at timestamptz,
+  last_sender_id uuid references public.users (id) on delete set null,
+  last_message_body text,
+  created_at timestamptz not null default now()
+);
+
+-- One row per person in a conversation: their unread mark and when they last read it.
+-- last_message_at is copied from the conversation so the inbox sorts on this table's index.
+create table if not exists public.conversation_members (
+  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  last_read_at timestamptz,
+  unread boolean not null default false,
+  last_message_at timestamptz,
+  primary key (conversation_id, user_id)
+);
+create index if not exists conversation_members_inbox on public.conversation_members (user_id, last_message_at desc) where last_message_at is not null;
+create index if not exists conversation_members_unread on public.conversation_members (user_id) where unread;
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations (id) on delete cascade,
+  sender_id uuid not null references public.users (id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists messages_conversation_created on public.messages (conversation_id, created_at desc);
+
+create table if not exists public.communities (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique check (slug ~ '^[a-z0-9][a-z0-9-]{1,47}$'),
+  name text not null check (char_length(name) between 3 and 40),
+  description text not null default '' check (char_length(description) <= 300),
+  topics text[] not null default '{}',
+  color text not null default 'violet',
+  icon text not null default 'bug',
+  is_private boolean not null default false,
+  owner_id uuid not null references public.users (id) on delete cascade,
+  member_count int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists communities_popular on public.communities (member_count desc, created_at desc);
+create index if not exists communities_owner on public.communities (owner_id);
+create index if not exists communities_topics on public.communities using gin (topics);
+
+-- role 'removed': the owner took this person out, and joining again is refused.
+create table if not exists public.community_members (
+  community_id uuid not null references public.communities (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  role text not null default 'member' check (role in ('owner', 'member', 'removed')),
+  joined_at timestamptz not null default now(),
+  primary key (community_id, user_id)
+);
+create index if not exists community_members_user on public.community_members (user_id, joined_at desc);
+create index if not exists community_members_list on public.community_members (community_id, joined_at);
+
+create table if not exists public.community_messages (
+  id uuid primary key default gen_random_uuid(),
+  community_id uuid not null references public.communities (id) on delete cascade,
+  sender_id uuid not null references public.users (id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists community_messages_created on public.community_messages (community_id, created_at desc);
+
+-- A block hides and forbids DMs both ways.
+create table if not exists public.blocks (
+  blocker_id uuid not null references public.users (id) on delete cascade,
+  blocked_id uuid not null references public.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  check (blocker_id <> blocked_id)
+);
+create index if not exists blocks_blocked on public.blocks (blocked_id);
+
+-- Reported messages, kept for review with a copy of the text (the message may be deleted later).
+-- message_id points at messages or community_messages (by kind), so it has no foreign key.
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.users (id) on delete cascade,
+  reported_user_id uuid references public.users (id) on delete set null,
+  kind text not null check (kind in ('dm', 'community')),
+  message_id uuid not null,
+  reason text not null check (reason in ('spam', 'harassment', 'inappropriate', 'other')),
+  note text not null default '' check (char_length(note) <= 300),
+  snapshot text not null default '',
+  status text not null default 'open' check (status in ('open', 'reviewed')),
+  created_at timestamptz not null default now(),
+  unique (reporter_id, kind, message_id)
+);
+create index if not exists reports_open on public.reports (created_at desc) where status = 'open';
+
+alter table public.conversations enable row level security;
+alter table public.conversation_members enable row level security;
+alter table public.messages enable row level security;
+alter table public.communities enable row level security;
+alter table public.community_members enable row level security;
+alter table public.community_messages enable row level security;
+alter table public.blocks enable row level security;
+alter table public.reports enable row level security;
+
+create or replace function public.refresh_community_member_count(p_community uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.communities c
+  set member_count = (select count(*) from public.community_members m where m.community_id = c.id and m.role in ('owner', 'member'))
+  where c.id = p_community;
+$$;
+revoke execute on function public.refresh_community_member_count(uuid) from public, anon, authenticated;
+
+-- "Ada sent you a message" in the bell.
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications add constraint notifications_type_check
+  check (type in ('comment', 'like', 'rating_valid', 'rating_bad', 'event_join', 'event_vote', 'event_winner', 'message'));

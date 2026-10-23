@@ -16,6 +16,8 @@ import { profileRoutes } from './modules/profile/profile.routes.js'
 import { progressRoutes } from './modules/progress/progress.routes.js'
 import { reviewRoutes } from './modules/review/review.routes.js'
 import { trailsRoutes } from './modules/trails/trails.routes.js'
+import { communitiesRoutes } from './modules/communities/communities.routes.js'
+import { messagesRoutes } from './modules/messages/messages.routes.js'
 
 // Every feature module's router, all under /api. Each one names its own paths in full.
 export function apiRouter() {
@@ -36,6 +38,8 @@ export function apiRouter() {
     articlesRoutes,
     eventsRoutes,
     assistantRoutes,
+    messagesRoutes,
+    communitiesRoutes,
     cronRoutes,
   )
 }

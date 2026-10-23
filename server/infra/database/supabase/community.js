@@ -172,7 +172,13 @@ export function createSupabaseCommunity(db) {
     // A like or rating is announced once per person and article; null when it already was.
     // Event notifications (event_*) point at an event instead, and are announced once the same way.
     async addNotification({ userId, type, actorId, articleId = null, eventId = null }) {
-      if (type !== 'comment') {
+      if (type === 'message') {
+        // A new message is announced once until it's read, so a chat doesn't fill the bell.
+        const waiting = unwrap(
+          await db.from('notifications').select('id').eq('user_id', userId).eq('type', type).eq('actor_id', actorId).eq('read', false).limit(1),
+        )
+        if (waiting?.length) return null
+      } else if (type !== 'comment') {
         const target = (query) => (eventId ? query.eq('event_id', eventId) : query.eq('article_id', articleId))
         const seen = unwrap(
           await target(db.from('notifications').select('id').eq('user_id', userId).eq('type', type).eq('actor_id', actorId)).limit(1),

@@ -186,12 +186,16 @@ export function createLocalCommunity({ load, save }) {
     // Event notifications (event_*) point at an event instead, and are announced once the same way.
     async addNotification({ userId, type, actorId, articleId = null, eventId = null }) {
       const data = lists(await load())
+      // A new message is announced once until it's read, so a chat doesn't fill the bell.
+      const unreadMessage = type === 'message' && data.notifications.some((item) => item.userId === userId && item.type === type && item.actorId === actorId && !item.read)
       const repeat =
-        type !== 'comment' &&
-        data.notifications.some(
+        unreadMessage ||
+        (type !== 'comment' &&
+          type !== 'message' &&
+          data.notifications.some(
           (item) =>
             item.userId === userId && item.type === type && item.actorId === actorId && (item.articleId ?? null) === articleId && (item.eventId ?? null) === eventId,
-        )
+          ))
       if (repeat) return null
       const created = { id: randomUUID(), userId, type, actorId, articleId, eventId, read: false, createdAt: now() }
       data.notifications.push(created)

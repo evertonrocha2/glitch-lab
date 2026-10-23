@@ -8,6 +8,8 @@ import { createLocalEvents } from './events.js'
 import { createLocalHunt } from './hunt.js'
 import { createLocalReview } from './review.js'
 import { createLocalInterrogations } from './interrogation.js'
+import { createLocalCommunities } from './communities.js'
+import { createLocalMessaging } from './messaging.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
 const now = () => new Date().toISOString()
@@ -413,5 +415,8 @@ export function createLocalStore({ file }) {
     ...createLocalReview({ load, save }),
     // Interrogations (guided debugging per case): see interrogation-local.js.
     ...createLocalInterrogations({ load, save }),
+    // Direct messages, blocks and reports: see messaging.js. Communities and their chat: communities.js.
+    ...createLocalMessaging({ load, save }),
+    ...createLocalCommunities({ load, save }),
   }
 }
