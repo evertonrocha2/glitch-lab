@@ -236,7 +236,7 @@ it('speaks Brazilian Portuguese: chips, thinking steps and the answer trace', as
   renderAt('/board', { user: 'alice', locale: 'pt-BR' })
   await userEvent.click(screen.getByRole('button', { name: 'Pergunte ao detetive' }))
   const dialog = screen.getByRole('dialog', { name: 'Pergunte ao detetive' })
-  expect(within(dialog).getByLabelText('Sua pergunta')).toHaveAttribute('placeholder', 'Pergunte sobre seus casos, o gym, notas...')
+  expect(within(dialog).getByLabelText('Sua pergunta')).toHaveAttribute('placeholder', 'Ex.: Qual bug eu mais repito?')
   const chips = within(dialog).getByRole('list', { name: 'Perguntas sugeridas' })
   await userEvent.click(within(chips).getByRole('button', { name: 'Qual é o meu ponto fraco?' }))
   expect(vi.mocked(askAssistant).mock.lastCall[0].messages.at(-1).content).toBe('Qual é o meu ponto fraco?')

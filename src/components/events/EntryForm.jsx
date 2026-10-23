@@ -7,9 +7,9 @@ import PixelCard from '../pixel/PixelCard.jsx'
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
 const LABEL = 'font-label text-xs text-ink'
 const LINKS = [
-  { kind: 'repo', field: 'repoUrl', placeholder: 'https://github.com/you/project' },
-  { kind: 'video', field: 'videoUrl', placeholder: 'https://youtu.be/...' },
-  { kind: 'demo', field: 'demoUrl', placeholder: 'https://your-demo.dev' },
+  { kind: 'repo', field: 'repoUrl' },
+  { kind: 'video', field: 'videoUrl' },
+  { kind: 'demo', field: 'demoUrl' },
 ]
 
 // Send or edit your entry. Only the links the event asks for show up. The server checks every link;
@@ -63,7 +63,7 @@ export default function EntryForm({ requirements, entry, onSave, onCancel }) {
         className={`mt-2 block resize-y ${INPUT}`}
       />
 
-      {links.map(({ kind, field, placeholder }) => (
+      {links.map(({ kind, field }) => (
         <div key={field} className="mt-4">
           <label htmlFor={`entry-${kind}`} className={`block ${LABEL}`}>
             {t(`events.entry.${kind}`)} {requirements[kind] === 'optional' && <span className="text-muted">{t('events.entry.optional')}</span>}
@@ -76,7 +76,7 @@ export default function EntryForm({ requirements, entry, onSave, onCancel }) {
             value={draft[field]}
             onChange={set(field)}
             maxLength={EVENT_LIMITS.url}
-            placeholder={placeholder}
+            placeholder={t(`events.entry.${kind}Placeholder`)}
             className={`mt-2 font-mono text-sm ${INPUT}`}
           />
           <p className="mt-1 text-xs text-muted">{t(`events.entry.${kind}Hint`)}</p>

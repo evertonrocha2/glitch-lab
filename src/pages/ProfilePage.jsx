@@ -69,7 +69,6 @@ const toggle = (list, id) => (list.includes(id) ? list.filter((item) => item !==
 
 // Labels and placeholders live under app.profile.<field> and app.profile.<field>Placeholder.
 const ABOUT_TEXT = ['university', 'course', 'work', 'location']
-const LINK_PLACEHOLDERS = { github: 'https://github.com/you', linkedin: 'https://www.linkedin.com/in/you', website: 'https://your.site' }
 
 function Chips({ label, hint, options, picked, max, onToggle }) {
   const full = max !== undefined && picked.length >= max
@@ -202,7 +201,7 @@ function AboutFields({ draft, change }) {
                 spellCheck={false}
                 value={value}
                 maxLength={PROFILE_LIMITS.link}
-                placeholder={LINK_PLACEHOLDERS[link.id]}
+                placeholder={t(`app.profile.linkPlaceholder.${link.id}`)}
                 aria-invalid={Boolean(problem)}
                 aria-describedby={problem ? `link-${link.id}-hint` : undefined}
                 onChange={(event) => change({ links: { ...draft.links, [link.id]: event.target.value } })}

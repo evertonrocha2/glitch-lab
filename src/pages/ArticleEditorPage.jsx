@@ -153,7 +153,7 @@ export default function ArticleEditorPage() {
             <label htmlFor="article-tags" className={`mt-6 block ${LABEL}`}>
               {t('notes.editorPage.tags')}
             </label>
-            <input id="article-tags" value={draft.tags} onChange={set('tags')} placeholder="javascript, loops" className={`mt-2 font-mono text-sm ${INPUT}`} />
+            <input id="article-tags" value={draft.tags} onChange={set('tags')} placeholder={t('notes.editorPage.tagsPlaceholder')} className={`mt-2 font-mono text-sm ${INPUT}`} />
             {problem ? (
               <p className="mt-1.5 text-xs text-primary">{problem}</p>
             ) : (

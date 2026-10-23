@@ -132,7 +132,7 @@ it('reads in Brazilian Portuguese', async () => {
   expect(screen.getByRole('button', { name: 'Válido (2)' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Ruim (0)' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Comentários (1)' })).toBeInTheDocument()
-  expect(screen.getByRole('textbox', { name: 'Seu comentário' })).toHaveAttribute('placeholder', 'Conte o que te ajudou ou faça uma pergunta.')
+  expect(screen.getByRole('textbox', { name: 'Seu comentário' })).toHaveAttribute('placeholder', 'Conte o que te ajudou ou faça uma pergunta')
   expect(screen.getByRole('button', { name: 'Publicar comentário' })).toBeDisabled()
   expect(screen.getByRole('link', { name: '< Todos os artigos' })).toHaveAttribute('href', '/articles')
 })

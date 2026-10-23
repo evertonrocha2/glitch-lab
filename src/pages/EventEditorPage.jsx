@@ -282,7 +282,7 @@ export default function EventEditorPage() {
               <label htmlFor="event-tags" className={`mt-5 block ${LABEL}`}>
                 {t('events.editor.tags')}
               </label>
-              <input id="event-tags" value={draft.tags} onChange={set('tags')} placeholder="backend, go, rinha" className={`mt-2 font-mono text-sm ${INPUT}`} />
+              <input id="event-tags" value={draft.tags} onChange={set('tags')} placeholder={t('events.editor.tagsPlaceholder')} className={`mt-2 font-mono text-sm ${INPUT}`} />
               <p className={`mt-1.5 text-xs ${tagsBad ? 'text-primary' : 'text-muted'}`}>{t('events.editor.tagsHint', { max: COMMUNITY_LIMITS.tags })}</p>
             </PixelCard>
 
