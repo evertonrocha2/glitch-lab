@@ -16,6 +16,9 @@ function localApi() {
       const env = loadEnv(server.config.mode, process.cwd(), '')
       // Dev keeps the local JSON store unless DEV_SUPABASE=1, so trying things out never writes to production.
       if (env.DEV_SUPABASE !== '1' && process.env.DEV_SUPABASE !== '1') delete env.SUPABASE_SERVICE_ROLE_KEY
+      // The paid AI too: trying pages out, or an agent taking screenshots, never spends credits unless
+      // DEV_AI=1. Without the key the provider chain moves straight on to the free one, with no request.
+      if (env.DEV_AI !== '1' && process.env.DEV_AI !== '1') delete env.OPENROUTER_API_KEY
       for (const [key, value] of Object.entries(env)) {
         process.env[key] ??= value
       }
