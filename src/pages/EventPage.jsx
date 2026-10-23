@@ -321,8 +321,8 @@ export default function EventPage() {
 
           {/* Phones: what you can do (join, organizer tools) first, then the event, then ranking and rules.
               Wide screens: the event on the left, everything else down the right. */}
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr]">
-            <div className="space-y-6 lg:col-start-2 lg:row-start-1">
+          <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr]">
+            <div className="min-w-0 space-y-6 lg:col-start-2 lg:row-start-1">
               <EntryPanel user={user} event={event} status={status} myEntry={myEntry} loginLink={loginLink} onOpen={() => setFormOpen(true)} />
               {event.mine && (
                 <OrganizerTools
@@ -377,7 +377,7 @@ export default function EventPage() {
               </section>
             </div>
 
-            <aside className="space-y-6 self-start lg:col-start-2 lg:row-start-2">
+            <aside className="min-w-0 space-y-6 self-start lg:col-start-2 lg:row-start-2">
               <Ranking entries={entries} />
               <PixelCard as="section" tone="muted" aria-label={t('events.page.requirements')} className="p-5">
                 <h2 className="font-label text-xs text-secondary">{t('events.page.requirements')}</h2>

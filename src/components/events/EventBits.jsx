@@ -46,7 +46,12 @@ export function Countdown({ event, now, compact = false, className = '' }) {
   const { date } = useFormat()
   const status = eventStatus(event, now)
   if (status === 'ended') {
-    return <span className={`font-label text-xs text-muted ${className}`}>{t('events.countdown.ended', { date: date(event.closesAt, WHEN) })}</span>
+    // Its own small size: a big clock's className only sets the numbers' size.
+    return (
+      <span className={`flex ${className}`}>
+        <span className="font-label text-xs text-muted">{t('events.countdown.ended', { date: date(event.closesAt, WHEN) })}</span>
+      </span>
+    )
   }
   const target = { upcoming: event.startsAt, live: event.endsAt, voting: event.closesAt }[status]
   const { days, hours, minutes, seconds } = timeLeft(Date.parse(target) - now)

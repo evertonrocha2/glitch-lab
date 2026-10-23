@@ -67,7 +67,7 @@ function WinnerPicker({ entries, announced, onPick }) {
             id={`winner-${place}`}
             value={picked[index]}
             onChange={(event) => setPicked((current) => current.map((value, at) => (at === index ? event.target.value : value)))}
-            className="min-w-0 flex-1 border-2 border-ink bg-white px-2 py-1.5 text-sm text-ink"
+            className="w-full min-w-0 flex-1 truncate border-2 border-ink bg-white px-2 py-1.5 text-sm text-ink"
           >
             <option value="">{t('events.tools.nobody')}</option>
             {entries.map((item) => (
