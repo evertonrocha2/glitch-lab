@@ -21,6 +21,15 @@ vi.mock('../../../lib/api.js', () => ({
   saveMessageSettings: vi.fn(),
 }))
 
+// Opening a conversation joins its realtime topic: faked, so no test opens a real socket.
+vi.mock('../../../lib/realtime/index.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  joinTopic: vi.fn((_topic, { onStatus }) => {
+    onStatus?.('off')
+    return { nudge: vi.fn(), leave: vi.fn() }
+  }),
+}))
+
 const PROFILE = {
   handle: 'bo_reads',
   displayName: 'Bo',
