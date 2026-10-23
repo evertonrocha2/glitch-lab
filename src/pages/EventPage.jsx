@@ -268,7 +268,7 @@ export default function EventPage() {
 
   return (
     <CommunityShell>
-      <Link to="/events" className="font-label text-xs text-ink hover:text-primary">
+      <Link to="/events" className="-my-3 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary">
         &lt; {t('events.page.all')}
       </Link>
 

@@ -4,6 +4,7 @@ import { cleanQuery } from '../../shared/community.js'
 import { EVENT_TABS } from '../../shared/events.js'
 import CommunityShell from '../components/community/CommunityShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import EventCard from '../components/events/EventCard.jsx'
 import { useNow } from '../components/events/EventBits.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
@@ -72,64 +73,61 @@ export default function EventsPage() {
 
   return (
     <CommunityShell>
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div className="min-w-0">
-          <p className="font-label text-xs text-secondary">
-            &gt; {t('events.list.prompt')}
-            <span className="motion-safe:animate-caret">_</span>
-          </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('events.list.title')}</h1>
-          <p className="mt-2 max-w-xl text-muted">{t('events.list.lede')}</p>
-        </div>
-        {user ? (
-          <PixelButton as={Link} to="/events/new" className="px-5 py-3">
-            {t('events.list.create')}
-          </PixelButton>
-        ) : (
-          <PixelButton as={Link} to={`/login?next=${encodeURIComponent('/events/new')}`} className="px-5 py-3">
-            {t('events.list.signInToCreate')}
-          </PixelButton>
-        )}
-      </div>
+      <PageHeader
+        kicker={t('events.list.prompt')}
+        title={t('events.list.title')}
+        lead={t('events.list.lede')}
+        actions={
+          user ? (
+            <PixelButton as={Link} to="/events/new" className="px-5 py-3">
+              {t('events.list.create')}
+            </PixelButton>
+          ) : (
+            <PixelButton as={Link} to={`/login?next=${encodeURIComponent('/events/new')}`} className="px-5 py-3">
+              {t('events.list.signInToCreate')}
+            </PixelButton>
+          )
+        }
+      />
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div role="group" aria-label={t('events.list.tabs')} className="flex shrink-0 border-2 border-ink bg-white">
-          {EVENT_TABS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={tab === id}
-              onClick={() => setFilter({ tab: id })}
-              className={`flex-1 px-3 py-2 font-label text-xs transition-colors sm:flex-none ${tab === id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
-            >
-              {t(`events.tab.${id}`)}
-            </button>
-          ))}
-        </div>
-        <form
-          role="search"
-          onSubmit={(event) => {
-            event.preventDefault()
-            setFilter({ q: cleanQuery(typed) })
-          }}
-          className="flex min-w-0 flex-1 gap-2"
-        >
-          <label htmlFor="event-search" className="sr-only">
-            {t('events.list.searchLabel')}
-          </label>
-          <input
-            id="event-search"
-            type="search"
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            placeholder={t('events.list.searchPlaceholder')}
-            maxLength={80}
-            className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel"
-          />
-          <PixelButton type="submit" variant="secondary" className="px-4">
-            {t('events.list.search')}
-          </PixelButton>
-        </form>
+      {/* Same toolbar as the articles: the search on its own row, the filters under it. */}
+      <form
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setFilter({ q: cleanQuery(typed) })
+        }}
+        className="mt-8 flex gap-2"
+      >
+        <label htmlFor="event-search" className="sr-only">
+          {t('events.list.searchLabel')}
+        </label>
+        <input
+          id="event-search"
+          type="search"
+          value={typed}
+          onChange={(event) => setTyped(event.target.value)}
+          placeholder={t('events.list.searchPlaceholder')}
+          maxLength={80}
+          className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel"
+        />
+        <PixelButton type="submit" variant="secondary" className="px-4">
+          {t('events.list.search')}
+        </PixelButton>
+      </form>
+
+      <div role="group" aria-label={t('events.list.tabs')} className="mt-5 flex border-2 border-ink bg-white sm:w-fit">
+        {EVENT_TABS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={tab === id}
+            onClick={() => setFilter({ tab: id })}
+            className={`min-h-10 flex-1 px-3 py-2 font-label text-xs transition-colors sm:flex-none ${tab === id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
+          >
+            {t(`events.tab.${id}`)}
+          </button>
+        ))}
       </div>
 
       <div className="mt-8">
