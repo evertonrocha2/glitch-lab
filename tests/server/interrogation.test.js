@@ -88,6 +88,14 @@ it('writes the feedback in Portuguese for a Portuguese reader', async () => {
   fetch.mockResolvedValue(geminiAnswer({ passed: true, feedback: 'Boa.', question: '' }))
   await answer(kase.id, 'chamando com user vazio', { locale: 'pt-BR' })
   expect(sentPrompt().systemInstruction.parts[0].text).toContain('Brazilian Portuguese')
+  expect(sentPrompt().contents[0].parts[0].text).toMatch(/Language of feedback and question: Write every explanation, hint, feedback and title in Brazilian Portuguese/)
+})
+
+it('keeps the coach in English for an English reader', async () => {
+  fetch.mockResolvedValue(geminiAnswer({ passed: true, feedback: 'Good.', question: '' }))
+  await answer(kase.id, 'calling it with an empty user')
+  expect(sentPrompt().systemInstruction.parts[0].text).not.toContain('Portuguese')
+  expect(sentPrompt().contents[0].parts[0].text).toMatch(/Language of feedback and question: Write in plain, simple English/)
 })
 
 it('hides a reply that gives the fix away before step 5', async () => {
