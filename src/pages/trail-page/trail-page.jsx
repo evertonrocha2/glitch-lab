@@ -11,14 +11,14 @@ import Working from '../../components/ui/working/working.jsx'
 import KindIcon from '../../components/trail/kind-icon/kind-icon.jsx'
 import TrailMap from '../../components/trail/trail-map/trail-map.jsx'
 import { AuthError, buildTrail, createNote, getTrail, setTrailMission, startChallenge } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { localDay } from '../../lib/day.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { newBlock } from '../../lib/notes/blocks.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
-import { useStudyTimer } from '../../lib/timer/StudyTimerProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useStudyTimer } from '../../lib/timer/study-timer-provider.jsx'
 
 // One block per mission, filled as they get done.
 function MissionBar({ trail }) {

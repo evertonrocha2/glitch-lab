@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { skillMap } from '../../../../shared/skills.js'
 import { startChallenge } from '../../../lib/api.js'
-import { AuthProvider } from '../../../lib/auth/AuthProvider.jsx'
+import { AuthProvider } from '../../../lib/auth/auth-provider.jsx'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
 import SkillMap from './skill-map.jsx'
 

@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { createNote } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 import { useT } from '../i18n/I18nProvider.jsx'
-import { useProgress } from '../progress/ProgressProvider.jsx'
+import { useProgress } from '../progress/progress-provider.jsx'
 import { interrogationNote } from './note.js'
 
 // "Export as note": writes the interrogation into a new note and opens it.

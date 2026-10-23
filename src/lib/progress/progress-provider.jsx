@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { getProgress } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 import { localDay } from '../day.js'
 
 const ProgressContext = createContext(null)

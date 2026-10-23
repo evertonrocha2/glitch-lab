@@ -2,9 +2,9 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createNote, deleteNote, getMyProfile, listCases, listNotes, setNotePublic, updateNote } from '../../lib/api.js'
-import { noteToMarkdown } from '../../lib/exportMarkdown.js'
-import { exportNoteImage, exportNotePdf } from '../../lib/exportNote.js'
-import { forgetMyProfiles } from '../../lib/profile/myProfile.js'
+import { noteToMarkdown } from '../../lib/export-markdown.js'
+import { exportNoteImage, exportNotePdf } from '../../lib/export-note.js'
+import { forgetMyProfiles } from '../../lib/profile/my-profile.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
 
 vi.mock('../../lib/api.js', () => ({
@@ -21,7 +21,7 @@ vi.mock('../../lib/api.js', () => ({
 }))
 
 // The image and PDF need a real browser to draw; jsdom only checks they are asked for.
-vi.mock('../../lib/exportNote.js', async (importOriginal) => ({
+vi.mock('../../lib/export-note.js', async (importOriginal) => ({
   ...(await importOriginal()),
   exportNoteImage: vi.fn(),
   exportNotePdf: vi.fn(),

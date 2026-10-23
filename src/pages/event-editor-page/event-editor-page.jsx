@@ -7,7 +7,7 @@ import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, createEvent, getEvent, updateEvent } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'

@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { badgeById } from '../../../../shared/badges.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
-import { useProgress } from '../../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../../lib/progress/progress-provider.jsx'
 import BadgeIcon from '../../ui/badge-icon/badge-icon.jsx'
 
 const SHOW_MS = 7000

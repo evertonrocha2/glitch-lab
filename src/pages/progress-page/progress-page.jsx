@@ -17,7 +17,7 @@ import SkillMap from '../../components/review/skill-map/skill-map.jsx'
 import { formatDuration, localDay } from '../../lib/day.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 const SEGMENTS = 20
 

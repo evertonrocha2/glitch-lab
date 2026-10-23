@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { boardFileName } from './exportBoard.js'
+import { boardFileName } from './export-board.js'
 
 it('names every board export after the local day', () => {
   const day = new Date(2026, 9, 2, 23, 30)

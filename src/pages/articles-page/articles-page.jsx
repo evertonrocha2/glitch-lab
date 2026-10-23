@@ -5,7 +5,7 @@ import ArticleList from '../../components/community/article-list/article-list.js
 import CommunityShell from '../../components/layout/community-shell/community-shell.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 const MAX_CHIPS = 10

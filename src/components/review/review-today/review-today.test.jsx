@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { answerReview, getReview, startReview } from '../../../lib/api.js'
-import { AuthProvider } from '../../../lib/auth/AuthProvider.jsx'
+import { AuthProvider } from '../../../lib/auth/auth-provider.jsx'
 import { localDay } from '../../../lib/day.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
-import { ProgressProvider } from '../../../lib/progress/ProgressProvider.jsx'
+import { ProgressProvider } from '../../../lib/progress/progress-provider.jsx'
 import ReviewToday from './review-today.jsx'
 
 vi.mock('../../../lib/api.js', () => ({

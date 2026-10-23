@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { canvasScale, exportDate, noteFileName, pageSlices, pdfGeometry } from './exportNote.js'
+import { canvasScale, exportDate, noteFileName, pageSlices, pdfGeometry } from './export-note.js'
 
 it('names each export after the note title', () => {
   expect(noteFileName('Undefined: again!', 'md')).toBe('undefined-again.md')

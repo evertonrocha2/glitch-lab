@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { BADGES } from '../../shared/badges.js'
-import { boardToMarkdown, noteToMarkdown, slug } from './exportMarkdown.js'
+import { boardToMarkdown, noteToMarkdown, slug } from './export-markdown.js'
 import { translate } from './i18n/I18nProvider.jsx'
 
 const analysis = { explicacao: 'It was undefined.', causa: 'No name yet.', correcao: 'user.name?.length', exercicio: { enunciado: 'book.title.x', resposta: 'add a title' } }

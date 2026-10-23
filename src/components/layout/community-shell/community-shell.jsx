@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router'
-import { useAuth } from '../../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import AppShell from '../app-shell/app-shell.jsx'
 import LanguageSelect from '../../ui/language-select/language-select.jsx'

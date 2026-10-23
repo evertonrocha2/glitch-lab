@@ -10,11 +10,11 @@ import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { addArticleComment, AuthError, deleteArticle, deleteArticleComment, getArticle, reactToArticle } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 const NO_REACTION = { liked: false, rating: null }
 const EDIT_GRACE_MS = 60_000

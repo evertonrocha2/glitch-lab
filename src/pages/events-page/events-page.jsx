@@ -9,7 +9,7 @@ import EventCard from '../../components/events/event-card/event-card.jsx'
 import { useNow } from '../../components/events/event-bits/event-bits.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { listEvents } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 const EMPTY = { status: 'loading', events: [], page: 1, hasMore: false }

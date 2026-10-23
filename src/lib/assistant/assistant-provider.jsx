@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AuthError, askAssistant } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 import { loadConversation, saveConversation, toApiMessages } from './conversation.js'
 
 const AssistantContext = createContext(null)

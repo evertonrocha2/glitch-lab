@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { getMyProfile } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 import { localDay } from '../day.js'
 
 // The signed-in person's profile, shared by the header avatar and the profile page.

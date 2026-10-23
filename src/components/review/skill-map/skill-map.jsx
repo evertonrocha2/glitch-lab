@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { AuthError, startChallenge } from '../../../lib/api.js'
-import { useAuth } from '../../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'

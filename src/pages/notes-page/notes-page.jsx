@@ -7,13 +7,13 @@ import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, createNote, deleteNote, listCases, listNotes, setNotePublic, updateNote } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
-import { exportNoteImage, exportNoteMarkdown, exportNotePdf } from '../../lib/exportNote.js'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
+import { exportNoteImage, exportNoteMarkdown, exportNotePdf } from '../../lib/export-note.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { newBlock } from '../../lib/notes/blocks.js'
-import { useMyProfile } from '../../lib/profile/myProfile.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useMyProfile } from '../../lib/profile/my-profile.js'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 const EXPORTS = { md: exportNoteMarkdown, png: exportNoteImage, pdf: exportNotePdf }
 

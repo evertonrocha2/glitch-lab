@@ -1,8 +1,8 @@
 import { createElement } from 'react'
 import BoardSheet from '../components/board/board-sheet/board-sheet.jsx'
 import { localDay } from './day.js'
-import { boardToMarkdown, downloadText } from './exportMarkdown.js'
-import { exportSheetImage, exportSheetPdf } from './exportNote.js'
+import { boardToMarkdown, downloadText } from './export-markdown.js'
+import { exportSheetImage, exportSheetPdf } from './export-note.js'
 import { DEFAULT_LOCALE, I18nProvider, translate } from './i18n/I18nProvider.jsx'
 import { dateIn } from './i18n/format.js'
 

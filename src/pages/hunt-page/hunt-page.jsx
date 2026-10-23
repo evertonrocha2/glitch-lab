@@ -6,11 +6,11 @@ import HuntRound from '../../components/hunt/hunt-round/hunt-round.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { AuthError, getHunt, getPracticeSnippet, sendHunt } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 const MODES = ['daily', 'practice']
 

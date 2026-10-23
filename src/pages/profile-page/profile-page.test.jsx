@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getMyProfile, saveProfile } from '../../lib/api.js'
-import { forgetMyProfiles } from '../../lib/profile/myProfile.js'
+import { forgetMyProfiles } from '../../lib/profile/my-profile.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
 
 vi.mock('../../lib/api.js', () => ({

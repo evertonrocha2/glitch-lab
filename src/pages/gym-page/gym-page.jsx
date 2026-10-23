@@ -9,11 +9,11 @@ import HintList from '../../components/gym/hint-list/hint-list.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import Working from '../../components/ui/working/working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { saveGymDraft, takeGymDraft } from '../../lib/draft.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 export default function GymPage() {
   const { id } = useParams()

@@ -9,12 +9,12 @@ import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import Working from '../../components/ui/working/working.jsx'
 import { AuthError, answerInterrogation, getInterrogation } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
-import { splitError } from '../../lib/caseInfo.js'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
+import { splitError } from '../../lib/case-info.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useExportInterrogation } from '../../lib/interrogation/useExportInterrogation.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useExportInterrogation } from '../../lib/interrogation/use-export-interrogation.js'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 // What the coach said about the last answer. Lives in a polite live region, so a screen reader
 // hears it without losing its place.

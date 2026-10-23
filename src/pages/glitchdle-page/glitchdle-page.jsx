@@ -6,11 +6,11 @@ import { Check, ClassicBoard, ErrorBoard, GuessList, Legend, SnippetBoard } from
 import LanguagePicker from '../../components/glitchdle/language-picker/language-picker.jsx'
 import { CommunityPanel, DistributionPanel, ResultCard, StatsPanel } from '../../components/glitchdle/panels/panels.jsx'
 import { AuthError, getRiddle, guessRiddle } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now())

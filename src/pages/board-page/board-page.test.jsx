@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../../lib/api.js'
 import { saveDraft, takeDraft } from '../../lib/draft.js'
-import { exportBoardImage, exportBoardPdf } from '../../lib/exportBoard.js'
+import { exportBoardImage, exportBoardPdf } from '../../lib/export-board.js'
 import { makeCase } from '../../test/fixtures.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
 
@@ -19,7 +19,7 @@ vi.mock('../../lib/api.js', () => ({
 }))
 
 // The image and PDF need a real browser to draw; jsdom only checks they are asked for.
-vi.mock('../../lib/exportBoard.js', async (importOriginal) => ({
+vi.mock('../../lib/export-board.js', async (importOriginal) => ({
   ...(await importOriginal()),
   exportBoardImage: vi.fn(),
   exportBoardPdf: vi.fn(),

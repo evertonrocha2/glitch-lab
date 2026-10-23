@@ -5,7 +5,7 @@ import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import LanguageSelect from '../../components/ui/language-select/language-select.jsx'
 import PixelLogo from '../../components/ui/pixel-logo/pixel-logo.jsx'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 // Only paths inside this site: "//evil.example" would leave it.

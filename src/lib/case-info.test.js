@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { makeCase } from '../test/fixtures.js'
-import { splitError, timeAgo, weakSpot } from './caseInfo.js'
+import { splitError, timeAgo, weakSpot } from './case-info.js'
 
 it('splits the error type from its message', () => {
   expect(splitError("TypeError: Cannot read properties of undefined (reading 'length')\n    at cart.js:2")).toEqual({

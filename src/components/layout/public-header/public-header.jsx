@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router'
-import { useAuth } from '../../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'

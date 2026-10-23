@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conceptLabel } from '../../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../../shared/limits.js'
-import { splitError } from '../../../lib/caseInfo.js'
+import { splitError } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, updateBlock } from '../../../lib/notes/blocks.js'

@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
-import { useAuth } from '../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../lib/auth/auth-provider.jsx'
 import ArticleEditorPage from '../pages/article-editor-page/article-editor-page.jsx'
 import ArticlePage from '../pages/article-page/article-page.jsx'
 import ArticlesPage from '../pages/articles-page/articles-page.jsx'

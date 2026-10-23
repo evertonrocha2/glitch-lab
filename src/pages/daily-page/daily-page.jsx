@@ -9,7 +9,7 @@ import HuntTeaser from '../../components/hunt/hunt-teaser/hunt-teaser.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import ReviewToday from '../../components/review/review-today/review-today.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
@@ -211,7 +211,7 @@ export default function DailyPage() {
             ))}
           </ul>
 
-          {/* Line hunt: 8 snippets, 20 seconds each (see pages/HuntPage.jsx). */}
+          {/* Line hunt: 8 snippets, 20 seconds each (see pages/hunt-page/hunt-page.jsx). */}
           <HuntTeaser className="order-last lg:col-span-2" />
         </div>
       )}

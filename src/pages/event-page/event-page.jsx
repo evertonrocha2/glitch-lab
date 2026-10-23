@@ -13,9 +13,9 @@ import OrganizerTools from '../../components/events/organizer-tools/organizer-to
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, closeEvent, getEvent, pickWinners, submitEntry, updateEntry, voteEntry } from '../../lib/api.js'
-import { useAuth } from '../../lib/auth/AuthProvider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
-import { useProgress } from '../../lib/progress/ProgressProvider.jsx'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 function Section({ title, children }) {
   return (

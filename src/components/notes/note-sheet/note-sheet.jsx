@@ -1,4 +1,4 @@
-import { splitError } from '../../../lib/caseInfo.js'
+import { splitError } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'

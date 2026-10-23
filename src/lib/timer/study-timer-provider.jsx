@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AuthError, addStudyTime } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 import { localDay } from '../day.js'
-import { useProgress } from '../progress/ProgressProvider.jsx'
+import { useProgress } from '../progress/progress-provider.jsx'
 import {
   elapsed,
   giveBack,
