@@ -5,6 +5,7 @@ import AppShell from '../components/AppShell.jsx'
 import Leaderboard from '../components/daily/Leaderboard.jsx'
 import PuzzleCard, { PuzzleStatus, PuzzleTags, StartButton, xpFor } from '../components/daily/PuzzleCard.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import HuntTeaser from '../components/hunt/HuntTeaser.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 import ReviewToday from '../components/review/ReviewToday.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../lib/api.js'
@@ -209,6 +210,9 @@ export default function DailyPage() {
               </li>
             ))}
           </ul>
+
+          {/* Line hunt: 8 snippets, 20 seconds each (see pages/HuntPage.jsx). */}
+          <HuntTeaser className="order-last lg:col-span-2" />
         </div>
       )}
 

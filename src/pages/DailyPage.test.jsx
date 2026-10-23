@@ -170,6 +170,13 @@ it("links to today's Glitchdle", async () => {
   expect(currentLocation()).toBe('/glitchdle')
 })
 
+it('links to the line hunt from a card', async () => {
+  renderAt('/daily', { user: 'alice' })
+  const teaser = await screen.findByRole('link', { name: /Line hunt/ })
+  expect(teaser).toHaveAttribute('href', '/hunt')
+  expect(teaser).toHaveTextContent('8 snippets, 20 seconds each: tap the buggy line.')
+})
+
 it('speaks Portuguese: puzzles, summary, global challenge and leaderboard', async () => {
   renderAt('/daily', { user: 'alice', locale: 'pt-BR' })
   const items = within(await screen.findByRole('list', { name: 'Desafios de hoje' })).getAllByRole('listitem')
