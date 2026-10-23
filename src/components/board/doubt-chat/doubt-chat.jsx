@@ -118,11 +118,11 @@ export default function DoubtChat({ onClose, onCreated, onOpenCase }) {
         className="relative flex h-full w-full max-w-xl flex-col border-l-2 border-ink bg-mist focus-visible:outline-none"
       >
         <header className="flex items-center gap-3 border-b-2 border-ink bg-secondary px-4 py-3 text-white">
-          <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center border-2 border-ink bg-white font-pixel text-xl font-bold text-secondary">
+          <span aria-hidden="true" className="hidden size-10 shrink-0 place-items-center border-2 border-ink bg-white font-pixel text-xl font-bold text-secondary sm:grid">
             ?
           </span>
           <span className="min-w-0 flex-1">
-            <h2 id="doubt-title" className="truncate font-pixel text-xl leading-tight font-bold">
+            <h2 id="doubt-title" className="font-pixel text-lg leading-tight font-bold sm:text-xl">
               {t('question.title')}
             </h2>
             <span className="block truncate text-xs text-white/85">{t('question.subtitle')}</span>
