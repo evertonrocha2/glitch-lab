@@ -20,7 +20,7 @@ function Toast({ id, onDismiss }) {
   const name = labels.badgeName(id)
 
   return (
-    <li className="flex items-center gap-3 border-2 border-ink bg-white p-3 shadow-pixel motion-safe:animate-toast-in">
+    <li className="pointer-events-auto flex items-center gap-3 border-2 border-ink bg-white p-3 shadow-pixel motion-safe:animate-toast-in">
       <span className="grid size-12 shrink-0 place-items-center border-2 border-ink bg-primary-soft">
         <BadgeIcon id={id} className="size-8" />
       </span>
@@ -38,12 +38,12 @@ function Toast({ id, onDismiss }) {
   )
 }
 
-// Announces badges as they're earned, on any signed-in page.
+// Announces badges as they're earned, on any signed-in page (the app shell places the stack).
 export default function BadgeToasts() {
   const { toasts, dismissToast } = useBadgeToasts()
   const t = useT()
   return (
-    <ul aria-live="polite" aria-label={t('app.toast.list')} className="fixed right-4 bottom-4 z-40 flex w-[calc(100vw-2rem)] max-w-80 flex-col gap-3">
+    <ul aria-live="polite" aria-label={t('app.toast.list')} className="flex flex-col gap-3">
       {toasts.map((id) => (
         <Toast key={id} id={id} onDismiss={dismissToast} />
       ))}

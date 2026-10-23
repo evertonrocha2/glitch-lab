@@ -6,6 +6,7 @@ import { useMyProfile } from '../../../lib/profile/my-profile.js'
 import { useProgressData } from '../../../lib/progress/progress-provider.jsx'
 import AssistantPanel, { AssistantButton } from '../../assistant/assistant-panel/assistant-panel.jsx'
 import BadgeToasts from '../badge-toasts/badge-toasts.jsx'
+import MessageToasts from '../message-toasts/message-toasts.jsx'
 import LanguageSelect from '../../ui/language-select/language-select.jsx'
 import CommunityIcon from '../../community/community-icon/community-icon.jsx'
 import NotificationBell from '../../community/notification-bell/notification-bell.jsx'
@@ -20,7 +21,7 @@ const navClass = ({ isActive }) =>
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
-// Top bar for the signed-in pages, plus the study timer, badge announcements and the assistant.
+// Top bar for the signed-in pages, plus the study timer, message and badge toasts and the assistant.
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
 // content (opening a drawer, typing) doesn't redraw them.
 export default function AppShell({ children }) {
@@ -37,7 +38,11 @@ const ShellWidgets = memo(function ShellWidgets() {
   return (
     <>
       <StudyTimer />
-      <BadgeToasts />
+      {/* Message and badge toasts share the corner, in one stack. Empty, it lets clicks through. */}
+      <div className="pointer-events-none fixed right-4 bottom-4 z-40 flex w-[calc(100vw-2rem)] max-w-80 flex-col gap-3">
+        <MessageToasts />
+        <BadgeToasts />
+      </div>
       <AssistantPanel />
     </>
   )
