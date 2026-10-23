@@ -1,0 +1,1486 @@
+{
+ "seeds": [
+  [
+   "postgresql",
+   "PostgreSQL"
+  ],
+  [
+   "mongodb",
+   "MongoDB"
+  ],
+  [
+   "amazon-dynamodb",
+   "Amazon DynamoDB"
+  ],
+  [
+   "redis",
+   "Redis"
+  ],
+  [
+   "sqlite",
+   "SQLite"
+  ],
+  [
+   "ms-access",
+   "Microsoft Access"
+  ]
+ ],
+ "resolveRows": [
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/postgresql"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "58"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/ms-access"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "64"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/redis"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "27"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/amazon-dynamodb"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "16"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/mongodb"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "41"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/sqlite"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "41"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MongoDB"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "41"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "PostgreSQL"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "58"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Amazon DynamoDB"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "16"
+   }
+  }
+ ],
+ "factRows": [
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "PostgreSQL"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "free software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MongoDB"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2001-03-20T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2001-07-23T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2001-04-15T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "MongoDB"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "pt-br",
+    "type": "literal",
+    "value": "MongoDB"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1992-11-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1996-01-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2000-08-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2009-01-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2009-05-08T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2012-01-18T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1992-11-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1996-07-08T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2000-08-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2009-01-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2009-04-10T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "DynamoDB"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "sqlite3"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "sqlite.org"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Microsoft"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C++"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "software company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JavaScript"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "object-relational database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "data store"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Redis"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Amazon DynamoDB"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "Amazon Dynamo"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Python"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "PostgreSQL Global Development Group"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Salvatore Sanfilippo"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Amazon"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "proprietary license"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "NoSQL database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "NoSQL database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Bruce Momjian"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Peter Eisentraut"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Marc Fournier"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "application software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MongoDB Inc."
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Tom Lane"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "relational database"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "relational database"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "relational database"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "D. Richard Hipp"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Server Side Public License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "released into the public domain by the copyright holder"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "nonprofit organization"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "PostgreSQL License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "distributed cache"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "proprietary software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "CVE Numbering Authority"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "document-oriented database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "document-oriented database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "cloud database"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "relational database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "relational database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q192490"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "SQL server"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "software company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q2136322"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "key–value database system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q319417"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "serverless relational database management system"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q1165204"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "source-available software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "enterprise"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q80689"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "technology company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q15731832"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "very large online platform"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  }
+ ],
+ "counts": [
+  {
+   "name": "postgresql",
+   "count": 178780
+  },
+  {
+   "name": "mongodb",
+   "count": 175156
+  },
+  {
+   "name": "sqlite",
+   "count": 94921
+  },
+  {
+   "name": "ms-access",
+   "count": 57822
+  },
+  {
+   "name": "redis",
+   "count": 25405
+  },
+  {
+   "name": "amazon-dynamodb",
+   "count": 14307
+  }
+ ]
+}

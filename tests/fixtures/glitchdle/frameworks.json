@@ -1,0 +1,1646 @@
+{
+ "seeds": [
+  [
+   "reactjs",
+   "React"
+  ],
+  [
+   "express",
+   "Express.js"
+  ],
+  [
+   "django",
+   "Django"
+  ],
+  [
+   "flutter",
+   "Flutter"
+  ],
+  [
+   "material-ui",
+   "Material UI",
+   "Q118628169"
+  ],
+  [
+   "alpine.js",
+   "Alpine.js"
+  ],
+  [
+   "qt",
+   "Qt"
+  ]
+ ],
+ "resolveRows": [
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "React"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "52"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Flutter"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "38"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Django"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "47"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/express"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "26"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/reactjs"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "52"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/qt"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "54"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/django"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "47"
+   }
+  },
+  {
+   "tag": {
+    "type": "uri",
+    "value": "https://stackoverflow.com/tags/flutter"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "38"
+   }
+  },
+  {
+   "label": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Express.js"
+   },
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "sitelinks": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+    "type": "literal",
+    "value": "26"
+   }
+  }
+ ],
+ "factRows": [
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "free software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1995-05-20T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2004-01-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2010-11-16T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2013-05-29T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2014-10-23T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "inception"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "cute"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "QT"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "cue toolkit"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "cue-tee"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Q-T"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JavaScript"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JavaScript"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Django"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Qt toolkit"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Qtoolkit"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "QtSDK"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1995-05-20T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2005-07-13T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2013-01-01T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2014-10-23T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "published"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Django Project"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Express"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Expressjs"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "React.js"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Reactjs"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Google"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Express.js"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MIT License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MIT License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q118628169"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MIT License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q118628169"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "material-ui @mui/material"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "alias"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "Django"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "pt-br",
+    "type": "literal",
+    "value": "Django"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "React"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "Flutter"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C++"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "C++"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "React"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1999-03-12T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q118628169"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "free and open-source software"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Flutter"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q118628169"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "npm package"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "1998-07-09T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "software library"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "human"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Meta Platforms"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q118628169"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "MUI"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "name"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "pt",
+    "type": "literal",
+    "value": "Express.js"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "namePt"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Qt Group Plc"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Ian Hickson"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "type": "literal",
+    "value": "2014-10-22T00:00:00Z"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "earlyRelease"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "computing platform"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Qt Project"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Django Software Foundation"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Adam Barth"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Jonah Williams"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Greg Spencer"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developer"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "application framework"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Python"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "web development"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "web application"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "widget toolkit"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "web framework"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "software framework"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "web framework"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "GNU Lesser General Public License, version 3.0"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Dart"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "mobile app"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "use"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "widget toolkit"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "GNU General Public License, version 3.0"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "GNU General Public License, version 2.0"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "3-clause BSD License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "3-clause BSD License"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "license"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "web framework"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q16878131"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JavaScript library"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JavaScript library"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "type"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "Skia Graphics Engine"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "JSX"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "language"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "organization"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q842014"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "charitable organization"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "public company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "business"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "online service provider"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q201904"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "enterprise"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "identity provider"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "technology company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q19399674"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "technology company"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  },
+  {
+   "item": {
+    "type": "uri",
+    "value": "http://www.wikidata.org/entity/Q39072787"
+   },
+   "value": {
+    "xml:lang": "en",
+    "type": "literal",
+    "value": "online service"
+   },
+   "fact": {
+    "type": "literal",
+    "value": "developerType"
+   }
+  }
+ ],
+ "counts": [
+  {
+   "name": "reactjs",
+   "count": 473730
+  },
+  {
+   "name": "django",
+   "count": 311128
+  },
+  {
+   "name": "flutter",
+   "count": 178570
+  },
+  {
+   "name": "express",
+   "count": 94704
+  },
+  {
+   "name": "qt",
+   "count": 86258
+  },
+  {
+   "name": "material-ui",
+   "count": 22603
+  },
+  {
+   "name": "alpine.js",
+   "count": 1122
+  }
+ ]
+}
