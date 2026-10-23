@@ -1,5 +1,6 @@
 import { conceptLabel } from '../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../shared/limits.js'
+import { caseText, isQuestion } from '../../../shared/question.js'
 
 const TOO_LONG = `Too long. Keep each block under ${NOTE_LIMITS.text} characters.`
 const isText = (value) => typeof value === 'string'
@@ -76,11 +77,14 @@ const TYPED_ERROR = /^([A-Za-z_$][\w$.]*)\s*:\s*(.*)$/
 
 // What a reader may learn about a case: the kind of error and how far along it is.
 // Never the code, attached files, context, analysis, stack lines or the case id.
+// A question card shows its topic where an error shows its type, and its question as the message.
 function caseSummary(kase) {
-  const firstLine = kase.error.split('\n')[0].trim()
-  const match = TYPED_ERROR.exec(firstLine)
+  const question = isQuestion(kase)
+  const firstLine = caseText(kase).split('\n')[0].trim()
+  const match = question ? null : TYPED_ERROR.exec(firstLine)
   return {
-    errorType: match ? match[1] : 'Error',
+    ...(question ? { kind: 'question' } : {}),
+    errorType: question ? kase.topic : match ? match[1] : 'Error',
     message: cut(match ? match[2] : firstLine, ERROR_MESSAGE),
     bugType: conceptLabel(kase.concept),
     language: kase.language,

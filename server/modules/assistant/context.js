@@ -1,6 +1,7 @@
 import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
+import { isQuestion } from '../../../shared/question.js'
 import { kindLabel, trailViews } from '../../../shared/trails.js'
 import { loadDaily } from '../daily/solved.js'
 import { loadRiddle } from '../glitchdle/solved.js'
@@ -21,6 +22,9 @@ const MAX_NOTES = 20
 
 const errorLine = (error) => clip(firstLines(error, 1), 160)
 const errorType = (error) => /^([A-Za-z_$][\w$.]*)\s*:/.exec(firstLines(error, 1).trim())?.[1] ?? 'Error'
+// A question card (from a doubt chat) has no error: its topic and question stand in.
+const caseLine = (item) => (isQuestion(item) ? `question card on ${clip(item.topic, 60)}: ${clip(firstLines(item.question, 1), 140)}` : errorLine(item.error))
+const caseType = (item) => (isQuestion(item) ? `question on ${clip(item.topic, 60)}` : errorType(item.error))
 
 function duration(seconds) {
   const minutes = Math.floor(seconds / 60)
@@ -43,7 +47,7 @@ async function boardContext({ store, userId, page, needs }) {
       `Cases (newest first, ${Math.min(cases.length, MAX_CASES)} of ${cases.length}):`,
       ...cases.slice(0, MAX_CASES).map(
         (item) =>
-          `- id ${item.id} | ${conceptLabel(item.concept)} | ${item.language} | ${item.status} | ${Math.min(item.passedCount, 2)}/2 challenges passed | ${errorLine(item.error)}`,
+          `- id ${item.id} | ${conceptLabel(item.concept)} | ${item.language} | ${item.status} | ${Math.min(item.passedCount, 2)}/2 challenges passed | ${caseLine(item)}`,
       ),
       open.length
         ? `Weak spot: ${conceptLabel(open[0][0])} (${open[0][1]} open ${open[0][1] === 1 ? 'case' : 'cases'})`
@@ -58,7 +62,8 @@ async function boardContext({ store, userId, page, needs }) {
       parts.push(
         '',
         `Open case ${item.id} (${conceptLabel(item.concept)}, ${item.language}, ${item.status}):`,
-        `Error: ${clip(firstLines(item.error, 6), 600)}`,
+        isQuestion(item) ? `Question card on ${clip(item.topic, 60)}: ${clip(firstLines(item.question, 6), 600)}` : `Error: ${clip(firstLines(item.error, 6), 600)}`,
+        isQuestion(item) && item.recap ? `What the student and the tutor talked about: ${clip(item.recap, 400)}` : '',
         item.context ? `What the student was trying to do: ${clip(item.context, 300)}` : '',
         item.code ? `Code: ${clip(firstLines(item.code, 20), 900)}` : '',
         `What happened: ${clip(item.analysis?.explicacao, 500)}`,
@@ -110,7 +115,7 @@ function noteText(note, cases) {
       if (block.type === 'todo') return `[${block.done ? 'x' : ' '}] ${block.text}`
       if (block.type === 'case') {
         const item = cases.find((kase) => kase.id === block.caseId)
-        return `[case ${block.caseId}: ${item ? errorType(item.error) : 'no longer on the board'}]`
+        return `[case ${block.caseId}: ${item ? caseType(item) : 'no longer on the board'}]`
       }
       return block.text
     })

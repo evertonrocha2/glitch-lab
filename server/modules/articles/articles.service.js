@@ -2,6 +2,7 @@ import { cleanQuery, COMMUNITY_LIMITS, excerpt, parseTags, SORT_IDS, tagProblem 
 import { conceptLabel } from '../../../shared/concepts.js'
 import { scanError } from '../../../shared/errorScan.js'
 import { handleProblem, normalizeHandle } from '../../../shared/profile.js'
+import { isQuestion } from '../../../shared/question.js'
 import { serverDay } from '../../core/days.js'
 import { badRequest, forbidden, notFound, tooMany, valueOrThrow } from '../../core/errors.js'
 import { pageOf } from '../../core/validation.js'
@@ -60,6 +61,8 @@ async function linkedCase(store, article) {
   if (!article.caseId) return null
   const found = await store.getCase(article.authorId, article.caseId)
   if (!found) return null
+  // A question card names its topic where an error names its type.
+  if (isQuestion(found)) return { kind: 'question', errorType: found.topic, concept: conceptLabel(found.concept), language: found.language }
   return { errorType: scanError(found.error).type ?? 'Error', concept: conceptLabel(found.concept), language: found.language }
 }
 

@@ -1,4 +1,5 @@
 import { CONCEPTS, conceptLabel } from '../../../shared/concepts.js'
+import { isQuestion } from '../../../shared/question.js'
 import { MISSION_XP } from '../../../shared/trails.js'
 import { clip, firstLines } from '../assistant/text.js'
 
@@ -40,7 +41,7 @@ export function trailFacts({ cases, notes, progress }) {
       .slice(0, MAX_CASES)
       .map(
         (item) =>
-          `- id ${item.id} | ${conceptLabel(item.concept)} (${item.concept}) | ${item.language} | ${item.status} | ${Math.min(item.passedCount, 2)}/2 challenges passed | ${clip(firstLines(item.error, 1), 160)}`,
+          `- id ${item.id} | ${conceptLabel(item.concept)} (${item.concept}) | ${item.language} | ${item.status} | ${Math.min(item.passedCount, 2)}/2 challenges passed | ${isQuestion(item) ? `question on ${clip(item.topic, 60)}: ${clip(firstLines(item.question, 1), 140)}` : clip(firstLines(item.error, 1), 160)}`,
       ),
     '',
     `Notes (newest first, ${Math.min(notes.length, MAX_NOTES)} of ${notes.length}):`,
