@@ -4,7 +4,7 @@ import { beforeEach, expect, it } from 'vitest'
 import LanguageSelect from '../../components/LanguageSelect.jsx'
 import { currentLocale, I18nProvider, initialLocale, translate, useT } from './I18nProvider.jsx'
 import { MESSAGES } from './catalog.js'
-import { timeAgoIn } from './format.js'
+import { capitalize, timeAgoIn } from './format.js'
 import { conceptName, levelTitle } from './labels.js'
 
 beforeEach(() => localStorage.clear())
@@ -50,6 +50,10 @@ it('writes relative times in the chosen language', () => {
   const now = new Date('2026-10-22T12:00:00Z')
   expect(timeAgoIn('en', '2026-10-22T10:00:00Z', now)).toBe('2 hours ago')
   expect(timeAgoIn('pt-BR', '2026-10-22T10:00:00Z', now)).toBe('há 2 horas')
+  // Shown on its own (under a card or comment) it starts with a capital.
+  expect(capitalize(timeAgoIn('pt-BR', '2026-10-22T10:00:00Z', now), 'pt-BR')).toBe('Há 2 horas')
+  expect(capitalize(timeAgoIn('pt-BR', '2026-10-21T10:00:00Z', now), 'pt-BR')).toBe('Ontem')
+  expect(capitalize('', 'en')).toBe('')
 })
 
 it('says zero in the plural in Portuguese, or with its own zero message', async () => {

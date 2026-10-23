@@ -37,7 +37,7 @@ function monthTotals(activity, today, format) {
   activity.days.forEach((count, index) => {
     const day = calendarDay(activity.start, index)
     if (day > today) return
-    const key = format.day(day, { month: 'long', year: 'numeric' })
+    const key = format.capitalize(format.day(day, { month: 'long', year: 'numeric' }))
     totals.set(key, (totals.get(key) ?? 0) + count)
   })
   return [...totals]

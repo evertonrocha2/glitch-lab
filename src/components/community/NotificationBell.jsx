@@ -23,7 +23,7 @@ export function notificationText({ type, actor, articleTitle, eventTitle }, t = 
 export default function NotificationBell() {
   const { data, refresh, markRead } = useNotifications()
   const t = useT()
-  const { timeAgo } = useFormat()
+  const { since } = useFormat()
   const [open, setOpen] = useState(false)
   const box = useRef(null)
 
@@ -99,7 +99,7 @@ export default function NotificationBell() {
                     <span className="min-w-0 flex-1">
                       <span className="block break-words text-sm text-ink">{notificationText(item, t)}</span>
                       <span className="block text-xs text-muted">
-                        {timeAgo(item.createdAt)}
+                        {since(item.createdAt)}
                         {!item.read && <span className="sr-only"> {t('notes.bell.unreadMark')}</span>}
                       </span>
                     </span>

@@ -5,6 +5,11 @@ const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
+// "há 2 horas" -> "Há 2 horas", for text that starts a line or stands alone. Inside a sentence
+// ("Publicada há 2 horas") use the plain value.
+export const capitalize = (text, locale) => (text ? text.charAt(0).toLocaleUpperCase(locale) + text.slice(1) : text)
+
+// Lowercase ("2 hours ago", "há 2 horas", "ontem") so it reads right inside a sentence.
 export function timeAgoIn(locale, iso, now = new Date()) {
   const elapsed = now - new Date(iso)
   const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
@@ -23,13 +28,16 @@ export const dayIn = (locale, day, options = { weekday: 'short', month: 'short',
 
 export const numberIn = (locale, value) => new Intl.NumberFormat(locale).format(value)
 
-// { timeAgo, date, day, number } bound to the current language.
+// { timeAgo, since, date, day, number, capitalize } bound to the current language. `since` is timeAgo with a
+// capital first letter ("Há 2 horas"), for a time shown on its own under a card, comment or note.
 export function useFormat() {
   const { locale } = useI18n()
   return {
     timeAgo: (iso, now) => timeAgoIn(locale, iso, now),
+    since: (iso, now) => capitalize(timeAgoIn(locale, iso, now), locale),
     date: (iso, options) => dateIn(locale, iso, options),
     day: (value, options) => dayIn(locale, value, options),
     number: (value) => numberIn(locale, value),
+    capitalize: (text) => capitalize(text, locale),
   }
 }

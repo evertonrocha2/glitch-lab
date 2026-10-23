@@ -66,7 +66,7 @@ it('shows the game number, countdown, modes and my Classic board', async () => {
   expect(await screen.findByRole('heading', { name: 'Glitchdle #1' })).toBeInTheDocument()
   expect(screen.getByText(/^[45]:\d{2}:\d{2}$/)).toBeInTheDocument()
   const tabs = within(screen.getByRole('tablist', { name: 'Game modes' })).getAllByRole('tab')
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Classic1 try', 'Errornew', 'Snippetnew'])
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Classic1 try', 'ErrorNew', 'SnippetNew'])
   expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
 
   const guesses = within(await board()).getByRole('list', { name: 'Your guesses' })
@@ -185,7 +185,7 @@ it('asks for sign in', () => {
 it('speaks Brazilian Portuguese: modes, traits, legend and the panels', async () => {
   renderAt('/glitchdle', { user: 'alice', locale: 'pt-BR' })
   const tabs = within(await screen.findByRole('tablist', { name: 'Modos de jogo' })).getAllByRole('tab')
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Clássico1 tentativa', 'Erronovo', 'Trechonovo'])
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Clássico1 tentativa', 'ErroNovo', 'TrechoNovo'])
   expect(screen.getByText(`${MAX_GUESSES - 1}/${MAX_GUESSES} palpites restantes`)).toBeInTheDocument()
   expect(screen.getByRole('combobox', { name: 'Dê um palpite de linguagem' })).toHaveAttribute('placeholder', 'Digite uma linguagem...')
   const guess = within(screen.getByRole('list', { name: 'Seus palpites' })).getByRole('listitem', { name: 'Python' })

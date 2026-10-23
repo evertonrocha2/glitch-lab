@@ -170,7 +170,7 @@ export default function ArticlePage() {
   const navigate = useNavigate()
   const location = useLocation()
   const t = useT()
-  const { date, timeAgo } = useFormat()
+  const { date, since } = useFormat()
   const { user, getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
   const [state, setState] = useState({ status: 'loading' })
@@ -337,7 +337,7 @@ export default function ArticlePage() {
                 {comments.map((comment) => (
                   <li key={comment.id} className="border-2 border-ink bg-white p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <AuthorChip author={comment.author} meta={timeAgo(comment.createdAt)} size="size-7" />
+                      <AuthorChip author={comment.author} meta={since(comment.createdAt)} size="size-7" />
                       {comment.canDelete && (
                         <button type="button" onClick={() => removeComment(comment.id)} aria-label={t('notes.article.deleteComment')} className="font-label text-[10px] text-muted hover:text-primary">
                           {t('notes.article.delete')}

@@ -289,7 +289,7 @@ it('speaks Brazilian Portuguese', async () => {
   expect(await screen.findByRole('heading', { level: 1, name: 'Suas notas' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Nova nota' })).toBeInTheDocument()
   expect(screen.getByRole('textbox', { name: 'Título da nota' })).toHaveAttribute('placeholder', 'Sem título')
-  expect(screen.getByRole('link', { name: /Undefined again/ })).toHaveTextContent('1 caso · editada')
+  expect(screen.getByRole('link', { name: /Undefined again/ })).toHaveTextContent('1 caso · Editada')
   // The case card uses the shared labels in Portuguese.
   expect(screen.getByText('Lendo undefined')).toBeInTheDocument()
   expect(screen.getByText('Treinando · 1/2')).toBeInTheDocument()

@@ -65,7 +65,7 @@ it('attaches a file the error mentions, ticks it and sends it with the context',
   await userEvent.upload(screen.getByLabelText('Upload a folder'), [cart, readme])
 
   expect(await screen.findByRole('checkbox', { name: 'Send shop/src/cart.js' })).toBeChecked()
-  expect(screen.getByText('error · line 2')).toBeInTheDocument()
+  expect(screen.getByText('Error · Line 2')).toBeInTheDocument()
   expect(screen.getByText(/1 skipped/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
   expect(onSubmit).toHaveBeenCalledWith(

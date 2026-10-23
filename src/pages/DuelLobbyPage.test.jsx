@@ -130,6 +130,6 @@ it('speaks Brazilian Portuguese', async () => {
   expect(screen.getByText('Fique nesta aba. Sair dela (outra aba ou app) com uma rodada aberta faz você perder essa rodada.')).toBeInTheDocument()
   expect(await screen.findByText('Seu rating')).toBeInTheDocument()
   expect(screen.getByText('2 V · 0 E · 1 D')).toBeInTheDocument()
-  expect(screen.getByRole('region', { name: 'Duelos recentes' })).toHaveTextContent('contra Detetive anônimo')
+  expect(screen.getByRole('region', { name: 'Duelos recentes' })).toHaveTextContent('Contra Detetive anônimo')
   expect(screen.getByRole('list', { name: 'Ranking' })).toHaveTextContent('1 vitória')
 })

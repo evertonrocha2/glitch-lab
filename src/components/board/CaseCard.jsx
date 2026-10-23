@@ -22,7 +22,7 @@ export function ProgressBlocks({ passed }) {
 
 export default function CaseCard({ item, onOpen }) {
   const t = useT()
-  const { timeAgo } = useFormat()
+  const { since } = useFormat()
   const { type, message } = splitError(item.error)
   const concept = useLabels().concept(item.concept)
 
@@ -46,7 +46,7 @@ export default function CaseCard({ item, onOpen }) {
             <ProgressBlocks passed={item.passedCount} />
             <span>{t('board.card.challenges', { passed: item.passedCount, total: CHALLENGES_TO_SOLVE })}</span>
           </span>
-          <span>{timeAgo(item.createdAt)}</span>
+          <span>{since(item.createdAt)}</span>
         </span>
       </span>
     </button>

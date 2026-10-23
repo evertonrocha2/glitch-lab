@@ -39,7 +39,7 @@ export default {
 
     // Drawer
     'board.drawer.closePanel': 'Close case panel',
-    'board.drawer.opened': '· opened {time}',
+    'board.drawer.opened': '· Opened {time}',
     'board.drawer.close': 'Close',
     'board.drawer.tryingTo': 'You were trying to',
     'board.drawer.yourCode': 'Your code',
@@ -166,7 +166,7 @@ export default {
     'board.global.title': 'Global challenge',
     'board.global.endsIn': 'Ends in {time}',
     'board.global.lead': 'One harder puzzle a week for every detective, with more than one bug inside. The clock runs from the moment you start.',
-    'board.global.tag': 'Weekly · hard',
+    'board.global.tag': 'Weekly · Hard',
     'board.global.solved': { one: '{count} detective solved it', other: '{count} detectives solved it' },
     'board.global.solvedZero': '0 detectives solved it',
     'board.puzzle.solve': 'Solve',
@@ -223,7 +223,7 @@ export default {
 
     // Drawer
     'board.drawer.closePanel': 'Fechar painel do caso',
-    'board.drawer.opened': '· aberto {time}',
+    'board.drawer.opened': '· Aberto {time}',
     'board.drawer.close': 'Fechar',
     'board.drawer.tryingTo': 'Você estava tentando',
     'board.drawer.yourCode': 'Seu código',
@@ -350,7 +350,7 @@ export default {
     'board.global.title': 'Desafio global',
     'board.global.endsIn': 'Termina em {time}',
     'board.global.lead': 'Um desafio mais difícil por semana para todo detetive, com mais de um bug dentro. O relógio corre a partir do momento em que você começa.',
-    'board.global.tag': 'Semanal · difícil',
+    'board.global.tag': 'Semanal · Difícil',
     'board.global.solved': { one: '{count} detetive resolveu', other: '{count} detetives resolveram' },
     'board.global.solvedZero': 'Ninguém resolveu ainda',
     'board.puzzle.solve': 'Resolver',

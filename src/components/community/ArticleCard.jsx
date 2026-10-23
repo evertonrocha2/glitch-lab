@@ -36,7 +36,7 @@ export function CountRow({ counts }) {
 // One article in a list. onTag, when given, turns the tags into filter buttons.
 export default function ArticleCard({ article, onTag }) {
   const t = useT()
-  const { timeAgo } = useFormat()
+  const { since } = useFormat()
   return (
     <article className="flex w-full min-w-0 flex-col border-2 border-ink bg-white p-4 shadow-pixel-muted transition-[translate,box-shadow] duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-pixel sm:p-5">
       {article.tags.length > 0 && (
@@ -67,7 +67,7 @@ export default function ArticleCard({ article, onTag }) {
       {article.excerpt && <p className="mt-2 line-clamp-3 break-words text-sm text-ink/80">{article.excerpt}</p>}
       <span aria-hidden="true" className="min-h-4 flex-1" />
       <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-line pt-3">
-        <AuthorChip author={article.author} meta={timeAgo(article.createdAt)} size="size-7" />
+        <AuthorChip author={article.author} meta={since(article.createdAt)} size="size-7" />
         <CountRow counts={article.counts} />
       </div>
     </article>

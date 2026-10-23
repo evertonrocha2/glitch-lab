@@ -35,7 +35,7 @@ it('speaks Brazilian Portuguese: summary, weekdays, months and the hover text', 
   )
   expect(screen.getByRole('img', { name: 'Atividade: 3 atividades no último ano, em 2 dias.' })).toBeInTheDocument()
   const table = screen.getByRole('table', { name: 'Atividade por mês' })
-  expect(within(table).getByRole('row', { name: 'outubro de 2026 2' })).toBeInTheDocument()
+  expect(within(table).getByRole('row', { name: 'Outubro de 2026 2' })).toBeInTheDocument()
   const labels = [...container.querySelectorAll('text')].map((text) => text.textContent)
   expect(labels).toEqual(expect.arrayContaining(['Seg', 'Qua', 'Sex', 'Out']))
   const busy = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill') === '#8f6ff5')

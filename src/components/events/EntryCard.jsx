@@ -77,7 +77,7 @@ function VideoEmbed({ id, title }) {
 // canVote: voting is open for this viewer (not their own entry). onVote: signed out sends them to sign in.
 export default function EntryCard({ entry, voted, canVote, busy, onVote }) {
   const t = useT()
-  const { timeAgo } = useFormat()
+  const { since } = useFormat()
   const video = youtubeId(entry.videoUrl)
   return (
     <article
@@ -92,7 +92,7 @@ export default function EntryCard({ entry, voted, canVote, busy, onVote }) {
         <div className="min-w-0 flex-1">
           <h3 className="break-words font-pixel text-lg font-bold leading-tight text-ink">{entry.title}</h3>
           <div className="mt-2">
-            <AuthorChip author={entry.author} meta={timeAgo(entry.createdAt)} size="size-6" />
+            <AuthorChip author={entry.author} meta={since(entry.createdAt)} size="size-6" />
           </div>
         </div>
         {entry.place && <Medal place={entry.place} className="size-9" />}

@@ -176,9 +176,9 @@ it("shows the server's tab flag for me and for the other player", async () => {
   renderAt('/duel/d1', { user: 'alice' })
   expect(await screen.findByRole('alert')).toHaveTextContent('You left the tab')
   const [mine, theirs] = within(screen.getByRole('list', { name: 'Score' })).getAllByRole('listitem')
-  expect(mine).toHaveTextContent('left the tab')
+  expect(mine).toHaveTextContent('Left the tab')
   expect(theirs).toHaveTextContent('Answered')
-  expect(theirs).toHaveTextContent('left the tab')
+  expect(theirs).toHaveTextContent('Left the tab')
 })
 
 it('reveals the answer between rounds and announces the round result', async () => {
@@ -201,7 +201,7 @@ it('shows the result, the breakdown and stops polling a finished bot duel', asyn
   expect(breakdown).toHaveTextContent('Round 1 of 5')
   expect(breakdown).toHaveTextContent('3.2s')
   expect(breakdown).toHaveTextContent('+179')
-  expect(breakdown).toHaveTextContent('left the tab')
+  expect(breakdown).toHaveTextContent('Left the tab')
   await waitFor(() => expect(getProgress).toHaveBeenCalled())
 
   await new Promise((resolve) => setTimeout(resolve, 1300))
