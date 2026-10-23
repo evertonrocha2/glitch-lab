@@ -50,7 +50,7 @@ export default function Countdown({ deadline, totalMs, running = true, onExpire 
           style={{ width: `${Math.min(100, share * 100)}%` }}
         />
       </div>
-      <p role="timer" aria-label={t('hunt.timeLeft')} className={`w-10 shrink-0 text-right font-mono text-sm font-bold tabular-nums ${low ? 'text-primary' : 'text-ink'}`}>
+      <p role="timer" aria-label={t('hunt.timeLeft')} className={`w-10 shrink-0 text-right font-pixel text-base font-bold leading-none tabular-nums ${low ? 'text-primary' : 'text-ink'}`}>
         {t('hunt.seconds', { seconds })}
       </p>
     </div>

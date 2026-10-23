@@ -43,7 +43,7 @@ export default function HuntLeaderboard({ entries, you }) {
                 {entry.isYou && <span className="mt-0.5 inline-block bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('hunt.board.you')}</span>}
               </span>
               <span className="shrink-0 text-right">
-                <strong className="block font-mono text-sm text-ink">{t('hunt.board.points', { count: entry.score })}</strong>
+                <strong className="block font-pixel text-sm font-bold text-ink tabular-nums">{t('hunt.board.points', { count: entry.score })}</strong>
                 <span className="text-xs text-muted">{t('hunt.board.lines', { count: entry.correct })}</span>
               </span>
             </li>

@@ -144,7 +144,7 @@ function Done({ data, now, onPractice }) {
                   <span className="font-label text-[10px] text-primary">{labels.concept(item.concept)}</span>
                 </span>
               </span>
-              <span className={`shrink-0 pt-0.5 text-right font-mono text-xs ${item.points > 0 ? 'font-bold text-secondary' : 'text-muted'}`}>+{item.points}</span>
+              <span className={`shrink-0 pt-0.5 text-right font-label text-xs tabular-nums ${item.points > 0 ? 'font-bold text-secondary' : 'text-muted'}`}>+{item.points}</span>
             </li>
           ))}
         </ol>
