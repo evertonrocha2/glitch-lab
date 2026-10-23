@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { getConversationMessages, listConversations } from '../api.js'
+import { getConversationMessages, listConversations, markConversationRead } from '../api.js'
 import { useAuth } from '../auth/auth-provider.jsx'
 import { useNotifications } from '../community/notifications.js'
 import { joinTopic, userTopic } from '../realtime/index.js'
@@ -67,6 +67,7 @@ export function MessageAlertsProvider({ children }) {
   account.current = userId
 
   // Another account (or signed out): start over, with nothing seen and no toasts.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new account is the moment to reset.
   useEffect(() => {
     seen.current = null
     setToasts([])
@@ -84,7 +85,19 @@ export function MessageAlertsProvider({ children }) {
       return
     }
     if (account.current !== owner) return
-    setUnreadMessages(owner, list.unread)
+    let unread = list.unread
+    // News in the conversation on screen: it's being read. The conversation marks it read too, but
+    // this answer may have left before that did, and the badge and title would stick at one.
+    const onScreen = list.conversations.find((item) => item.unread && item.id === openId.current && !document.hidden)
+    if (onScreen) {
+      try {
+        unread = await markConversationRead(onScreen.id, token)
+      } catch {
+        // The conversation's own mark follows.
+      }
+      if (account.current !== owner) return
+    }
+    setUnreadMessages(owner, unread)
     const before = seen.current
     const now = snapshot(list.conversations)
     seen.current = now

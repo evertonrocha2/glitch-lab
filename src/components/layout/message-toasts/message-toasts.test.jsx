@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { getConversationMessages, listConversations, listNotifications } from '../../../lib/api.js'
+import { getConversationMessages, listConversations, listNotifications, markConversationRead } from '../../../lib/api.js'
 import { ALERT_POLL_MS, ALERT_REALTIME_POLL_MS, previewText, titleWithCount } from '../../../lib/chat/message-alerts.jsx'
 import { forgetUnreadMessages } from '../../../lib/chat/unread.js'
 import { forgetNotifications } from '../../../lib/community/notifications.js'
@@ -93,6 +93,12 @@ beforeEach(() => {
       messages: (threads[id] ?? []).filter((item) => !cursor.after || item.createdAt > cursor.after),
       hasMore: false,
     }))
+  vi.mocked(markConversationRead)
+    .mockReset()
+    .mockImplementation(async (id) => {
+      inbox = inbox.map((item) => (item.id === id ? { ...item, unread: false } : item))
+      return inbox.filter((item) => item.unread).length
+    })
   vi.mocked(listNotifications).mockReset().mockResolvedValue({ notifications: [], unread: 0 })
 })
 afterEach(() => {
@@ -170,6 +176,9 @@ it('shows no toast for the conversation already open, nor for my own messages', 
   await waitFor(() => expect(listConversations.mock.calls.length).toBeGreaterThanOrEqual(3))
   await act(async () => {})
   expect(toasts().queryAllByRole('listitem')).toHaveLength(0)
+  // It's read on screen, even before its own chat hears the news: nothing unread is left.
+  expect(markConversationRead).toHaveBeenCalledWith('c3', 'token-ada')
+  expect(document.title).toBe('Glitch Lab')
   // Someone else still gets through.
   deliver('c4', 'Hey Ada')
   await nudge()
