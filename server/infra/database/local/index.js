@@ -400,9 +400,10 @@ export function createLocalStore({ file }) {
     async addUsage(key, day) {
       const data = await load()
       const slot = `${key}:${day}`
-      data.usage[slot] = (data.usage[slot] ?? 0) + 1
+      const calls = (data.usage[slot] = (data.usage[slot] ?? 0) + 1)
+      // This call's own count: read after the write, it would be whatever the requests queued behind it made it.
       await save()
-      return data.usage[slot]
+      return calls
     },
 
     // Articles, comments, reactions and notifications: see community-local.js.

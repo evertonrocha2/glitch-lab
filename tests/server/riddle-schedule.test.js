@@ -39,10 +39,9 @@ it(`never repeats a framework or a database within ${CATEGORY_NO_REPEAT_DAYS} da
 })
 
 it('keeps the language answers it picked before the new categories existed', () => {
-  // Recorded with the fallback secret before frameworks and databases were added: adding a
-  // category must never move a language answer.
-  expect(answersFor('2026-10-24')).toMatchObject({ classic: 'ocaml', error: 'fsharp', snippet: 'bash' })
-  expect(answersFor('2026-10-10')).toMatchObject({ classic: 'ocaml', error: 'php', snippet: 'sql' })
+  // Recorded with the fallback secret: adding a category must never move a language answer.
+  expect(answersFor('2026-10-24')).toMatchObject({ classic: 'prolog', error: 'r', snippet: 'lua' })
+  expect(answersFor('2026-10-10')).toMatchObject({ classic: 'cobol', error: 'rust', snippet: 'fortran' })
 })
 
 it(`never repeats a language in the same mode within ${NO_REPEAT_DAYS} days`, () => {

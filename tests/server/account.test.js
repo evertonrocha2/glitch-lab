@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { SIGNUP_LIMITS } from '../../server/modules/auth/credentials.js'
 import { api, useTempStore } from './helpers.js'
 
 const send = (path, body, options = {}) => api(path, { body, token: null, ...options })
@@ -76,6 +77,22 @@ it('locks an email after too many wrong passwords', async () => {
   expect(res.status).toBe(429)
   expect(await res.json()).toEqual({ message: 'Too many wrong passwords for this email. Try again tomorrow.' })
 })
+
+it('lets no more than the limit of guesses through when they arrive all at once', async () => {
+  await signUp({ email: 'ada@example.com', password: 'correct horse' })
+  const answers = await Promise.all(Array.from({ length: 30 }, (_, i) => signIn({ email: 'ada@example.com', password: `guess ${i}` })))
+  expect(answers.filter((res) => res.status === 401)).toHaveLength(10)
+  expect(answers.filter((res) => res.status === 429)).toHaveLength(20)
+})
+
+it('limits new accounts and demos from one network', async () => {
+  for (let i = 0; i < SIGNUP_LIMITS.perNetwork; i++) expect((await signUp({ email: `user${i}@example.com`, password: 'correct horse' })).status).toBe(201)
+  const refused = await signUp({ email: 'one-more@example.com', password: 'correct horse' })
+  expect(refused.status).toBe(429)
+  expect(await refused.json()).toEqual({ message: 'Too many tries from your network today. Try again tomorrow.' })
+  for (let i = 0; i < SIGNUP_LIMITS.demosPerNetwork; i++) expect((await demo()).status).toBe(201)
+  expect((await demo()).status).toBe(429)
+}, 30_000)
 
 it('gives each demo visitor their own seeded account', async () => {
   const first = await (await demo()).json()

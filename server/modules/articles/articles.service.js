@@ -5,6 +5,7 @@ import { handleProblem, normalizeHandle } from '../../../shared/profile.js'
 import { isQuestion } from '../../../shared/question.js'
 import { serverDay } from '../../core/days.js'
 import { badRequest, forbidden, notFound, tooMany, valueOrThrow } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { pageOf } from '../../core/validation.js'
 import { loadPeople } from './people.js'
 import { commentView } from './comments.service.js'
@@ -139,12 +140,9 @@ export async function createArticle(store, user, body) {
   const value = valueOrThrow(parseArticle(body ?? {}))
   await checkCase(store, user.id, value.caseId)
 
-  const key = articlesKey(user.id)
-  const day = serverDay()
-  if ((await store.countUsage(key, day)) >= COMMUNITY_LIMITS.articlesPerDay) {
+  if (!(await spendUsage(store, articlesKey(user.id), serverDay(), COMMUNITY_LIMITS.articlesPerDay))) {
     throw tooMany(`You can publish ${COMMUNITY_LIMITS.articlesPerDay} articles a day. Come back tomorrow.`)
   }
-  await store.addUsage(key, day)
   const article = await store.createArticle(user.id, value)
   return articleView(store, article, user.id)
 }

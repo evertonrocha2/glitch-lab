@@ -1,6 +1,8 @@
 import { cleanQuery } from '../../../shared/community.js'
 import { COMMUNITY_TOPICS, MESSAGE_LIMITS, slugify } from '../../../shared/messages.js'
+import { serverDay } from '../../core/days.js'
 import { badRequest, forbidden, notFound } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { pageOf } from '../../core/validation.js'
 import { loadPeople } from '../articles/people.js'
 import { parseCursor, parseMessageBody, refuseDemo, spendMessage, trimPage } from '../messages/messages.model.js'
@@ -96,7 +98,10 @@ async function createWithFreeSlug(store, user, fields) {
 export async function createCommunity(store, user, input) {
   refuseDemo(user, 'Sign up to create a community.')
   const fields = parseCommunity(input)
-  if ((await store.countOwnedCommunities(user.id)) >= MESSAGE_LIMITS.ownedCommunities) {
+  // The owned count alone can't stop a burst (every request reads the same count before any
+  // insert), so creations also spend a daily counter, which can't be raced.
+  const spent = await spendUsage(store, `communities:${user.id}`, serverDay(), MESSAGE_LIMITS.ownedCommunities)
+  if (!spent || (await store.countOwnedCommunities(user.id)) >= MESSAGE_LIMITS.ownedCommunities) {
     throw forbidden(`You can create up to ${MESSAGE_LIMITS.ownedCommunities} communities.`)
   }
   return communityView(await createWithFreeSlug(store, user, fields), true)

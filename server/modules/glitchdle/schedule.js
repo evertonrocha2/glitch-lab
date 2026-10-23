@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import { CATEGORIES } from '../../../shared/riddle/categories.js'
 import { LAUNCH_DAY, MODES } from '../../../shared/riddle/game.js'
 import { LANGUAGES } from '../../../shared/riddle/languages.js'
@@ -17,7 +18,8 @@ const DAY_MS = 24 * 3_600_000
 const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / DAY_MS)
 const dayString = (number) => new Date(number * DAY_MS).toISOString().slice(0, 10)
 
-// FNV-1a: a small, stable string hash (the same on every machine and every run).
+// FNV-1a: a small, stable string hash (the same on every machine and every run). Not for anything
+// keyed by a secret: see secretSeed.
 export function hash(text) {
   let value = 0x811c9dc5
   for (let index = 0; index < text.length; index++) {
@@ -28,9 +30,12 @@ export function hash(text) {
 }
 
 // The code is public, so the date alone would let anyone work out tomorrow's answers: every choice
-// also mixes in a server secret. Production sets one of these; tests and local dev use the fallback.
+// is keyed by a server secret. Production sets one of these; tests and local dev use the fallback.
+// An HMAC, not hash() with the secret in front: FNV squeezes any secret into 32 bits of state, and a
+// week of revealed answers is enough to brute-force that state and play every future day.
 const secret = () => process.env.GLITCHDLE_SECRET || process.env.CRON_SECRET || process.env.AUTH_SECRET || 'glitchdle-local'
-const seeded = (text) => hash(`${secret()}:${text}`)
+export const secretSeed = (text) => createHmac('sha256', secret()).update(text).digest().readUInt32BE(0)
+const seeded = secretSeed
 
 // LANGUAGES is append-only: reordering it would reshuffle every future answer.
 const IDS = LANGUAGES.map((item) => item.id)

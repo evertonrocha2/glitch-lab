@@ -1,6 +1,8 @@
 import { randomInt } from 'node:crypto'
 import { STALE_MS } from '../../../shared/duel.js'
-import { AppError, badRequest } from '../../core/errors.js'
+import { serverDay } from '../../core/days.js'
+import { AppError, badRequest, tooMany } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { who } from '../daily/leaderboard.js'
 import { BOT_ID, outcomeAt, phaseAt, timeline } from './clock.js'
 import { botPlan, buildRounds } from './questions.js'
@@ -20,6 +22,8 @@ export const SEEN_EVERY_MS = 5_000
 // is always "hidden", so a player who uses them all up counts as away from then on (fails closed).
 export const MAX_FOCUS_EVENTS = 120
 const RECENT_DUELS = 10
+// New duels one account may open a day (rooms, quick matches, bot games and rematches together).
+export const DUELS_PER_DAY = 100
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 6
 const BOT_PERSON = { name: 'Glitch Bot', handle: null, avatar: null }
@@ -37,8 +41,11 @@ function newCode() {
   return Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('')
 }
 
-// A new duel with a code nobody has (tries again on the rare clash).
-async function createWithCode(store, fields) {
+// A new duel with a code nobody has (tries again on the rare clash), from user's daily allowance.
+async function createWithCode(store, user, fields) {
+  if (!(await spendUsage(store, `duels:${user.id}`, serverDay(), DUELS_PER_DAY))) {
+    throw tooMany(`You can start ${DUELS_PER_DAY} duels a day. Come back tomorrow.`)
+  }
   for (let tries = 0; tries < 5; tries++) {
     const created = await store.createDuel({ ...fields, code: newCode() })
     if (created) return created
@@ -104,8 +111,9 @@ async function cancelRoom(store, id, userId) {
 
 // Gives up every waiting room of mine before I start or join another duel, so nobody sits in
 // several at once. Returns a room that someone joined in the meantime (I'm playing that one), or null.
-async function cancelWaiting(store, userId) {
-  const rooms = await store.listDuels(userId, { status: 'waiting' })
+// keepId: the room I'm about to join, left alone.
+async function cancelWaiting(store, userId, keepId = null) {
+  const rooms = (await store.listDuels(userId, { status: 'waiting' })).filter((room) => room.id !== keepId)
   const after = await Promise.all(rooms.map((room) => cancelRoom(store, room.id, userId)))
   return after.find((duel) => duel?.status === 'active') ?? null
 }
@@ -173,7 +181,9 @@ export async function duelAction(store, user, action, input, now = Date.now()) {
   if (!ACTIONS.includes(action)) throw badRequest()
   const body = input ?? {}
   if (action === 'create') {
-    const duel = await createWithCode(store, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
+    const taken = await cancelWaiting(store, user.id)
+    if (taken) return respond(store, taken, user.id, now)
+    const duel = await createWithCode(store, user, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
     return respond(store, duel, user.id, now, true)
   }
   if (action === 'queue') return queue(store, user, now)
@@ -204,6 +214,8 @@ async function join(store, user, body, now) {
     if (!found) throw new AppError(404, 'No duel has that code.')
     id = found.id
   }
+  const taken = await cancelWaiting(store, user.id, id)
+  if (taken) return respond(store, taken, user.id, now)
   const { duel, error } = await mutate(store, id, (current) => joinFields(current, user, now))
   if (error) throw error
   return respond(store, duel, user.id, now)
@@ -222,7 +234,7 @@ async function queue(store, user, now) {
     const joined = await store.updateDuel(candidate.id, outcome.fields, candidate.version)
     if (joined) return respond(store, joined, user.id, now)
   }
-  const duel = await createWithCode(store, { kind: 'queue', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
+  const duel = await createWithCode(store, user, { kind: 'queue', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
   return respond(store, duel, user.id, now, true)
 }
 
@@ -233,7 +245,7 @@ async function playBot(store, user, now) {
   const taken = await cancelWaiting(store, user.id)
   if (taken) return respond(store, taken, user.id, now)
   const rounds = buildRounds()
-  const duel = await createWithCode(store, {
+  const duel = await createWithCode(store, user, {
     kind: 'bot',
     status: 'active',
     players: [seatFor(user, now), BOT_SEAT(now)],
@@ -305,7 +317,9 @@ async function rematch(store, user, body, now) {
     await mutate(store, old.id, (current) => (current.rematchId === old.rematchId ? { fields: { rematchId: null } } : {}))
   }
 
-  const fresh = await createWithCode(store, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds(), rematchOf: old.id })
+  const taken = await cancelWaiting(store, user.id)
+  if (taken) return respond(store, taken, user.id, now)
+  const fresh = await createWithCode(store, user, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds(), rematchOf: old.id })
   const { duel: linked } = await mutate(store, old.id, (current) => (current.rematchId ? {} : { fields: { rematchId: fresh.id } }))
   if (linked?.rematchId && linked.rematchId !== fresh.id) {
     // The other player asked at the same moment: drop mine and join theirs.

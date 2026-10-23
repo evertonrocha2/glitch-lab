@@ -2,7 +2,10 @@ import { createToken } from '../../infra/security/session.js'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const MIN_PASSWORD = 8
-export const MAX_WRONG_PASSWORDS_PER_DAY = 10
+// Sign-in tries a day (right or wrong): see login in auth.service.js.
+export const LOGIN_LIMITS = { perEmailAndNetwork: 10, perEmail: 100, perNetwork: 200 }
+// New accounts a day from one network. Demos are higher: a class or an event may share one network.
+export const SIGNUP_LIMITS = { perNetwork: 10, demosPerNetwork: 30 }
 // The app makes accounts on these domains itself (demo visitors, sample community authors).
 const RESERVED_DOMAINS = ['demo.glitch', 'sample.glitch']
 

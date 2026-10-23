@@ -4,7 +4,7 @@ import { HUNT_LANGUAGES, HUNT_ROUNDS, MAX_LINES, MIN_LINES } from '../../../shar
 import { HUNT_POOL } from '../../../shared/hunt/snippets.js'
 import { generateJson } from '../../infra/ai/index.js'
 import { buildHuntPrompt, HUNT_SCHEMA, HUNT_SYSTEM } from './hunt.prompt.js'
-import { hash } from '../glitchdle/schedule.js'
+import { secretSeed } from '../glitchdle/schedule.js'
 
 // Line hunt's daily set: 8 snippets, the same for everyone. The cron asks the AI for a few fresh
 // ones and fills the rest from the pool; a day the cron missed (or the AI failed) is all pool. Which
@@ -19,8 +19,7 @@ const MAX_LINE_CHARS = 100
 const MAX_SYMPTOM_CHARS = 200
 const MAX_EXPLANATION_CHARS = 320
 
-const secret = () => process.env.GLITCHDLE_SECRET || process.env.CRON_SECRET || process.env.AUTH_SECRET || 'glitchdle-local'
-const seeded = (text) => hash(`${secret()}:hunt:${text}`)
+const seeded = (text) => secretSeed(`hunt:${text}`)
 
 // A fixed shuffle per seed (Fisher-Yates over xorshift32).
 export function shuffle(list, seed) {

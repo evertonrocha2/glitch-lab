@@ -123,7 +123,7 @@ it('skips the second specialist when the daily limit has room for one call only'
   const events = await eventsOf(await askStream('How do I open you and plan my time?'))
   expect(events.at(-1).data.agents).toEqual(['guide'])
   expect(fetch.mock.calls.some(([, init]) => systemOf(init).includes('Study planner'))).toBe(false)
-  expect(await store.countUsage('alice', today())).toBe(30)
+  expect(await store.countUsage('ai:all', today())).toBe(1)
 })
 
 it('answers a used-up daily limit and a bad request with plain JSON, before any stream or AI call', async () => {
