@@ -199,6 +199,9 @@ const en = {
   'server.interrogationDone': 'This interrogation is finished.',
   'server.interrogationFull': 'This interrogation has too many answers.',
   'server.interrogationClash': 'Another answer landed at the same time. Try again.',
+  // Spaced review.
+  'server.nothingToReview': 'Nothing to review right now.',
+  'server.reviewOver': "This review is over. Open today's review again.",
   'server.what.answer': 'answer',
 }
 
@@ -380,6 +383,8 @@ const ptBR = {
   'server.interrogationDone': 'Este interrogatório já terminou.',
   'server.interrogationFull': 'Este interrogatório já tem respostas demais.',
   'server.interrogationClash': 'Outra resposta chegou ao mesmo tempo. Tente de novo.',
+  'server.nothingToReview': 'Nada para revisar agora.',
+  'server.reviewOver': 'Esta revisão terminou. Abra a revisão de hoje de novo.',
   'server.what.answer': 'sua resposta',
 }
 

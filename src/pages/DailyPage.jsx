@@ -6,6 +6,7 @@ import Leaderboard from '../components/daily/Leaderboard.jsx'
 import PuzzleCard, { PuzzleStatus, PuzzleTags, StartButton, xpFor } from '../components/daily/PuzzleCard.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import PageHeader from '../components/PageHeader.jsx'
+import ReviewToday from '../components/review/ReviewToday.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatCountdown } from '../lib/daily.js'
@@ -210,6 +211,9 @@ export default function DailyPage() {
           </ul>
         </div>
       )}
+
+      {/* Spaced review of the bug types already met (see components/review). */}
+      <ReviewToday className="mt-14" />
 
       {global && <GlobalChallenge data={global} now={now} onStart={start} starting={starting} />}
     </AppShell>

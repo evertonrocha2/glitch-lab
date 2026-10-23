@@ -11,6 +11,8 @@ vi.mock('../lib/api.js', () => ({
   startPuzzle: vi.fn(),
   getChallenge: vi.fn().mockReturnValue(new Promise(() => {})),
   getRiddle: vi.fn().mockReturnValue(new Promise(() => {})),
+  // Today's review loads on its own (see components/review); these tests leave it loading.
+  getReview: vi.fn().mockReturnValue(new Promise(() => {})),
   getProgress: vi.fn().mockResolvedValue(null),
   addStudyTime: vi.fn(),
 }))

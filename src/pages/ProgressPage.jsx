@@ -5,6 +5,7 @@ import { DAILY_XP } from '../../shared/daily.js'
 import { INTERROGATION_XP } from '../../shared/interrogation.js'
 import { COMMUNITY_XP, XP } from '../../shared/progress.js'
 import { RIDDLE_XP } from '../../shared/riddle/game.js'
+import { REVIEW_XP } from '../../shared/review.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import ActivityGraph from '../components/ActivityGraph.jsx'
 import AppShell from '../components/AppShell.jsx'
@@ -12,6 +13,7 @@ import PageHeader from '../components/PageHeader.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
+import SkillMap from '../components/review/SkillMap.jsx'
 import { formatDuration, localDay } from '../lib/day.js'
 import { useT } from '../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../lib/i18n/labels.js'
@@ -59,6 +61,7 @@ const EARN = [
   ['like', COMMUNITY_XP.likeReceived],
   ['comment', COMMUNITY_XP.comment],
   ['interrogation', INTERROGATION_XP],
+  ['review', REVIEW_XP.card],
 ]
 
 export default function ProgressPage() {
@@ -141,6 +144,8 @@ export default function ProgressPage() {
           </div>
 
           {progress.activity && <ActivityGraph activity={progress.activity} today={localDay()} title={t('app.progress.activity')} className="mt-14" />}
+
+          {progress.skills && <SkillMap skills={progress.skills} className="mt-14" />}
 
           {/* The badges take the page; how XP is earned is reference, so it rides along on the side. */}
           <div className="mt-14 grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">

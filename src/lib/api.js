@@ -326,3 +326,18 @@ export async function updateEntry(id, fields, token) {
 export function voteEntry(entryId, vote, token) {
   return request(`${COMMUNITY}event-votes`, { method: 'POST', body: { entryId, vote }, token })
 }
+
+// Spaced review: { today, met, due: [{ concept, box }], nextDueDay, session, day, xpCap }.
+export async function getReview(today, token) {
+  return (await request(`/api/progress?review=1&today=${encodeURIComponent(today)}`, { token })).review
+}
+
+// Opens today's review session (or resumes the open one): { id, cards, answers, right, done }.
+export async function startReview(today, token) {
+  return (await request('/api/progress?review=start', { method: 'POST', body: { today }, token })).session
+}
+
+// Grades one card: { result, item, xp, session, day }.
+export function answerReview({ sessionId, index, choice, today }, token) {
+  return request('/api/progress?review=answer', { method: 'POST', body: { sessionId, index, choice, today }, token })
+}
