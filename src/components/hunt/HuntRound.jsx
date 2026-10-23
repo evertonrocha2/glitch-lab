@@ -6,6 +6,9 @@ import PixelButton from '../pixel/PixelButton.jsx'
 import CodeLines from './CodeLines.jsx'
 import Countdown from './Countdown.jsx'
 
+// The fixed study timer's height plus its gap from the bottom edge.
+const BOTTOM_CLEARANCE = 96
+
 // What came back for an answer: right or not, the bug line, one sentence on why and the bug type.
 // Read out by screen readers; its button takes the focus so Enter goes on to the next snippet.
 function RoundResult({ result, actionLabel, onAction, busy }) {
@@ -42,8 +45,17 @@ function RoundResult({ result, actionLabel, onAction, busy }) {
 // phase: 'playing' (the clock runs), 'sending' (a line was picked) or 'revealed'.
 export default function HuntRound({ kicker, score, snippet, deadline, totalMs, phase, picked, result, onPick, onExpire, actionLabel, onAction, busy }) {
   const t = useT()
+  const section = useRef(null)
+  // On a phone the round is taller than what's left of the screen, and the study timer sits on the
+  // bottom lines. When a new snippet starts with its end out of view, bring the round to the top.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new snippet scrolls
+  useEffect(() => {
+    const box = section.current?.getBoundingClientRect()
+    if (phase !== 'playing' || !box || box.bottom <= window.innerHeight - BOTTOM_CLEARANCE) return
+    section.current.scrollIntoView?.({ block: 'start' })
+  }, [snippet.code])
   return (
-    <section aria-label={kicker} className="border-2 border-ink bg-white shadow-pixel">
+    <section ref={section} aria-label={kicker} className="scroll-mt-4 border-2 border-ink bg-white shadow-pixel">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b-2 border-ink bg-primary px-4 py-2 font-label text-xs text-white">
         <span>{kicker}</span>
         <span className="flex items-center gap-4">
