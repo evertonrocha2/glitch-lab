@@ -46,6 +46,31 @@ it('gives each demo one notification to open, and never seeds the samples twice'
   expect(note.actorId).not.toBe(first.id)
 })
 
+it('writes the samples in Portuguese for a pt-BR demo, once per language, and points its notification at one', async () => {
+  const store = await freshStore()
+  const english = await demoUser(store)
+  const portuguese = await demoUser(store)
+  const another = await demoUser(store)
+  await seedDemo(store, english.id, '2026-10-22')
+  await seedDemo(store, portuguese.id, '2026-10-22', 'pt-BR')
+  await seedDemo(store, another.id, '2026-10-22', 'pt-BR')
+
+  const { articles } = await store.searchArticles({ authorHandle: 'glitch_team', sort: 'new', offset: 0, limit: 10 })
+  const titles = articles.map((item) => item.title)
+  expect(titles).toContain('Undefined everywhere: reading a property too early')
+  expect(titles).toContain('Undefined em todo lugar: lendo uma propriedade cedo demais')
+  expect(titles).toContain('Leia o stack trace em três passos')
+  // Three per language, never twice.
+  expect(articles).toHaveLength(6)
+  const ptFirst = articles.find((item) => item.title.startsWith('Undefined em todo lugar'))
+  expect(ptFirst.body).toMatch(/o que vem antes do ponto ainda não existe/)
+  expect(ptFirst.commentCount).toBe(1)
+  for (const user of [portuguese, another]) expect((await store.listNotifications(user.id))[0].articleId).toBe(ptFirst.id)
+  expect((await store.listNotifications(english.id))[0].articleId).not.toBe(ptFirst.id)
+  for (const item of articles) expect(item.body).not.toMatch(new RegExp(String.fromCharCode(0x2014)))
+  for (const item of articles) expect(`${item.title} ${item.body}`).not.toMatch(/detetive|detective/i)
+})
+
 it('never takes over a real account that holds a sample email', async () => {
   const store = await freshStore()
   const real = await store.createUser({ email: 'team@sample.glitch', passwordHash: 'scrypt$aa$bb', isDemo: false })
