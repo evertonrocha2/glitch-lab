@@ -11,50 +11,53 @@ const firstOpen = (session) => {
 }
 
 // The broken code, one line per row with its number. `bugLine` marks a line (a fix card);
-// `onPick` turns every non-blank line into a button (a "which line?" card).
+// `onPick` turns every non-blank line into a button (a "which line?" card). Long lines scroll
+// sideways inside the block, and the answer tags stick to its right edge so they stay readable.
 function CodeLines({ lines, bugLine = null, onPick, picked, answer, disabled }) {
   const t = useT()
   return (
-    <ol aria-label={t('review.code')} className="overflow-x-auto border-2 border-ink bg-white py-1 font-mono text-xs leading-relaxed text-ink">
-      {lines.map((line, index) => {
-        const number = index + 1
-        const id = `l${number}`
-        const marked = bugLine === index
-        const blank = !line.trim()
-        const isAnswer = answer === id
-        const isPicked = picked === id
-        const tone = isAnswer ? 'bg-secondary-soft' : isPicked ? 'bg-primary-soft' : marked ? 'bg-primary-soft' : ''
-        const body = (
-          <>
-            <span aria-hidden="true" className="w-7 shrink-0 select-none pr-2 text-right text-muted">
-              {number}
-            </span>
-            <span className="whitespace-pre">{line || ' '}</span>
-          </>
-        )
-        return (
-          // biome-ignore lint/suspicious/noArrayIndexKey: lines are fixed for a card
-          <li key={index} className={tone}>
-            {onPick && !blank ? (
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => onPick(id)}
-                aria-label={`${t('review.lineNumber', { line: number })}: ${line.trim()}`}
-                className="flex w-full min-h-8 items-center px-2 text-left hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:hover:bg-transparent"
-              >
-                {body}
-                {(isAnswer || isPicked) && (
-                  <span className="ml-auto shrink-0 pl-3 font-sans text-[11px] text-ink">{isAnswer ? t('review.rightAnswer') : t('review.yourAnswer')}</span>
-                )}
-              </button>
-            ) : (
-              <span className={`flex px-2 ${marked ? 'border-l-4 border-primary' : ''}`}>{body}</span>
-            )}
-          </li>
-        )
-      })}
-    </ol>
+    <div className="overflow-x-auto border-2 border-ink bg-white">
+      <ol aria-label={t('review.code')} className="min-w-max py-1 font-mono text-xs leading-relaxed text-ink">
+        {lines.map((line, index) => {
+          const number = index + 1
+          const id = `l${number}`
+          const marked = bugLine === index
+          const blank = !line.trim()
+          const isAnswer = answer === id
+          const isPicked = picked === id
+          const tone = isAnswer ? 'bg-secondary-soft' : isPicked ? 'bg-primary-soft' : marked ? 'bg-primary-soft' : ''
+          const body = (
+            <>
+              <span aria-hidden="true" className="w-7 shrink-0 select-none pr-2 text-right text-muted">
+                {number}
+              </span>
+              <span className="whitespace-pre">{line || ' '}</span>
+            </>
+          )
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: lines are fixed for a card
+            <li key={index} className={tone}>
+              {onPick && !blank ? (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onPick(id)}
+                  aria-label={`${t('review.lineNumber', { line: number })}: ${line.trim()}`}
+                  className="flex w-full min-h-10 items-center px-2 lg:min-h-8 text-left hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:hover:bg-transparent"
+                >
+                  {body}
+                  {(isAnswer || isPicked) && (
+                    <span className={`sticky right-2 ml-auto shrink-0 px-1.5 py-0.5 font-label text-[10px] leading-none text-white ${isAnswer ? 'bg-secondary' : 'bg-ink'}`}>{isAnswer ? t('review.rightAnswer') : t('review.yourAnswer')}</span>
+                  )}
+                </button>
+              ) : (
+                <span className={`flex px-2 ${marked ? 'border-l-4 border-primary' : ''}`}>{body}</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </div>
   )
 }
 
