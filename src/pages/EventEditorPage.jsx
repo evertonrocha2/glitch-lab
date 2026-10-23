@@ -68,18 +68,18 @@ function Field({ id, label, value, max, children }) {
 function RequirementPicker({ kind, value, onChange }) {
   const t = useT()
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
+    <div>
       <span id={`req-${kind}`} className="text-sm text-ink">
         {t(`events.req.${kind}`)}
       </span>
-      <div role="group" aria-labelledby={`req-${kind}`} className="flex border-2 border-ink bg-white">
+      <div role="group" aria-labelledby={`req-${kind}`} className="mt-1.5 flex border-2 border-ink bg-white">
         {REQUIREMENT_LEVELS.filter((level) => requirementAllowed(kind, level)).map((level) => (
           <button
             key={level}
             type="button"
             aria-pressed={value === level}
             onClick={() => onChange(level)}
-            className={`px-2.5 py-1 font-label text-[10px] ${value === level ? 'bg-secondary text-white' : 'text-ink hover:bg-mist'}`}
+            className={`flex-1 px-2 py-1.5 font-label text-[10px] ${value === level ? 'bg-secondary text-white' : 'text-ink hover:bg-mist'}`}
           >
             {t(`events.editor.level.${level}`)}
           </button>

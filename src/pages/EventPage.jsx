@@ -293,8 +293,11 @@ export default function EventPage() {
                 </div>
                 <h1 className="mt-4 break-words font-pixel text-3xl font-bold leading-tight text-ink sm:text-4xl">{event.title}</h1>
                 <p className="mt-3 max-w-2xl break-words text-ink/80">{event.summary}</p>
-                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
-                  <AuthorChip author={event.organizer} meta={t('events.page.organizedBy')} size="size-9" />
+                <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-3">
+                  <div>
+                    <p className="mb-1.5 font-label text-[10px] text-muted">{t('events.page.organizedBy')}</p>
+                    <AuthorChip author={event.organizer} size="size-9" />
+                  </div>
                   <DateRange event={event} />
                 </div>
               </div>
@@ -316,8 +319,22 @@ export default function EventPage() {
             </p>
           )}
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div className="min-w-0">
+          {/* Phones: what you can do (join, organizer tools) first, then the event, then ranking and rules.
+              Wide screens: the event on the left, everything else down the right. */}
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr]">
+            <div className="space-y-6 lg:col-start-2 lg:row-start-1">
+              <EntryPanel user={user} event={event} status={status} myEntry={myEntry} loginLink={loginLink} onOpen={() => setFormOpen(true)} />
+              {event.mine && (
+                <OrganizerTools
+                  event={event}
+                  status={status}
+                  entries={entries}
+                  onClose={() => run((token) => closeEvent(event.id, token))}
+                  onPick={(winners) => run((token) => pickWinners(event.id, winners, token))}
+                />
+              )}
+            </div>
+            <div className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">
               <PixelCard tone="muted" className="p-5 sm:p-8">
                 <Section title={t('events.page.about')}>
                   <ArticleBody body={event.description} />
@@ -360,17 +377,7 @@ export default function EventPage() {
               </section>
             </div>
 
-            <aside className="space-y-6">
-              <EntryPanel user={user} event={event} status={status} myEntry={myEntry} loginLink={loginLink} onOpen={() => setFormOpen(true)} />
-              {event.mine && (
-                <OrganizerTools
-                  event={event}
-                  status={status}
-                  entries={entries}
-                  onClose={() => run((token) => closeEvent(event.id, token))}
-                  onPick={(winners) => run((token) => pickWinners(event.id, winners, token))}
-                />
-              )}
+            <aside className="space-y-6 self-start lg:col-start-2 lg:row-start-2">
               <Ranking entries={entries} />
               <PixelCard as="section" tone="muted" aria-label={t('events.page.requirements')} className="p-5">
                 <h2 className="font-label text-xs text-secondary">{t('events.page.requirements')}</h2>

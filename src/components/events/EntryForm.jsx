@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EVENT_LIMITS } from '../../../shared/events.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../pixel/PixelButton.jsx'
@@ -24,6 +24,9 @@ export default function EntryForm({ requirements, entry, onSave, onCancel }) {
     demoUrl: entry?.demoUrl ?? '',
   }))
   const [busy, setBusy] = useState(false)
+  const titleRef = useRef(null)
+  // The form opens below the event text: bring it into view, ready to type.
+  useEffect(() => titleRef.current?.focus(), [])
   const set = (field) => (event) => setDraft((current) => ({ ...current, [field]: event.target.value }))
   const links = LINKS.filter(({ kind }) => requirements[kind] !== 'off')
   const missing = !draft.title.trim() || links.some(({ kind, field }) => requirements[kind] === 'required' && !draft[field].trim())
@@ -44,7 +47,7 @@ export default function EntryForm({ requirements, entry, onSave, onCancel }) {
       <label htmlFor="entry-title" className={`mt-4 block ${LABEL}`}>
         {t('events.entry.title')}
       </label>
-      <input id="entry-title" value={draft.title} onChange={set('title')} maxLength={EVENT_LIMITS.entryTitle} placeholder={t('events.entry.titlePlaceholder')} className={`mt-2 ${INPUT}`} />
+      <input ref={titleRef} id="entry-title" value={draft.title} onChange={set('title')} maxLength={EVENT_LIMITS.entryTitle} placeholder={t('events.entry.titlePlaceholder')} className={`mt-2 ${INPUT}`} />
 
       <label htmlFor="entry-description" className={`mt-4 block ${LABEL}`}>
         {t('events.entry.description')} <span className="text-muted">{t('events.entry.optional')}</span>
