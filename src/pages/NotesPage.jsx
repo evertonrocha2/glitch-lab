@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useParams } from 'react-router'
 import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import NoteEditor from '../components/notes/NoteEditor.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { AuthError, createNote, deleteNote, listCases, listNotes, setNotePublic, updateNote } from '../lib/api.js'
@@ -39,7 +40,7 @@ function NoteList({ notes, showPublic }) {
             <NavLink
               to={`/notes/${note.id}`}
               className={({ isActive }) =>
-                `block border-2 px-3 py-2.5 transition-colors ${isActive ? 'border-ink bg-white shadow-pixel' : 'border-transparent hover:border-ink hover:bg-white'}`
+                `block border-2 border-ink px-3 py-2.5 transition-colors ${isActive ? 'bg-primary-soft shadow-pixel' : 'bg-white hover:bg-primary-soft'}`
               }
             >
               <span className="block truncate font-semibold text-ink">{note.title || t('notes.untitled')}</span>
@@ -169,39 +170,36 @@ export default function NotesPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="font-label text-xs text-secondary">
-            &gt; {t('notes.prompt')}
-            <span className="motion-safe:animate-caret">_</span>
-          </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('notes.title')}</h1>
-          <p className="mt-2 text-muted">{t('notes.lede')}</p>
-        </div>
-        <PixelButton onClick={create} disabled={creating || notes === null} className="px-5 py-3">
-          {creating ? t('notes.creating') : t('notes.new')}
-        </PixelButton>
-      </div>
+      <PageHeader
+        kicker={t('notes.prompt')}
+        title={t('notes.title')}
+        lead={t('notes.lede')}
+        actions={
+          <PixelButton onClick={create} disabled={creating || notes === null} className="px-5 py-3">
+            {creating ? t('notes.creating') : t('notes.new')}
+          </PixelButton>
+        }
+      />
 
       {message && (
-        <div className="mt-6">
+        <div className="mt-8">
           <ErrorNotice message={message} />
         </div>
       )}
 
       {notes === null ? (
-        <p role="status" className="mt-10 font-label text-xs text-muted">
+        <p role="status" className="mt-8 font-label text-xs text-muted">
           {t('notes.loading')}
         </p>
       ) : (
-        <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label={t('notes.nav')} className={id ? 'hidden lg:block' : ''}>
             <NoteList notes={notes} showPublic={sharing.status === 'ready'} />
           </nav>
 
           <section className={id ? '' : 'hidden lg:block'}>
             {id && (
-              <Link to="/notes" className="mb-4 inline-block font-label text-xs text-ink hover:text-primary lg:hidden">
+              <Link to="/notes" className="-my-3 mb-1 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary lg:hidden">
                 &lt; {t('notes.all')}
               </Link>
             )}
