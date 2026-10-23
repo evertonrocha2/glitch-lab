@@ -1,19 +1,24 @@
 export const PUZZLE_SYSTEM = `You write debugging puzzles for a daily challenge that every student of a debugging app gets.
 Each puzzle is a small, self-contained program with a realistic task and the exact bugs asked for. The student must find and fix them.
 Never solve the puzzle inside the code, comments, title or symptom.
-Use plain text only. Do not use Markdown or code fences.`
+Students read the app in English or in Brazilian Portuguese, so every text a student reads comes twice: once in plain, simple English and once in natural Brazilian Portuguese (pt-BR). The code is written once and is the same for both.
+Use plain text only. Do not use Markdown or code fences. Do not use em dashes.`
 
 export const PUZZLE_SCHEMA = {
   type: 'OBJECT',
   properties: {
     title: { type: 'STRING' },
+    titlePt: { type: 'STRING' },
     brokenCode: { type: 'STRING' },
     symptom: { type: 'STRING' },
+    symptomPt: { type: 'STRING' },
     hints: { type: 'ARRAY', items: { type: 'STRING' } },
+    hintsPt: { type: 'ARRAY', items: { type: 'STRING' } },
     solution: { type: 'STRING' },
     bugExplanation: { type: 'STRING' },
+    bugExplanationPt: { type: 'STRING' },
   },
-  required: ['title', 'brokenCode', 'symptom', 'hints', 'solution', 'bugExplanation'],
+  required: ['title', 'titlePt', 'brokenCode', 'symptom', 'symptomPt', 'hints', 'hintsPt', 'solution', 'bugExplanation', 'bugExplanationPt'],
 }
 
 const LEVELS = {
@@ -35,5 +40,6 @@ Fields:
 - symptom: the exact error message, or the wrong output next to the expected one, that the student sees when running brokenCode.
 - hints: exactly 3 hints, from vague to almost the answer, without giving the fixed code.
 - solution: brokenCode with ${kind === 'global' ? 'both bugs' : 'the bug'} fixed and nothing else changed.
-- bugExplanation: one or two sentences on what went wrong and why the fix works.`
+- bugExplanation: one or two sentences on what went wrong and why the fix works.
+- titlePt, symptomPt, hintsPt (exactly 3, in the same order) and bugExplanationPt: the same texts in Brazilian Portuguese. Keep code, identifiers and real error messages exactly as the programming language prints them; translate only the prose around them.`
 }

@@ -41,16 +41,29 @@ const filled = (value) => typeof value === 'string' && value.trim() !== ''
 // The app never shows em dashes; the AI likes them in prose.
 const prose = (text) => text.replace(/\s*\u2014\s*/g, ', ')
 
-// Splits the AI answer into the public puzzle and its secret, or throws when anything is off.
-// Stricter than a gym challenge: everyone gets this puzzle, so a broken one can't slip through.
-export function parsePuzzle(data, { kind, recentTitles }) {
-  const { title, brokenCode, symptom, solution, bugExplanation } = data ?? {}
-  const hints = Array.isArray(data?.hints) ? data.hints.slice(0, HINTS_PER_PUZZLE) : []
-  if (hints.length !== HINTS_PER_PUZZLE || !hints.every(filled) || ![title, brokenCode, symptom, solution, bugExplanation].every(filled)) {
-    throw new Error('AI puzzle is incomplete')
-  }
+const threeHints = (list) => (Array.isArray(list) ? list.slice(0, HINTS_PER_PUZZLE) : [])
+const hintsOk = (list) => list.length === HINTS_PER_PUZZLE && list.every(filled)
+
+// A short one-line name, or it throws.
+function shortName(title) {
   const name = prose(title.trim())
   if (name.length > MAX_TITLE || name.includes('\n')) throw new Error('AI puzzle title is not a short name')
+  return name
+}
+
+// Splits the AI answer into the public puzzle and its secret, or throws when anything is off.
+// Stricter than a gym challenge: everyone gets this puzzle, so a broken one can't slip through.
+// Every reader-facing text comes in English and in Brazilian Portuguese (`pt`); the code is shared.
+export function parsePuzzle(data, { kind, recentTitles }) {
+  const { title, brokenCode, symptom, solution, bugExplanation, titlePt, symptomPt, bugExplanationPt } = data ?? {}
+  const hints = threeHints(data?.hints)
+  const hintsPt = threeHints(data?.hintsPt)
+  if (!hintsOk(hints) || ![title, brokenCode, symptom, solution, bugExplanation].every(filled)) {
+    throw new Error('AI puzzle is incomplete')
+  }
+  if (!hintsOk(hintsPt) || ![titlePt, symptomPt, bugExplanationPt].every(filled)) throw new Error('AI puzzle has no Portuguese text')
+  const name = shortName(title)
+  const namePt = shortName(titlePt)
   if (recentTitles.some((used) => used.trim().toLowerCase() === name.toLowerCase())) throw new Error('AI puzzle repeats a recent title')
   for (const code of [brokenCode, solution]) {
     if (code.includes('```') || code.length > LIMITS.code) throw new Error('AI puzzle code is not plain or too long')
@@ -58,8 +71,14 @@ export function parsePuzzle(data, { kind, recentTitles }) {
   if (brokenCode.split('\n').length > MAX_LINES[kind]) throw new Error('AI puzzle code is too long')
   if (solution.trim() === brokenCode.trim()) throw new Error('AI puzzle solution changes nothing')
   return {
-    puzzle: { title: name, brokenCode, symptom: prose(symptom), hints: hints.map(prose) },
-    secret: { solution, bugExplanation: prose(bugExplanation) },
+    puzzle: {
+      title: name,
+      brokenCode,
+      symptom: prose(symptom),
+      hints: hints.map(prose),
+      pt: { title: namePt, symptom: prose(symptomPt), hints: hintsPt.map(prose) },
+    },
+    secret: { solution, bugExplanation: prose(bugExplanation), pt: { bugExplanation: prose(bugExplanationPt) } },
   }
 }
 

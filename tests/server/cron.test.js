@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { pickFromPool } from '../../server/modules/daily/puzzle-pool.js'
 import { api, geminiAnswer, useTempStore } from './helpers.js'
-import { AI_PUZZLE } from './puzzle-fixtures.js'
+import { AI_PUZZLE, AI_PUZZLE_PT, AI_SECRET_PT } from './puzzle-fixtures.js'
 import { PUZZLE_SECRET, puzzleFor } from './store-contract.js'
 
 const SECRET = 'cron-secret-for-tests'
@@ -83,7 +83,10 @@ it("writes today's and tomorrow's dailies plus the week's global with the AI", a
   expect(await store.listPuzzles({ kind: 'daily', day: TOMORROW })).toHaveLength(3)
   const [global] = await store.listPuzzles({ kind: 'global', day: '2026-10-19' })
   expect(global).toMatchObject({ kind: 'global', difficulty: 'hard' })
-  expect(await store.getPuzzleSecret(global.id)).toEqual({ solution: AI_PUZZLE.solution, bugExplanation: AI_PUZZLE.bugExplanation })
+  expect(await store.getPuzzleSecret(global.id)).toEqual({ solution: AI_PUZZLE.solution, bugExplanation: AI_PUZZLE.bugExplanation, pt: AI_SECRET_PT })
+  // Shared by everyone, so saved in both languages with one copy of the code.
+  expect(global.pt).toEqual(AI_PUZZLE_PT)
+  expect(today.every((item) => item.pt?.title === AI_PUZZLE.titlePt)).toBe(true)
   expect(prompts().some((prompt) => /two bugs/i.test(prompt))).toBe(true)
 })
 

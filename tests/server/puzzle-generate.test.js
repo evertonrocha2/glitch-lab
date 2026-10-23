@@ -1,17 +1,44 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { CONCEPTS } from '../../shared/concepts.js'
-import { buildPuzzlePrompt } from '../../server/modules/daily/puzzle.prompt.js'
+import { buildPuzzlePrompt, PUZZLE_SCHEMA, PUZZLE_SYSTEM } from '../../server/modules/daily/puzzle.prompt.js'
 import { LANGUAGES_BY_CONCEPT, parsePuzzle, planSlot } from '../../server/modules/daily/puzzle-generate.js'
-import { AI_PUZZLE } from './puzzle-fixtures.js'
+import { AI_PUZZLE, AI_PUZZLE_PT, AI_SECRET_PT } from './puzzle-fixtures.js'
 
 const parse = (data, options = {}) => parsePuzzle(data, { kind: 'daily', recentTitles: [], ...options })
 
-it('splits a good answer into the public puzzle and its secret', () => {
+it('splits a good answer into the public puzzle and its secret, each with its Portuguese copy', () => {
   expect(parse(AI_PUZZLE)).toEqual({
-    puzzle: { title: AI_PUZZLE.title, brokenCode: AI_PUZZLE.brokenCode, symptom: AI_PUZZLE.symptom, hints: AI_PUZZLE.hints },
-    secret: { solution: AI_PUZZLE.solution, bugExplanation: AI_PUZZLE.bugExplanation },
+    puzzle: { title: AI_PUZZLE.title, brokenCode: AI_PUZZLE.brokenCode, symptom: AI_PUZZLE.symptom, hints: AI_PUZZLE.hints, pt: AI_PUZZLE_PT },
+    secret: { solution: AI_PUZZLE.solution, bugExplanation: AI_PUZZLE.bugExplanation, pt: AI_SECRET_PT },
   })
+})
+
+it.each([
+  ['no Portuguese title', { ...AI_PUZZLE, titlePt: '' }],
+  ['no Portuguese symptom', { ...AI_PUZZLE, symptomPt: undefined }],
+  ['two Portuguese hints', { ...AI_PUZZLE, hintsPt: ['um', 'dois'] }],
+  ['a blank Portuguese hint', { ...AI_PUZZLE, hintsPt: ['um', ' ', 'três'] }],
+  ['no Portuguese explanation', { ...AI_PUZZLE, bugExplanationPt: ' ' }],
+  ['a Portuguese title on two lines', { ...AI_PUZZLE, titlePt: 'Linha um\nlinha dois' }],
+  ['a very long Portuguese title', { ...AI_PUZZLE, titlePt: 'x'.repeat(61) }],
+])('rejects an answer with %s', (_label, data) => {
+  expect(() => parse(data)).toThrow()
+})
+
+it('swaps em dashes in the Portuguese prose too', () => {
+  const parsed = parse({ ...AI_PUZZLE, symptomPt: 'Quebra — sempre', hintsPt: ['a — b', 'c', 'd'], bugExplanationPt: 'x — y' })
+  expect(parsed.puzzle.pt.symptom).toBe('Quebra, sempre')
+  expect(parsed.puzzle.pt.hints[0]).toBe('a, b')
+  expect(parsed.secret.pt.bugExplanation).toBe('x, y')
+})
+
+it('asks for every reader-facing text in English and in Brazilian Portuguese, with one copy of the code', () => {
+  const prompt = buildPuzzlePrompt({ kind: 'daily', difficulty: 'easy', language: 'python', conceptName: 'Off by one', avoidTitles: [] })
+  expect(prompt).toMatch(/titlePt, symptomPt, hintsPt \(exactly 3, in the same order\) and bugExplanationPt/)
+  expect(prompt).toMatch(/Brazilian Portuguese/)
+  expect(PUZZLE_SCHEMA.required).toEqual(expect.arrayContaining(['titlePt', 'symptomPt', 'hintsPt', 'bugExplanationPt']))
+  expect(PUZZLE_SYSTEM).toMatch(/The code is written once and is the same for both/)
 })
 
 it('keeps the first three hints and trims the title', () => {
