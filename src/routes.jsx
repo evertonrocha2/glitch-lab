@@ -9,6 +9,7 @@ import DuelLobbyPage from './pages/DuelLobbyPage.jsx'
 import DuelPage from './pages/DuelPage.jsx'
 import GlitchdlePage from './pages/GlitchdlePage.jsx'
 import GymPage from './pages/GymPage.jsx'
+import HuntPage from './pages/HuntPage.jsx'
 import InterrogationPage from './pages/InterrogationPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
@@ -78,6 +79,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <GlitchdlePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/hunt"
+        element={
+          <RequireAuth>
+            <HuntPage />
           </RequireAuth>
         }
       />

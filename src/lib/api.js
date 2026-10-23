@@ -105,6 +105,22 @@ export function guessRiddle({ mode, guess, day }, token) {
   return request('/api/challenge', { method: 'POST', body: { riddle: true, mode, guess, day }, token })
 }
 
+// Line hunt: today's run (where I am in it) and its leaderboard.
+export function getHunt(token) {
+  return request('/api/challenge?hunt=1', { token })
+}
+
+// Line hunt actions: 'start', 'answer' ({ index, line, day }), 'next' ({ day }) and 'practice'
+// ({ id, line }). Each answers with the run's new state; an answer also carries { result }.
+export function sendHunt(action, fields, token) {
+  return request('/api/challenge', { method: 'POST', body: { hunt: action, ...fields }, token })
+}
+
+// One practice snippet ({ roundMs, snippet }), never the one just played (`after`).
+export function getPracticeSnippet(after, token) {
+  return request(`/api/challenge?hunt=practice${after ? `&after=${encodeURIComponent(after)}` : ''}`, { token })
+}
+
 // Duel lobby: { rating, recent, leaderboard, active, isDemo }.
 export function getDuelLobby(token) {
   return request('/api/challenge?duel=lobby', { token })
