@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getDuel, getDuelLobby, getProgress, sendDuel } from '../lib/api.js'
+import { nudgeDuel } from '../lib/realtime/index.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
@@ -11,6 +12,13 @@ vi.mock('../lib/api.js', () => ({
   sendDuel: vi.fn(),
   getProgress: vi.fn().mockResolvedValue(null),
   addStudyTime: vi.fn(),
+}))
+vi.mock('../lib/realtime/index.js', () => ({
+  nudgeDuel: vi.fn(),
+  joinDuel: vi.fn((_id, { onStatus }) => {
+    onStatus('off')
+    return { nudge: vi.fn(), setSeat: vi.fn(), leave: vi.fn() }
+  }),
 }))
 
 const LOBBY = (fields = {}) => ({
@@ -55,6 +63,7 @@ beforeEach(() => {
   vi.mocked(getDuel).mockReset().mockResolvedValue(WAITING)
   vi.mocked(sendDuel).mockReset().mockResolvedValue({ duel: WAITING })
   vi.mocked(getProgress).mockClear()
+  vi.mocked(nudgeDuel).mockClear()
 })
 
 it('shows the ways to play, the tab rule, my rating, recent duels and the leaderboard', async () => {
@@ -89,6 +98,16 @@ it('starts a quick match and opens the waiting room', async () => {
   expect(sendDuel).toHaveBeenCalledWith('queue', {}, 'token-alice')
   await waitFor(() => expect(currentLocation()).toBe('/duel/q1'))
   expect(await screen.findByRole('heading', { name: 'Looking for an opponent' })).toBeInTheDocument()
+  // Nobody to tell: my own room is still waiting.
+  expect(nudgeDuel).not.toHaveBeenCalled()
+})
+
+it('tells the waiting player at once when a quick match pairs us up', async () => {
+  vi.mocked(sendDuel).mockResolvedValue({ duel: { ...WAITING, status: 'active', version: 3 } })
+  renderAt('/duel', { user: 'alice' })
+  await userEvent.click(screen.getByRole('button', { name: 'Quick match' }))
+  await waitFor(() => expect(currentLocation()).toBe('/duel/q1'))
+  expect(nudgeDuel).toHaveBeenCalledWith('q1', 3)
 })
 
 it('creates a private duel or plays the bot', async () => {
@@ -109,8 +128,10 @@ it('joins with a code, in capitals, and shows what went wrong', async () => {
   await userEvent.click(join)
   expect(sendDuel).toHaveBeenCalledWith('join', { code: 'ABC234' }, 'token-alice')
   expect(await screen.findByRole('alert')).toHaveTextContent('No duel has that code.')
+  vi.mocked(sendDuel).mockResolvedValueOnce({ duel: { ...WAITING, kind: 'private', status: 'active', version: 1 } })
   await userEvent.click(join)
   await waitFor(() => expect(currentLocation()).toBe('/duel/q1'))
+  expect(nudgeDuel).toHaveBeenCalledWith('q1', 1)
 })
 
 it('links back to a duel in progress and explains demo ratings', async () => {

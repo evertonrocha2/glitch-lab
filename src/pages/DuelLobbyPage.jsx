@@ -10,6 +10,7 @@ import { AuthError, getDuelLobby, sendDuel } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { playerName } from '../lib/duel.js'
 import { useT } from '../lib/i18n/I18nProvider.jsx'
+import { nudgeDuel } from '../lib/realtime/index.js'
 
 function ActionRow({ title, how, children }) {
   return (
@@ -149,6 +150,8 @@ export default function DuelLobbyPage() {
     setMessage('')
     try {
       const { duel } = await sendDuel(action, fields, await getToken())
+      // I took the empty seat of someone's waiting room: their page hears it now, not on its next poll.
+      if (duel.status === 'active' && (action === 'join' || action === 'queue')) nudgeDuel(duel.id, duel.version)
       navigate(`/duel/${duel.id}`)
     } catch (err) {
       await handleError(err)
