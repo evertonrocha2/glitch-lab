@@ -254,3 +254,49 @@ export function listNotifications(token) {
 export async function markNotificationsRead(id, token) {
   return (await request(`${COMMUNITY}notifications`, { method: 'POST', body: id ? { id } : { all: true }, token })).unread
 }
+
+// Community events. Reading works signed out (token may be null); everything else needs a token.
+// { events, page, hasMore } for a tab (live, upcoming, ended). Only the filters that are set go in the URL.
+export function listEvents({ q, tab, page } = {}, token) {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries({ q, tab, page })) {
+    if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
+  }
+  const query = params.toString()
+  return request(`${COMMUNITY}events${query ? `&${query}` : ''}`, { token })
+}
+
+// { event, entries (ranked by votes), myEntry, myVotes }. createEvent and the organizer tools answer the same.
+export function getEvent(id, token) {
+  return request(`${COMMUNITY}events&id=${encodeURIComponent(id)}`, { token })
+}
+
+export function createEvent(fields, token) {
+  return request(`${COMMUNITY}events`, { method: 'POST', body: fields, token })
+}
+
+export function updateEvent(id, fields, token) {
+  return request(`${COMMUNITY}events`, { method: 'PUT', body: { ...fields, id }, token })
+}
+
+export function closeEvent(id, token) {
+  return request(`${COMMUNITY}events`, { method: 'PUT', body: { id, action: 'close' }, token })
+}
+
+// winners: entry ids, first place first (1 to 3).
+export function pickWinners(id, winners, token) {
+  return request(`${COMMUNITY}events`, { method: 'PUT', body: { id, action: 'winners', winners }, token })
+}
+
+export async function submitEntry(eventId, fields, token) {
+  return (await request(`${COMMUNITY}event-entries`, { method: 'POST', body: { ...fields, eventId }, token })).entry
+}
+
+export async function updateEntry(id, fields, token) {
+  return (await request(`${COMMUNITY}event-entries`, { method: 'PUT', body: { ...fields, id }, token })).entry
+}
+
+// Returns { voted, votes }.
+export function voteEntry(entryId, vote, token) {
+  return request(`${COMMUNITY}event-votes`, { method: 'POST', body: { entryId, vote }, token })
+}

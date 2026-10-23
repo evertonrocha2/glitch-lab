@@ -25,6 +25,9 @@ export default function CommunityShell({ children }) {
             <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
               {t('notes.articles.title')}
             </Link>
+            <Link to="/events" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
+              {t('events.nav')}
+            </Link>
             <LanguageSelect compact />
             <PixelButton as={Link} to={`/login?next=${next}`} className="px-3 py-2">
               {t('notes.articles.signIn')}

@@ -74,6 +74,9 @@ export default function AppShell({ children }) {
               <NavLink to="/articles" className={navClass}>
                 {t('app.nav.articles')}
               </NavLink>
+              <NavLink to="/events" className={navClass}>
+                {t('events.nav')}
+              </NavLink>
               <NavLink to="/progress" className={navClass}>
                 {t('app.nav.progress')}{' '}
                 {progress && (
