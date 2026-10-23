@@ -1,5 +1,6 @@
 import { timeline } from '../../../../shared/interrogation.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { stepKey } from '../../../lib/interrogation/step-key.js'
 
 const STYLE = {
   passed: 'bg-secondary text-white',
@@ -8,13 +9,14 @@ const STYLE = {
 }
 
 // The six steps in a row (two rows of three on a phone): done in blue, the current one in purple.
-export default function InterrogationStepper({ interrogation }) {
+// question: the case is a question card, so the steps are named for a doubt.
+export default function InterrogationStepper({ interrogation, question = false }) {
   const t = useT()
   const rows = timeline(interrogation)
   return (
     <ol aria-label={t('interrogation.page.steps')} className="grid grid-cols-3 gap-2 sm:grid-cols-6">
       {rows.map((row) => {
-        const title = t(`interrogation.step.${row.id}.title`)
+        const title = t(stepKey(row.id, 'title', question))
         const status = t(`interrogation.step.status.${row.status}`)
         return (
           <li

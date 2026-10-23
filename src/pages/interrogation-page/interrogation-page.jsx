@@ -1,25 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { currentStep, INTERROGATION_LIMITS, INTERROGATION_STEPS } from '../../../shared/interrogation.js'
+import { isQuestion } from '../../../shared/question.js'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import InterrogationStepper from '../../components/interrogation/interrogation-stepper/interrogation-stepper.jsx'
 import InterrogationTimeline from '../../components/interrogation/interrogation-timeline/interrogation-timeline.jsx'
+import QuestionBadge from '../../components/board/question-badge/question-badge.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import Working from '../../components/ui/working/working.jsx'
 import { AuthError, answerInterrogation, getInterrogation } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
-import { splitError } from '../../lib/case-info.js'
+import { caseHeading } from '../../lib/case-info.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
+import { stepKey } from '../../lib/interrogation/step-key.js'
 import { useExportInterrogation } from '../../lib/interrogation/use-export-interrogation.js'
 import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import InterrogationPageSkeleton from './interrogation-page-skeleton.jsx'
 
 // What the coach said about the last answer. Lives in a polite live region, so a screen reader
-// hears it without losing its place.
-function CoachReply({ turn }) {
+// hears it without losing its place. question: the case is a question card.
+function CoachReply({ turn, question }) {
   const t = useT()
   if (!turn) return null
   const passed = turn.passed
@@ -35,7 +38,7 @@ function CoachReply({ turn }) {
           <span className="font-semibold">{t('interrogation.feedback.question')}</span> {turn.question}
         </p>
       )}
-      {passed && next && <p className="mt-3 text-sm text-muted">{t('interrogation.feedback.next', { title: t(`interrogation.step.${next}.title`) })}</p>}
+      {passed && next && <p className="mt-3 text-sm text-muted">{t('interrogation.feedback.next', { title: t(stepKey(next, 'title', question)) })}</p>}
     </div>
   )
 }
@@ -107,7 +110,9 @@ export default function InterrogationPage() {
   const index = interrogation?.step ?? 0
   const total = INTERROGATION_STEPS.length
   const triesHere = interrogation?.turns.filter((turn) => turn.step === step) ?? []
-  const error = kase ? splitError(kase.error) : null
+  const heading = kase ? caseHeading(kase) : null
+  // A question card (from a doubt chat) shows its question and walks the steps from the doubt.
+  const question = isQuestion(kase)
 
   return (
     <AppShell>
@@ -131,9 +136,14 @@ export default function InterrogationPage() {
             <h2 id="interrogation-case" className="font-label text-xs text-primary">
               {t('interrogation.page.case')}
             </h2>
-            <p className="mt-3 wrap-break-word font-pixel text-xl font-bold text-ink">{error.type}</p>
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word border-2 border-ink bg-white p-3 font-mono text-xs leading-relaxed text-ink">{kase.error}</pre>
+            <p className="mt-3 wrap-break-word font-pixel text-xl font-bold text-ink">{heading.type}</p>
+            {question ? (
+              <p className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word border-2 border-ink bg-white p-3 text-sm leading-relaxed text-ink">{kase.question}</p>
+            ) : (
+              <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word border-2 border-ink bg-white p-3 font-mono text-xs leading-relaxed text-ink">{kase.error}</pre>
+            )}
             <p className="mt-3 flex flex-wrap gap-1.5">
+              {question && <QuestionBadge topic={kase.topic} />}
               <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(kase.concept)}</span>
               <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{kase.language}</span>
             </p>
@@ -146,13 +156,13 @@ export default function InterrogationPage() {
           </aside>
 
           <div className="min-w-0 space-y-6">
-            <InterrogationStepper interrogation={interrogation} />
+            <InterrogationStepper interrogation={interrogation} question={question} />
 
             {step ? (
               <form onSubmit={submit} className="border-2 border-ink bg-white p-5 shadow-pixel sm:p-6">
                 <p className="font-label text-xs text-secondary">{t('interrogation.step.number', { number: index + 1, total })}</p>
-                <h2 className="mt-2 font-pixel text-2xl font-bold text-ink">{t(`interrogation.step.${step}.title`)}</h2>
-                <p className="mt-2 text-ink">{t(`interrogation.step.${step}.ask`)}</p>
+                <h2 className="mt-2 font-pixel text-2xl font-bold text-ink">{t(stepKey(step, 'title', question))}</h2>
+                <p className="mt-2 text-ink">{t(stepKey(step, 'ask', question))}</p>
 
                 <label htmlFor="interrogation-answer" className="mt-5 block font-label text-xs text-ink">
                   {t('interrogation.answer.label')}
@@ -166,7 +176,7 @@ export default function InterrogationPage() {
                     // Ctrl/Cmd + Enter sends, Enter alone makes a new line.
                     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) submit(event)
                   }}
-                  placeholder={t(`interrogation.step.${step}.example`)}
+                  placeholder={t(stepKey(step, 'example', question))}
                   maxLength={INTERROGATION_LIMITS.answer}
                   rows={4}
                   aria-describedby="interrogation-answer-hint"
@@ -195,7 +205,7 @@ export default function InterrogationPage() {
 
             {sending && <Working label={t('interrogation.answer.checking')} />}
             <div aria-live="polite">
-              <CoachReply turn={lastTurn} />
+              <CoachReply turn={lastTurn} question={question} />
             </div>
 
             {step && triesHere.length > 0 && (
@@ -216,7 +226,7 @@ export default function InterrogationPage() {
               </details>
             )}
 
-            {interrogation.turns.some((turn) => turn.passed) && <InterrogationTimeline interrogation={interrogation} />}
+            {interrogation.turns.some((turn) => turn.passed) && <InterrogationTimeline interrogation={interrogation} question={question} />}
           </div>
         </div>
       )}

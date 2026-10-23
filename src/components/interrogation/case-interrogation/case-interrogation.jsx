@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { INTERROGATION_STEPS, INTERROGATION_XP } from '../../../../shared/interrogation.js'
+import { isQuestion } from '../../../../shared/question.js'
 import { AuthError, getInterrogation } from '../../../lib/api.js'
 import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
@@ -55,7 +56,7 @@ export default function CaseInterrogation({ item }) {
       {finished ? (
         <>
           <div className="mt-4">
-            <InterrogationTimeline interrogation={interrogation} headingLevel="h4" id="case-interrogation-timeline" />
+            <InterrogationTimeline interrogation={interrogation} headingLevel="h4" id="case-interrogation-timeline" question={isQuestion(item)} />
           </div>
           <PixelButton variant="secondary" onClick={() => exportNote(item, interrogation)} disabled={exporting} className="mt-5">
             {exporting ? t('interrogation.exporting') : t('interrogation.export')}

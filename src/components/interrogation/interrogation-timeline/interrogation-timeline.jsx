@@ -1,9 +1,11 @@
 import { timeline } from '../../../../shared/interrogation.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { stepKey } from '../../../lib/interrogation/step-key.js'
 
 // The interrogation as a timeline: each passed step with the student's answer and the coach's word.
 // Steps not reached yet are left out. headingLevel: 'h2' on its own page, 'h3' inside the drawer.
-export default function InterrogationTimeline({ interrogation, headingLevel: Heading = 'h2', id = 'interrogation-timeline' }) {
+// question: the case is a question card, so the steps are named for a doubt.
+export default function InterrogationTimeline({ interrogation, headingLevel: Heading = 'h2', id = 'interrogation-timeline', question = false }) {
   const t = useT()
   const rows = timeline(interrogation).filter((row) => row.status === 'passed')
   if (!rows.length) return null
@@ -19,7 +21,7 @@ export default function InterrogationTimeline({ interrogation, headingLevel: Hea
             <span aria-hidden="true" className="absolute top-0 -left-[9px] grid size-4 place-items-center border-2 border-ink bg-secondary" />
             <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="font-label text-xs text-ink">
-                {row.index + 1}. {t(`interrogation.step.${row.id}.title`)}
+                {row.index + 1}. {t(stepKey(row.id, 'title', question))}
               </span>
               <span className="text-xs text-muted">{t('interrogation.tries', { count: row.tries })}</span>
             </p>
