@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest'
-import { answersFor, CATEGORY_NO_REPEAT_DAYS, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../server/modules/glitchdle/schedule.js'
+import { answersFor, CATEGORY_NO_REPEAT_DAYS, categoryWindow, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../server/modules/glitchdle/schedule.js'
 import { itemById, SLOTS } from '../../shared/riddle/categories.js'
 import { addDays } from '../../shared/daily.js'
 import { LAUNCH_DAY, MODES } from '../../shared/riddle/game.js'
@@ -31,8 +31,11 @@ it(`never repeats a framework or a database within ${CATEGORY_NO_REPEAT_DAYS} da
       const window = sets.slice(Math.max(0, index - CATEGORY_NO_REPEAT_DAYS), index).map((set) => set[slot])
       expect(window, `${slot} on ${days[index]}`).not.toContain(sets[index][slot])
     }
-    expect(new Set(sets.map((set) => set[slot])).size).toBeGreaterThan(40)
+    expect(new Set(sets.map((set) => set[slot])).size).toBeGreaterThan(60)
   }
+  // A small catalog keeps some room to pick from.
+  expect(categoryWindow(50)).toBe(40)
+  expect(categoryWindow(200)).toBe(CATEGORY_NO_REPEAT_DAYS)
 })
 
 it('keeps the language answers it picked before the new categories existed', () => {

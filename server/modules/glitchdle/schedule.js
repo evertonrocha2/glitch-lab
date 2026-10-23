@@ -6,10 +6,12 @@ import { SAMPLES } from '../../../shared/riddle/samples.js'
 // Which language is each day's answer, worked out from the date alone, so a day the cron missed
 // still gets the same answers for everyone. Server only: the browser must never be able to run this.
 
-// A language doesn't come back in the same mode for this many days.
-export const NO_REPEAT_DAYS = 20
-// Nor a framework or a database: their catalogs are bigger, so the window is too.
-export const CATEGORY_NO_REPEAT_DAYS = 30
+// A language doesn't come back in the same mode for this many days (38 languages, 3 a day: 30
+// leaves a handful to pick from). Raised from 20: the first 20 days pick the same either way.
+export const NO_REPEAT_DAYS = 30
+// Nor a framework or a database within 60 days; a catalog too small for that keeps 10 to pick from.
+export const CATEGORY_NO_REPEAT_DAYS = 60
+export const categoryWindow = (size) => Math.max(0, Math.min(CATEGORY_NO_REPEAT_DAYS, size - 10))
 
 const DAY_MS = 24 * 3_600_000
 const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / DAY_MS)
@@ -79,7 +81,7 @@ function walkCategory(category, index) {
   }
   while (walk.picks.length <= index) {
     const today = walk.picks.length
-    const taken = new Set(walk.picks.slice(Math.max(0, today - CATEGORY_NO_REPEAT_DAYS)))
+    const taken = new Set(walk.picks.slice(Math.max(0, today - categoryWindow(ids.length))))
     const candidates = ids.filter((id) => !taken.has(id))
     walk.picks.push(candidates[seeded(`${dayString(LAUNCH + today)}:${slot}`) % candidates.length])
   }
@@ -132,12 +134,17 @@ export function revealOrder(lines, seed) {
 // a snippet and its reveal order for Snippet mode. Classic boards need nothing.
 export function datasetPayload(day, mode, answer) {
   const samples = SAMPLES[answer]
-  if (mode === 'error') return { text: samples.errors[seeded(`${day}:error:sample`) % samples.errors.length] }
-  if (mode === 'snippet') {
-    const lines = samples.snippets[seeded(`${day}:snippet:sample`) % samples.snippets.length].split('\n')
-    return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
-  }
+  if (mode === 'error') return poolPayload(day, mode, samples.errors)
+  if (mode === 'snippet') return poolPayload(day, mode, samples.snippets)
   return {}
+}
+
+// The payload for a clue picked from `pool` (error texts, or snippets as one string each): the
+// same pick for the same day and pool.
+export function poolPayload(day, mode, pool) {
+  if (mode === 'error') return { text: pool[seeded(`${day}:error:sample`) % pool.length] }
+  const lines = pool[seeded(`${day}:snippet:sample`) % pool.length].split('\n')
+  return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
 }
 
 // The full set for a day, as the store saves it, from the dataset only.
