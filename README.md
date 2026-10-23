@@ -59,7 +59,9 @@ A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) wh
 3. **Specialists run in parallel**: Board analyst, Gym coach, Notes keeper, Study planner, App guide. Your content is fenced off as data, and every one of them is a tutor: no full fixes for gym challenges, just nudges.
 4. **Merge and check**: two answers are stacked (no third slow AI call), and suggested actions (open a case or note, train a case, start the timer, go to a page) are checked on the server: ids must be yours, pages from an allowlist.
 
-One question counts as one AI call on the daily limit. The chat lives in the browser session only.
+One question counts as one AI call on the daily limit, plus one per extra specialist. The chat lives in the browser session only. The App guide knows every page and leads with the one you're on, so "what can I do here?" gets concrete next steps.
+
+**Streaming.** The panel asks `POST /api/assistant/stream`, which answers with Server-Sent Events: `step` (routing, who answers, loading data), `delta` (`{ agent, text }` as the model writes), then `done` (the same payload as `POST /api/assistant`) or `error` (`{ message }`). Specialists write plain text and end with one `ACTIONS: [...]` line; the server holds back anything that could be that line, so it never reaches the screen, and checks the actions at the end as before. Two specialists write at the same time, and the second one's text waits until the first is done. The AI layer streams from OpenRouter and Gemini (`streamText` in `server/infra/ai`) and only falls back to the next provider before the first word. Closing the panel or pressing Stop aborts the AI call. The browser reads the stream with `fetch` (EventSource can't POST or send a token) and falls back to the plain endpoint if the stream can't be used before any text arrives. Vercel's `/api` rewrite passes the stream through unbuffered (measured: words arrive every ~170 ms, same as calling Render directly); if a proxy ever buffers it, set `VITE_API_STREAM_URL` to the API's own origin to call it directly for this one route (that needs CORS for the app's origin on the API).
 
 ## Daily and global challenges
 
