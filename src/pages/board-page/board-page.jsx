@@ -11,6 +11,7 @@ import ExportMenu from '../../components/notes/export-menu/export-menu.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
+import { Bone } from '../../components/ui/skeleton/skeleton.jsx'
 import Working from '../../components/ui/working/working.jsx'
 import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../../lib/api.js'
 import { useAssistantFocus } from '../../lib/assistant/assistant-provider.jsx'
@@ -21,6 +22,7 @@ import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../../lib
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import { mentionsCase, newBlock } from '../../lib/notes/blocks.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import BoardPageSkeleton from './board-page-skeleton.jsx'
 
 const EXPORTS = { md: exportBoardMarkdown, png: exportBoardImage, pdf: exportBoardPdf }
 
@@ -187,14 +189,21 @@ export default function BoardPage() {
         title={t('board.page.title')}
         lead={t('board.page.lead')}
         actions={
-          hasCases &&
-          !investigating && (
+          cases === null ? (
             <>
-              <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
-              <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
-                {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
-              </PixelButton>
+              <Bone className="h-11 w-28" />
+              <Bone className="h-11 w-40" />
             </>
+          ) : (
+            hasCases &&
+            !investigating && (
+              <>
+                <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
+                <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+                  {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
+                </PixelButton>
+              </>
+            )
           )
         }
       />
@@ -224,20 +233,19 @@ export default function BoardPage() {
       )}
 
       <div className="mt-8">
-        {cases === null && (
-          <p role="status" className="font-label text-xs text-muted">
-            {t('board.page.loading')}
-          </p>
+        {cases === null ? (
+          <BoardPageSkeleton />
+        ) : (
+          <>
+            {cases.length === 0 && !investigating && <p className="mb-5 font-pixel text-lg text-ink">{t('board.page.empty')}</p>}
+            {hasCases && (
+              <div className="mb-8">
+                <BoardStats cases={cases} />
+              </div>
+            )}
+            <Board cases={cases} onOpen={(item) => setOpenId(item.id)} />
+          </>
         )}
-        {cases?.length === 0 && !investigating && (
-          <p className="mb-5 font-pixel text-lg text-ink">{t('board.page.empty')}</p>
-        )}
-        {hasCases && (
-          <div className="mb-8">
-            <BoardStats cases={cases} />
-          </div>
-        )}
-        <Board cases={cases ?? []} onOpen={(item) => setOpenId(item.id)} />
       </div>
 
       {openCase && (

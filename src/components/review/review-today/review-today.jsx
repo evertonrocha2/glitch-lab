@@ -10,6 +10,7 @@ import { useProgress } from '../../../lib/progress/progress-provider.jsx'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import ReviewSession from '../review-session/review-session.jsx'
+import ReviewTodaySkeleton from './review-today-skeleton.jsx'
 
 const SHOWN_CONCEPTS = 5
 
@@ -96,11 +97,7 @@ export default function ReviewToday({ className = '' }) {
                 <ErrorNotice message={message} />
               </div>
             )}
-            {!review && !message && (
-              <p role="status" className="font-label text-xs text-muted">
-                {t('review.loading')}
-              </p>
-            )}
+            {!review && !message && <ReviewTodaySkeleton />}
             {review && review.met === 0 && <p className="text-ink">{t('review.none')}</p>}
             {review && review.met > 0 && (
               <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

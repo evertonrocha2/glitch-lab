@@ -117,10 +117,12 @@ it('Get a hint cannot be sent twice while waiting', async () => {
   expect(revealHint).toHaveBeenCalledTimes(1)
 })
 
-it('shows a loading state while the challenge loads', async () => {
+it('shows a skeleton of the gym while the challenge loads', async () => {
   vi.mocked(getChallenge).mockReturnValue(new Promise(() => {}))
   renderAt('/gym/ch1', { user: 'alice' })
-  expect(await screen.findByText('Loading your challenge...')).toBeInTheDocument()
+  const skeleton = await screen.findByRole('status', { name: 'Loading your challenge...' })
+  expect(skeleton).toHaveAttribute('aria-busy', 'true')
+  expect(screen.queryByLabelText('Your fix')).not.toBeInTheDocument()
 })
 
 it('says when the challenge is already fixed', async () => {

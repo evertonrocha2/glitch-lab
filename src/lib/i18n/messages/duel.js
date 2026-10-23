@@ -6,6 +6,7 @@ const en = {
   'duel.bot': 'Glitch Bot',
   'duel.you': 'You',
   'duel.loading': 'Loading the duel...',
+  'duel.lobby.loading': 'Loading your rating and duels...',
   'duel.back': 'Back to the lobby',
   'duel.clipboard': 'Copy this link:',
 
@@ -124,6 +125,7 @@ const pt = {
   'duel.bot': 'Glitch Bot',
   'duel.you': 'Você',
   'duel.loading': 'Carregando o duelo...',
+  'duel.lobby.loading': 'Carregando seu rating e seus duelos...',
   'duel.back': 'Voltar ao lobby',
   'duel.clipboard': 'Copie este link:',
 

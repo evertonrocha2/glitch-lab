@@ -11,6 +11,7 @@ import { formatCountdown } from '../../lib/daily.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import GlitchdlePageSkeleton, { CountdownSkeleton } from './glitchdle-page-skeleton.jsx'
 
 function useNow() {
   const [now, setNow] = useState(() => Date.now())
@@ -194,6 +195,7 @@ export default function GlitchdlePage() {
               {t('app.glitchdle.nextIn')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
             </p>
           )}
+          {!game && !message && <CountdownSkeleton />}
         </div>
         <p className="mt-2 max-w-2xl text-muted">{t('app.glitchdle.lead')}</p>
       </div>
@@ -204,11 +206,7 @@ export default function GlitchdlePage() {
         </div>
       )}
 
-      {!game && !message && (
-        <p role="status" className="mt-10 font-label text-xs text-muted">
-          {t('app.glitchdle.loading')}
-        </p>
-      )}
+      {!game && !message && <GlitchdlePageSkeleton />}
 
       {game && state && (
         // The game on the left; my numbers and today's community in a sidebar on wide screens, below on phones.

@@ -18,6 +18,7 @@ import { formatDuration, localDay } from '../../lib/day.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import ProgressPageSkeleton from './progress-page-skeleton.jsx'
 
 const SEGMENTS = 20
 
@@ -90,9 +91,7 @@ export default function ProgressPage() {
       />
 
       {!progress ? (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('app.progress.loading')}
-        </p>
+        <ProgressPageSkeleton badges={BADGES.length} earn={EARN.length} />
       ) : (
         <>
           <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

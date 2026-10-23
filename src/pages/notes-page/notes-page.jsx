@@ -14,6 +14,7 @@ import { useFormat } from '../../lib/i18n/format.js'
 import { newBlock } from '../../lib/notes/blocks.js'
 import { useMyProfile } from '../../lib/profile/my-profile.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import NotesPageSkeleton from './notes-page-skeleton.jsx'
 
 const EXPORTS = { md: exportNoteMarkdown, png: exportNoteImage, pdf: exportNotePdf }
 
@@ -188,9 +189,7 @@ export default function NotesPage() {
       )}
 
       {notes === null ? (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('notes.loading')}
-        </p>
+        !message && <NotesPageSkeleton withNote={Boolean(id)} />
       ) : (
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label={t('notes.nav')} className={id ? 'hidden lg:block' : ''}>

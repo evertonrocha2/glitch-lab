@@ -15,6 +15,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useExportInterrogation } from '../../lib/interrogation/use-export-interrogation.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import InterrogationPageSkeleton from './interrogation-page-skeleton.jsx'
 
 // What the coach said about the last answer. Lives in a polite live region, so a screen reader
 // hears it without losing its place.
@@ -121,11 +122,7 @@ export default function InterrogationPage() {
         </div>
       )}
 
-      {!data && !message && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('interrogation.page.loading')}
-        </p>
-      )}
+      {!data && !message && <InterrogationPageSkeleton steps={total} />}
 
       {kase && interrogation && (
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

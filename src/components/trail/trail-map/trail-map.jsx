@@ -14,8 +14,8 @@ const STATUS = {
 }
 
 // A dashed pixel line: 8px of ink, 6px of gap.
-const DASHED_DOWN = 'bg-[repeating-linear-gradient(to_bottom,var(--color-ink)_0_8px,transparent_8px_14px)]'
-const DASHED_ACROSS = 'bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_6px,transparent_6px_10px)]'
+export const DASHED_DOWN = 'bg-[repeating-linear-gradient(to_bottom,var(--color-ink)_0_8px,transparent_8px_14px)]'
+export const DASHED_ACROSS = 'bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_6px,transparent_6px_10px)]'
 
 function Node({ number, status }) {
   if (status === 'done') {

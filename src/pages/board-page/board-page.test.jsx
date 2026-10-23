@@ -42,6 +42,19 @@ async function investigate(error) {
   await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
 }
 
+it('shows a skeleton of the board while my cases load', async () => {
+  let resolve
+  vi.mocked(listCases).mockReturnValue(new Promise((done) => (resolve = done)))
+  renderAt('/board', { user: 'alice' })
+  expect(await screen.findByRole('status', { name: 'Loading your cases...' })).toHaveAttribute('aria-busy', 'true')
+  // The columns are only drawn, not real yet: no regions, no "nothing here" hints.
+  expect(screen.queryByRole('region', { name: 'New' })).not.toBeInTheDocument()
+
+  resolve([makeCase({ status: 'training', passedCount: 1 })])
+  expect(await screen.findByText('1/2 challenges')).toBeInTheDocument()
+  expect(screen.queryByRole('status', { name: 'Loading your cases...' })).not.toBeInTheDocument()
+})
+
 it('loads my cases', async () => {
   vi.mocked(listCases).mockResolvedValue([makeCase({ status: 'training', passedCount: 1 })])
   renderAt('/board', { user: 'alice' })

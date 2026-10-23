@@ -13,6 +13,7 @@ import { playerName, secondsUntil } from '../../lib/duel.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
 import { joinDuel, nudgeDuel } from '../../lib/realtime/index.js'
+import DuelPageSkeleton from './duel-page-skeleton.jsx'
 
 // While a duel is on, the page asks for its state about once a second, and right when the next
 // round opens. A finished duel between people is checked every few seconds for a while, so a
@@ -323,11 +324,7 @@ export default function DuelPage() {
         </div>
       )}
 
-      {!duel && !message && (
-        <p role="status" className="mt-10 font-label text-xs text-muted">
-          {t('duel.loading')}
-        </p>
-      )}
+      {!duel && !message && <DuelPageSkeleton />}
 
       {duel && (
         <div className="mt-8">

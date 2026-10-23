@@ -4,7 +4,7 @@ import StepIcon from '../../ui/step-icon/step-icon.jsx'
 import CaseCard from '../case-card/case-card.jsx'
 
 // Gray = just investigated, blue = practicing, purple = understood for good.
-const COLUMNS = [
+export const COLUMNS = [
   {
     status: 'new',
     icon: 'investigate',

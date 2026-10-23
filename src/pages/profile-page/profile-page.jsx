@@ -15,6 +15,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { loadMyProfile, rememberMyProfile } from '../../lib/profile/my-profile.js'
+import ProfilePageSkeleton from './profile-page-skeleton.jsx'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
 const LABEL = 'font-label text-xs text-ink'
@@ -414,11 +415,7 @@ export default function ProfilePage() {
       )}
 
       {!draft ? (
-        !message && (
-          <p role="status" className="mt-8 font-label text-xs text-muted">
-            {t('app.profile.loading')}
-          </p>
-        )
+        !message && <ProfilePageSkeleton />
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
           <section aria-labelledby="preview-title" className="lg:sticky lg:top-6 lg:order-last">

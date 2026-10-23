@@ -54,6 +54,20 @@ async function openEditor() {
   await waitFor(() => expect(field('Display name')).toHaveValue('alice'))
 }
 
+it('shows a skeleton of the editor while the profile loads, then the real form', async () => {
+  let resolve
+  vi.mocked(getMyProfile).mockReturnValue(new Promise((done) => (resolve = done)))
+  renderAt('/profile', { user: 'alice', locale: 'pt-BR' })
+  const skeleton = await screen.findByRole('status', { name: 'Carregando seu perfil...' })
+  expect(skeleton).toHaveAttribute('aria-busy', 'true')
+  expect(screen.queryByText('Carregando seu perfil...')).toHaveClass('sr-only')
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+  resolve(MINE)
+  await waitFor(() => expect(screen.queryByRole('status', { name: 'Carregando seu perfil...' })).not.toBeInTheDocument())
+  expect(screen.getByRole('textbox', { name: 'Nome de exibição' })).toHaveValue('alice')
+})
+
 it('opens from the avatar in the header', async () => {
   renderAt('/progress', { user: 'alice' })
   await userEvent.click(await screen.findByRole('link', { name: 'Your profile' }))

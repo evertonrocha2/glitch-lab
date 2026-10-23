@@ -13,6 +13,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
 import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
+import DailyPageSkeleton, { GlobalChallengeSkeleton } from './daily-page-skeleton.jsx'
 
 // Ticks once a second for the countdowns.
 function useNow() {
@@ -179,11 +180,7 @@ export default function DailyPage() {
         </div>
       )}
 
-      {!daily && !message && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('board.daily.loading')}
-        </p>
-      )}
+      {!daily && !message && <DailyPageSkeleton />}
 
       {daily && (
         // Desktop: today's counters and the Glitchdle side by side, over the three cases.
@@ -221,7 +218,7 @@ export default function DailyPage() {
       {/* Spaced review of the bug types already met (see components/review). */}
       <ReviewToday className="mt-14" />
 
-      {global && <GlobalChallenge data={global} now={now} onStart={start} starting={starting} />}
+      {global ? <GlobalChallenge data={global} now={now} onStart={start} starting={starting} /> : !daily && !message && <GlobalChallengeSkeleton />}
     </AppShell>
   )
 }

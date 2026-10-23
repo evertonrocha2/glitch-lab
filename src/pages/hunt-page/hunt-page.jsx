@@ -11,6 +11,7 @@ import { formatCountdown } from '../../lib/daily.js'
 import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import HuntPageSkeleton, { ModeTabsSkeleton } from './hunt-page-skeleton.jsx'
 
 const MODES = ['daily', 'practice']
 
@@ -344,7 +345,7 @@ export default function HuntPage() {
 
   return (
     <AppShell>
-      <PageHeader kicker={t('hunt.kicker')} title={t('hunt.title')} lead={t('hunt.lead')} actions={data && <ModeTabs mode={mode} onPick={setMode} locked={playing} />} />
+      <PageHeader kicker={t('hunt.kicker')} title={t('hunt.title')} lead={t('hunt.lead')} actions={data ? <ModeTabs mode={mode} onPick={setMode} locked={playing} /> : !message && <ModeTabsSkeleton />} />
 
       {message && (
         <div className="mt-8">
@@ -352,11 +353,7 @@ export default function HuntPage() {
         </div>
       )}
 
-      {!data && !message && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('hunt.loading')}
-        </p>
-      )}
+      {!data && !message && <HuntPageSkeleton />}
 
       {data && (
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">

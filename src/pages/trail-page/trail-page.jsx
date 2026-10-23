@@ -19,6 +19,7 @@ import { useLabels } from '../../lib/i18n/labels.js'
 import { newBlock } from '../../lib/notes/blocks.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
 import { useStudyTimer } from '../../lib/timer/study-timer-provider.jsx'
+import TrailPageSkeleton from './trail-page-skeleton.jsx'
 
 // One block per mission, filled as they get done.
 function MissionBar({ trail }) {
@@ -281,11 +282,7 @@ export default function TrailPage() {
           <Working label={t('notes.trail.building')} />
         </div>
       ) : !data ? (
-        !message && (
-          <p role="status" className="mt-8 font-label text-xs text-muted">
-            {t('notes.trail.loading')}
-          </p>
-        )
+        !message && <TrailPageSkeleton />
       ) : !trail ? (
         <EmptyState sources={data.sources} onBuild={build} />
       ) : (

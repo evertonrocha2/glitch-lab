@@ -11,6 +11,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { playerName } from '../../lib/duel.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { nudgeDuel } from '../../lib/realtime/index.js'
+import DuelLobbySideSkeleton from './duel-lobby-page-skeleton.jsx'
 
 function ActionRow({ title, how, children }) {
   return (
@@ -243,6 +244,7 @@ export default function DuelLobbyPage() {
           {lobby && <RatingCard rating={lobby.rating} isDemo={lobby.isDemo} />}
           {lobby && <RecentDuels recent={lobby.recent} />}
           {lobby && <DuelLeaderboard entries={lobby.leaderboard} />}
+          {!lobby && !message && <DuelLobbySideSkeleton />}
         </div>
       </div>
     </AppShell>

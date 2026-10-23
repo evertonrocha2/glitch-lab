@@ -7,6 +7,7 @@ import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import FixResult from '../../components/gym/fix-result/fix-result.jsx'
 import HintList from '../../components/gym/hint-list/hint-list.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
+import { Line } from '../../components/ui/skeleton/skeleton.jsx'
 import Working from '../../components/ui/working/working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
@@ -14,6 +15,7 @@ import { saveGymDraft, takeGymDraft } from '../../lib/draft.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import GymPageSkeleton from './gym-page-skeleton.jsx'
 
 export default function GymPage() {
   const { id } = useParams()
@@ -143,6 +145,7 @@ export default function GymPage() {
           )}
         </p>
       )}
+      {!challenge && !message && <Line className="mt-3 text-sm" width="w-56" />}
       <p className="mt-2 max-w-2xl text-muted">
         {!puzzle && t('board.gym.leadCase')}
         {puzzle?.kind === 'daily' && t('board.gym.leadDaily')}
@@ -155,11 +158,7 @@ export default function GymPage() {
         </div>
       )}
 
-      {!challenge && !message && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('board.gym.loading')}
-        </p>
-      )}
+      {!challenge && !message && <GymPageSkeleton />}
 
       {challenge?.status === 'passed' && !result && (
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
