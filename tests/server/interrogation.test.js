@@ -80,7 +80,10 @@ it('keeps the step when the coach says not yet, with one guiding question', asyn
   const prompt = sent.contents[0].parts[0].text
   expect(prompt).toContain(CASE.error)
   expect(prompt).toContain('CURRENT STEP (1 of 6): Reproduce')
-  expect(prompt).toContain('<student_answer>\nit breaks\n</student_answer>')
+  const [boundary] = prompt.match(/GLB-[0-9a-f]{16}/)
+  expect(prompt).toContain(`<<<DATA student_answer ${boundary}>>>\nit breaks\n<<<END student_answer ${boundary}>>>`)
+  expect(prompt).toContain(`<<<DATA error ${boundary}>>>`)
+  expect(sent.systemInstruction.parts[0].text).toContain(boundary)
   expect(sent.systemInstruction.parts[0].text).toMatch(/never write the fixed code/)
 })
 

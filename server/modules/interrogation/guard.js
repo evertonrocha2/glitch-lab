@@ -1,31 +1,15 @@
 import { FIX_STEP, INTERROGATION_STEPS } from '../../../shared/interrogation.js'
+import { repeatsLines, secretLines } from '../../infra/ai/guard/output.js'
 
 // The coach must not hand out the fix before the "fix" step: the prompt says so, and this checks it.
 // A reply "gives the fix away" when it repeats a line of code from the case's fix that is NOT
 // already in the student's own code (lines both share, like a print, are fair to quote).
-
-const MIN_LINE = 6
-// Code looks like code: brackets, operators, dots between names, or a keyword line.
-const CODE_LIKE = /[(){}[\];=<>]|\w\.\w|^\s*(return|if|for|while|def|const|let|var|import)\b/
-
-const squash = (text) => text.replace(/[\s`'"]+/g, '').toLowerCase()
+// The line matching is the output guard's, shared with the gym and the assistant.
 
 // The code lines from the fix that the broken code doesn't already have, squashed for matching.
-export function fixLines(fix = '', code = '') {
-  const known = squash(code)
-  const lines = String(fix)
-    .split('\n')
-    .flatMap((line) => line.split('`'))
-    .filter((line) => CODE_LIKE.test(line))
-    .map(squash)
-    .filter((line) => line.length >= MIN_LINE && !known.includes(line))
-  return [...new Set(lines)]
-}
+export const fixLines = (fix = '', code = '') => secretLines(fix, code)
 
-export function revealsFix(text, lines) {
-  const squashed = squash(text ?? '')
-  return lines.some((line) => squashed.includes(line))
-}
+export const revealsFix = (text, lines) => repeatsLines(text, lines)
 
 const SAFE = {
   en: {

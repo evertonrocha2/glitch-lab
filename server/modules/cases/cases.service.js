@@ -1,5 +1,6 @@
 import { AppError, badRequest } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
+import { createBoundary, findLeak, GUARD_TEXT, screenInput } from '../../infra/ai/guard/index.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { seedDemo } from '../demo/demo.seed.js'
 import { parseCard } from '../questions/card.js'
@@ -53,11 +54,42 @@ export async function analyzeError({ store, ai }, user, body, locale) {
   const repeat = await recentSameCase(store, user.id, input.value)
   if (repeat) return repeat
 
+  const blocked = await screenInput(store, user, analyzeFields(input.value))
+  if (blocked) throw notAnalyzed(blocked.kind)
+
   await spendAiCall(store, user)
   // Explanation, clues and exercise come back in the reader's language; the error stays as printed.
+  const boundary = createBoundary()
   const parsed = await withAi(async () => {
-    const answer = await ai.generateJson({ system: analyzeSystem(locale), prompt: buildPrompt(input.value, locale), schema: RESPONSE_SCHEMA })
+    const answer = await ai.generateJson({ system: analyzeSystem(locale, { boundary }), prompt: buildPrompt(input.value, locale, boundary), schema: RESPONSE_SCHEMA })
+    if (answer?.off_topic === true) return { guard: 'off_topic' }
+    if (findLeak(JSON.stringify(answer), { boundary })) return { guard: 'leak' }
     return parseAnalysis(answer)
   })
+  if (parsed.guard) throw notAnalyzed(parsed.guard)
   return store.createCase(user.id, { ...input.value, ...parsed })
 }
+
+// What the guard reads of a new investigation. The error, code and files are code-like text; what
+// the student was doing is their own words. With no code or files, the error is all there is to
+// tell a real error from a poem, so it gets the scope check too.
+function analyzeFields({ error, code, context, files }) {
+  const bare = !code.trim() && !files.length
+  return {
+    fields: [
+      { text: error, prose: false },
+      { text: code, prose: false },
+      { text: context },
+      ...files.flatMap((file) => [
+        { text: file.path, prose: false },
+        { text: file.content, prose: false },
+      ]),
+    ],
+    scope: [...(bare ? [error] : []), ...(context ? [context] : [])],
+    feature: 'analyze',
+  }
+}
+
+// The form shows this like any other "can't investigate this" message: no case, no AI call spent
+// for a local block. English here; the client translates it.
+const notAnalyzed = (kind) => new AppError(422, GUARD_TEXT[kind === 'injection' || kind === 'leak' ? kind : 'not_an_error'].en, 'AI_GUARD')
