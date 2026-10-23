@@ -179,6 +179,17 @@
   opacity: 0.35;
 }
 
+/* Skeletons: the gray stand-ins for content still on its way breathe softly (motion-safe: only). */
+@theme {
+  --animate-skeleton: skeleton 1.6s ease-in-out infinite;
+
+  @keyframes skeleton {
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
 /* Lab assistant: the panel slides in from the left in a few hard steps. */
 @theme {
   --animate-panel-in: panel-in 200ms steps(4, end) both;
