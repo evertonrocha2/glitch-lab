@@ -52,10 +52,10 @@ export default {
     'app.xpBar': 'Experience toward the next level',
 
     // Progress page
-    'app.progress.kicker': 'detective file',
+    'app.progress.kicker': 'lab record',
     'app.progress.title': 'Your progress',
     'app.progress.lead': 'Every case, fix, note and minute of study earns XP. Badges mark the milestones.',
-    'app.progress.findPeople': 'Find detectives',
+    'app.progress.findPeople': 'Find people',
     'app.progress.loading': 'Loading your progress...',
     'app.progress.level': 'Level {level}',
     'app.progress.toNext': '{xp} XP to level {level}',
@@ -132,7 +132,7 @@ export default {
     'app.profile.previewTitle': 'How others see you',
     'app.profile.isPublic': 'Your profile is public.',
     'app.profile.isPrivate': 'Only you can see this until you make it public.',
-    'app.profile.fallbackName': 'Detective',
+    'app.profile.fallbackName': 'Player',
     'app.profile.displayName': 'Display name',
     'app.profile.handle': 'Handle',
     'app.profile.handlePlaceholder': 'bug_hunter',
@@ -184,8 +184,8 @@ export default {
     'app.profile.open': 'Open',
 
     // Assistant
-    'app.assistant.open': 'Ask the detective',
-    'app.assistant.title': 'Ask the detective',
+    'app.assistant.open': 'Lab assistant',
+    'app.assistant.title': 'Lab assistant',
     'app.assistant.subtitle': 'Five specialists, one answer',
     'app.assistant.closeBackdrop': 'Close the assistant',
     'app.assistant.close': 'Close',
@@ -247,7 +247,7 @@ export default {
     // Glitchdle
     'app.glitchdle.kicker': 'glitchdle',
     'app.glitchdle.lead':
-      "Name today's programming language from its traits, an error it printed and a hidden snippet. The same riddle for every detective, new at midnight, Brasilia time.",
+      "Name today's programming language from its traits, an error it printed and a hidden snippet. The same riddle for every player, new at midnight, Brasilia time.",
     'app.glitchdle.nextIn': 'Next in',
     'app.glitchdle.loading': "Loading today's Glitchdle...",
     'app.glitchdle.clipboard': "Couldn't reach the clipboard. Copy it by hand:",
@@ -319,7 +319,7 @@ export default {
     'app.glitchdle.statsHint': 'A perfect day has all three modes solved. The streak counts perfect days in a row.',
     'app.glitchdle.distribution': '{mode} guess distribution',
     'app.glitchdle.noSolves': 'No {mode} solves yet. Your first one starts the chart.',
-    'app.glitchdle.community': "Today's detectives",
+    'app.glitchdle.community': "Today's players",
     'app.glitchdle.mode': 'Mode',
     'app.glitchdle.solvedCol': 'Solved',
     'app.glitchdle.avgGuesses': 'Avg guesses',
@@ -374,10 +374,10 @@ export default {
 
     'app.xpBar': 'Experiência até o próximo nível',
 
-    'app.progress.kicker': 'ficha do detetive',
+    'app.progress.kicker': 'ficha no lab',
     'app.progress.title': 'Seu progresso',
     'app.progress.lead': 'Cada caso, correção, nota e minuto de estudo rende XP. As medalhas marcam cada conquista.',
-    'app.progress.findPeople': 'Encontrar detetives',
+    'app.progress.findPeople': 'Encontrar pessoas',
     'app.progress.loading': 'Carregando seu progresso...',
     'app.progress.level': 'Nível {level}',
     'app.progress.toNext': '{xp} XP para o nível {level}',
@@ -452,7 +452,7 @@ export default {
     'app.profile.previewTitle': 'Como os outros veem você',
     'app.profile.isPublic': 'Seu perfil é público.',
     'app.profile.isPrivate': 'Só você vê isto até deixar o perfil público.',
-    'app.profile.fallbackName': 'Detetive',
+    'app.profile.fallbackName': 'Jogador',
     'app.profile.displayName': 'Nome de exibição',
     'app.profile.handle': 'Nome de usuário',
     'app.profile.handlePlaceholder': 'caca_bugs',
@@ -503,8 +503,8 @@ export default {
     'app.profile.copied': 'Copiado',
     'app.profile.open': 'Abrir',
 
-    'app.assistant.open': 'Pergunte ao detetive',
-    'app.assistant.title': 'Pergunte ao detetive',
+    'app.assistant.open': 'Assistente do Lab',
+    'app.assistant.title': 'Assistente do Lab',
     'app.assistant.subtitle': 'Cinco especialistas, uma resposta',
     'app.assistant.closeBackdrop': 'Fechar o assistente',
     'app.assistant.close': 'Fechar',
@@ -565,7 +565,7 @@ export default {
 
     'app.glitchdle.kicker': 'glitchdle',
     'app.glitchdle.lead':
-      'Descubra a linguagem de programação do dia pelas características, por um erro que ela imprimiu e por um trecho escondido. O mesmo enigma para todo detetive, renovado à meia-noite, horário de Brasília.',
+      'Descubra a linguagem de programação do dia pelas características, por um erro que ela imprimiu e por um trecho escondido. O mesmo enigma para todo mundo, renovado à meia-noite, horário de Brasília.',
     'app.glitchdle.nextIn': 'Próximo em',
     'app.glitchdle.loading': 'Carregando o Glitchdle de hoje...',
     'app.glitchdle.clipboard': 'Não deu para acessar a área de transferência. Copie à mão:',
@@ -640,7 +640,7 @@ export default {
     'app.glitchdle.statsHint': 'Um dia perfeito tem os três modos resolvidos. A sequência conta dias perfeitos seguidos.',
     'app.glitchdle.distribution': 'Palpites por acerto no modo {mode}',
     'app.glitchdle.noSolves': 'Nenhum acerto no modo {mode} ainda. O primeiro começa o gráfico.',
-    'app.glitchdle.community': 'Detetives de hoje',
+    'app.glitchdle.community': 'Jogadores de hoje',
     'app.glitchdle.mode': 'Modo',
     'app.glitchdle.solvedCol': 'Acertos',
     'app.glitchdle.avgGuesses': 'Média de palpites',

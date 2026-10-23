@@ -37,7 +37,7 @@ export default function HuntLeaderboard({ entries, you }) {
                       {entry.name}
                     </Link>
                   ) : (
-                    entry.name
+                    t('player.anonymous')
                   )}
                 </span>
                 {entry.isYou && <span className="mt-0.5 inline-block bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('hunt.board.you')}</span>}

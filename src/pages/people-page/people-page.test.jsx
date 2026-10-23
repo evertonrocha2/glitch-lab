@@ -33,10 +33,10 @@ beforeEach(() => {
     )
 })
 
-it('lists the newest public detectives, signed out', async () => {
+it('lists the newest public profiles, signed out', async () => {
   renderAt('/people')
-  expect(await screen.findByRole('heading', { name: 'Find detectives', level: 1 })).toBeInTheDocument()
-  const results = await screen.findByRole('list', { name: 'Detectives' })
+  expect(await screen.findByRole('heading', { name: 'Find people', level: 1 })).toBeInTheDocument()
+  const results = await screen.findByRole('list', { name: 'People' })
   expect(vi.mocked(searchProfiles).mock.calls[0][0]).toBe('')
   const links = within(results).getAllByRole('link')
   expect(links.map((link) => link.getAttribute('href'))).toEqual(['/u/ada_dev', '/u/grace'])
@@ -44,10 +44,10 @@ it('lists the newest public detectives, signed out', async () => {
 
 it('searches by handle or name', async () => {
   renderAt('/people')
-  await screen.findByRole('list', { name: 'Detectives' })
+  await screen.findByRole('list', { name: 'People' })
   await userEvent.type(screen.getByRole('searchbox', { name: 'Search by handle or name' }), 'ada{Enter}')
   expect(vi.mocked(searchProfiles).mock.lastCall[0]).toBe('ada')
-  const results = await screen.findByRole('list', { name: 'Detectives' })
+  const results = await screen.findByRole('list', { name: 'People' })
   expect(await within(results).findByText('Learning React')).toBeInTheDocument()
   expect(within(results).getByText('Student')).toBeInTheDocument()
   expect(within(results).getAllByRole('link')).toHaveLength(1)
@@ -56,7 +56,7 @@ it('searches by handle or name', async () => {
 it('says when nobody matches', async () => {
   vi.mocked(searchProfiles).mockResolvedValue([])
   renderAt('/people')
-  expect(await screen.findByText('No public detectives match that yet.')).toBeInTheDocument()
+  expect(await screen.findByText('No public profiles match that yet.')).toBeInTheDocument()
 })
 
 it('shows the error when the search fails', async () => {
@@ -67,11 +67,11 @@ it('shows the error when the search fails', async () => {
 
 it('speaks Brazilian Portuguese, roles included', async () => {
   renderAt('/people', { locale: 'pt-BR' })
-  expect(await screen.findByRole('heading', { name: 'Encontre detetives', level: 1 })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Encontre pessoas', level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Pessoas' })).toHaveAttribute('href', '/people')
-  await screen.findByRole('list', { name: 'Detetives' })
-  expect(screen.getByText('Detetives mais recentes')).toBeInTheDocument()
+  await screen.findByRole('list', { name: 'Pessoas' })
+  expect(screen.getByText('Perfis mais recentes')).toBeInTheDocument()
   await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar por usuário ou nome' }), 'ada{Enter}')
   expect(await screen.findByText('Resultados para "ada"')).toBeInTheDocument()
-  expect(within(screen.getByRole('list', { name: 'Detetives' })).getByText('Estudante')).toBeInTheDocument()
+  expect(within(screen.getByRole('list', { name: 'Pessoas' })).getByText('Estudante')).toBeInTheDocument()
 })

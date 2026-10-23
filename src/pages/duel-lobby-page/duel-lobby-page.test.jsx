@@ -44,19 +44,19 @@ const LOBBY = (fields = {}) => ({
       them: 500,
       rated: true,
       ratingAfter: 984,
-      opponent: { name: 'Anonymous detective', handle: null, avatar: null, bot: false },
+      opponent: { name: 'Anonymous player', handle: null, avatar: null, bot: false },
     },
   ],
   leaderboard: [
     { rank: 1, name: 'Ada', handle: 'ada', avatar: { seed: 'ada', color: 'violet' }, rating: 1100, games: 5, wins: 4, isYou: false },
-    { rank: 2, name: 'Anonymous detective', handle: null, avatar: null, rating: 1016, games: 3, wins: 1, isYou: true },
+    { rank: 2, name: 'Anonymous player', handle: null, avatar: null, rating: 1016, games: 3, wins: 1, isYou: true },
   ],
   active: null,
   isDemo: false,
   ...fields,
 })
 
-const WAITING = { id: 'q1', code: 'QQQ234', kind: 'queue', status: 'waiting', now: new Date().toISOString(), roundCount: 5, you: 0, players: [{ name: 'Anonymous detective', handle: null, avatar: null, bot: false, you: true }], rematchId: null, joinable: false, createdAt: new Date().toISOString() }
+const WAITING = { id: 'q1', code: 'QQQ234', kind: 'queue', status: 'waiting', now: new Date().toISOString(), roundCount: 5, you: 0, players: [{ name: 'Anonymous player', handle: null, avatar: null, bot: false, you: true }], rematchId: null, joinable: false, createdAt: new Date().toISOString() }
 
 beforeEach(() => {
   vi.mocked(getDuelLobby).mockReset().mockResolvedValue(LOBBY())
@@ -81,7 +81,7 @@ it('shows the ways to play, the tab rule, my rating, recent duels and the leader
   expect(rows[0]).toHaveTextContent('vs Glitch Bot')
   expect(rows[0]).toHaveTextContent('Win')
   expect(rows[0]).toHaveTextContent('820 - 410')
-  expect(rows[1]).toHaveTextContent('vs Anonymous detective')
+  expect(rows[1]).toHaveTextContent('vs Anonymous player')
   expect(rows[1]).toHaveTextContent('984')
 
   const board = screen.getByRole('list', { name: 'Leaderboard' })
@@ -151,6 +151,6 @@ it('speaks Brazilian Portuguese', async () => {
   expect(screen.getByText('Fique nesta aba. Sair dela (outra aba ou app) com uma rodada aberta faz você perder essa rodada.')).toBeInTheDocument()
   expect(await screen.findByText('Seu rating')).toBeInTheDocument()
   expect(screen.getByText('2 V · 0 E · 1 D')).toBeInTheDocument()
-  expect(screen.getByRole('region', { name: 'Duelos recentes' })).toHaveTextContent('Contra Detetive anônimo')
+  expect(screen.getByRole('region', { name: 'Duelos recentes' })).toHaveTextContent('Contra Jogador anônimo')
   expect(screen.getByRole('list', { name: 'Ranking' })).toHaveTextContent('1 vitória')
 })

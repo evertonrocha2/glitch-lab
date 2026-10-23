@@ -36,7 +36,7 @@ const PROFILE = {
 const MINE = {
   profile: PROFILE,
   earnedBadges: ['first-clue', 'fixed-it', 'case-closed', 'sharp-eye'],
-  progress: { level: 2, title: 'Junior Detective', xp: 145, levelXp: 100, nextLevelXp: 300 },
+  progress: { level: 2, title: 'Apprentice', xp: 145, levelXp: 100, nextLevelXp: 300 },
 }
 
 beforeEach(() => {
@@ -69,7 +69,7 @@ it('shares one request between the header and the page', async () => {
 
 it('shows changes in the preview as you type', async () => {
   await openEditor()
-  expect(within(preview()).getByText('Junior Detective')).toBeInTheDocument()
+  expect(within(preview()).getByText('Apprentice')).toBeInTheDocument()
   await userEvent.clear(field('Display name'))
   await userEvent.type(field('Display name'), 'Ada L.')
   await userEvent.type(field('Bio'), 'Bug hunter')
@@ -239,7 +239,7 @@ it('loads saved about-you fields into the editor', async () => {
 
 it('links to the people search', async () => {
   await openEditor()
-  expect(screen.getByRole('link', { name: 'Find detectives' })).toHaveAttribute('href', '/people')
+  expect(screen.getByRole('link', { name: 'Find people' })).toHaveAttribute('href', '/people')
 })
 
 it('speaks Brazilian Portuguese: fields, hints, choices and the preview', async () => {
@@ -248,7 +248,7 @@ it('speaks Brazilian Portuguese: fields, hints, choices and the preview', async 
   expect(screen.getByRole('heading', { level: 1, name: 'Seu perfil' })).toBeInTheDocument()
   const card = screen.getByRole('region', { name: 'Como os outros veem você' })
   expect(within(card).getByText('Nv 2')).toBeInTheDocument()
-  expect(within(card).getByText('Detetive júnior')).toBeInTheDocument()
+  expect(within(card).getByText('Aprendiz')).toBeInTheDocument()
   expect(screen.getByText('Letras minúsculas, números, _ e -. De 3 a 20 caracteres.')).toBeInTheDocument()
   await userEvent.type(field('Nome de usuário'), 'ab')
   expect(screen.getByText('Use pelo menos 3 caracteres.')).toBeInTheDocument()

@@ -128,10 +128,10 @@ describe('reading', () => {
     expect((await read('nope')).status).toBe(404)
   })
 
-  it('names authors without a profile name after their handle, then "Detective"', async () => {
+  it('names authors without a profile name after their handle, then "Player"', async () => {
     const plain = await makeUser(store, 'plain')
     const { article } = (await publish({}, plain.token)).body
-    expect(article.author).toMatchObject({ name: 'Detective', handle: null, isPublic: false })
+    expect(article.author).toMatchObject({ name: 'Player', handle: null, isPublic: false })
     expect(article.author.avatar).toEqual({ seed: expect.any(String), color: expect.any(String) })
     expect(article.author.avatar.seed).not.toContain(plain.id)
     const byBob = (await publish({}, bob.token)).body.article

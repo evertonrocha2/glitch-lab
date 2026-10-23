@@ -118,7 +118,7 @@ describe('notifications', () => {
     expect(res.status).toBe(200)
     expect(res.body.unread).toBe(3)
     expect(res.body.notifications.map((item) => [item.type, item.actor.name])).toEqual([
-      ['rating_valid', 'Detective'],
+      ['rating_valid', 'Player'],
       ['like', 'Bo'],
       ['comment', 'Bo'],
     ])

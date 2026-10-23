@@ -27,7 +27,7 @@ const lastChannel = () => realtime.channels.at(-1)
 
 // Times relative to the moment the fixture is made; the page reads the server clock from `now`.
 const iso = (offset) => new Date(Date.now() + offset).toISOString()
-const ME = { name: 'Anonymous detective', handle: null, avatar: null, bot: false, you: true }
+const ME = { name: 'Anonymous player', handle: null, avatar: null, bot: false, you: true }
 const BOT = { name: 'Glitch Bot', handle: null, avatar: null, bot: true, you: false }
 const FRIEND = { name: 'Ada', handle: 'ada', avatar: { seed: 'ada', color: 'violet' }, bot: false, you: false }
 const OPTIONS = [

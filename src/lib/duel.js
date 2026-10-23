@@ -1,11 +1,11 @@
 // Small helpers the duel pages share. The rules themselves live in shared/duel.js.
 
-// A player's name as the page shows it: "You", the bot, a public name, or "Anonymous detective".
+// A player's name as the page shows it: "You", the bot, a public name, or "Anonymous player".
 export function playerName(t, player, { youLabel = true } = {}) {
   if (!player) return ''
   if (player.you && youLabel) return t('duel.you')
   if (player.bot) return t('duel.bot')
-  return player.handle ? player.name : t('duel.anonymous')
+  return player.handle ? player.name : t('player.anonymous')
 }
 
 // m:ss, for how long the waiting room has waited.

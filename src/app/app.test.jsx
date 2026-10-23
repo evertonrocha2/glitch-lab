@@ -51,7 +51,7 @@ it('presents the features, the comparison, bug types, ranks and answers', async 
   expect(features.at(-1)).toHaveTextContent('A study trail made from your cases')
   expect(within(screen.getByRole('list', { name: 'A chatbot compared with Glitch Lab' })).getAllByRole('listitem').length).toBeGreaterThan(3)
   expect(within(screen.getByRole('list', { name: 'Bug types' })).getAllByRole('listitem')).toHaveLength(12)
-  const ranks = within(screen.getByRole('list', { name: 'Detective ranks' })).getAllByRole('listitem')
+  const ranks = within(screen.getByRole('list', { name: 'Level ladder' })).getAllByRole('listitem')
   expect(ranks[0]).toHaveTextContent('Rookie')
   expect(ranks.at(-1)).toHaveTextContent('Bug Whisperer')
 
@@ -71,7 +71,7 @@ it('speaks Brazilian Portuguese on the landing page', async () => {
   const steps = within(screen.getByRole('list', { name: 'Como funciona' })).getAllByRole('heading', { level: 3 })
   expect(steps.map((step) => step.textContent)).toEqual(['Investigue um erro', 'Estude seu board', 'Treine no gym'])
   expect(within(screen.getByRole('list', { name: 'Tipos de bug' })).getByText('Erro de um a mais')).toBeInTheDocument()
-  const ranks = within(screen.getByRole('list', { name: 'Patentes de detetive' })).getAllByRole('listitem')
+  const ranks = within(screen.getByRole('list', { name: 'Escada de níveis' })).getAllByRole('listitem')
   expect(ranks.at(-1)).toHaveTextContent('Encantador de bugs')
   expect(screen.getByRole('heading', { name: 'De Novato a Encantador de bugs' })).toBeInTheDocument()
   expect(screen.getByText('user.name nunca foi definido. Ele é undefined, e undefined não tem .length para ler.')).toBeInTheDocument()

@@ -65,7 +65,7 @@ Fill every field:
 - exercicio.resposta: the solution to the challenge and one sentence on why it works.
 - concept: the kind of bug, one of the allowed values. Use "other" if none fits.
 - language: the programming language, lowercase (javascript, python, java, ...).
-- pistas: 2 to 4 short clues a detective would read straight from the error (the error type, the value or name it mentions, the line it points at), one sentence each.
+- pistas: 2 to 4 short clues a debugger would read straight from the error (the error type, the value or name it mentions, the line it points at), one sentence each.
 - local: where the bug most likely is, like "cart.js, line 12: user.name.length". Empty if you can't tell.
 
 Language: ${languageRule(locale)} This covers explicacao, causa, correcao, the exercise statement and answer, pistas and local.`

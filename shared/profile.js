@@ -40,9 +40,9 @@ export function handleProblem(handle) {
 
 // The name shown until the person picks one: the part of their email before the @.
 export function defaultDisplayName({ email, isDemo }) {
-  if (isDemo) return 'Demo Detective'
+  if (isDemo) return 'Demo Dev'
   const name = (email ?? '').split('@')[0].trim()
-  return name ? name.slice(0, PROFILE_LIMITS.displayName) : 'Detective'
+  return name ? name.slice(0, PROFILE_LIMITS.displayName) : 'Player'
 }
 
 // "About you": what someone does, the languages they write and what they are open to.

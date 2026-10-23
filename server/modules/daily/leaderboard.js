@@ -2,7 +2,7 @@ import { AVATAR_COLORS } from '../../../shared/profile.js'
 import { defaultSeed } from '../profile/profile.model.js'
 
 export const LEADERBOARD_SIZE = 10
-export const ANONYMOUS = 'Anonymous detective'
+export const ANONYMOUS = 'Anonymous player'
 
 // Only a public profile shows a name and picture. Built field by field: no email, no account id,
 // and a private profile's name stays private even when it has one.

@@ -21,7 +21,7 @@ function NotShared() {
   )
 }
 
-// One note a detective shared on their profile. Read-only, works signed out.
+// One note a person shared on their profile. Read-only, works signed out.
 export default function PublicNotePage() {
   const { handle, id } = useParams()
   const t = useT()

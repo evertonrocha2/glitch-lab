@@ -2,11 +2,11 @@ import { AVATAR_COLORS } from '../../../shared/profile.js'
 import { defaultSeed } from '../profile/profile.model.js'
 
 // How a person shows up next to their articles, comments and in notifications: never an id or email.
-// Without a chosen name the handle stands in, then "Detective". Only public profiles get a link.
+// Without a chosen name the handle stands in, then "Player". Only public profiles get a link.
 export function personView(profile, userId) {
   return {
     handle: profile?.handle ?? null,
-    name: profile?.displayName ?? profile?.handle ?? 'Detective',
+    name: profile?.displayName ?? profile?.handle ?? 'Player',
     avatar: profile?.avatar ?? { seed: defaultSeed(userId), color: AVATAR_COLORS[0].id },
     isPublic: Boolean(profile?.isPublic && profile.handle),
   }

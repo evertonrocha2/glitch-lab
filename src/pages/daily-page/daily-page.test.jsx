@@ -49,7 +49,7 @@ const GLOBAL = () => ({
   puzzle: card({ id: 'g1', kind: 'global', day: '2026-10-19', difficulty: 'hard', title: 'Everybody passes', language: 'javascript', concept: 'wrong-comparison' }),
   solvedCount: 3,
   leaderboard: [
-    { rank: 1, name: 'Anonymous detective', handle: null, avatar: null, seconds: 300, attempts: 4, firstSolver: false, isYou: false },
+    { rank: 1, name: 'Anonymous player', handle: null, avatar: null, seconds: 300, attempts: 4, firstSolver: false, isYou: false },
     { rank: 2, name: 'cy-dev', handle: 'cy-dev', avatar, seconds: 600, attempts: 1, firstSolver: false, isYou: true },
     { rank: 3, name: 'Ada', handle: 'ada-lab', avatar, seconds: 3900, attempts: 2, firstSolver: true, isYou: false },
   ],
@@ -112,13 +112,13 @@ it('shows the global challenge with how many solved it and the leaderboard', asy
   renderAt('/daily', { user: 'alice' })
   const section = await screen.findByRole('region', { name: 'Global challenge' })
   expect(within(section).getByRole('heading', { name: 'Everybody passes' })).toBeInTheDocument()
-  expect(within(section).getByText('3 detectives solved it')).toBeInTheDocument()
+  expect(within(section).getByText('3 players solved it')).toBeInTheDocument()
   expect(within(section).getByText('+100 XP')).toBeInTheDocument()
   expect(within(section).getByText(/^Ends in 3d [78]h$/)).toBeInTheDocument()
 
   const rows = within(within(section).getByRole('list', { name: 'Leaderboard' })).getAllByRole('listitem')
   expect(rows).toHaveLength(3)
-  expect(rows[0]).toHaveTextContent('Anonymous detective')
+  expect(rows[0]).toHaveTextContent('Anonymous player')
   expect(within(rows[0]).queryByRole('link')).not.toBeInTheDocument()
   expect(rows[0]).toHaveTextContent('5m 00s')
   expect(within(rows[1]).getByRole('link', { name: 'cy-dev' })).toHaveAttribute('href', '/u/cy-dev')
@@ -138,7 +138,7 @@ it('invites the first solver when nobody solved the global challenge yet', async
   vi.mocked(getGlobalChallenge).mockResolvedValue({ ...GLOBAL(), solvedCount: 0, leaderboard: [], you: null })
   renderAt('/daily', { user: 'alice' })
   expect(await screen.findByText('Nobody has solved it yet. Be the first.')).toBeInTheDocument()
-  expect(screen.getByText('0 detectives solved it')).toBeInTheDocument()
+  expect(screen.getByText('0 players solved it')).toBeInTheDocument()
 })
 
 it('starts the global challenge too', async () => {
@@ -191,13 +191,14 @@ it('speaks Portuguese: puzzles, summary, global challenge and leaderboard', asyn
   expect(within(stats).getByText('dias seguidos')).toBeInTheDocument()
 
   const section = screen.getByRole('region', { name: 'Desafio global' })
-  expect(within(section).getByText('3 detetives resolveram')).toBeInTheDocument()
+  expect(within(section).getByText('3 pessoas resolveram')).toBeInTheDocument()
   expect(within(section).getByText(/^Semana de 19/)).toBeInTheDocument()
   expect(within(section).getByText(/^Termina em 3d/)).toBeInTheDocument()
   const rows = within(within(section).getByRole('list', { name: 'Ranking' })).getAllByRole('listitem')
   expect(within(rows[1]).getByText('Você')).toBeInTheDocument()
   expect(within(rows[2]).getByText('Primeiro a resolver')).toBeInTheDocument()
   expect(within(rows[0]).getByText('4 tentativas')).toBeInTheDocument()
+  expect(rows[0]).toHaveTextContent('Jogador anônimo')
 })
 
 it('asks for sign in', () => {

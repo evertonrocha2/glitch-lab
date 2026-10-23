@@ -98,7 +98,7 @@ function ModeTabs({ modes, active, onPick }) {
   )
 }
 
-// Glitchdle: a programming-language riddle a day in three modes, the same for every detective.
+// Glitchdle: a programming-language riddle a day in three modes, the same for every player.
 export default function GlitchdlePage() {
   const { getToken, signOut } = useAuth()
   const { refresh } = useProgress()

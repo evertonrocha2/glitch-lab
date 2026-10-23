@@ -30,8 +30,8 @@ it('normalizes a typed handle to trimmed lowercase', () => {
 
 it('names people after their email until they pick a name', () => {
   expect(defaultDisplayName({ email: 'ada.lovelace@example.com', isDemo: false })).toBe('ada.lovelace')
-  expect(defaultDisplayName({ email: 'demo-123@demo.glitch', isDemo: true })).toBe('Demo Detective')
-  expect(defaultDisplayName({ email: '', isDemo: false })).toBe('Detective')
+  expect(defaultDisplayName({ email: 'demo-123@demo.glitch', isDemo: true })).toBe('Demo Dev')
+  expect(defaultDisplayName({ email: '', isDemo: false })).toBe('Player')
   expect(defaultDisplayName({ email: `${'x'.repeat(60)}@example.com`, isDemo: false })).toHaveLength(PROFILE_LIMITS.displayName)
 })
 

@@ -13,7 +13,7 @@ function roleName(t, role) {
   return text === key ? labelOf(ROLES, role) : text
 }
 
-// A small card for one detective (search results, a note's author). The name links to the
+// A small card for one person (search results, a note's author). The name links to the
 // public profile, and that link stretches over the whole card so anywhere on it opens the profile.
 export default function PersonCard({ person, headingLevel = 2, className = '' }) {
   const t = useT()

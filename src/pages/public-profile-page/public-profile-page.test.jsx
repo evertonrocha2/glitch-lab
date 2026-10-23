@@ -19,7 +19,7 @@ const PUBLIC = {
   bio: 'I read stack traces for fun.',
   avatar: { seed: 'abc123', color: 'cobalt' },
   level: 2,
-  title: 'Junior Detective',
+  title: 'Apprentice',
   xp: 145,
   levelXp: 100,
   nextLevelXp: 300,
@@ -102,7 +102,7 @@ it('shows a public profile to a signed-out visitor', async () => {
   expect(vi.mocked(getPublicProfile).mock.lastCall[0]).toBe('ada_dev')
   expect(screen.getByText('@ada_dev')).toBeInTheDocument()
   expect(screen.getByText('I read stack traces for fun.')).toBeInTheDocument()
-  expect(screen.getByText('Junior Detective')).toBeInTheDocument()
+  expect(screen.getByText('Apprentice')).toBeInTheDocument()
   expect(screen.getByRole('progressbar', { name: 'Experience toward the next level' })).toHaveAttribute('aria-valuenow', '145')
 
   const stats = screen.getByRole('list', { name: 'Stats' })
@@ -123,7 +123,7 @@ it('shows a public profile to a signed-out visitor', async () => {
 it('says so kindly when there is no public profile', async () => {
   vi.mocked(getPublicProfile).mockResolvedValue(null)
   renderAt('/u/ghost')
-  expect(await screen.findByRole('heading', { name: 'No detective here' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'No one here' })).toBeInTheDocument()
   expect(screen.getByText(/@ghost/)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Try Glitch Lab' })).toHaveAttribute('href', '/')
 })

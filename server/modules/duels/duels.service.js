@@ -46,7 +46,7 @@ async function createWithCode(store, fields) {
   throw new Error('Could not find a free duel code')
 }
 
-// Names and pictures in seat order: public profiles only, the rest "Anonymous detective".
+// Names and pictures in seat order: public profiles only, the rest "Anonymous player".
 async function peopleOf(store, duel) {
   return Promise.all(duel.players.map(async (player) => (player.bot ? BOT_PERSON : who(await store.getProfile(player.userId), player.userId))))
 }

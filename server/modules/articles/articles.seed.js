@@ -46,7 +46,7 @@ const ARTICLES = [
     reaction: { liked: true },
   },
   {
-    title: 'Read the stack trace like a detective',
+    title: 'Read the stack trace in three steps',
     tags: ['debugging', 'python', 'javascript'],
     body: [
       'A stack trace is a list of clues, not a wall of noise. Find three things before you change any code.',

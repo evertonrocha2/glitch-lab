@@ -77,7 +77,7 @@ it('lists the badges you have earned so you can feature them', async () => {
   const { earnedBadges, progress } = await (await getMine()).json()
   expect(earnedBadges).toEqual(expect.arrayContaining(['first-clue', 'fixed-it', 'case-closed', 'sharp-eye']))
   // 10 (case) + 30 (pass) + 15 (no hints) + 50 (solved) + 5 (note) + 15 (minutes)
-  expect(progress).toEqual({ level: 2, title: 'Junior Detective', xp: 125, levelXp: 100, nextLevelXp: 300 })
+  expect(progress).toEqual({ level: 2, title: 'Apprentice', xp: 125, levelXp: 100, nextLevelXp: 300 })
 })
 
 it('saves a profile and normalizes the handle', async () => {
@@ -246,7 +246,7 @@ it('shows a public profile to anyone, without private details', async () => {
     bio: VALID.bio,
     avatar: VALID.avatar,
     level: 2,
-    title: 'Junior Detective',
+    title: 'Apprentice',
     xp: 125,
     levelXp: 100,
     nextLevelXp: 300,
@@ -290,7 +290,7 @@ it('shows the about-you fields on the public profile', async () => {
 
 const search = (query) => api(`/api/profiles?search=${encodeURIComponent(query)}`, { method: 'GET', token: null })
 
-it('finds public detectives by handle or name, signed out', async () => {
+it('finds public profiles by handle or name, signed out', async () => {
   await save({ ...VALID, ...ABOUT })
   await save({ handle: 'bob_hidden', displayName: 'Ada Twin', isPublic: false }, `dev:${bob.id}`)
 

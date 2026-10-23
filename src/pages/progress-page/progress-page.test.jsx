@@ -13,7 +13,7 @@ vi.mock('../../lib/api.js', () => ({
 const progressWith = (earnedIds, extra = {}) => ({
   xp: 145,
   level: 2,
-  title: 'Junior Detective',
+  title: 'Apprentice',
   levelXp: 100,
   nextLevelXp: 300,
   streak: 3,
@@ -30,13 +30,13 @@ beforeEach(() => {
 it('links to the people search', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith([]))
   renderAt('/progress', { user: 'alice' })
-  expect(await screen.findByRole('link', { name: 'Find detectives' })).toHaveAttribute('href', '/people')
+  expect(await screen.findByRole('link', { name: 'Find people' })).toHaveAttribute('href', '/people')
 })
 
 it('shows the level, xp, streak and study time', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   renderAt('/progress', { user: 'alice' })
-  expect(await screen.findByRole('heading', { name: 'Junior Detective' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Apprentice' })).toBeInTheDocument()
   expect(screen.getByText('145 XP')).toBeInTheDocument()
   expect(screen.getByText(/155 XP to level 3/)).toBeInTheDocument()
   expect(screen.getByRole('progressbar', { name: 'Experience toward the next level' })).toHaveAttribute('aria-valuenow', '145')
@@ -58,7 +58,7 @@ it('marks earned and locked badges', async () => {
 it('announces a badge earned since the last visit, but not on the first one', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   const first = renderAt('/progress', { user: 'alice' })
-  await screen.findByRole('heading', { name: 'Junior Detective' })
+  await screen.findByRole('heading', { name: 'Apprentice' })
   expect(screen.queryByText('New badge')).toBeNull()
   first.unmount()
 
@@ -72,7 +72,7 @@ it('announces a badge earned since the last visit, but not on the first one', as
 it('speaks Brazilian Portuguese: header, level, timer and badges', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   renderAt('/progress', { user: 'alice', locale: 'pt-BR' })
-  expect(await screen.findByRole('heading', { name: 'Detetive júnior' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Aprendiz' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: 'Seu progresso' })).toBeInTheDocument()
   expect(screen.getByText(/155 XP para o nível 3/)).toBeInTheDocument()
   expect(screen.getByRole('progressbar', { name: 'Experiência até o próximo nível' })).toBeInTheDocument()

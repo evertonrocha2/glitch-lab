@@ -224,7 +224,7 @@ function demoNote(byConcept, locale) {
 
 // The demo's profile shows off badges the seed above really earns (solved case, clean pass, 3-day streak).
 const DEMO_PROFILE = {
-  displayName: 'Demo Detective',
+  displayName: 'Demo Dev',
   bio: 'Learning to read error messages one case at a time.',
   featuredBadges: ['case-closed', 'sharp-eye', 'on-a-roll'],
   // "About you", so judges see a filled-in card. Links stay empty: they would point at real people.
@@ -241,7 +241,7 @@ const DEMO_PROFILE = {
 
 // The words on the sample profile for a Portuguese reader; the rest stays as above.
 const DEMO_PROFILE_PT = {
-  displayName: 'Detetive Demo',
+  displayName: 'Dev Demo',
   bio: 'Aprendendo a ler mensagens de erro, um caso de cada vez.',
   headline: 'Estudando JavaScript e Python à noite',
   course: 'Engenharia de Software',

@@ -78,7 +78,7 @@ it('gives the demo a profile that features badges it really earned', async () =>
   await seedDemo(store, user.id, '2026-10-22')
 
   const profile = await store.getProfile(user.id)
-  expect(profile).toMatchObject({ displayName: 'Demo Detective', isPublic: false })
+  expect(profile).toMatchObject({ displayName: 'Demo Dev', isPublic: false })
   expect(profile.bio.length).toBeGreaterThan(0)
   expect(profile.featuredBadges.length).toBeGreaterThanOrEqual(2)
   expect(profile.featuredBadges.length).toBeLessThanOrEqual(3)
@@ -144,7 +144,7 @@ it('seeds the sample texts in Portuguese for a pt-BR visitor, with errors and co
   expect(trail.missions[0].title).toBe('Vença um desafio de índice de lista')
 
   const profile = await store.getProfile(user.id)
-  expect(profile).toMatchObject({ displayName: 'Detetive Demo', headline: 'Estudando JavaScript e Python à noite', isPublic: false })
+  expect(profile).toMatchObject({ displayName: 'Dev Demo', headline: 'Estudando JavaScript e Python à noite', isPublic: false })
   const about = { headline: profile.headline, course: profile.course, work: profile.work, bio: profile.bio, displayName: profile.displayName }
   expect(parseProfile(about)).toEqual({ value: about })
 })

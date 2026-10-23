@@ -93,7 +93,7 @@ function DuelLeaderboard({ entries }) {
                       {entry.name}
                     </Link>
                   ) : (
-                    t('duel.anonymous')
+                    t('player.anonymous')
                   )}
                 </span>
                 {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('duel.you')}</span>}

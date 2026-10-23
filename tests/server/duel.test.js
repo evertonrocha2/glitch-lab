@@ -73,7 +73,7 @@ it('opens a private duel with a code and a link; a friend joins with the code an
   expect(created.status).toBe(201)
   expect(created.body.duel).toMatchObject({ kind: 'private', status: 'waiting', you: 0, joinable: false, roundCount: DUEL_ROUNDS })
   expect(created.body.duel.code).toMatch(/^[A-Z2-9]{6}$/)
-  expect(created.body.duel.players).toEqual([{ name: 'Anonymous detective', handle: null, avatar: null, bot: false, you: true }])
+  expect(created.body.duel.players).toEqual([{ name: 'Anonymous player', handle: null, avatar: null, bot: false, you: true }])
 
   expect(joined.status).toBe(200)
   expect(joined.body.duel).toMatchObject({ id, status: 'active', phase: 'countdown', you: 1, scores: [0, 0], rounds: [], next: { index: 0, openAt: new Date(OPEN0).toISOString() } })
@@ -222,7 +222,7 @@ it('finishes after the last round with a winner and moves both Elo ratings', asy
   const lobby = await state('lobby')
   expect(lobby.body).toMatchObject({ rating: { rating: 1016, games: 1, wins: 1 }, active: null })
   expect(lobby.body.recent).toEqual([
-    expect.objectContaining({ id, kind: 'private', outcome: 'win', you: 5 * 193, them: 0, rated: true, ratingAfter: 1016, opponent: expect.objectContaining({ name: 'Anonymous detective', bot: false }) }),
+    expect.objectContaining({ id, kind: 'private', outcome: 'win', you: 5 * 193, them: 0, rated: true, ratingAfter: 1016, opponent: expect.objectContaining({ name: 'Anonymous player', bot: false }) }),
   ])
   expect(lobby.body.leaderboard.map((row) => [row.rank, row.rating, row.isYou])).toEqual([
     [1, 1016, true],
@@ -245,7 +245,7 @@ it('shows public names on the leaderboard and keeps the rest anonymous', async (
     await act('answer', { id, round: index, choice: options.wrong }, `dev:${ada.id}`)
   }
   const board = (await state('lobby', `dev:${ada.id}`)).body.leaderboard
-  expect(board[0]).toMatchObject({ name: 'Anonymous detective', handle: null, avatar: null, isYou: false })
+  expect(board[0]).toMatchObject({ name: 'Anonymous player', handle: null, avatar: null, isYou: false })
   expect(board[1]).toMatchObject({ name: 'Ada', handle: 'ada', avatar: expect.any(Object), isYou: true })
   expect(JSON.stringify(board)).not.toContain(ada.id)
   expect(JSON.stringify(board)).not.toContain('bob')

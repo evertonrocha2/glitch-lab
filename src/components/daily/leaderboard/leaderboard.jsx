@@ -39,7 +39,7 @@ export default function Leaderboard({ entries, you }) {
                       {entry.name}
                     </Link>
                   ) : (
-                    entry.name
+                    t('player.anonymous')
                   )}
                 </span>
                 {(entry.firstSolver || entry.isYou) && (

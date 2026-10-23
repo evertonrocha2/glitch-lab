@@ -15,7 +15,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { badgeHow, badgeName } from '../../lib/i18n/labels.js'
 
-// The notes this detective shared. Each one opens read-only on its own page.
+// The notes this person shared. Each one opens read-only on its own page.
 function PublicNotes({ handle, notes }) {
   const t = useT()
   const format = useFormat()
@@ -92,7 +92,7 @@ function NotFound({ handle }) {
   )
 }
 
-// A detective's public file: anyone can open it, signed in or not.
+// A person's public profile: anyone can open it, signed in or not.
 export default function PublicProfilePage() {
   const { handle: raw } = useParams()
   // "/u/@Ada" and "/u/ada" are the same page; the address is tidied to the plain handle.

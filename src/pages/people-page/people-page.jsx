@@ -8,7 +8,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 const SEARCH_MAX = 40
 
-// "Find detectives": search public profiles by handle or name. Works signed out.
+// "Find people": search public profiles by handle or name. Works signed out.
 export default function PeoplePage() {
   const t = useT()
   const [query, setQuery] = useState('')

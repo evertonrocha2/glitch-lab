@@ -194,7 +194,7 @@ it('speaks Brazilian Portuguese: modes, traits, legend and the panels', async ()
   expect(within(guess).getByText('Estilo Python')).toBeInTheDocument()
   expect(screen.getByRole('list', { name: 'O que as cores significam' })).toHaveTextContent('Algo em comum')
   expect(screen.getByRole('heading', { name: 'Suas estatísticas' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Detetives de hoje' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Jogadores de hoje' })).toBeInTheDocument()
   expect(screen.getByText('Nenhum acerto no modo Clássico ainda. O primeiro começa o gráfico.')).toBeInTheDocument()
 })
 

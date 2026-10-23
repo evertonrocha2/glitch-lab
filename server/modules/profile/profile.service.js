@@ -5,7 +5,7 @@ import { earnedIds, ownProfile, parseProfile, parseSearch, profileCard, publicPr
 const NOT_FOUND = 'No public profile here.'
 const SEARCH_RESULTS = 20
 
-// "Find detectives": public profiles whose handle or name matches. An empty query lists the newest.
+// "Find people": public profiles whose handle or name matches. An empty query lists the newest.
 export async function searchProfiles(store, rawQuery) {
   const query = parseSearch(rawQuery)
   if (query === null) throw badRequest(`Search with letters, numbers, spaces, _ . and -, up to ${SEARCH_MAX} characters.`)
