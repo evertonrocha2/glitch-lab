@@ -119,9 +119,13 @@ describe('membership and chat', () => {
     await join('cafe-com-js', bob.token)
     expect((await post('cafe-com-js', '  ', bob.token)).status).toBe(400)
     expect((await post('cafe-com-js', 'x'.repeat(MESSAGE_LIMITS.body + 1), bob.token)).status).toBe(413)
-    const day = new Date().toISOString().slice(0, 10)
-    for (let n = 0; n < MESSAGE_LIMITS.perDay; n++) await store.addUsage(`messages:${bob.id}`, day)
-    expect((await post('cafe-com-js', 'one more', bob.token)).status).toBe(429)
+    // The day's counter already at the limit (500 real writes would make the test slow).
+    const addUsage = store.addUsage
+    vi.spyOn(store, 'addUsage').mockImplementation(async (key, day) => (key === `messages:${bob.id}` ? MESSAGE_LIMITS.perDay + 1 : addUsage(key, day)))
+    const limited = await post('cafe-com-js', 'one more', bob.token)
+    expect(limited.status).toBe(429)
+    expect(limited.body.message).toBe('You can send 500 messages a day. Come back tomorrow.')
+    vi.restoreAllMocks()
   })
 
   it('lets members delete their own messages and the owner delete any', async () => {
