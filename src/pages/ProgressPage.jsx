@@ -7,7 +7,9 @@ import { RIDDLE_XP } from '../../shared/riddle/game.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
 import ActivityGraph from '../components/ActivityGraph.jsx'
 import AppShell from '../components/AppShell.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
+import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { formatDuration, localDay } from '../lib/day.js'
 import { useT } from '../lib/i18n/I18nProvider.jsx'
@@ -71,22 +73,24 @@ export default function ProgressPage() {
 
   return (
     <AppShell>
-      <p className="font-label text-xs text-secondary">
-        &gt; {t('app.progress.kicker')}<span className="motion-safe:animate-caret">_</span>
-      </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('app.progress.title')}</h1>
-      <p className="mt-2 text-muted">{t('app.progress.lead')}</p>
-      <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
-        {t('app.progress.findPeople')}
-      </Link>
+      <PageHeader
+        kicker={t('app.progress.kicker')}
+        title={t('app.progress.title')}
+        lead={t('app.progress.lead')}
+        actions={
+          <PixelButton as={Link} to="/people" variant="ghost" className="px-4 py-3">
+            {t('app.progress.findPeople')}
+          </PixelButton>
+        }
+      />
 
       {!progress ? (
-        <p role="status" className="mt-10 font-label text-xs text-muted">
+        <p role="status" className="mt-8 font-label text-xs text-muted">
           {t('app.progress.loading')}
         </p>
       ) : (
         <>
-          <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <PixelCard className="relative overflow-hidden p-6 sm:p-8">
               <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/3 opacity-25" />
               <div className="relative">
@@ -136,55 +140,58 @@ export default function ProgressPage() {
 
           {progress.activity && <ActivityGraph activity={progress.activity} today={localDay()} title={t('app.progress.activity')} className="mt-14" />}
 
-          <section aria-labelledby="badges-title" className="mt-14">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <h2 id="badges-title" className="font-pixel text-2xl font-bold text-ink">
-                {t('app.progress.badges')}
-              </h2>
-              <p className="font-label text-xs text-muted">
-                {t('app.progress.earnedCount', { earned: earnedCount, total: BADGES.length })}
-              </p>
-            </div>
-            <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {BADGES.map((badge, index) => {
-                const earned = earnedIds.has(badge.id)
-                return (
-                  <li
-                    key={badge.id}
-                    className={`relative flex flex-col items-center border-2 p-4 text-center ${
-                      earned ? 'border-ink bg-white shadow-pixel-ink' : 'border-dashed border-muted/60 bg-mist'
-                    }`}
-                  >
-                    {!earned && <span aria-hidden="true" className="dither-primary absolute inset-0 opacity-10" />}
-                    <span className={`relative grid size-16 place-items-center border-2 ${earned ? 'border-ink bg-primary-soft' : 'border-muted/50 bg-white'}`}>
-                      <BadgeIcon id={badge.id} earned={earned} accent={index % 2 ? 'secondary' : 'primary'} className="size-11" />
-                    </span>
-                    <strong className={`relative mt-3 font-pixel text-lg leading-tight ${earned ? 'text-ink' : 'text-muted'}`}>{labels.badgeName(badge.id)}</strong>
-                    <span className="relative mt-1 text-xs text-muted">{labels.badgeHow(badge.id)}</span>
-                    <span
-                      className={`relative mt-3 px-1.5 py-0.5 font-label text-[10px] ${earned ? 'bg-primary text-white' : 'border border-muted/50 text-muted'}`}
+          {/* The badges take the page; how XP is earned is reference, so it rides along on the side. */}
+          <div className="mt-14 grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <section aria-labelledby="badges-title">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h2 id="badges-title" className="font-pixel text-2xl font-bold text-ink">
+                  {t('app.progress.badges')}
+                </h2>
+                <p className="font-label text-xs text-muted">
+                  {t('app.progress.earnedCount', { earned: earnedCount, total: BADGES.length })}
+                </p>
+              </div>
+              <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {BADGES.map((badge, index) => {
+                  const earned = earnedIds.has(badge.id)
+                  return (
+                    <li
+                      key={badge.id}
+                      className={`relative flex flex-col items-center border-2 p-4 text-center ${
+                        earned ? 'border-ink bg-white shadow-pixel-ink' : 'border-dashed border-muted/60 bg-mist'
+                      }`}
                     >
-                      {earned ? t('app.progress.earned') : t('app.progress.locked')}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          </section>
+                      {!earned && <span aria-hidden="true" className="dither-primary absolute inset-0 opacity-10" />}
+                      <span className={`relative grid size-16 place-items-center border-2 ${earned ? 'border-ink bg-primary-soft' : 'border-muted/50 bg-white'}`}>
+                        <BadgeIcon id={badge.id} earned={earned} accent={index % 2 ? 'secondary' : 'primary'} className="size-11" />
+                      </span>
+                      <strong className={`relative mt-3 font-pixel text-lg leading-tight ${earned ? 'text-ink' : 'text-muted'}`}>{labels.badgeName(badge.id)}</strong>
+                      <span className="relative mt-1 text-xs text-muted">{labels.badgeHow(badge.id)}</span>
+                      <span
+                        className={`relative mt-3 px-1.5 py-0.5 font-label text-[10px] ${earned ? 'bg-primary text-white' : 'border border-muted/50 text-muted'}`}
+                      >
+                        {earned ? t('app.progress.earned') : t('app.progress.locked')}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
 
-          <section aria-labelledby="xp-title" className="mt-14 max-w-xl">
-            <h2 id="xp-title" className="font-label text-sm text-primary">
-              {t('app.progress.howXp')}
-            </h2>
-            <ul className="mt-4 divide-y-2 divide-dashed divide-line border-2 border-ink bg-white">
-              {EARN.map(([id, points]) => (
-                <li key={id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-ink">
-                  <span>{t(`app.progress.earn.${id}`)}</span>
-                  <strong className="shrink-0 font-label text-xs text-secondary">{points} XP</strong>
-                </li>
-              ))}
-            </ul>
-          </section>
+            <aside aria-labelledby="xp-title" className="lg:sticky lg:top-6">
+              <h2 id="xp-title" className="flex min-h-8 items-end font-label text-sm text-primary">
+                {t('app.progress.howXp')}
+              </h2>
+              <ul className="mt-6 divide-y-2 divide-dashed divide-line border-2 border-ink bg-white">
+                {EARN.map(([id, points]) => (
+                  <li key={id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-ink">
+                    <span>{t(`app.progress.earn.${id}`)}</span>
+                    <strong className="shrink-0 font-label text-xs text-secondary">{points} XP</strong>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </div>
         </>
       )}
     </AppShell>
