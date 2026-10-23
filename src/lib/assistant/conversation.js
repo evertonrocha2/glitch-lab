@@ -40,6 +40,29 @@ export function pageFromLocation(pathname, focus) {
   return page
 }
 
+// A streamed answer so far, as [{ agent, reply }] like a finished one's parts: text from the same
+// specialist grows its part, a new specialist starts the next one.
+export function appendDelta(parts, { agent, text }) {
+  const last = parts.at(-1)
+  if (last && last.agent === agent) return [...parts.slice(0, -1), { agent, reply: last.reply + text }]
+  return [...parts, { agent, reply: text }]
+}
+
+// What stays in the chat when the student stops an answer halfway: the text so far, no actions.
+export function stoppedMessage(id, parts, steps = []) {
+  const kept = parts.map((part) => ({ agent: part.agent, reply: part.reply.trim() })).filter((part) => part.reply)
+  return {
+    id,
+    role: 'assistant',
+    content: kept.map((part) => part.reply).join('\n\n'),
+    parts: kept,
+    agents: [...new Set(kept.map((part) => part.agent))],
+    actions: [],
+    steps,
+    stopped: true,
+  }
+}
+
 const FENCE = /^```/
 const LIST_ITEM = /^\s*(?:[-*]|\d+\.)\s+/
 

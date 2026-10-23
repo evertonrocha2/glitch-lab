@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { loadConversation, pageFromLocation, parseInline, parseReply, saveConversation, toApiMessages } from './conversation.js'
+import { appendDelta, loadConversation, pageFromLocation, parseInline, parseReply, saveConversation, stoppedMessage, toApiMessages } from './conversation.js'
 
 it('keeps each conversation per user in session storage', () => {
   saveConversation('alice', [{ id: 'm1', role: 'user', content: 'hi' }])
@@ -49,4 +49,27 @@ it('finds inline code and bold text', () => {
     { type: 'strong', text: 'reading' },
     { type: 'text', text: ' it' },
   ])
+})
+
+it('grows a streamed answer part by part, one per specialist', () => {
+  let parts = appendDelta([], { agent: 'gym', text: 'Look ' })
+  parts = appendDelta(parts, { agent: 'gym', text: 'at a.b.' })
+  parts = appendDelta(parts, { agent: 'study', text: 'Study.' })
+  expect(parts).toEqual([
+    { agent: 'gym', reply: 'Look at a.b.' },
+    { agent: 'study', reply: 'Study.' },
+  ])
+})
+
+it('keeps the text of a stopped answer, without actions', () => {
+  expect(stoppedMessage('m1', [{ agent: 'board', reply: 'First, look at \n' }, { agent: 'study', reply: '  ' }])).toEqual({
+    id: 'm1',
+    role: 'assistant',
+    content: 'First, look at',
+    parts: [{ agent: 'board', reply: 'First, look at' }],
+    agents: ['board'],
+    actions: [],
+    steps: [],
+    stopped: true,
+  })
 })

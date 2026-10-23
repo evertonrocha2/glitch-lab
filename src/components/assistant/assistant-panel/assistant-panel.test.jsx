@@ -1,13 +1,15 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { AuthError, askAssistant, listCases, listNotes, startChallenge } from '../../../lib/api.js'
+import { AuthError, askAssistant, listCases, listNotes, StreamUnavailableError, startChallenge, streamAssistant } from '../../../lib/api.js'
 import { makeCase } from '../../../test/fixtures.js'
 import { currentLocation, renderAt } from '../../../test/render.jsx'
 
 vi.mock('../../../lib/api.js', () => ({
   AuthError: class AuthError extends Error {},
   askAssistant: vi.fn(),
+  StreamUnavailableError: class StreamUnavailableError extends Error {},
+  streamAssistant: vi.fn(),
   startChallenge: vi.fn(),
   listCases: vi.fn(),
   listNotes: vi.fn(),
@@ -27,6 +29,8 @@ const REPLY = {
 
 beforeEach(() => {
   vi.mocked(askAssistant).mockReset().mockResolvedValue(REPLY)
+  // Most tests read the plain answer: the stream is unavailable, as behind a proxy that blocks it.
+  vi.mocked(streamAssistant).mockReset().mockRejectedValue(new StreamUnavailableError('no stream'))
   vi.mocked(startChallenge).mockReset()
   vi.mocked(listCases).mockReset().mockResolvedValue([])
   vi.mocked(listNotes).mockReset().mockResolvedValue([])
@@ -123,7 +127,7 @@ it('renders the reply as text, never as HTML', async () => {
   vi.mocked(askAssistant).mockResolvedValue({ ...REPLY, reply: '<img src=x onerror=alert(1)>', parts: [{ agent: 'board', reply: '<img src=x onerror=alert(1)>' }] })
   await openPanel()
   await userEvent.type(screen.getByLabelText('Your question'), 'hi{Enter}')
-  expect(await within(panel()).findByText('<img src=x onerror=alert(1)>')).toBeInTheDocument()
+  expect(await within(within(panel()).getByRole('log')).findByText('<img src=x onerror=alert(1)>')).toBeInTheDocument()
   expect(panel().querySelector('img')).toBeNull()
 })
 
@@ -250,4 +254,117 @@ it('speaks Brazilian Portuguese: chips, thinking steps and the answer trace', as
     expect.arrayContaining(['Encaminhando sua pergunta', 'Analista do board está olhando seus casos']),
   )
   expect(within(dialog).getByRole('button', { name: 'Nova conversa' })).toBeEnabled()
+})
+
+// A stream the test drives: emit(type, data) sends an event, finish(answer) or fail(err) ends it.
+function controlledStream() {
+  const control = {}
+  vi.mocked(streamAssistant).mockImplementation(
+    (_body, _token, { onEvent, signal }) =>
+      new Promise((resolve, reject) => {
+        control.signal = signal
+        control.emit = (type, data) => act(async () => onEvent({ type, data }))
+        control.finish = (answer) => act(async () => resolve(answer))
+        control.fail = (err) => act(async () => reject(err))
+      }),
+  )
+  return control
+}
+
+it('shows the answer growing as it streams, with a caret, then the buttons when it is done', async () => {
+  const stream = controlledStream()
+  await openPanel()
+  await userEvent.type(screen.getByLabelText('Your question'), 'What is my weak spot?{Enter}')
+  expect(streamAssistant).toHaveBeenCalledWith(
+    { messages: [{ role: 'user', content: 'What is my weak spot?' }], page: { path: '/board' } },
+    'token-alice',
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  )
+
+  await stream.emit('step', { kind: 'routing', text: 'Routing your question' })
+  await stream.emit('step', { kind: 'context', agent: 'board', text: 'Board analyst is looking at your cases' })
+  const thinking = within(panel()).getByRole('status')
+  expect(within(thinking).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['Routing your question', 'Board analyst is looking at your cases'])
+  expect(within(panel()).getByRole('log')).toHaveAttribute('aria-busy', 'true')
+
+  await stream.emit('delta', { agent: 'board', text: 'Your weak spot ' })
+  expect(within(panel()).queryByRole('status')).toBeNull()
+  expect(within(panel()).getByText('Board analyst is typing')).toBeInTheDocument()
+  expect(within(panel()).getByText('Your weak spot', { exact: false })).toBeInTheDocument()
+  expect(within(panel()).getByTestId('typing-caret')).toHaveClass('motion-safe:animate-blink')
+  await stream.emit('delta', { agent: 'board', text: 'is `undefined` access.' })
+  expect(within(panel()).getByText('undefined', { selector: 'code' })).toBeInTheDocument()
+  // Nothing is announced word by word.
+  expect(screen.getByTestId('assistant-announcer')).toHaveTextContent('')
+  expect(within(panel()).getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+
+  await stream.finish({ ...REPLY, actions: [{ type: 'start_timer', target: '', label: 'Start the study timer' }] })
+  expect(await within(panel()).findByText('Answered by Board analyst')).toBeInTheDocument()
+  expect(within(panel()).queryByTestId('typing-caret')).toBeNull()
+  expect(within(panel()).getByRole('button', { name: 'Start the study timer' })).toBeInTheDocument()
+  expect(screen.getByTestId('assistant-announcer')).toHaveTextContent('Your weak spot is `undefined` access.')
+  expect(within(panel()).getByRole('log')).toHaveAttribute('aria-busy', 'false')
+  expect(askAssistant).not.toHaveBeenCalled()
+})
+
+it('labels each specialist as their streamed parts arrive', async () => {
+  const stream = controlledStream()
+  await openPanel()
+  await userEvent.type(screen.getByLabelText('Your question'), 'help{Enter}')
+  await stream.emit('delta', { agent: 'gym', text: 'Look at a.b.' })
+  await stream.emit('delta', { agent: 'study', text: 'Study 20' })
+  expect(within(panel()).getByText('Study planner is typing')).toBeInTheDocument()
+  expect(within(panel()).getByRole('heading', { name: 'Gym coach' })).toBeInTheDocument()
+  expect(within(panel()).getByRole('heading', { name: 'Study planner' })).toBeInTheDocument()
+})
+
+it('falls back to the plain answer when the stream is unavailable before any text', async () => {
+  await openPanel()
+  await userEvent.type(screen.getByLabelText('Your question'), 'hi{Enter}')
+  expect(await within(panel()).findByText('Answered by Board analyst')).toBeInTheDocument()
+  expect(streamAssistant).toHaveBeenCalledTimes(1)
+  expect(askAssistant).toHaveBeenCalledWith({ messages: [{ role: 'user', content: 'hi' }], page: { path: '/board' } }, 'token-alice')
+})
+
+it('does not ask twice once text has streamed, or when the server answered with an error', async () => {
+  const stream = controlledStream()
+  await openPanel()
+  await userEvent.type(screen.getByLabelText('Your question'), 'hi{Enter}')
+  await stream.emit('delta', { agent: 'board', text: 'Half an ans' })
+  await stream.fail(new StreamUnavailableError('cut'))
+  expect(await within(panel()).findByRole('alert')).toHaveTextContent('cut')
+
+  vi.mocked(streamAssistant).mockRejectedValueOnce(new Error('The AI is busy right now. Try again in a minute.'))
+  await userEvent.click(within(panel()).getByRole('button', { name: 'Try again' }))
+  expect(await within(panel()).findByRole('alert')).toHaveTextContent('The AI is busy right now.')
+  expect(askAssistant).not.toHaveBeenCalled()
+})
+
+it('stops an answer halfway and keeps what was written', async () => {
+  const stream = controlledStream()
+  await openPanel()
+  await userEvent.type(screen.getByLabelText('Your question'), 'explain{Enter}')
+  await stream.emit('delta', { agent: 'board', text: 'First, look at' })
+  await userEvent.click(within(panel()).getByRole('button', { name: 'Stop' }))
+  expect(stream.signal.aborted).toBe(true)
+  expect(within(panel()).getByText('First, look at')).toBeInTheDocument()
+  expect(within(panel()).getByText('You stopped this answer here.')).toBeInTheDocument()
+  expect(within(panel()).queryByTestId('typing-caret')).toBeNull()
+  // A late end of the stopped stream changes nothing.
+  await stream.finish(REPLY)
+  expect(within(panel()).queryByText('Then read it')).toBeNull()
+  expect(within(panel()).getByRole('button', { name: 'Send' })).toBeInTheDocument()
+})
+
+it('says who is typing and stops in Portuguese', async () => {
+  const stream = controlledStream()
+  renderAt('/board', { user: 'alice', locale: 'pt-BR' })
+  await userEvent.click(screen.getByRole('button', { name: 'Assistente do Lab' }))
+  await userEvent.type(screen.getByLabelText('Sua pergunta'), 'oi{Enter}')
+  await stream.emit('step', { kind: 'routing', text: 'Encaminhando sua pergunta' })
+  expect(screen.getByText('Encaminhando sua pergunta')).toBeInTheDocument()
+  await stream.emit('delta', { agent: 'guide', text: 'Aqui você' })
+  expect(screen.getByText('Guia do app está digitando')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Parar' }))
+  expect(screen.getByText('Você parou esta resposta aqui.')).toBeInTheDocument()
 })

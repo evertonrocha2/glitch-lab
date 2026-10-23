@@ -9,7 +9,7 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useStudyTimer } from '../../../lib/timer/study-timer-provider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
-import { AssistantBubble, UserBubble } from '../assistant-message/assistant-message.jsx'
+import { AssistantBubble, StreamingBubble, UserBubble } from '../assistant-message/assistant-message.jsx'
 import LabAvatar from '../lab-avatar/lab-avatar.jsx'
 import { suggestionsFor } from '../names.js'
 import ThinkingSteps from '../thinking-steps/thinking-steps.jsx'
@@ -22,7 +22,7 @@ export const isAssistantShortcut = (event) =>
 
 function Dialog() {
   const assistant = useAssistant()
-  const { messages, pending, error, close } = assistant
+  const { messages, pending, error, announcement, close } = assistant
   const { getToken, signOut } = useAuth()
   const timer = useStudyTimer()
   const t = useT()
@@ -43,7 +43,7 @@ function Dialog() {
     return () => opener?.focus?.()
   }, [])
 
-  // Newest message in view.
+  // Newest message in view, and the newest words while an answer streams in.
   // biome-ignore lint/correctness/useExhaustiveDependencies: these are the moments the log grows.
   useEffect(() => {
     log.current?.scrollTo?.({ top: log.current.scrollHeight })
@@ -141,7 +141,19 @@ function Dialog() {
           </PixelButton>
         </header>
 
-        <div ref={log} role="log" aria-live="polite" aria-label={t('app.assistant.log')} className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+        {/* Screen readers hear each answer once, when it is done, from here: the log itself stays
+            quiet, or it would read every streamed word. */}
+        <p className="sr-only" aria-live="polite" aria-atomic="true" data-testid="assistant-announcer">
+          {announcement}
+        </p>
+        <div
+          ref={log}
+          role="log"
+          aria-live="off"
+          aria-busy={Boolean(pending)}
+          aria-label={t('app.assistant.log')}
+          className="flex-1 space-y-4 overflow-y-auto px-4 py-5"
+        >
           {empty && (
             <div className="space-y-4">
               <div className="flex items-start gap-2.5">
@@ -177,7 +189,12 @@ function Dialog() {
             ),
           )}
 
-          {pending && <ThinkingSteps question={pending.question} page={pending.page} />}
+          {pending &&
+            (pending.parts?.length ? (
+              <StreamingBubble parts={pending.parts} />
+            ) : (
+              <ThinkingSteps question={pending.question} page={pending.page} steps={pending.steps} />
+            ))}
 
           {(error || actionError) && (
             <div role="alert" className="border-2 border-ink bg-white p-3 text-sm shadow-pixel-muted">
@@ -218,9 +235,15 @@ function Dialog() {
               }}
               className="min-h-11 flex-1 resize-none border-2 border-ink bg-white px-2.5 py-2 text-sm text-ink placeholder:text-muted focus-visible:rounded-none focus-visible:outline-offset-0"
             />
-            <PixelButton type="submit" disabled={!draft.trim() || Boolean(pending)} className="px-3 py-2.5">
-              {t('app.assistant.send')}
-            </PixelButton>
+            {pending ? (
+              <PixelButton variant="secondary" onClick={assistant.stop} title={t('app.assistant.stopTitle')} className="px-3 py-2.5">
+                {t('app.assistant.stop')}
+              </PixelButton>
+            ) : (
+              <PixelButton type="submit" disabled={!draft.trim()} className="px-3 py-2.5">
+                {t('app.assistant.send')}
+              </PixelButton>
+            )}
           </div>
           <div className="mt-2 flex items-center justify-between gap-3">
             <p className="text-xs text-muted">{t('app.assistant.keys')}</p>

@@ -3,27 +3,32 @@ import { pickSpecialists } from '../../../../shared/assistant.js'
 import { translate, useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelBug from '../../ui/pixel-bug/pixel-bug.jsx'
 import LabAvatar from '../lab-avatar/lab-avatar.jsx'
-import { routingStep, workingStep, writingStep } from '../names.js'
+import { routingStep, stepLabel, workingStep, writingStep } from '../names.js'
 
 const STEP_MS = 2500
 
-// The server answers in one go, so the plan here is a best guess (the same keyword routing the
-// server falls back to). The real trace comes with the reply.
+// Until the server says what it is doing, the plan here is a best guess (the same keyword routing
+// the server falls back to). A streamed answer sends its real steps, and those replace the guess.
 // `t` defaults to English, for callers outside a provider.
 export function plannedSteps(question, page, t) {
   const say = t ?? ((key, vars) => translate('en', key, vars))
   return [routingStep(say), ...pickSpecialists(question, page).map((id) => workingStep(say, id)), writingStep(say)]
 }
 
-export default function ThinkingSteps({ question, page }) {
+export default function ThinkingSteps({ question, page, steps: real = [] }) {
   const t = useT()
-  const steps = useMemo(() => plannedSteps(question, page, t), [question, page, t])
-  const [active, setActive] = useState(0)
+  const planned = useMemo(() => plannedSteps(question, page, t), [question, page, t])
+  const [guess, setGuess] = useState(0)
+  const live = real.length > 0
+  const steps = live ? real.map((step) => stepLabel(t, step)) : planned
+  // The real steps arrive as they happen, so the newest one is the one in progress.
+  const active = live ? steps.length - 1 : guess
 
   useEffect(() => {
-    const timer = setInterval(() => setActive((current) => Math.min(current + 1, steps.length - 1)), STEP_MS)
+    if (live) return
+    const timer = setInterval(() => setGuess((current) => Math.min(current + 1, planned.length - 1)), STEP_MS)
     return () => clearInterval(timer)
-  }, [steps])
+  }, [planned, live])
 
   return (
     <div className="flex items-start gap-2.5">

@@ -15,7 +15,8 @@ export function UserBubble({ message }) {
 }
 
 // One reply: who answered, each specialist's part, the actions it offers, and how it was answered.
-export function AssistantBubble({ message, onAction, busy }) {
+// streaming: the answer is still being written, so it says who is typing and ends in a caret.
+export function AssistantBubble({ message, onAction, busy, streaming = false }) {
   const t = useT()
   const name = (id) => specialistLabel(t, id)
   const agents = message.agents ?? []
@@ -26,15 +27,20 @@ export function AssistantBubble({ message, onAction, busy }) {
     <div className="flex items-start gap-2.5">
       <LabAvatar />
       <div className="min-w-0 flex-1 border-2 border-ink bg-white p-3 shadow-pixel">
-        {agents.length > 0 && <p className="font-label text-[10px] text-primary">{t('app.assistant.answeredBy', { names: agents.map(name).join(' + ') })}</p>}
+        {streaming ? (
+          <p className="font-label text-[10px] text-primary">{t('app.assistant.typing', { name: name(parts.at(-1)?.agent) })}</p>
+        ) : (
+          agents.length > 0 && <p className="font-label text-[10px] text-primary">{t('app.assistant.answeredBy', { names: agents.map(name).join(' + ') })}</p>
+        )}
         <div className={`mt-1.5 ${several ? 'space-y-3' : ''}`}>
           {parts.map((part, index) => (
             <section key={index} className={several && index > 0 ? 'border-t-2 border-dashed border-line pt-3' : ''}>
               {several && <h3 className="mb-1 font-label text-[10px] text-secondary">{name(part.agent)}</h3>}
-              <ReplyText text={part.reply} label={name(part.agent)} />
+              <ReplyText text={part.reply} label={name(part.agent)} caret={streaming && index === parts.length - 1} />
             </section>
           ))}
         </div>
+        {message.stopped && <p className="mt-2 text-xs text-muted">{t('app.assistant.stopped')}</p>}
         {message.actions?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {message.actions.map((action) => (
@@ -63,4 +69,9 @@ export function AssistantBubble({ message, onAction, busy }) {
       </div>
     </div>
   )
+}
+
+// The answer while it streams in: parts as [{ agent, reply }], growing.
+export function StreamingBubble({ parts }) {
+  return <AssistantBubble message={{ parts, agents: [...new Set(parts.map((part) => part.agent))] }} streaming />
 }

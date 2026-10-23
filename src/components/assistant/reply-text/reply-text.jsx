@@ -20,16 +20,34 @@ function Inline({ text }) {
   })
 }
 
-export default function ReplyText({ text, label }) {
+// The blinking block at the end of an answer that is still being written. It only blinks when the
+// reader allows motion; otherwise it just sits there.
+export function TypingCaret() {
+  return <span aria-hidden="true" data-testid="typing-caret" className="ml-0.5 inline-block h-[1em] w-[0.5em] translate-y-[0.15em] bg-primary motion-safe:animate-blink" />
+}
+
+// caret: the answer is still streaming, so the caret follows its last word.
+export default function ReplyText({ text, label, caret = false }) {
   const t = useT()
+  const blocks = parseReply(text)
+  if (caret && !blocks.length) return <TypingCaret />
   return (
     <div className="space-y-2.5 text-sm leading-relaxed">
-      {parseReply(text).map((block, index) => {
+      {blocks.map((block, index) => {
+        const last = caret && index === blocks.length - 1
         if (block.type === 'code') {
-          return (
+          const code = (
             <pre key={index} className="overflow-x-auto border-2 border-ink bg-mist p-2.5 font-mono text-xs leading-relaxed text-ink">
               <code>{block.text}</code>
             </pre>
+          )
+          if (!last) return code
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: blocks of a text that only grows at the end.
+            <div key={index}>
+              {code}
+              <TypingCaret />
+            </div>
           )
         }
         if (block.type === 'list') {
@@ -40,6 +58,7 @@ export default function ReplyText({ text, label }) {
                   <span aria-hidden="true" className="mt-[0.55em] size-1.5 shrink-0 bg-primary" />
                   <span className="min-w-0">
                     <Inline text={item} />
+                    {last && itemIndex === block.items.length - 1 && <TypingCaret />}
                   </span>
                 </li>
               ))}
@@ -49,6 +68,7 @@ export default function ReplyText({ text, label }) {
         return (
           <p key={index} className="whitespace-pre-line wrap-break-word">
             <Inline text={block.text} />
+            {last && <TypingCaret />}
           </p>
         )
       })}
