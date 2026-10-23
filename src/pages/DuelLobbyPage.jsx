@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import AppShell from '../components/AppShell.jsx'
 import { PlayerFace } from '../components/duel/Play.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
 import { AuthError, getDuelLobby, sendDuel } from '../lib/api.js'
@@ -17,7 +18,8 @@ function ActionRow({ title, how, children }) {
         <h3 className="font-label text-sm text-ink">{title}</h3>
         <p className="mt-1 text-sm text-muted">{how}</p>
       </div>
-      {children}
+      {/* One width for every action, so the buttons line up on the same edge. */}
+      <div className="w-full shrink-0 *:w-full sm:w-60">{children}</div>
     </div>
   )
 }
@@ -161,22 +163,16 @@ export default function DuelLobbyPage() {
 
   return (
     <AppShell>
-      <div>
-        <p className="font-label text-xs text-secondary">
-          &gt; duel<span className="motion-safe:animate-caret">_</span>
-        </p>
-        <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('duel.title')}</h1>
-        <p className="mt-2 max-w-2xl text-muted">{t('duel.lead')}</p>
-      </div>
+      <PageHeader kicker={t('duel.nav')} title={t('duel.title')} lead={t('duel.lead')} />
 
       {message && (
-        <div className="mt-6">
+        <div className="mt-8">
           <ErrorNotice message={message} />
         </div>
       )}
 
       {lobby?.active && (
-        <p className="mt-6 flex flex-wrap items-center gap-2 border-2 border-ink bg-primary-soft px-4 py-3 text-sm text-ink shadow-pixel">
+        <p className="mt-8 flex flex-wrap items-center gap-2 border-2 border-ink bg-primary-soft px-4 py-3 text-sm text-ink shadow-pixel">
           {t('duel.lobby.resume')}
           <Link to={`/duel/${lobby.active.id}`} className="font-label text-xs text-primary underline">
             {t('duel.lobby.resumeLink')}
@@ -219,7 +215,7 @@ export default function DuelLobbyPage() {
                       className="block w-full border-2 border-ink bg-white px-3 py-2 font-mono text-base tracking-[0.3em] text-ink uppercase placeholder:text-muted/50"
                     />
                   </label>
-                  <PixelButton type="submit" variant="ghost" disabled={busy || code.trim().length < 6}>
+                  <PixelButton type="submit" variant="ghost" disabled={busy || code.trim().length < 6} className="w-full sm:w-60">
                     {t('duel.lobby.join')}
                   </PixelButton>
                 </div>
