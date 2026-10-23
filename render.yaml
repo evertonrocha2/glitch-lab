@@ -1,34 +1,54 @@
-# Render blueprint: one Node web service that serves the built app and the api/ routes (server.js).
-# Secrets are marked sync: false, so Render asks for them when the blueprint is created.
+# Render blueprint: the backend. The site itself is on Vercel, which forwards /api/* here (vercel.json).
+#   glitch-detective-api   web service: every api/<name>.js through server.js
+#   glitch-detective-cron  cron job: the daily content (puzzles, Glitchdle, line hunt) at 03:00 UTC
+# Secrets marked sync: false are asked for when the blueprint is created; the generated ones are
+# created by Render once and shared through the group, so the API and the cron always agree.
+envVarGroups:
+  - name: glitch-detective-shared
+    envVars:
+      - key: CRON_SECRET
+        generateValue: true
+
 services:
   - type: web
-    name: glitch-detective
+    name: glitch-detective-api
     runtime: node
     plan: free
-    buildCommand: npm install --include=dev && npm run build
+    region: ohio
+    buildCommand: npm install
     startCommand: node server.js
     healthCheckPath: /healthz
     envVars:
+      - fromGroup: glitch-detective-shared
       - key: NODE_VERSION
         value: "22"
       - key: NODE_ENV
         value: production
       - key: GEMINI_MODEL
         value: gemini-3.8-flash
-      - key: GEMINI_API_KEY
-        sync: false
       - key: AUTH_SECRET
-        sync: false
-      - key: CRON_SECRET
-        sync: false
+        generateValue: true
       - key: GLITCHDLE_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
         sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      # Read by the browser build (Vite), so they must be set before the build runs.
-      - key: VITE_SUPABASE_URL
-        sync: false
-      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+
+  - type: cron
+    name: glitch-detective-cron
+    runtime: node
+    plan: starter
+    region: ohio
+    schedule: "0 3 * * *"
+    buildCommand: "true"
+    startCommand: node scripts/run-cron.mjs
+    envVars:
+      - fromGroup: glitch-detective-shared
+      - key: NODE_VERSION
+        value: "22"
+      # The API's public address, e.g. https://glitch-detective-api.onrender.com
+      - key: APP_URL
         sync: false
