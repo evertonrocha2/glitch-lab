@@ -11,7 +11,7 @@ import ReviewToday from '../../components/review/review-today/review-today.jsx'
 import { AuthError, getDaily, getGlobalChallenge, startPuzzle } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
-import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 
 // Ticks once a second for the countdowns.
@@ -107,7 +107,8 @@ function GlitchdleTeaser({ day }) {
 // Three puzzles a day (the same for everyone) and one global challenge a week, with a leaderboard.
 export default function DailyPage() {
   const { getToken, signOut } = useAuth()
-  const t = useT()
+  // The titles and symptoms come from the server in the reader's language: a switch fetches them again.
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const [daily, setDaily] = useState(null)
   const [global, setGlobal] = useState(null)
@@ -135,7 +136,8 @@ export default function DailyPage() {
     } catch (err) {
       await handleError(err)
     }
-  }, [getToken, handleError])
+    // locale: refetch in the new language.
+  }, [getToken, handleError, locale])
 
   useEffect(() => {
     load()
