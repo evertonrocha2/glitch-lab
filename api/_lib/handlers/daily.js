@@ -6,6 +6,7 @@ import { ensureSet, isCurrent, runCron, toPuzzleCard, withStatus } from '../puzz
 import { leaderboard } from '../puzzles/leaderboard.js'
 import { loadDaily } from '../puzzles/solved.js'
 import { runRiddleCron } from '../riddle/daily.js'
+import { runHuntCron } from '../hunt/daily.js'
 import { getStore } from '../store/index.js'
 
 // Daily and global challenges, served from /api/challenge to stay under Vercel's free-plan limit.
@@ -67,12 +68,17 @@ export function cronAllowed(request) {
 export async function cron(request, now = new Date()) {
   if (!cronAllowed(request)) return fail(401, 'Not allowed.')
   const store = getStore()
-  const [puzzles, riddle] = await Promise.all([
+  const [puzzles, riddle, hunt] = await Promise.all([
     runCron(store, now),
     runRiddleCron(store, now).catch((err) => {
       console.error('Glitchdle cron failed:', err)
       return { failed: true }
     }),
+    // Line hunt: a few fresh AI snippets a day, the rest from the pool.
+    runHuntCron(store, now).catch((err) => {
+      console.error('Line hunt cron failed:', err)
+      return { failed: true }
+    }),
   ])
-  return ok({ ...puzzles, riddle })
+  return ok({ ...puzzles, riddle, hunt })
 }

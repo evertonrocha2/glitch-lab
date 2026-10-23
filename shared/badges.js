@@ -16,6 +16,7 @@ export const BADGES = [
   { id: 'daily-grinder', name: 'Daily grinder', how: 'Solve a daily challenge 7 days in a row.', earned: (s) => s.dailyLongestStreak >= 7 },
   { id: 'global-ace', name: 'Global ace', how: 'Solve a weekly global challenge.', earned: (s) => s.globalSolved >= 1 },
   { id: 'lingo-master', name: 'Lingo master', how: 'Solve all three Glitchdle modes in one day.', earned: (s) => s.riddlePerfectDays >= 1 },
+  { id: 'eagle-eye', name: 'Eagle eye', how: 'Find all 8 lines in a daily line hunt.', earned: (s) => s.huntPerfectRuns >= 1 },
   { id: 'author', name: 'Author', how: 'Publish a community article.', earned: (s) => s.articles >= 1 },
   { id: 'trusted', name: 'Trusted', how: 'Get 5 valid ratings on your articles.', earned: (s) => s.validReceived >= 5 },
   { id: 'duelist', name: 'Duelist', how: 'Win a duel against a person.', earned: (s) => s.duelHumanWins >= 1 },

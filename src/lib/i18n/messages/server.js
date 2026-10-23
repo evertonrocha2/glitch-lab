@@ -59,6 +59,15 @@ const en = {
   'server.alreadyTried': 'You already tried that language.',
   'server.guessClash': 'Another guess landed at the same time. Try again.',
 
+  // Line hunt.
+  'server.newHunt': 'A new line hunt just started. Reload to play it.',
+  'server.huntNotStarted': "Start today's line hunt first.",
+  'server.huntOver': 'Your line hunt for today is over. Come back tomorrow.',
+  'server.huntClash': 'Another hunt answer landed at the same time. Try again.',
+  'server.huntRoundOver': 'That snippet is over. Load the next one.',
+  'server.pickLine': 'Pick a line of the snippet.',
+  'server.snippetNotFound': 'Snippet not found.',
+
   // Duel.
   'server.duelNotFound': 'Duel not found.',
   'server.duelFull': 'This duel is already full.',
@@ -239,6 +248,14 @@ const ptBR = {
   'server.noGuessesLeft': 'Seus palpites neste modo acabaram por hoje.',
   'server.alreadyTried': 'Você já tentou essa linguagem.',
   'server.guessClash': 'Outro palpite chegou ao mesmo tempo. Tente de novo.',
+
+  'server.newHunt': 'Uma nova caça à linha acabou de começar. Recarregue para jogar.',
+  'server.huntNotStarted': 'Comece a caça à linha de hoje primeiro.',
+  'server.huntOver': 'Sua caça à linha de hoje acabou. Volte amanhã.',
+  'server.huntClash': 'Outra resposta da caça chegou ao mesmo tempo. Tente de novo.',
+  'server.huntRoundOver': 'Esse trecho já acabou. Carregue o próximo.',
+  'server.pickLine': 'Escolha uma linha do trecho.',
+  'server.snippetNotFound': 'Trecho não encontrado.',
 
   'server.duelNotFound': 'Duelo não encontrado.',
   'server.duelFull': 'Este duelo já está cheio.',

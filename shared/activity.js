@@ -1,6 +1,7 @@
 // A year of activity, one count per day, for the GitHub-style graph on profiles and the progress page.
 // Worked out from what's already stored, like XP: nothing to keep in sync.
 import { MAX_DUEL_ACTIVITY } from './duel.js'
+import { huntSummary } from './hunt/game.js'
 
 export const WEEKS = 53
 const DAY_MS = 24 * 3_600_000
@@ -28,8 +29,9 @@ export function activityLevel(count) {
 // riddle (optional): { results } from Glitchdle; a day with any mode solved counts once.
 // duel (optional): { results } from duels; each finished duel counts, up to MAX_DUEL_ACTIVITY a day.
 // events (optional): { days } from community events; each entry sent counts on its day.
+// hunt (optional): { runs } from the line hunt; a day with a daily run played counts once.
 // review (optional): { days: [{ day, completed }] } from spaced review; a day with a finished review counts once.
-export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, duel, events, review }, today) {
+export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, duel, events, review, hunt }, today) {
   const counts = new Map()
   const add = (day, amount = 1) => {
     if (day) counts.set(day, (counts.get(day) ?? 0) + amount)
@@ -42,6 +44,7 @@ export function activityCalendar({ cases = [], challenges = [], notes = [], stud
   for (const item of duel?.results ?? []) duelDays.set(item.day, (duelDays.get(item.day) ?? 0) + 1)
   for (const [day, count] of duelDays) add(day, Math.min(count, MAX_DUEL_ACTIVITY))
   for (const day of events?.days ?? []) add(day)
+  for (const day of huntSummary(hunt?.runs).days) add(day)
   for (const item of review?.days ?? []) if (item.completed) add(item.day)
   for (const entry of study) {
     if (entry.seconds >= STUDY_DAY_SECONDS) add(entry.day, Math.min(MAX_STUDY_PER_DAY, 1 + Math.floor(entry.seconds / STUDY_BLOCK_SECONDS)))

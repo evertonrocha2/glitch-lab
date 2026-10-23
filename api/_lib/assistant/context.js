@@ -5,6 +5,7 @@ import { kindLabel, trailViews } from '../../../shared/trails.js'
 import { loadDaily } from '../puzzles/solved.js'
 import { loadRiddle } from '../riddle/solved.js'
 import { loadDuel } from '../duel/solved.js'
+import { loadHunt } from '../hunt/solved.js'
 import { loadInterrogation } from '../interrogation/solved.js'
 import { serverDay } from '../days.js'
 import { APP_GUIDE } from './guide.js'
@@ -148,11 +149,13 @@ async function studyContext({ store, userId, needs }) {
     // The same inputs as /api/progress, so the assistant never quotes a different XP.
     const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
     const duel = await loadDuel(store, userId)
+    // Line hunts too, so the XP matches /api/progress.
+    const hunt = await loadHunt(store, userId)
     // Community events too, so the XP matches /api/progress.
     const events = await store.eventStats(userId)
     // Interrogations too, so the XP matches /api/progress.
     const interrogation = await loadInterrogation(store, userId)
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, duel, events, interrogation })
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, hunt, duel, events, interrogation })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(

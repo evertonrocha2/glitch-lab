@@ -4,6 +4,7 @@ import { dailySummary } from './daily.js'
 import { riddleSummary } from './riddle/game.js'
 import { duelSummary } from './duel.js'
 import { eventsXp, NO_EVENTS } from './events.js'
+import { huntSummary } from './hunt/game.js'
 import { INTERROGATION_XP, NO_INTERROGATION } from './interrogation.js'
 import { reviewSummary } from './review.js'
 
@@ -56,17 +57,19 @@ function streaks(study, today) {
 // daily (optional): { solved: [{ kind, day, difficulty }] }, the daily and global puzzles passed.
 // community (optional): articles written, likes and valid ratings received, comments written.
 // riddle (optional): { results: [{ day, mode, guessCount, solved }] }, the Glitchdle games played.
+// hunt (optional): { runs: [{ day, correct, answered }] }, the daily line hunts played (shared/hunt/game.js).
 // duel (optional): { results: [{ day, outcome, vsBot, fastestMs }] }, the duels finished (shared/duel.js).
 // events (optional): community events taken part in, won, voted on and hosted (see shared/events.js).
 // interrogation (optional): { completed }, cases interrogated from start to end (shared/interrogation.js).
 // review (optional): { days: [{ day, cards, right, completed }] }, spaced review days (shared/review.js).
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel, events = NO_EVENTS, interrogation = NO_INTERROGATION, review }) {
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel, events = NO_EVENTS, interrogation = NO_INTERROGATION, review, hunt }) {
   const reviews = reviewSummary(review?.days)
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
   const glitchdle = riddleSummary(riddle?.results, today)
   const duels = duelSummary(duel?.results)
+  const hunts = huntSummary(hunt?.runs)
   const cleanPasses = passes.filter((item) => item.hintsRevealed === 0).length
   const solved = cases.filter((item) => item.status === 'solved').length
   const totalSeconds = study.reduce((sum, entry) => sum + entry.seconds, 0)
@@ -83,6 +86,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     trailViews.reduce((sum, view) => sum + view.xp, 0) +
     puzzles.xp +
     glitchdle.xp +
+    hunts.xp +
     duels.xp +
     communityXp(community) +
     eventsXp(events) +
@@ -106,6 +110,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     articles: community.articles,
     validReceived: community.validReceived,
     riddlePerfectDays: glitchdle.perfectDays,
+    huntPerfectRuns: hunts.perfectRuns,
     duelHumanWins: duels.humanWins,
     duelFastestMs: duels.fastestMs,
     eventEntries: events.entries,

@@ -8,7 +8,8 @@ import { PUZZLE_SECRET, puzzleFor } from './store-contract.js'
 
 const SECRET = 'cron-secret-for-tests'
 const runCron = (token = SECRET) => GET(apiRequest('/api/challenge?cron=1', { method: 'GET', token }))
-const prompts = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body).contents[0].parts[0].text)
+// The same run also asks for Line hunt snippets (see hunt-cron.test.js); these tests read the rest.
+const prompts = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body).contents[0].parts[0].text).filter((text) => !text.startsWith('Line hunt'))
 const TODAY = '2026-10-22'
 const TOMORROW = '2026-10-23'
 
