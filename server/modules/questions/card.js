@@ -1,13 +1,13 @@
 import { CONCEPTS } from '../../../shared/concepts.js'
 import { CARD_LIMITS, CARD_MARKER, knownLanguage } from '../../../shared/question.js'
-import { markerLine } from '../assistant/answer-stream.js'
+import { stripMarkers } from '../../infra/ai/guard/output.js'
+import { lastMarker } from '../assistant/answer-stream.js'
 
 // Once the tutor knows what the doubt is about, it ends its message with one machine line:
 //   CARD: {"concept":"off-by-one","topic":"...","language":"python","title":"...","summary":"...",
 //          "explanation":"...","exercise":{"prompt":"...","answer":"..."},"recap":"..."}
 // The student never sees that line. The server checks it strictly and offers it as a board card.
 
-const CARD_LINE = markerLine(CARD_MARKER)
 const CONCEPT_IDS = new Set(CONCEPTS.map((concept) => concept.id))
 const EM_DASH = /—/
 
@@ -42,14 +42,15 @@ export function parseCard(raw) {
   return { concept: raw.concept, topic, language, title, summary, explanation, exercise: { prompt, answer }, ...(recap ? { recap } : {}) }
 }
 
-// The finished text as { reply, card }: what comes before the CARD line, and the checked card
-// after it (null when there is none or it is broken).
+// The finished text as { reply, card }: what comes before the last CARD line (any other marker
+// line, an echo of the student's text, taken out), and the checked card after it (null when there
+// is none or it is broken).
 export function splitCard(text) {
   const full = String(text ?? '')
-  const marker = CARD_LINE.exec(full)
-  if (!marker) return { reply: full.trim(), card: null }
-  const reply = full.slice(0, marker.index).trim()
-  const rest = full.slice(marker.index + marker[0].length)
+  const marker = lastMarker(full, CARD_MARKER)
+  if (!marker) return { reply: stripMarkers(full), card: null }
+  const reply = stripMarkers(full.slice(0, marker.start))
+  const rest = full.slice(marker.end)
   const start = rest.indexOf('{')
   const end = rest.lastIndexOf('}')
   if (start === -1 || end < start) return { reply, card: null }

@@ -1,4 +1,5 @@
 // Small text helpers shared by the assistant's prompts and context loaders.
+import { fenceData } from '../../infra/ai/guard/fence.js'
 import { pageName } from './guide.js'
 
 export function clip(value, max) {
@@ -8,18 +9,16 @@ export function clip(value, max) {
 
 export const firstLines = (value, count) => String(value ?? '').split('\n').slice(0, count).join('\n')
 
-// Wraps student content in tags the prompts call data. A student can't close the fence early:
-// any copy of the tag inside the content is taken out.
-export function fence(tag, content) {
-  const clean = String(content ?? '').replace(new RegExp(`</?${tag}>`, 'gi'), '')
-  return `<${tag}>\n${clean}\n</${tag}>`
-}
+// Wraps student content in a data fence that carries the request's random boundary token, so the
+// content can't close it early (see infra/ai/guard/fence.js).
+export const fence = (tag, content, boundary) => fenceData(tag, content, boundary)
 
 const SPEAKER = { user: 'Student', assistant: 'Assistant' }
 
-// The chat so far, oldest first, fenced off as data.
-export function conversationBlock(messages) {
-  return fence('conversation', messages.map((item) => `${SPEAKER[item.role]}: ${clip(item.content, 2000)}`).join('\n\n'))
+// The chat so far, oldest first. Each message is its own data block and the speaker sits outside
+// it, set by the server from the role, so a message can't pass itself off as another turn.
+export function conversationBlock(messages, boundary) {
+  return messages.map((item) => `${SPEAKER[item.role]}:\n${fence('message', clip(item.content, 2000), boundary)}`).join('\n\n')
 }
 
 // "Current page: /board (Board; open case: c1)", so "here", "this case" and "this note" can be resolved.

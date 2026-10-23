@@ -52,7 +52,8 @@ it('streams the tutor turn, holds the CARD line back and sends the checked card 
   const [url, init] = fetch.mock.calls[0]
   expect(url).toContain('streamGenerateContent')
   expect(systemOf(init)).toContain('You are the Tutor')
-  expect(promptOf(init)).toContain('<student_code>')
+  expect(promptOf(init)).toMatch(/<<<DATA student_code GLB-[0-9a-f]{16}>>>/)
+  expect(systemOf(init)).toContain(promptOf(init).match(/GLB-[0-9a-f]{16}/)[0])
   expect(await store.countUsage('alice', today())).toBe(1)
   expect(await store.countUsage('ai:all', today())).toBe(1)
 })

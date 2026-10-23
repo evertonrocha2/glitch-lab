@@ -40,11 +40,11 @@ it('lists the specialists in the schema', () => {
 })
 
 it('tells the router the page and fences the conversation as data', () => {
-  const prompt = buildRouterPrompt({ messages: ask('why does this case happen?'), page: { path: '/board', caseId: 'c1' } })
+  const boundary = 'GLB-0123456789abcdef'
+  const prompt = buildRouterPrompt({ messages: ask('why does this case happen?'), page: { path: '/board', caseId: 'c1' }, boundary })
   expect(prompt).toContain('/board')
   expect(prompt).toContain('open case: c1')
-  expect(prompt).toContain('<conversation>')
-  expect(prompt).toContain('why does this case happen?')
+  expect(prompt).toContain(`Student:\n<<<DATA message ${boundary}>>>\nwhy does this case happen?\n<<<END message ${boundary}>>>`)
 })
 
 it('routes with the AI answer', async () => {
