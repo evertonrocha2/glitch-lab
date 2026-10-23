@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import StepIcon from '../../ui/step-icon/step-icon.jsx'
@@ -28,7 +29,8 @@ export const COLUMNS = [
   },
 ]
 
-export default function Board({ cases, onOpen }) {
+// Memoized (with a stable onOpen): opening or closing a case doesn't redraw every card.
+export default memo(function Board({ cases, onOpen }) {
   const t = useT()
   const labels = useLabels()
   return (
@@ -69,4 +71,4 @@ export default function Board({ cases, onOpen }) {
       })}
     </div>
   )
-}
+})

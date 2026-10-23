@@ -21,7 +21,7 @@ import { saveDraft, takeDraft } from '../../lib/draft.js'
 import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../../lib/export-board.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import { mentionsCase, newBlock } from '../../lib/notes/blocks.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressData, useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import BoardPageSkeleton from './board-page-skeleton.jsx'
 
 const EXPORTS = { md: exportBoardMarkdown, png: exportBoardImage, pdf: exportBoardPdf }
@@ -29,7 +29,8 @@ const EXPORTS = { md: exportBoardMarkdown, png: exportBoardImage, pdf: exportBoa
 export default function BoardPage() {
   const { user, getToken, signOut } = useAuth()
   const { locale, t } = useI18n()
-  const { progress, refresh: refreshProgress } = useProgress()
+  const progress = useProgressData()
+  const refreshProgress = useProgressRefresh()
   const [params, setParams] = useSearchParams()
   const [notes, setNotes] = useState([])
   const [writing, setWriting] = useState(false)
@@ -177,6 +178,7 @@ export default function BoardPage() {
   }
 
   const closeDrawer = useCallback(() => setOpenId(null), [])
+  const openCaseCard = useCallback((item) => setOpenId(item.id), [])
   const openCase = cases?.find((item) => item.id === openId)
   const hasCases = (cases?.length ?? 0) > 0
   // With an empty board the form is the whole point; once there are cards it folds away.
@@ -243,7 +245,7 @@ export default function BoardPage() {
                 <BoardStats cases={cases} />
               </div>
             )}
-            <Board cases={cases} onOpen={(item) => setOpenId(item.id)} />
+            <Board cases={cases} onOpen={openCaseCard} />
           </>
         )}
       </div>
