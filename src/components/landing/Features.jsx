@@ -76,7 +76,7 @@ function MiniTimer() {
     <div className="flex items-center justify-between gap-3 border-2 border-ink bg-white p-3 shadow-pixel-secondary">
       <span className="flex items-center gap-2">
         <span className="size-2.5 border border-ink bg-primary motion-safe:animate-blink" />
-        <span className="font-label text-2xl leading-none text-ink">25:00</span>
+        <span className="font-pixel font-bold text-2xl leading-none text-ink">25:00</span>
       </span>
       <span className="text-right text-xs text-muted">
         {t('landing.mini.streak')}
@@ -119,7 +119,7 @@ function MiniExport() {
         <span className="absolute top-0 right-0 size-3 border-b-2 border-l-2 border-ink bg-mist" />
         <span className="font-label text-[10px] text-primary">.md</span>
       </span>
-      <span className="font-label text-lg text-ink">→</span>
+      <span className="font-pixel font-bold text-lg text-ink">→</span>
       <span className="flex flex-col gap-1">
         {['Notion', 'Obsidian', 'GitHub'].map((app) => (
           <span key={app} className="border-2 border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">

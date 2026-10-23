@@ -127,7 +127,7 @@ export default function ProgressPage() {
               ].map((item) => (
                 <li key={item.id} className="bg-white px-4 py-3">
                   <span className="font-label text-xs text-muted">{item.label}</span>
-                  <strong className={`mt-1 block whitespace-nowrap font-label text-lg leading-none pt-1 sm:text-2xl ${item.tone}`}>{item.value}</strong>
+                  <strong className={`mt-1 block whitespace-nowrap font-pixel font-bold text-lg leading-none pt-1 sm:text-2xl ${item.tone}`}>{item.value}</strong>
                   <span className="text-xs text-muted">{item.note}</span>
                 </li>
               ))}

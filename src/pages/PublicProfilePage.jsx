@@ -66,7 +66,7 @@ function Stats({ profile }) {
       {items.map((item) => (
         <li key={item.id} className="bg-white px-4 py-3 last:col-span-2 sm:last:col-span-1">
           <span className="font-label text-xs text-muted">{t(`landing.profile.stat.${item.id}`)}</span>
-          <strong className={`mt-1 block pt-1 font-label text-2xl leading-none ${item.tone}`}>{item.value}</strong>
+          <strong className={`mt-1 block pt-1 font-pixel font-bold text-2xl leading-none ${item.tone}`}>{item.value}</strong>
           <span className="text-xs text-muted">{t(`landing.profile.stat.${item.id}Note`)}</span>
         </li>
       ))}

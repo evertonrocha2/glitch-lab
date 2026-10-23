@@ -75,7 +75,7 @@ export function StatsPanel({ stats, mode, todayGuesses }) {
           [t('app.glitchdle.best'), stats.longestStreak],
         ].map(([name, value]) => (
           <li key={name} className="min-w-0 bg-white px-2 py-2 text-center">
-            <strong className="block font-label text-xl leading-none text-ink tabular-nums">{value}</strong>
+            <strong className="block font-pixel font-bold text-xl leading-none text-ink tabular-nums">{value}</strong>
             <span className="mt-1 block font-label text-[10px] text-muted">{name}</span>
           </li>
         ))}

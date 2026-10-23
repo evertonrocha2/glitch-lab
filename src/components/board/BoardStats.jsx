@@ -24,7 +24,7 @@ export default function BoardStats({ cases }) {
       {numbers.map((item) => (
         <li key={item.label} className="bg-white px-4 py-3">
           <span className="font-label text-xs text-muted">{item.label}</span>
-          <strong className={`mt-1 block font-label text-[28px] leading-none pt-1 ${item.tone}`}>{item.value}</strong>
+          <strong className={`mt-1 block font-pixel font-bold text-[28px] leading-none pt-1 ${item.tone}`}>{item.value}</strong>
         </li>
       ))}
       <li className="col-span-3 bg-primary-soft px-4 py-3 sm:col-span-1">

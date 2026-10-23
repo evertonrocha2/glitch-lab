@@ -197,7 +197,7 @@ export default function DailyPage() {
             ].map((item) => (
               <li key={item.label} className="min-w-0 bg-white px-3 py-3 sm:px-4">
                 <span className="font-label text-[10px] text-muted sm:text-xs">{item.label}</span>
-                <strong className={`mt-1 block pt-1 font-label text-lg leading-none tabular-nums sm:text-2xl ${item.tone}`}>{item.value}</strong>
+                <strong className={`mt-1 block pt-1 font-pixel font-bold text-lg leading-none tabular-nums sm:text-2xl ${item.tone}`}>{item.value}</strong>
                 <span className="text-xs text-muted">{item.note}</span>
               </li>
             ))}

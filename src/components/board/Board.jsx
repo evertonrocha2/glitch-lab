@@ -49,7 +49,7 @@ export default function Board({ cases, onOpen }) {
                 </h2>
                 <p className="mt-1 text-sm text-muted">{t(`board.column.${column.status}.hint`)}</p>
               </div>
-              <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-label text-lg leading-8 text-ink">
+              <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-pixel font-bold text-lg leading-8 text-ink">
                 {String(items.length).padStart(2, '0')}
               </span>
             </header>

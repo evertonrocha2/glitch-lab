@@ -57,7 +57,7 @@ function Summary({ cases }) {
       {numbers.map((item) => (
         <li key={item.label} className="bg-white px-4 py-3">
           <span className="font-label text-xs text-muted">{item.label}</span>
-          <strong className={`mt-1 block pt-1 font-label text-[28px] leading-none ${item.tone}`}>{item.value}</strong>
+          <strong className={`mt-1 block pt-1 font-pixel font-bold text-[28px] leading-none ${item.tone}`}>{item.value}</strong>
         </li>
       ))}
       <li className="bg-primary-soft px-4 py-3">
@@ -133,7 +133,7 @@ function ColumnSection({ column, items }) {
           </h2>
           <span className="text-sm text-muted">{t(`board.column.${column.status}.hint`)}</span>
         </div>
-        <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-label text-lg leading-8 text-ink">{pad(items.length)}</span>
+        <span className="min-w-11 border-2 border-ink bg-white px-1.5 text-center font-pixel font-bold text-lg leading-8 text-ink">{pad(items.length)}</span>
       </header>
       {items.length > 0 ? (
         <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
@@ -167,7 +167,7 @@ function NotesSection({ notes }) {
         <h2 id="sheet-notes" className="font-label text-base text-ink">
           {t('board.sheet.notes')}
         </h2>
-        <span className="min-w-11 border-2 border-ink bg-mist px-1.5 text-center font-label text-lg leading-8 text-ink">{pad(notes.length)}</span>
+        <span className="min-w-11 border-2 border-ink bg-mist px-1.5 text-center font-pixel font-bold text-lg leading-8 text-ink">{pad(notes.length)}</span>
       </header>
       <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
         {notes.map((note) => {
