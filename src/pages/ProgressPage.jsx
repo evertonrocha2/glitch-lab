@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../shared/badges.js'
 import { DAILY_XP } from '../../shared/daily.js'
+import { INTERROGATION_XP } from '../../shared/interrogation.js'
 import { COMMUNITY_XP, XP } from '../../shared/progress.js'
 import { RIDDLE_XP } from '../../shared/riddle/game.js'
 import { MISSION_XP, TRAIL_BONUS_XP } from '../../shared/trails.js'
@@ -57,6 +58,7 @@ const EARN = [
   ['validRating', COMMUNITY_XP.validReceived],
   ['like', COMMUNITY_XP.likeReceived],
   ['comment', COMMUNITY_XP.comment],
+  ['interrogation', INTERROGATION_XP],
 ]
 
 export default function ProgressPage() {

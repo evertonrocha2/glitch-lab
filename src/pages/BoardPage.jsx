@@ -6,6 +6,7 @@ import BoardStats from '../components/board/BoardStats.jsx'
 import CaseDrawer from '../components/board/CaseDrawer.jsx'
 import ErrorForm from '../components/ErrorForm.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import CaseInterrogation from '../components/interrogation/CaseInterrogation.jsx'
 import ExportMenu from '../components/notes/ExportMenu.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
@@ -248,7 +249,9 @@ export default function BoardPage() {
           notes={notes.filter((note) => mentionsCase(note, openCase.id))}
           onWriteNote={writeNote}
           writing={writing}
-        />
+        >
+          <CaseInterrogation key={openCase.id} item={openCase} />
+        </CaseDrawer>
       )}
     </AppShell>
   )

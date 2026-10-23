@@ -15,7 +15,8 @@ const STATUS = {
 }
 
 // A side panel to study one case, with the way into the gym at the bottom.
-export default function CaseDrawer({ item, onClose, onTrain, training, notes = [], onWriteNote, writing = false }) {
+// children: extra sections the page adds under the gym card (the board puts the interrogation there).
+export default function CaseDrawer({ item, onClose, onTrain, training, notes = [], onWriteNote, writing = false, children }) {
   const t = useT()
   const labels = useLabels()
   const { timeAgo } = useFormat()
@@ -114,6 +115,8 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
               {training ? t('board.drawer.preparing') : solved ? t('board.drawer.practiceAgain') : t('board.drawer.train')}
             </PixelButton>
           </div>
+
+          {children}
 
           <section aria-labelledby="case-notes-title" className="mt-8 border-2 border-ink bg-white p-5 shadow-pixel">
             <h3 id="case-notes-title" className="font-label text-xs text-primary">
