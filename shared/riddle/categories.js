@@ -1,8 +1,10 @@
 import { DATABASES } from './catalogs/databases.js'
 import { FRAMEWORKS } from './catalogs/frameworks.js'
 import { ATTRIBUTES as LANGUAGE_ATTRIBUTES, LABELS as LANGUAGE_LABELS, LANGUAGES, languageById } from './languages.js'
+import { CATEGORY_MODES, SLOTS } from './slots.js'
 
 export { searchItems } from './search.js'
+export { SLOTS }
 
 // Glitchdle's categories: languages (three modes) and the classic-only ones built from public data
 // (scripts/sync-glitchdle.mjs writes catalogs/*.js from Wikidata and Stack Overflow). Public on
@@ -112,14 +114,14 @@ export const POPULARITY_STEPS = {
 export const CATEGORIES = [
   {
     id: 'languages',
-    modes: ['classic', 'error', 'snippet'],
+    modes: CATEGORY_MODES.languages,
     items: LANGUAGES,
     attributes: LANGUAGE_ATTRIBUTES,
     labels: LANGUAGE_LABELS,
   },
   {
     id: 'frameworks',
-    modes: ['frameworks'],
+    modes: CATEGORY_MODES.frameworks,
     items: FRAMEWORKS,
     attributes: [
       { key: 'language', kind: 'one', family: FRONT_FAMILY, values: 'languages' },
@@ -134,7 +136,7 @@ export const CATEGORIES = [
   },
   {
     id: 'databases',
-    modes: ['databases'],
+    modes: CATEGORY_MODES.databases,
     items: DATABASES,
     attributes: [
       { key: 'model', kind: 'set', values: MODELS },
@@ -155,11 +157,7 @@ const ITEMS = new Map(CATEGORIES.map((category) => [category.id, new Map(categor
 export const categoryById = (id) => BY_ID.get(id) ?? null
 export const itemById = (categoryId, id) => ITEMS.get(categoryId)?.get(id) ?? null
 
-// Every board a day has, one slot each in the store: the language modes, then a slot per other category.
-export const SLOTS = CATEGORIES.flatMap((category) => category.modes)
 export const categoryOfSlot = (slot) => CATEGORIES.find((category) => category.modes.includes(slot)) ?? null
-// Slots graded on traits, a card per guess: Classic and every non-language category.
-export const CLASSIC_SLOTS = ['classic', ...CATEGORIES.slice(1).flatMap((category) => category.modes)]
 
 // What a value reads like on a cell, in English: language ids read as the language's name.
 export function valueLabel(categoryId, value) {

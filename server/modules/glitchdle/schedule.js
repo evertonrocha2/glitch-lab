@@ -1,3 +1,4 @@
+import { CATEGORIES } from '../../../shared/riddle/categories.js'
 import { LAUNCH_DAY, MODES } from '../../../shared/riddle/game.js'
 import { LANGUAGES } from '../../../shared/riddle/languages.js'
 import { SAMPLES } from '../../../shared/riddle/samples.js'
@@ -5,8 +6,12 @@ import { SAMPLES } from '../../../shared/riddle/samples.js'
 // Which language is each day's answer, worked out from the date alone, so a day the cron missed
 // still gets the same answers for everyone. Server only: the browser must never be able to run this.
 
-// A language doesn't come back in the same mode for this many days.
-export const NO_REPEAT_DAYS = 20
+// A language doesn't come back in the same mode for this many days (38 languages, 3 a day: 30
+// leaves a handful to pick from). Raised from 20: the first 20 days pick the same either way.
+export const NO_REPEAT_DAYS = 30
+// Nor a framework or a database within 60 days; a catalog too small for that keeps 10 to pick from.
+export const CATEGORY_NO_REPEAT_DAYS = 60
+export const categoryWindow = (size) => Math.max(0, Math.min(CATEGORY_NO_REPEAT_DAYS, size - 10))
 
 const DAY_MS = 24 * 3_600_000
 const dayNumber = (day) => Math.round(Date.parse(`${day}T00:00:00Z`) / DAY_MS)
@@ -60,13 +65,40 @@ function walkTo(index) {
   return walked[index]
 }
 
-// { classic, error, snippet }: the answer ids for a day. Days before the launch only keep the
-// three modes apart.
+// The other categories walk the same way, each on its own, so adding one never moves the language
+// answers. Their catalogs are sorted by id; a sync that adds items reshuffles days not yet saved,
+// while saved days (the store's riddles) keep their answer.
+const OTHER = CATEGORIES.filter((category) => category.id !== 'languages')
+const categoryWalks = new Map()
+
+function walkCategory(category, index) {
+  const [slot] = category.modes
+  const ids = category.items.map((item) => item.id)
+  let walk = categoryWalks.get(slot)
+  if (!walk || walk.secret !== secret() || walk.ids !== ids.join()) {
+    walk = { secret: secret(), ids: ids.join(), picks: [] }
+    categoryWalks.set(slot, walk)
+  }
+  while (walk.picks.length <= index) {
+    const today = walk.picks.length
+    const taken = new Set(walk.picks.slice(Math.max(0, today - categoryWindow(ids.length))))
+    const candidates = ids.filter((id) => !taken.has(id))
+    walk.picks.push(candidates[seeded(`${dayString(LAUNCH + today)}:${slot}`) % candidates.length])
+  }
+  return walk.picks[index]
+}
+
+// { classic, error, snippet, frameworks, databases }: the answer ids for a day. Days before the
+// launch only keep the three language modes apart.
 export function answersFor(day) {
   const index = dayNumber(day) - LAUNCH
-  if (index >= 0) return { ...walkTo(index) }
   const set = {}
-  for (const mode of MODES) set[mode] = pick(day, mode, new Set(Object.values(set)))
+  if (index >= 0) Object.assign(set, walkTo(index))
+  else for (const mode of MODES) set[mode] = pick(day, mode, new Set(Object.values(set)))
+  for (const category of OTHER) {
+    const [slot] = category.modes
+    set[slot] = index >= 0 ? walkCategory(category, index) : category.items[seeded(`${day}:${slot}`) % category.items.length].id
+  }
   return set
 }
 
@@ -99,19 +131,24 @@ export function revealOrder(lines, seed) {
 }
 
 // What a mode shows besides the board, built from the dataset: an error message for Error mode,
-// a snippet and its reveal order for Snippet mode. Classic needs nothing.
+// a snippet and its reveal order for Snippet mode. Classic boards need nothing.
 export function datasetPayload(day, mode, answer) {
   const samples = SAMPLES[answer]
-  if (mode === 'error') return { text: samples.errors[seeded(`${day}:error:sample`) % samples.errors.length] }
-  if (mode === 'snippet') {
-    const lines = samples.snippets[seeded(`${day}:snippet:sample`) % samples.snippets.length].split('\n')
-    return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
-  }
+  if (mode === 'error') return poolPayload(day, mode, samples.errors)
+  if (mode === 'snippet') return poolPayload(day, mode, samples.snippets)
   return {}
+}
+
+// The payload for a clue picked from `pool` (error texts, or snippets as one string each): the
+// same pick for the same day and pool.
+export function poolPayload(day, mode, pool) {
+  if (mode === 'error') return { text: pool[seeded(`${day}:error:sample`) % pool.length] }
+  const lines = pool[seeded(`${day}:snippet:sample`) % pool.length].split('\n')
+  return { lines, order: revealOrder(lines, `${day}:snippet:order`) }
 }
 
 // The full set for a day, as the store saves it, from the dataset only.
 export const datasetSet = (day) => {
   const answers = answersFor(day)
-  return MODES.map((mode) => ({ day, mode, answer: answers[mode], payload: datasetPayload(day, mode, answers[mode]), source: 'dataset' }))
+  return Object.entries(answers).map(([mode, answer]) => ({ day, mode, answer, payload: datasetPayload(day, mode, answer), source: 'dataset' }))
 }

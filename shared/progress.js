@@ -110,6 +110,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     articles: community.articles,
     validReceived: community.validReceived,
     riddlePerfectDays: glitchdle.perfectDays,
+    riddleFullDays: glitchdle.fullDays,
     huntPerfectRuns: hunts.perfectRuns,
     duelHumanWins: duels.humanWins,
     duelFastestMs: duels.fastestMs,

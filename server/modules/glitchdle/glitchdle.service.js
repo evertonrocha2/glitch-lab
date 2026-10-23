@@ -1,14 +1,19 @@
 import { challengeDay, nextResetAt } from '../../../shared/daily.js'
-import { compareGuess, ERROR_HINTS_AT, gameNumber, MAX_GUESSES, MODES, riddleSummary, SNIPPET_START_LINES } from '../../../shared/riddle/game.js'
-import { label, languageById } from '../../../shared/riddle/languages.js'
+import { categoryOfSlot, itemById, SLOTS } from '../../../shared/riddle/categories.js'
+import { compareGuess, ERROR_HINTS_AT, gameNumber, MAX_GUESSES, riddleSummary, SNIPPET_START_LINES } from '../../../shared/riddle/game.js'
+import { label } from '../../../shared/riddle/languages.js'
 import { badRequest, conflict } from '../../core/errors.js'
 import { ensureRiddleSet } from './riddle-daily.js'
 import { toResults } from './solved.js'
 
-// Glitchdle: guess the programming language, three modes a day.
-// The answer of a mode only leaves the server once that mode is over (solved, or out of guesses).
+// Glitchdle: guess the programming language in three modes, plus a framework and a database, every day.
+// The answer of a board only leaves the server once that board is over (solved, or out of guesses).
 
-const named = (id) => ({ id, name: languageById(id)?.name ?? id })
+const itemOf = (slot, id) => itemById(categoryOfSlot(slot).id, id)
+const named = (slot, id) => ({ id, name: itemOf(slot, id)?.name ?? id })
+
+// What the API says when a guess isn't in the board's list.
+const PICK = { languages: 'Pick a language from the list.', frameworks: 'Pick a framework from the list.', databases: 'Pick a database from the list.' }
 
 function errorHints(answer, wrong, over) {
   const hints = [
@@ -25,26 +30,28 @@ function snippetLines({ lines, order }, wrong, over) {
   return lines.map((text, index) => (text.trim() === '' || shown.has(index) ? { text } : { hidden: true, width: text.length }))
 }
 
-// One mode as the browser sees it. Guesses come newest first.
+// One board as the browser sees it. Guesses come newest first.
 export function publicMode(riddle, result) {
   const guesses = result?.guesses ?? []
   const solved = Boolean(result?.solved)
   const over = solved || guesses.length >= MAX_GUESSES
   const wrong = guesses.length - (solved ? 1 : 0)
-  const answer = languageById(riddle.answer)
+  const category = categoryOfSlot(riddle.mode)
+  const answer = itemOf(riddle.mode, riddle.answer)
   const state = {
     mode: riddle.mode,
+    category: category.id,
     solved,
     over,
     guessCount: guesses.length,
     guessesLeft: Math.max(0, MAX_GUESSES - guesses.length),
-    answer: over ? named(answer.id) : null,
+    answer: over ? named(riddle.mode, answer.id) : null,
   }
   const newestFirst = [...guesses].reverse()
-  if (riddle.mode === 'classic') {
-    return { ...state, guesses: newestFirst.map((id) => ({ ...named(id), ...compareGuess(languageById(id), answer) })) }
+  if (riddle.mode === 'classic' || category.id !== 'languages') {
+    return { ...state, guesses: newestFirst.map((id) => ({ ...named(riddle.mode, id), ...compareGuess(itemOf(riddle.mode, id), answer, category.attributes) })) }
   }
-  const guessList = newestFirst.map((id) => ({ ...named(id), correct: id === answer.id }))
+  const guessList = newestFirst.map((id) => ({ ...named(riddle.mode, id), correct: id === answer.id }))
   if (riddle.mode === 'error') {
     const nextHint = ERROR_HINTS_AT.find((at) => at > wrong)
     return { ...state, guesses: guessList, text: riddle.payload.text, hints: errorHints(answer, wrong, over), nextHintIn: over || !nextHint ? null : nextHint - wrong }
@@ -52,10 +59,10 @@ export function publicMode(riddle, result) {
   return { ...state, guesses: guessList, lines: snippetLines(riddle.payload, wrong, over) }
 }
 
-// Today's numbers per mode: how many played and solved, and the solvers' average guesses.
-export function communityNumbers(results) {
+// Today's numbers per board: how many played and solved, and the solvers' average guesses.
+export function communityNumbers(results, slots = SLOTS) {
   return Object.fromEntries(
-    MODES.map((mode) => {
+    slots.map((mode) => {
       const mine = results.filter((item) => item.mode === mode && item.guessCount > 0)
       const solvers = mine.filter((item) => item.solved)
       const average = solvers.length ? Math.round((solvers.reduce((sum, item) => sum + item.guessCount, 0) / solvers.length) * 10) / 10 : null
@@ -67,19 +74,21 @@ export function communityNumbers(results) {
 export async function gameState(store, userId, now = new Date()) {
   const day = challengeDay(now)
   const set = await ensureRiddleSet(store, day)
+  // Every board the day has (a board missing from the store is left out, see ensureRiddleSet).
+  const slots = SLOTS.filter((slot) => set[slot])
   const [results, history, everyone] = await Promise.all([
-    Promise.all(MODES.map((mode) => store.getRiddleResult(userId, day, mode))),
+    Promise.all(slots.map((slot) => store.getRiddleResult(userId, day, slot))),
     store.listRiddleResults(userId),
     store.riddleDayResults(day),
   ])
-  const { xp, played, perfectDays, streak, longestStreak, solved, distribution } = riddleSummary(toResults(history), day)
+  const { xp, played, perfectDays, fullDays, streak, longestStreak, solved, distribution } = riddleSummary(toResults(history), day)
   return {
     day,
     number: gameNumber(day),
     nextResetAt: nextResetAt(now),
-    modes: Object.fromEntries(MODES.map((mode, index) => [mode, publicMode(set[mode], results[index])])),
-    stats: { xp, played, perfectDays, streak, longestStreak, solved, distribution },
-    community: communityNumbers(everyone),
+    modes: Object.fromEntries(slots.map((slot, index) => [slot, publicMode(set[slot], results[index])])),
+    stats: { xp, played, perfectDays, fullDays, streak, longestStreak, solved, distribution },
+    community: communityNumbers(everyone, slots),
   }
 }
 
@@ -88,21 +97,24 @@ export function getRiddle(store, user, now = new Date()) {
   return gameState(store, user.id, now)
 }
 
-// { mode, guess, day? }: one guess. The server grades it and saves it, so a reload keeps the
-// board. `day` (optional) catches a guess sent from yesterday's page.
+// { mode, guess, day? }: one guess on one board (mode is a slot: a language mode or a category).
+// The server grades it and saves it, so a reload keeps the board. `day` (optional) catches a guess
+// sent from yesterday's page.
 export async function guessRiddle(store, user, body, now = new Date()) {
   const { mode, guess } = body ?? {}
-  if (!MODES.includes(mode)) throw badRequest('Pick a game mode.')
-  if (typeof guess !== 'string' || !languageById(guess)) throw badRequest('Pick a language from the list.')
+  if (!SLOTS.includes(mode)) throw badRequest('Pick a game mode.')
+  const category = categoryOfSlot(mode)
+  if (typeof guess !== 'string' || !itemById(category.id, guess)) throw badRequest(PICK[category.id])
   const day = challengeDay(now)
   if (body?.day !== undefined && body.day !== day) throw conflict('A new Glitchdle just started. Reload to play it.')
 
   const set = await ensureRiddleSet(store, day)
+  if (!set[mode]) throw conflict('This board is not ready yet. Try again later.')
   const result = await store.getRiddleResult(user.id, day, mode)
   const guesses = result?.guesses ?? []
   if (result?.solved) throw conflict('You already solved this one. Come back tomorrow.')
   if (guesses.length >= MAX_GUESSES) throw conflict('No guesses left in this mode today.')
-  if (guesses.includes(guess)) throw conflict('You already tried that language.')
+  if (guesses.includes(guess)) throw conflict(category.id === 'languages' ? 'You already tried that language.' : 'You already tried that one.')
 
   const correct = guess === set[mode].answer
   const saved = await store.saveRiddleResult(user.id, { day, mode, guesses: [...guesses, guess], solved: correct }, guesses.length)

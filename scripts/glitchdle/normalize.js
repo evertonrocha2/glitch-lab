@@ -68,7 +68,7 @@ const LICENSE_RULES = [
   [/^mit\b|\bmit license|expat|x11 license/i, 'mit'],
   [/apache/i, 'apache'],
   [/bsd/i, 'bsd'],
-  [/public domain|postgresql license|zlib|isc license|unlicense|boost software|matplotlib license|python software foundation/i, 'permissive'],
+  [/public domain|postgresql license|zlib|isc license|unlicense|boost software|matplotlib license|python software foundation|openldap/i, 'permissive'],
 ]
 // When an item lists several, the most permissive open one names it: that's the one anyone can
 // pick (RocksDB is "GPLv2 or Apache 2.0", MySQL is GPL or a commercial license).

@@ -1,24 +1,27 @@
+import { memo, useMemo } from 'react'
 import { LABELS } from '../../../../shared/riddle/languages.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
-import { useLabels } from '../../../lib/i18n/labels.js'
+import { categoryValueName, traitName, useLabels } from '../../../lib/i18n/labels.js'
 
-// The three Glitchdle boards. Grading stays in the palette: purple is a match, blue is close
-// (lists that overlap), white is a miss.
+// The Glitchdle boards. Grading: purple is a match, amber with a hatch is close (lists that
+// overlap, or values in the same family), white is a miss. Close never leans on color alone: the
+// hatch and a "~" mark tell it apart for colorblind players too. Every text on a cell passes WCAG
+// AA (white on purple 5.9:1, ink on amber 9.5:1, muted on white 6.5:1).
+const HATCH = { backgroundImage: 'repeating-linear-gradient(135deg, rgb(28 29 38 / 0.16) 0 2px, transparent 2px 7px)' }
 export const STATUS = {
-  match: { cell: 'bg-primary text-white', swatch: 'bg-primary' },
-  partial: { cell: 'bg-secondary-soft text-secondary', swatch: 'bg-secondary-soft' },
-  miss: { cell: 'bg-white text-ink', swatch: 'bg-white' },
+  match: { cell: 'bg-primary text-white', label: 'text-white', swatch: 'bg-primary' },
+  partial: { cell: 'bg-[#f5b800] text-ink', label: 'text-ink', swatch: 'bg-[#f5b800]', style: HATCH },
+  miss: { cell: 'bg-white text-ink', label: 'text-muted', swatch: 'bg-white' },
 }
 
-const LABEL_TONE = { match: 'text-white/80', partial: 'text-secondary/80', miss: 'text-muted' }
-const valueText = (trait, value) => (Array.isArray(value) ? value.map(trait).join(', ') : typeof value === 'number' ? String(value) : trait(value))
+const valueText = (name, value) => (Array.isArray(value) ? value.map(name).join(', ') : typeof value === 'number' ? String(value) : name(value))
 
 // The server names the Error hints in English ("File extension", "Syntax family"); the syntax hint's
 // value is an English trait label too. Both are matched back to their ids and named in the reader's language.
 const HINT_KEYS = { 'File extension': 'extension', 'Syntax family': 'syntax' }
 const TRAIT_IDS = Object.fromEntries(Object.entries(LABELS).map(([id, text]) => [text, id]))
 
-// A 7x7 pixel arrow: up means the answer appeared later.
+// A 7x7 pixel arrow: up means the answer is newer (or ranks higher).
 const ARROW_UP = ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '..###..']
 export function YearArrow({ direction, className = 'size-4' }) {
   const rows = direction === 'higher' ? ARROW_UP : [...ARROW_UP].reverse()
@@ -54,41 +57,61 @@ export function Cross({ className = 'size-2.5' }) {
   )
 }
 
-export function Legend() {
+// The swatch a legend shows is the board cell itself, small: same color, hatch and border.
+function Swatch({ status }) {
+  const style = STATUS[status]
+  return <span aria-hidden="true" style={style.style} className={`size-5 shrink-0 border-2 border-ink ${style.swatch}`} />
+}
+
+// ranked: the board has a Stack Overflow column, whose arrow means "more questions".
+export function Legend({ ranked = false }) {
   const t = useT()
   return (
-    <ul aria-label={t('app.glitchdle.legend')} className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-muted">
+    <ul aria-label={t('app.glitchdle.legend')} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink">
       {[
         ['match', t('app.glitchdle.legend.match')],
         ['partial', t('app.glitchdle.legend.partial')],
         ['miss', t('app.glitchdle.legend.miss')],
       ].map(([status, text]) => (
-        <li key={status} className="flex items-center gap-1.5">
-          <span aria-hidden="true" className={`size-3 border-2 border-ink ${STATUS[status].swatch}`} />
+        <li key={status} className="flex items-center gap-2">
+          <Swatch status={status} />
           {text}
         </li>
       ))}
-      <li className="flex items-center gap-1.5">
-        <YearArrow direction="higher" className="size-3.5 text-ink" />
-        {t('app.glitchdle.legend.newer')}
+      <li className="flex items-center gap-2">
+        <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border-2 border-ink bg-white">
+          <YearArrow direction="higher" className="size-3 text-ink" />
+        </span>
+        {t(ranked ? 'app.glitchdle.legend.higher' : 'app.glitchdle.legend.newer')}
       </li>
     </ul>
   )
 }
 
-function Cell({ cell, index, animate }) {
+const DIRECTION_HINTS = {
+  year: { higher: 'app.glitchdle.later', lower: 'app.glitchdle.earlier' },
+  rank: { higher: 'app.glitchdle.more', lower: 'app.glitchdle.fewer' },
+}
+
+function Cell({ cell, kind, label, name, index, animate }) {
   const style = STATUS[cell.status]
   const t = useT()
-  const labels = useLabels()
-  const hint = cell.direction ? t(cell.direction === 'higher' ? 'app.glitchdle.later' : 'app.glitchdle.earlier') : ''
+  const hint = cell.direction ? t(DIRECTION_HINTS[kind]?.[cell.direction] ?? DIRECTION_HINTS.year[cell.direction]) : ''
   return (
     <div
-      style={animate ? { animationDelay: `${index * 90}ms` } : undefined}
+      style={{ ...style.style, ...(animate ? { animationDelay: `${index * 90}ms` } : null) }}
       className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
     >
-      <span className={`font-label text-[10px] leading-tight ${LABEL_TONE[cell.status]}`}>{t(`app.glitchdle.attr.${cell.key}`)}</span>
+      <span className={`flex items-start justify-between gap-1 font-label text-[10px] leading-tight ${style.label}`}>
+        <span className="min-w-0">{label}</span>
+        {cell.status === 'partial' && (
+          <span aria-hidden="true" className="shrink-0 font-bold">
+            ~
+          </span>
+        )}
+      </span>
       <span className="flex items-end justify-between gap-1 text-xs leading-snug font-semibold wrap-break-word">
-        <span className="min-w-0">{valueText(labels.trait, cell.value)}</span>
+        <span className="min-w-0">{valueText(name, cell.value)}</span>
         {cell.direction && <YearArrow direction={cell.direction} className="size-4 shrink-0" />}
       </span>
       <span className="sr-only">
@@ -99,31 +122,57 @@ function Cell({ cell, index, animate }) {
   )
 }
 
-// Classic: one card per guess, newest on top, each attribute graded against the answer.
-export function ClassicBoard({ guesses, animateId }) {
+// One guess card. Memoized: a new guess or a keystroke in the guess box leaves old cards alone.
+const GuessCard = memo(function GuessCard({ guess, attributes, columns, labelOf, name, animate }) {
   const t = useT()
+  return (
+    // content-visibility: a long board only lays out the cards on screen.
+    <li aria-label={guess.name} className="border-2 border-ink bg-ink shadow-pixel-muted [contain-intrinsic-size:auto_10rem] [content-visibility:auto]">
+      <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5">
+        <span className="font-pixel text-lg font-bold text-ink">{guess.name}</span>
+        {guess.correct && (
+          <span className="flex items-center gap-1 font-label text-[10px] text-primary">
+            <Check /> {t('app.glitchdle.solved')}
+          </span>
+        )}
+      </div>
+      {/* All across only when the board itself is wide enough, not just the screen. */}
+      <div className={`grid grid-cols-2 gap-[2px] border-t-2 border-ink @sm:grid-cols-4 ${columns === 7 ? '@3xl:grid-cols-7' : '@3xl:grid-cols-8'}`}>
+        {guess.cells.map((cell, index) => (
+          <Cell key={cell.key} cell={cell} kind={attributes[index]?.kind} label={labelOf(cell.key)} name={name} index={index} animate={animate} />
+        ))}
+      </div>
+    </li>
+  )
+})
+
+// Classic boards (languages' Classic, frameworks, databases): one card per guess, newest on top,
+// each attribute graded against the answer. category: 'languages', 'frameworks' or 'databases'.
+export function ClassicBoard({ guesses, animateId, category = 'languages', attributes = [] }) {
+  const t = useT()
+  // Stable for a language and category, so the memoized cards skip re-rendering.
+  const { labelOf, name } = useMemo(() => {
+    const languages = category === 'languages'
+    return {
+      labelOf: (key) => t(languages ? `app.glitchdle.attr.${key}` : `app.glitchdle.attr.${category}.${key}`),
+      name: languages ? (value) => traitName(t, value) : (value) => categoryValueName(t, category, value),
+    }
+  }, [t, category])
   if (guesses.length === 0) {
     return <p className="border-2 border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted">{t('app.glitchdle.empty')}</p>
   }
   return (
     <ol aria-label={t('app.glitchdle.yourGuesses')} className="@container space-y-3">
       {guesses.map((guess) => (
-        <li key={guess.id} aria-label={guess.name} className="border-2 border-ink bg-ink shadow-pixel-muted">
-          <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5">
-            <span className="font-pixel text-lg font-bold text-ink">{guess.name}</span>
-            {guess.correct && (
-              <span className="flex items-center gap-1 font-label text-[10px] text-primary">
-                <Check /> {t('app.glitchdle.solved')}
-              </span>
-            )}
-          </div>
-          {/* Eight across only when the board itself is wide enough, not just the screen. */}
-          <div className="grid grid-cols-2 gap-[2px] border-t-2 border-ink @sm:grid-cols-4 @3xl:grid-cols-8">
-            {guess.cells.map((cell, index) => (
-              <Cell key={cell.key} cell={cell} index={index} animate={guess.id === animateId} />
-            ))}
-          </div>
-        </li>
+        <GuessCard
+          key={guess.id}
+          guess={guess}
+          attributes={attributes}
+          columns={guess.cells.length}
+          labelOf={labelOf}
+          name={name}
+          animate={guess.id === animateId}
+        />
       ))}
     </ol>
   )

@@ -46,6 +46,7 @@ const BADGES_EN = {
   'daily-grinder': ['Daily grinder', 'Solve a daily challenge 7 days in a row.'],
   'global-ace': ['Global ace', 'Solve a weekly global challenge.'],
   'lingo-master': ['Lingo master', 'Solve all three Glitchdle modes in one day.'],
+  'full-stack': ['Full stack', 'Solve every Glitchdle board in one day: the three language modes, the framework and the database.'],
   'eagle-eye': ['Eagle eye', 'Find all 8 lines in a daily line hunt.'],
   author: ['Author', 'Publish a community article.'],
   trusted: ['Trusted', 'Get 5 valid ratings on your articles.'],
@@ -74,6 +75,7 @@ const BADGES_PT = {
   'daily-grinder': ['Rotina diária', 'Resolva um desafio diário 7 dias seguidos.'],
   'global-ace': ['Ás global', 'Resolva um desafio global da semana.'],
   'lingo-master': ['Mestre das linguagens', 'Resolva os três modos do Glitchdle no mesmo dia.'],
+  'full-stack': ['Full stack', 'Resolva todos os jogos do Glitchdle no mesmo dia: os três modos de linguagem, o framework e o banco de dados.'],
   'eagle-eye': ['Olho de lince', 'Encontre as 8 linhas numa caça à linha diária.'],
   author: ['Autor', 'Publique um artigo na comunidade.'],
   trusted: ['Confiável', 'Receba 5 avaliações válidas nos seus artigos.'],
@@ -150,6 +152,67 @@ const TRAITS_PT = {
   other: 'Outra',
 }
 
+// Glitchdle's framework and database traits, by category: the same value can read differently in
+// each (the Stack Overflow buckets have their own ranges). English comes from shared/riddle/categories.js.
+const LICENSES_PT = {
+  mit: 'MIT',
+  apache: 'Apache 2.0',
+  bsd: 'BSD',
+  permissive: 'Outra permissiva',
+  gpl: 'Família GPL',
+  'weak-copyleft': 'Copyleft fraco',
+  'source-available': 'Código disponível',
+  proprietary: 'Proprietária',
+}
+const CATEGORY_VALUES_PT = {
+  frameworks: {
+    ...LICENSES_PT,
+    frontend: 'Frontend',
+    backend: 'Backend',
+    mobile: 'Mobile',
+    desktop: 'Desktop',
+    data: 'Dados e ML',
+    testing: 'Testes',
+    games: 'Jogos',
+    framework: 'Framework',
+    library: 'Biblioteca',
+    'big-tech': 'Big tech',
+    company: 'Empresa',
+    foundation: 'Fundação',
+    community: 'Comunidade',
+    niche: 'Menos de 5 mil',
+    known: '5 a 25 mil',
+    popular: '25 a 100 mil',
+    huge: '100 mil+',
+  },
+  databases: {
+    ...LICENSES_PT,
+    relational: 'Relacional',
+    document: 'Documentos',
+    'key-value': 'Chave-valor',
+    'wide-column': 'Colunas largas',
+    columnar: 'Colunar',
+    graph: 'Grafo',
+    'time-series': 'Séries temporais',
+    search: 'Busca',
+    vector: 'Vetorial',
+    sql: 'SQL',
+    'sql-dialect': 'Dialeto de SQL',
+    'document-api': 'Consulta de documentos',
+    'graph-language': 'Linguagem de grafos',
+    'key-commands': 'Comandos por chave',
+    'own-language': 'Linguagem própria',
+    server: 'Servidor',
+    embedded: 'Embutido',
+    cloud: 'Só na nuvem',
+    undisclosed: 'Não divulgado',
+    niche: 'Menos de 2 mil',
+    known: '2 a 15 mil',
+    popular: '15 a 100 mil',
+    huge: '100 mil+',
+  },
+}
+
 const keyed = (prefix, object, pick = (value) => value) => Object.fromEntries(Object.entries(object).map(([id, value]) => [`${prefix}.${id}`, pick(value)]))
 
 export default {
@@ -173,6 +236,8 @@ export default {
     'glitchdle.mode.classic': 'Classic',
     'glitchdle.mode.error': 'Error',
     'glitchdle.mode.snippet': 'Snippet',
+    'glitchdle.mode.frameworks': 'Frameworks',
+    'glitchdle.mode.databases': 'Databases',
   },
   'pt-BR': {
     'language.label': 'Idioma',
@@ -195,5 +260,8 @@ export default {
     'glitchdle.mode.classic': 'Clássico',
     'glitchdle.mode.error': 'Erro',
     'glitchdle.mode.snippet': 'Trecho',
+    'glitchdle.mode.frameworks': 'Frameworks',
+    'glitchdle.mode.databases': 'Bancos de dados',
+    ...Object.fromEntries(Object.entries(CATEGORY_VALUES_PT).flatMap(([category, values]) => Object.entries(values).map(([id, text]) => [`glitchdle.value.${category}.${id}`, text]))),
   },
 }

@@ -1,6 +1,7 @@
 import { badgeById } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { LEVELS } from '../../../shared/progress.js'
+import { valueLabel } from '../../../shared/riddle/categories.js'
 import { LABELS } from '../../../shared/riddle/languages.js'
 import { kindLabel, TRAIL_KINDS } from '../../../shared/trails.js'
 import { useT } from './I18nProvider.jsx'
@@ -23,6 +24,8 @@ export const statusName = (t, status) => or(t, `status.${status}`, status)
 export const difficultyName = (t, difficulty) => or(t, `difficulty.${difficulty}`, difficulty)
 export const traitName = (t, value) => or(t, `trait.${value}`, LABELS[value] ?? value)
 export const glitchdleModeName = (t, mode) => or(t, `glitchdle.mode.${mode}`, mode)
+// A framework or database trait value; language names stay as they are in every language.
+export const categoryValueName = (t, category, value) => or(t, `glitchdle.value.${category}.${value}`, valueLabel(category, value))
 
 // All of the above, bound to the current language.
 export function useLabels() {
@@ -38,5 +41,6 @@ export function useLabels() {
     difficulty: (difficulty) => difficultyName(t, difficulty),
     trait: (value) => traitName(t, value),
     glitchdleMode: (mode) => glitchdleModeName(t, mode),
+    categoryValue: (category, value) => categoryValueName(t, category, value),
   }
 }

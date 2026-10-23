@@ -117,5 +117,27 @@ export const DATABASE_OVERRIDES = {
   hana: { year: 2010 },
   'azure-cosmosdb': { year: 2017 }, // launched as Cosmos DB in 2017 (DocumentDB before)
   questdb: { drop: 'too little data on Wikidata' },
+  // The second batch: models and years Wikidata leaves out.
+  'google-cloud-spanner': { model: ['relational'], query: 'sql', year: 2017 },
+  'google-cloud-bigtable': { model: ['wide-column'], query: 'key-commands', year: 2015 },
+  hazelcast: { model: ['key-value'], query: 'key-commands', year: 2008 }, // an in-memory data grid
+  ignite: { model: ['key-value', 'relational'], query: 'sql' },
+  greenplum: { model: ['relational', 'columnar'], query: 'sql' },
+  foundationdb: { year: 2013 },
+  tarantool: { model: ['key-value'], query: 'key-commands' },
+  edgedb: { writtenIn: 'python' },
+  'apache-pinot': { model: ['columnar'], query: 'sql', writtenIn: 'java' },
+  'apache-kudu': { model: ['columnar'], query: 'sql' },
+  keydb: { writtenIn: 'cpp', year: 2019 },
+  memgraph: { writtenIn: 'cpp', year: 2017 },
+  tdengine: { model: ['time-series'], query: 'sql-dialect', license: 'gpl', year: 2019 }, // AGPL
+  // Erlang's own store: key-value tables, queried from Erlang code.
+  mnesia: { model: ['key-value'], query: 'key-commands', writtenIn: 'erlang', year: 1999 },
+  faunadb: { drop: 'the name finds a board game on Wikidata' },
+  aerospike: { drop: 'not on Wikidata' },
+  vertica: { drop: 'not on Wikidata' },
+  'azure-sql-database': { drop: 'not on Wikidata' },
+  objectbox: { drop: 'not on Wikidata' },
+  kdb: { drop: 'no Stack Overflow tag' },
   teradata: { model: ['relational'], query: 'sql', writtenIn: 'undisclosed', license: 'proprietary', year: 1979 },
 }

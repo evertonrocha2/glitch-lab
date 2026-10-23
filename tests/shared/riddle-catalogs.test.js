@@ -6,9 +6,9 @@ import { languageById } from '../../shared/riddle/languages.js'
 const synced = CATEGORIES.filter((category) => category.id !== 'languages')
 
 describe('the synced catalogs', () => {
-  it('has 40+ items per category with unique ids and names', () => {
+  it('has 60+ items per category with unique ids and names', () => {
     for (const { id, items } of synced) {
-      expect(items.length, id).toBeGreaterThanOrEqual(40)
+      expect(items.length, id).toBeGreaterThanOrEqual(60)
       expect(new Set(items.map((item) => item.id)).size, id).toBe(items.length)
       expect(new Set(items.map((item) => item.name.toLowerCase())).size, id).toBe(items.length)
     }

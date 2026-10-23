@@ -1,10 +1,10 @@
-import { DISTRIBUTION_SIZE, MODES } from '../../../../shared/riddle/game.js'
-import { formatCountdown } from '../../../lib/daily.js'
+import { DISTRIBUTION_SIZE } from '../../../../shared/riddle/game.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../ui/pixel-card/pixel-card.jsx'
 import { Check } from '../boards/boards.jsx'
+import Countdown from '../countdown/countdown.jsx'
 
 // Pixels thrown out from the middle on a win. Purely decorative, and gone with reduced motion.
 const BURST = Array.from({ length: 18 }, (_, index) => {
@@ -33,8 +33,8 @@ export function WinBurst() {
   )
 }
 
-// The end of a mode: solved or out of guesses, the answer, sharing and the wait for tomorrow.
-export function ResultCard({ state, justWon, msLeft, onShare, copied }) {
+// The end of a board: solved or out of guesses, the answer, sharing and the wait for tomorrow.
+export function ResultCard({ state, justWon, resetAt, onShare, copied }) {
   const t = useT()
   return (
     <PixelCard tone={state.solved ? 'primary' : 'muted'} className="relative overflow-visible p-5">
@@ -48,11 +48,17 @@ export function ResultCard({ state, justWon, msLeft, onShare, copied }) {
       </div>
       <div className="relative mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="font-label text-xs text-muted">
-          {t('app.glitchdle.nextGlitchdle')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
+          {t('app.glitchdle.nextGlitchdle')} <Countdown resetAt={resetAt} className="text-ink tabular-nums" />
         </p>
-        <PixelButton onClick={onShare} variant="secondary">
-          {copied ? t('app.glitchdle.shareCopied') : t('app.glitchdle.share')}
-        </PixelButton>
+        <span className="flex items-center gap-2">
+          {/* A short confirmation next to the button, read out when it appears. */}
+          <span role="status" className="font-label text-xs text-primary">
+            {copied ? t('app.glitchdle.shareCopied') : ''}
+          </span>
+          <PixelButton onClick={onShare} variant="secondary">
+            {t('app.glitchdle.share')}
+          </PixelButton>
+        </span>
       </div>
     </PixelCard>
   )
@@ -119,7 +125,7 @@ export function DistributionPanel({ stats, mode, todayGuesses }) {
   )
 }
 
-// Today's numbers for every mode, demo accounts left out.
+// Today's numbers for every board, demo accounts left out.
 export function CommunityPanel({ community, modes }) {
   const t = useT()
   const labels = useLabels()
@@ -145,7 +151,7 @@ export function CommunityPanel({ community, modes }) {
           </tr>
         </thead>
         <tbody>
-          {MODES.map((mode) => {
+          {Object.keys(modes).map((mode) => {
             const numbers = community[mode]
             const mine = modes[mode]
             return (
