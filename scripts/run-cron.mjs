@@ -1,5 +1,5 @@
-// The daily cron (Render cron job): wakes the API, then asks it to write today's and tomorrow's
-// content. Exits non-zero on failure so Render marks the run as failed.
+// The daily cron (GitHub Actions, see .github/workflows/daily-cron.yml): wakes the API, then asks it
+// to write today's and tomorrow's content. Exits non-zero on failure so the run shows as failed.
 const base = (process.env.APP_URL ?? '').replace(/\/+$/, '')
 const secret = process.env.CRON_SECRET
 if (!base || !secret) {

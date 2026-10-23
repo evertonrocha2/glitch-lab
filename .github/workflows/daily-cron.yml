@@ -1,0 +1,22 @@
+# The daily content cron: new puzzles, Glitchdle and line hunt at 03:00 UTC, midnight in Brasilia.
+# GitHub only wakes the API and calls it (scripts/run-cron.mjs); the API writes the content.
+# Needs repo secrets APP_URL (the Render API address) and CRON_SECRET (same value as on Render).
+name: daily-cron
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run the daily cron
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/run-cron.mjs

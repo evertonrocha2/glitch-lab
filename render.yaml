@@ -1,14 +1,7 @@
-# Render blueprint: the backend. The site itself is on Vercel, which forwards /api/* here (vercel.json).
-#   glitch-detective-api   web service: every api/<name>.js through server.js
-#   glitch-detective-cron  cron job: the daily content (puzzles, Glitchdle, line hunt) at 03:00 UTC
-# Secrets marked sync: false are asked for when the blueprint is created; the generated ones are
-# created by Render once and shared through the group, so the API and the cron always agree.
-envVarGroups:
-  - name: glitch-detective-shared
-    envVars:
-      - key: CRON_SECRET
-        generateValue: true
-
+# Render blueprint: the backend API. The site itself is on Vercel, which forwards /api/* here
+# (vercel.json), and the daily content cron runs on GitHub Actions (.github/workflows/daily-cron.yml).
+# Secrets marked sync: false are asked for when the blueprint is created; generateValue ones are
+# created by Render once.
 services:
   - type: web
     name: glitch-detective-api
@@ -19,7 +12,6 @@ services:
     startCommand: node server.js
     healthCheckPath: /healthz
     envVars:
-      - fromGroup: glitch-detective-shared
       - key: NODE_VERSION
         value: "22"
       - key: NODE_ENV
@@ -30,25 +22,12 @@ services:
         generateValue: true
       - key: GLITCHDLE_SECRET
         generateValue: true
+      # The same value as the GitHub secret CRON_SECRET, so only the daily workflow can run the cron.
+      - key: CRON_SECRET
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-
-  - type: cron
-    name: glitch-detective-cron
-    runtime: node
-    plan: starter
-    region: ohio
-    schedule: "0 3 * * *"
-    buildCommand: "true"
-    startCommand: node scripts/run-cron.mjs
-    envVars:
-      - fromGroup: glitch-detective-shared
-      - key: NODE_VERSION
-        value: "22"
-      # The API's public address, e.g. https://glitch-detective-api.onrender.com
-      - key: APP_URL
         sync: false
