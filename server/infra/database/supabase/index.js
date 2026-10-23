@@ -19,10 +19,16 @@ const toCase = (row) =>
   row && {
     id: row.id,
     userId: row.user_id,
+    // Rows from before doubt chats read as investigated errors.
+    kind: row.kind ?? 'error',
     error: row.error,
     code: row.code,
     files: row.files ?? [],
     context: row.context ?? '',
+    question: row.question ?? '',
+    topic: row.topic ?? '',
+    title: row.title ?? '',
+    recap: row.recap ?? '',
     analysis: row.analysis,
     concept: row.concept,
     language: row.language,
@@ -135,9 +141,16 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toUser(unwrap(await db.from('users').select('*').eq('email', email.trim().toLowerCase()).maybeSingle()))
     },
 
-    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '' }) {
+    // kind 'question' is a card from a doubt chat (topic, title, the question and a short recap).
+    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '', kind = 'error', topic = '', title = '', question = '', recap = '' }) {
       return toCase(
-        unwrap(await db.from('cases').insert({ user_id: userId, error, code, files, context, analysis, concept, language }).select().single()),
+        unwrap(
+          await db
+            .from('cases')
+            .insert({ user_id: userId, kind, error, code, files, context, question, topic, title, recap, analysis, concept, language })
+            .select()
+            .single(),
+        ),
       )
     },
 

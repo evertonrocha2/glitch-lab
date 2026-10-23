@@ -29,6 +29,15 @@ create table if not exists public.cases (
 );
 create index if not exists cases_user_created on public.cases (user_id, created_at desc);
 
+-- "Ask a question": a case can also be a card from a doubt chat. kind tells them apart (rows from
+-- before are errors). A question card has error '' and keeps the student's question, its topic and
+-- title, and a short recap of the chat (never the transcript).
+alter table public.cases add column if not exists kind text not null default 'error' check (kind in ('error', 'question'));
+alter table public.cases add column if not exists question text not null default '' check (char_length(question) <= 2000);
+alter table public.cases add column if not exists topic text not null default '' check (char_length(topic) <= 60);
+alter table public.cases add column if not exists title text not null default '' check (char_length(title) <= 100);
+alter table public.cases add column if not exists recap text not null default '' check (char_length(recap) <= 400);
+
 create table if not exists public.challenges (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references public.cases (id) on delete cascade,

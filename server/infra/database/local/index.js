@@ -21,6 +21,8 @@ const ABOUT_FIELDS = ['role', 'headline', 'university', 'course', 'work', 'locat
 const toProfile = profileFromUser
 // Notes made before sharing existed are private.
 const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false })
+// Cases saved before doubt chats existed are investigated errors, with no question fields.
+const toCase = (item) => (item == null ? null : copy({ ...item, kind: item.kind ?? 'error', question: item.question ?? '', topic: item.topic ?? '', title: item.title ?? '', recap: item.recap ?? '' }))
 
 // Development only: the whole database is one JSON file (default .data/db.json).
 export function createLocalStore({ file }) {
@@ -76,22 +78,23 @@ export function createLocalStore({ file }) {
       return copy((data.users ?? []).find((user) => user.email === normalized))
     },
 
-    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '' }) {
+    // kind 'question' is a card from a doubt chat (topic, title, the question and a short recap).
+    async createCase(userId, { error, code, analysis, concept, language, files = [], context = '', kind = 'error', topic = '', title = '', question = '', recap = '' }) {
       const data = await load()
       const stamp = now()
-      const created = { id: randomUUID(), userId, error, code, files, context, analysis, concept, language, status: 'new', passedCount: 0, createdAt: stamp, updatedAt: stamp }
+      const created = { id: randomUUID(), userId, kind, error, code, files, context, question, topic, title, recap, analysis, concept, language, status: 'new', passedCount: 0, createdAt: stamp, updatedAt: stamp }
       data.cases.push(created)
       await save()
-      return copy(created)
+      return toCase(created)
     },
 
     async listCases(userId) {
       const data = await load()
-      return copy(data.cases.filter((item) => item.userId === userId).reverse())
+      return data.cases.filter((item) => item.userId === userId).reverse().map(toCase)
     },
 
     async getCase(userId, id) {
-      return copy(ownCase(await load(), userId, id))
+      return toCase(ownCase(await load(), userId, id))
     },
 
     async updateCase(userId, id, { status, passedCount }) {
@@ -101,7 +104,7 @@ export function createLocalStore({ file }) {
       if (passedCount !== undefined) found.passedCount = passedCount
       found.updatedAt = now()
       await save()
-      return copy(found)
+      return toCase(found)
     },
 
     // A gym challenge has a caseId; a daily or global one has a puzzleId instead, and only one per user
