@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { TRAIL_BONUS_XP, TRAIL_KINDS } from '../../shared/trails.js'
 import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import PixelCard from '../components/pixel/PixelCard.jsx'
@@ -43,7 +44,7 @@ function EmptyState({ sources, onBuild }) {
   const labels = useLabels()
   const ready = sources.cases > 0
   return (
-    <PixelCard className="relative mt-10 overflow-hidden p-6 sm:p-8">
+    <PixelCard className="relative mt-8 overflow-hidden p-6 sm:p-8">
       <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/3 opacity-20" />
       <div className="relative max-w-2xl">
         <p className="font-label text-xs text-primary">{t('notes.trail.emptyKicker')}</p>
@@ -108,7 +109,7 @@ function TrailHeader({ trail, confirming, onAskNew, onCancel, onBuild }) {
   const t = useT()
   const { timeAgo } = useFormat()
   return (
-    <PixelCard className="relative mt-10 overflow-hidden p-6 sm:p-8">
+    <PixelCard className="relative mt-8 overflow-hidden p-6 sm:p-8">
       <div aria-hidden="true" className="dither-primary absolute inset-y-0 right-0 w-1/4 opacity-20" />
       <div className="relative">
         <p className="font-label text-xs text-primary">{t('notes.trail.active', { time: timeAgo(trail.createdAt) })}</p>
@@ -267,12 +268,7 @@ export default function TrailPage() {
 
   return (
     <AppShell>
-      <p className="font-label text-xs text-secondary">
-        &gt; {t('notes.trail.prompt')}
-        <span className="motion-safe:animate-caret">_</span>
-      </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('notes.trail.title')}</h1>
-      <p className="mt-2 max-w-2xl text-muted">{t('notes.trail.lede')}</p>
+      <PageHeader kicker={t('notes.trail.prompt')} title={t('notes.trail.title')} lead={t('notes.trail.lede')} />
 
       {message && (
         <div className="mt-8">
@@ -281,12 +277,12 @@ export default function TrailPage() {
       )}
 
       {building ? (
-        <div className="mt-10 max-w-xl">
+        <div className="mt-8 max-w-xl">
           <Working label={t('notes.trail.building')} />
         </div>
       ) : !data ? (
         !message && (
-          <p role="status" className="mt-10 font-label text-xs text-muted">
+          <p role="status" className="mt-8 font-label text-xs text-muted">
             {t('notes.trail.loading')}
           </p>
         )
