@@ -70,6 +70,10 @@ it('has a working card of every kind for each concept in the pool', () => {
     expect(types[0]).toBe('cause')
     expect(types.every(Boolean)).toBe(true)
   }
-  // Pool prose is English: Portuguese readers don't get it as the explanation.
-  expect(poolSamples('off-by-one', 'pt-BR')[0].explanation).toBeNull()
+  // Pool prose follows the reader's language.
+  const [en] = poolSamples('off-by-one', 'en')
+  const [pt] = poolSamples('off-by-one', 'pt-BR')
+  expect(en).toMatchObject({ symptom: 'It prints pen and book, but never lamp.', explanation: expect.stringContaining('stops one index early') })
+  expect(pt).toMatchObject({ symptom: 'Imprime pen e book, mas nunca lamp.', explanation: expect.stringContaining('o último item fica de fora') })
+  expect(pt.code).toBe(en.code)
 })

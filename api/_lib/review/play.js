@@ -3,6 +3,7 @@ import { isDue, newReviewItem, REVIEW_SESSION_CARDS, REVIEW_XP, REVIEW_XP_CARDS_
 import { clientDay, serverDay } from '../days.js'
 import { fail, ok, readJson, requireUser } from '../http.js'
 import { localeOf } from '../locale.js'
+import { poolEntryFor, poolText } from '../puzzles/pool.js'
 import { getStore } from '../store/index.js'
 import { buildCard, poolSamples, publicCard, seededRandom } from './cards.js'
 
@@ -52,7 +53,10 @@ async function samplesFor(store, concept, { cases, challenges, puzzles }, locale
   const puzzle = puzzles.find((item) => item.concept === concept)
   const puzzleSecret = puzzle && (await store.getPuzzleSecret(puzzle.id))
   if (puzzleSecret) {
-    samples.push({ symptom: puzzle.symptom, code: puzzle.brokenCode, solution: puzzleSecret.solution, explanation: puzzleSecret.bugExplanation, language: puzzle.language })
+    // A day the cron fell back to the pool saved the English text; the pool has it translated.
+    const pool = poolEntryFor(puzzle.brokenCode)
+    const text = pool ? poolText(pool, locale) : { symptom: puzzle.symptom, bugExplanation: puzzleSecret.bugExplanation }
+    samples.push({ symptom: text.symptom, code: puzzle.brokenCode, solution: puzzleSecret.solution, explanation: text.bugExplanation, language: puzzle.language })
   }
   return [...samples, ...poolSamples(concept, locale)]
 }

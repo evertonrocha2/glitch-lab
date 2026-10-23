@@ -6,7 +6,7 @@
 //          deterministic edits of the right one and of the broken line).
 // A card keeps its answer; publicCard() is what the browser may see before answering.
 import { REVIEW_CONCEPTS } from '../../../shared/review.js'
-import { POOL } from '../puzzles/pool.js'
+import { POOL, poolText } from '../puzzles/pool.js'
 
 export const CARD_TYPES = ['cause', 'line', 'fix']
 const MAX_LINES = 16
@@ -172,16 +172,13 @@ function fixCard(concept, sample, random) {
 
 const BUILDERS = { cause: causeCard, line: lineCard, fix: fixCard }
 
-// The hand-written puzzles for a concept, as samples. Their prose is English, so the explanation
-// only rides along for English readers.
+// The hand-written puzzles for a concept, as samples, with the symptom and explanation in the
+// reader's language.
 export function poolSamples(concept, locale) {
-  return POOL.filter((puzzle) => puzzle.concept === concept).map((puzzle) => ({
-    symptom: puzzle.symptom,
-    code: puzzle.brokenCode,
-    solution: puzzle.solution,
-    explanation: locale === 'en' ? puzzle.bugExplanation : null,
-    language: puzzle.language,
-  }))
+  return POOL.filter((puzzle) => puzzle.concept === concept).map((puzzle) => {
+    const text = poolText(puzzle, locale)
+    return { symptom: text.symptom, code: puzzle.brokenCode, solution: puzzle.solution, explanation: text.bugExplanation, language: puzzle.language }
+  })
 }
 
 // One card for a concept. `turn` (how many times it was reviewed) rotates the preferred kind, so

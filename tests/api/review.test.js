@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { pickFromPool, POOL } from '../../api/_lib/puzzles/pool.js'
 import { GET, POST } from '../../api/progress.js'
 import { REVIEW_XP, REVIEW_XP_CARDS_PER_DAY } from '../../shared/review.js'
 import { apiRequest, useTempStore } from './helpers.js'
@@ -127,6 +128,35 @@ it('builds "which line?" and "pick the fix" cards from my own gym challenge', as
   expect(card.answer).toBe('l2')
   const { result } = await (await answer({ sessionId: session.id, index: 0, choice: 'l2' })).json()
   expect(result).toMatchObject({ correct: true, fixed: 'console.log(a.b?.c)', explanation: SECRET.bugExplanation })
+})
+
+it('gives a Portuguese reader the pool explanation and symptom in Portuguese', async () => {
+  // A daily puzzle from the pool, passed: the day saved its English text.
+  const { puzzle, secret } = pickFromPool({ kind: 'daily', day: TODAY, difficulty: 'easy' })
+  const saved = await store.createPuzzle(puzzle, secret)
+  const challenge = await store.createChallenge('alice', { caseId: null, puzzleId: saved.id, brokenCode: puzzle.brokenCode, symptom: puzzle.symptom, language: puzzle.language, hints: puzzle.hints }, secret)
+  await store.updateChallenge('alice', challenge.id, { status: 'passed' })
+  // Reviewed once: a "which line?" card, built from that puzzle.
+  await store.saveReviewItem('alice', { concept: puzzle.concept, box: 2, dueDay: TODAY, lastDay: '2026-10-19', right: 1, wrong: 0 })
+  const entry = POOL.find((item) => item.title === puzzle.title)
+
+  const res = await POST(apiRequest('/api/progress?review=start', { body: { today: TODAY }, locale: 'pt-BR,pt;q=0.9' }))
+  const { session } = await res.json()
+  expect(session.cards[0]).toMatchObject({ type: 'line', prompt: { symptom: entry.pt?.symptom ?? entry.symptom } })
+  const [card] = await secretCards()
+  const { result } = await (await answer({ sessionId: session.id, index: 0, choice: card.answer })).json()
+  expect(result.explanation).toBe(entry.pt.bugExplanation)
+  expect(result.explanation).not.toBe(secret.bugExplanation)
+})
+
+it('keeps the pool explanation in English for an English reader', async () => {
+  await store.createCase('alice', { ...CASE, concept: 'off-by-one' })
+  await store.saveReviewItem('alice', { concept: 'off-by-one', box: 2, dueDay: TODAY, lastDay: '2026-10-19', right: 1, wrong: 0 })
+  const { session } = await (await POST(apiRequest('/api/progress?review=start', { body: { today: TODAY }, locale: 'en-US' }))).json()
+  expect(session.cards[0].type).toBe('line')
+  const [card] = await secretCards()
+  const { result } = await (await answer({ sessionId: session.id, index: 0, choice: card.answer })).json()
+  expect(result.explanation).toBe(POOL.find((item) => item.concept === 'off-by-one').bugExplanation)
 })
 
 it('rejects bad answers and stale sessions', async () => {
