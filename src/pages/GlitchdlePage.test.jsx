@@ -197,3 +197,17 @@ it('speaks Brazilian Portuguese: modes, traits, legend and the panels', async ()
   expect(screen.getByRole('heading', { name: 'Detetives de hoje' })).toBeInTheDocument()
   expect(screen.getByText('Nenhum acerto no modo Clássico ainda. O primeiro começa o gráfico.')).toBeInTheDocument()
 })
+
+it('puts my stats and the community in a sidebar, and reads the guesses left with the input', async () => {
+  renderAt('/glitchdle', { user: 'alice' })
+  const input = await screen.findByRole('combobox', { name: 'Guess a language' })
+  expect(input).toHaveAccessibleDescription(`${MAX_GUESSES - 1}/${MAX_GUESSES} guesses left`)
+
+  const sidebar = screen.getByRole('complementary', { name: 'Stats and community' })
+  expect(within(sidebar).getByRole('heading', { name: 'Your stats' })).toBeInTheDocument()
+  expect(within(sidebar).getByRole('heading', { name: 'Classic guess distribution' })).toBeInTheDocument()
+  const table = within(sidebar).getByRole('table')
+  // The column says "Avg" on screen and the whole name to screen readers.
+  expect(within(table).getByRole('columnheader', { name: 'Avg guesses' })).toHaveTextContent('Avg')
+  expect(screen.getByRole('tabpanel')).not.toContainElement(sidebar)
+})

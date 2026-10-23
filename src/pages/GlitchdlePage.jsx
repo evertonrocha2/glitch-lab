@@ -4,7 +4,7 @@ import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
 import { Check, ClassicBoard, ErrorBoard, GuessList, Legend, SnippetBoard } from '../components/glitchdle/Boards.jsx'
 import LanguagePicker from '../components/glitchdle/LanguagePicker.jsx'
-import { CommunityPanel, ResultCard, StatsPanel } from '../components/glitchdle/Panels.jsx'
+import { CommunityPanel, DistributionPanel, ResultCard, StatsPanel } from '../components/glitchdle/Panels.jsx'
 import { AuthError, getRiddle, guessRiddle } from '../lib/api.js'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { formatCountdown } from '../lib/daily.js'
@@ -44,10 +44,11 @@ function ModeTabs({ modes, active, onPick }) {
     tabs.current[next]?.focus()
   }
   return (
-    <div role="tablist" aria-label={t('app.glitchdle.modes')} className="grid grid-cols-3 gap-[2px] border-2 border-ink bg-ink shadow-pixel-ink">
+    <div role="tablist" aria-label={t('app.glitchdle.modes')} className="grid grid-cols-3 gap-[2px] border-b-2 border-ink bg-ink">
       {MODES.map((mode, index) => {
         const state = modes[mode]
         const selected = mode === active
+        const fresh = !state.over && !state.guessCount
         const note = state.solved
           ? t('app.glitchdle.guesses', { count: state.guessCount })
           : state.over
@@ -69,7 +70,7 @@ function ModeTabs({ modes, active, onPick }) {
             tabIndex={selected ? 0 : -1}
             onClick={() => onPick(mode)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`min-w-0 px-2 py-2.5 text-left transition-colors sm:px-4 ${selected ? 'bg-primary text-white' : 'bg-white text-ink hover:bg-primary-soft'}`}
+            className={`min-w-0 px-3 py-2.5 text-left transition-colors focus-visible:relative focus-visible:z-10 sm:px-5 ${selected ? 'bg-primary text-white' : 'bg-white text-ink hover:bg-primary-soft'}`}
           >
             <span className="flex items-center gap-1.5 font-label text-xs sm:text-sm">
               {labels.glitchdleMode(mode)}
@@ -82,7 +83,14 @@ function ModeTabs({ modes, active, onPick }) {
                 </>
               )}
             </span>
-            <span className={`mt-0.5 block text-xs ${selected ? 'text-white/80' : 'text-muted'}`}>{note}</span>
+            {/* An unplayed mode gets a small "new" pill, the same height as the text line it replaces. */}
+            <span className="mt-1 flex h-4 items-center">
+              {fresh ? (
+                <span className={`px-1 font-label text-[10px] leading-4 ${selected ? 'bg-white/20 text-white' : 'bg-secondary-soft text-secondary'}`}>{note}</span>
+              ) : (
+                <span className={`truncate text-xs leading-4 ${selected ? 'text-white/80' : 'text-muted'}`}>{note}</span>
+              )}
+            </span>
           </button>
         )
       })}
@@ -175,19 +183,19 @@ export default function GlitchdlePage() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-label text-xs text-secondary">
-            &gt; glitchdle<span className="motion-safe:animate-caret">_</span>
-          </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">Glitchdle{game ? ` #${game.number}` : ''}</h1>
-          <p className="mt-2 max-w-2xl text-muted">{t('app.glitchdle.lead')}</p>
+      <div>
+        <p className="font-label text-xs text-secondary">
+          &gt; glitchdle<span className="motion-safe:animate-caret">_</span>
+        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <h1 className="font-pixel text-3xl font-bold text-ink sm:text-4xl">Glitchdle{game ? ` #${game.number}` : ''}</h1>
+          {game && (
+            <p className="border-2 border-ink bg-white px-3 py-2 font-label text-xs text-muted shadow-pixel-muted">
+              {t('app.glitchdle.nextIn')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
+            </p>
+          )}
         </div>
-        {game && (
-          <p className="border-2 border-ink bg-white px-3 py-2 font-label text-xs text-muted shadow-pixel-muted">
-            {t('app.glitchdle.nextIn')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
-          </p>
-        )}
+        <p className="mt-2 max-w-2xl text-muted">{t('app.glitchdle.lead')}</p>
       </div>
 
       {message && (
@@ -203,48 +211,56 @@ export default function GlitchdlePage() {
       )}
 
       {game && state && (
-        <>
-          <div className="mt-8">
-            <ModeTabs modes={game.modes} active={mode} onPick={(next) => {
+        // The game on the left; my numbers and today's community in a sidebar on wide screens, below on phones.
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="border-2 border-ink bg-white shadow-pixel-ink">
+            <ModeTabs
+              modes={game.modes}
+              active={mode}
+              onPick={(next) => {
                 setMode(next)
                 setCopied(false)
-              }} />
-          </div>
+              }}
+            />
 
-          <section id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`} className="mt-6 space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <section id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`} className="space-y-4 p-4 sm:p-5">
               <p className="max-w-2xl text-sm text-ink">{t(`app.glitchdle.intro.${mode}`)}</p>
-              {!state.over && (
-                <p className="font-label text-[10px] text-muted">
-                  {t('app.glitchdle.guessesLeft', { left: state.guessesLeft, max: MAX_GUESSES })}
-                </p>
+
+              {mode === 'error' && <ErrorBoard state={state} />}
+              {mode === 'snippet' && <SnippetBoard state={state} />}
+
+              {state.over ? (
+                <ResultCard key={`${game.day}-${mode}`} state={state} justWon={justWon} msLeft={msLeft} onShare={share} copied={copied} />
+              ) : (
+                <LanguagePicker
+                  key={mode}
+                  mode={mode}
+                  guessed={state.guesses.map((item) => item.id)}
+                  onGuess={guess}
+                  busy={busy}
+                  left={state.guessesLeft}
+                  max={MAX_GUESSES}
+                />
               )}
-            </div>
 
-            {mode === 'error' && <ErrorBoard state={state} />}
-            {mode === 'snippet' && <SnippetBoard state={state} />}
-
-            {state.over ? (
-              <ResultCard key={`${game.day}-${mode}`} state={state} justWon={justWon} msLeft={msLeft} onShare={share} copied={copied} />
-            ) : (
-              <LanguagePicker key={mode} mode={mode} guessed={state.guesses.map((item) => item.id)} onGuess={guess} busy={busy} />
-            )}
-
-            {mode === 'classic' ? (
-              <>
-                <Legend />
-                <ClassicBoard guesses={state.guesses} animateId={last?.mode === 'classic' ? last.id : null} />
-              </>
-            ) : (
-              <GuessList guesses={state.guesses} animateId={last?.mode === mode ? last.id : null} />
-            )}
-          </section>
-
-          <div className="mt-12 grid grid-cols-[minmax(0,1fr)] items-start gap-8 md:grid-cols-2">
-            <StatsPanel stats={game.stats} mode={mode} todayGuesses={state.solved ? state.guessCount : null} />
-            <CommunityPanel community={game.community} modes={game.modes} />
+              {mode === 'classic' ? (
+                <>
+                  <Legend />
+                  <ClassicBoard guesses={state.guesses} animateId={last?.mode === 'classic' ? last.id : null} />
+                </>
+              ) : (
+                <GuessList guesses={state.guesses} animateId={last?.mode === mode ? last.id : null} />
+              )}
+            </section>
           </div>
-        </>
+
+          {/* Sticky only when the whole sidebar fits on screen, so its bottom is never out of reach. */}
+          <aside aria-label={t('app.glitchdle.sidebar')} className="space-y-6 lg:[@media(min-height:860px)]:sticky lg:[@media(min-height:860px)]:top-6">
+            <StatsPanel stats={game.stats} />
+            <DistributionPanel stats={game.stats} mode={mode} todayGuesses={state.solved ? state.guessCount : null} />
+            <CommunityPanel community={game.community} modes={game.modes} />
+          </aside>
+        </div>
       )}
     </AppShell>
   )
