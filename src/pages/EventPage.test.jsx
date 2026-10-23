@@ -86,7 +86,7 @@ it('joins with an entry, showing only the links the event asks for', async () =>
 })
 
 it('edits my own entry, which I cannot vote for', async () => {
-  const mine = makeEntry({ id: 'x2', title: 'Cache it', mine: true, votes: 1, rank: 2 })
+  const mine = makeEntry({ id: 'x2', title: 'Cache it', mine: true, votes: 0, rank: 2 })
   vi.mocked(getEvent).mockResolvedValue(loadedEvent({ entries: [makeEntry(), mine], myEntry: mine }))
   vi.mocked(updateEntry).mockResolvedValue({ ...mine, title: 'Cache it v2' })
   renderAt('/events/e1', { user: 'me' })
@@ -101,6 +101,14 @@ it('edits my own entry, which I cannot vote for', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Save entry' }))
   expect(vi.mocked(updateEntry).mock.lastCall[0]).toBe('x2')
   expect(await screen.findByRole('article', { name: 'Cache it v2' })).toBeInTheDocument()
+})
+
+it('stops offering edits once my entry has votes', async () => {
+  const mine = makeEntry({ id: 'x2', title: 'Cache it', mine: true, votes: 1, rank: 2 })
+  vi.mocked(getEvent).mockResolvedValue(loadedEvent({ entries: [makeEntry(), mine], myEntry: mine }))
+  renderAt('/events/e1', { user: 'me' })
+  expect(await screen.findByText('Your entry has votes, so it can no longer change.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit my entry' })).not.toBeInTheDocument()
 })
 
 it('votes and takes the vote back, reordering the ranking', async () => {

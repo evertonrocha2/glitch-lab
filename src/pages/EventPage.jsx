@@ -122,12 +122,14 @@ function EntryPanel({ user, event, status, myEntry, loginLink, onOpen }) {
       <>
         <p className="break-words font-pixel text-lg font-bold text-ink">{myEntry.title}</p>
         <p className="mt-1 text-xs text-muted">{t('events.entry.votes', { count: myEntry.votes })}</p>
-        {canSubmit(status) ? (
+        {!canSubmit(status) ? (
+          <p className="mt-2 text-xs text-muted">{t('events.page.closed')}</p>
+        ) : myEntry.votes > 0 ? (
+          <p className="mt-2 text-xs text-muted">{t('events.page.entryLocked')}</p>
+        ) : (
           <PixelButton onClick={onOpen} variant="secondary" className="mt-3 w-full">
             {t('events.page.editEntry')}
           </PixelButton>
-        ) : (
-          <p className="mt-2 text-xs text-muted">{t('events.page.closed')}</p>
         )}
       </>
     )

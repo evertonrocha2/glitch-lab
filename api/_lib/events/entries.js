@@ -46,7 +46,8 @@ export async function POST(request) {
   return respond(store, entry, auth.user.id, 201)
 }
 
-// PUT { id, ...fields }: change your entry while the event is live.
+// PUT { id, ...fields }: change your entry while the event is live, until it gets its first vote
+// (so nobody swaps in something else after people voted for it).
 export async function PUT(request) {
   const auth = await requireUser(request)
   if (auth.response) return auth.response
@@ -60,6 +61,7 @@ export async function PUT(request) {
   if (!event) return fail(404, 'Event not found.')
   const closed = closedProblem(event)
   if (closed) return closed
+  if (entry.votes > 0) return fail(409, 'Your entry has votes now, so it can no longer change.')
 
   const parsed = parseEntry(body, event.requirements)
   if (!parsed.value) return fail(parsed.status, parsed.message)

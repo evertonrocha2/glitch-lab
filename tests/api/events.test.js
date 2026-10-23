@@ -266,6 +266,16 @@ describe('entries', () => {
     later(3 * DAY)
     expect((await update(entry(), bob.token)).body.message).toBe('Entries are closed for this event.')
   })
+
+  it('locks an entry once it gets its first vote', async () => {
+    const mine = (await submit(event.id, entry(), bob.token)).body.entry
+    const update = (body) => call('PUT', 'event-entries', { body: { id: mine.id, ...body }, token: bob.token })
+    expect((await update(entry({ title: 'Before votes' }))).status).toBe(200)
+    await vote(mine.id, true, cy.token)
+    const res = await update(entry({ title: 'Something else' }))
+    expect([res.status, res.body.message]).toEqual([409, 'Your entry has votes now, so it can no longer change.'])
+    expect((await getEvent(event.id)).body.entries[0].title).toBe('Before votes')
+  })
 })
 
 describe('votes', () => {

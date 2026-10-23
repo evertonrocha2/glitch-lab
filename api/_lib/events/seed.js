@@ -19,7 +19,7 @@ const EVENT = {
     'Post your entry with the repository link, and a short video if you can. Vote for the entries you like best.',
   ].join('\n\n'),
   rules: [
-    'One entry per person. You can edit it while the event is live.',
+    'One entry per person. You can edit it while the event is live, until it gets its first vote.',
     'The repository must be public, with a README that says how to run it.',
     'Be kind in the votes: vote for what you would like to learn from.',
   ].join('\n\n'),

@@ -44,6 +44,7 @@ export default function EntryForm({ requirements, entry, onSave, onCancel }) {
   return (
     <PixelCard as="form" tone="secondary" onSubmit={submit} aria-label={entry ? t('events.page.editEntry') : t('events.page.join')} className="p-5 sm:p-6">
       <h3 className="font-pixel text-xl font-bold text-ink">{entry ? t('events.page.editEntry') : t('events.page.join')}</h3>
+      <p className="mt-1 text-xs text-muted">{t('events.entry.editHint')}</p>
       <label htmlFor="entry-title" className={`mt-4 block ${LABEL}`}>
         {t('events.entry.title')}
       </label>

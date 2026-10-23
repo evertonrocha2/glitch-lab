@@ -71,6 +71,8 @@ const ROWS = [
   ['events.page.demo', 'Demo accounts can look around. Sign up to join events and vote.', 'Contas demo podem só olhar. Crie uma conta para participar e votar.'],
   ['events.page.yourEntry', 'Your entry', 'Sua participação'],
   ['events.page.editEntry', 'Edit my entry', 'Editar minha participação'],
+  ['events.page.entryLocked', 'Your entry has votes, so it can no longer change.', 'Sua participação já tem votos, então não muda mais.'],
+  ['events.entry.editHint', 'You can edit your entry until it gets its first vote.', 'Dá para editar sua participação até ela receber o primeiro voto.'],
   ['events.page.notStarted', 'Entries open when the event starts.', 'As participações abrem quando o evento começar.'],
   ['events.page.closed', 'Entries are closed.', 'As participações estão encerradas.'],
   ['events.page.organizer', "You organize this event, so you can't enter it. You can still vote.", 'Você organiza este evento, então não pode participar. Mas pode votar.'],
