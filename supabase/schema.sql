@@ -3,7 +3,7 @@
 -- anon key in the browser can't see any row: not cases, not hints, not solutions, not usage.
 
 -- Accounts live here (the app does its own email + password auth; Supabase is only the database).
-create table public.users (
+create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
   password_hash text,
@@ -11,7 +11,7 @@ create table public.users (
   created_at timestamptz not null default now()
 );
 
-create table public.cases (
+create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
   error text not null,
@@ -27,9 +27,9 @@ create table public.cases (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index cases_user_created on public.cases (user_id, created_at desc);
+create index if not exists cases_user_created on public.cases (user_id, created_at desc);
 
-create table public.challenges (
+create table if not exists public.challenges (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references public.cases (id) on delete cascade,
   user_id uuid not null references public.users (id) on delete cascade,
@@ -42,16 +42,16 @@ create table public.challenges (
   attempts int not null default 0,
   created_at timestamptz not null default now()
 );
-create index challenges_case_open on public.challenges (user_id, case_id, status);
+create index if not exists challenges_case_open on public.challenges (user_id, case_id, status);
 
-create table public.challenge_secrets (
+create table if not exists public.challenge_secrets (
   challenge_id uuid primary key references public.challenges (id) on delete cascade,
   solution text not null,
   bug_explanation text not null
 );
 
 -- A note is a list of blocks: text, heading, todo, or a case from the board.
-create table public.notes (
+create table if not exists public.notes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users (id) on delete cascade,
   title text not null default '',
@@ -59,17 +59,17 @@ create table public.notes (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index notes_user_updated on public.notes (user_id, updated_at desc);
+create index if not exists notes_user_updated on public.notes (user_id, updated_at desc);
 
 -- Seconds studied per day, from the timer. The day is the student's local date.
-create table public.study_time (
+create table if not exists public.study_time (
   user_id uuid not null references public.users (id) on delete cascade,
   day date not null,
   seconds int not null default 0,
   primary key (user_id, day)
 );
 
-create table public.usage (
+create table if not exists public.usage (
   key text not null,
   day date not null,
   calls int not null default 0,
