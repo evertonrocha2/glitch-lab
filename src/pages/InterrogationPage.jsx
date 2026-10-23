@@ -110,7 +110,7 @@ export default function InterrogationPage() {
 
   return (
     <AppShell>
-      <Link to="/board" className="font-label text-xs text-ink hover:text-primary">
+      <Link to="/board" className="-my-3 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary">
         &lt; {t('interrogation.page.back')}
       </Link>
       <PageHeader className="mt-6" kicker={t('interrogation.page.kicker')} title={t('interrogation.page.title')} lead={t('interrogation.page.lead')} />
@@ -129,6 +129,25 @@ export default function InterrogationPage() {
 
       {kase && interrogation && (
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          {/* First in reading order (the questions are about this error); the right column on desktop. */}
+          <aside aria-labelledby="interrogation-case" className="min-w-0 border-2 border-ink bg-mist p-5 lg:sticky lg:top-6 lg:order-last">
+            <h2 id="interrogation-case" className="font-label text-xs text-primary">
+              {t('interrogation.page.case')}
+            </h2>
+            <p className="mt-3 wrap-break-word font-pixel text-xl font-bold text-ink">{error.type}</p>
+            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word border-2 border-ink bg-white p-3 font-mono text-xs leading-relaxed text-ink">{kase.error}</pre>
+            <p className="mt-3 flex flex-wrap gap-1.5">
+              <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(kase.concept)}</span>
+              <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{kase.language}</span>
+            </p>
+            {kase.code && (
+              <details className="mt-4 border-2 border-ink bg-white">
+                <summary className="cursor-pointer px-4 py-3 font-label text-xs leading-4 text-ink">{t('interrogation.page.code')}</summary>
+                <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink">{kase.code}</pre>
+              </details>
+            )}
+          </aside>
+
           <div className="min-w-0 space-y-6">
             <InterrogationStepper interrogation={interrogation} />
 
@@ -184,7 +203,7 @@ export default function InterrogationPage() {
 
             {step && triesHere.length > 0 && (
               <details className="border-2 border-ink bg-white">
-                <summary className="cursor-pointer px-4 py-2.5 font-label text-xs text-ink">
+                <summary className="cursor-pointer px-4 py-3 font-label text-xs leading-4 text-ink">
                   {t('interrogation.history')} ({triesHere.length})
                 </summary>
                 <ol className="space-y-3 border-t-2 border-ink p-4 text-sm">
@@ -202,24 +221,6 @@ export default function InterrogationPage() {
 
             {interrogation.turns.some((turn) => turn.passed) && <InterrogationTimeline interrogation={interrogation} />}
           </div>
-
-          <aside aria-labelledby="interrogation-case" className="min-w-0 border-2 border-ink bg-mist p-5 lg:sticky lg:top-6">
-            <h2 id="interrogation-case" className="font-label text-xs text-primary">
-              {t('interrogation.page.case')}
-            </h2>
-            <p className="mt-3 wrap-break-word font-pixel text-xl font-bold text-ink">{error.type}</p>
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap wrap-break-word border-2 border-ink bg-white p-3 font-mono text-xs leading-relaxed text-ink">{kase.error}</pre>
-            <p className="mt-3 flex flex-wrap gap-1.5">
-              <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(kase.concept)}</span>
-              <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{kase.language}</span>
-            </p>
-            {kase.code && (
-              <details className="mt-4 border-2 border-ink bg-white">
-                <summary className="cursor-pointer px-4 py-2.5 font-label text-xs text-ink">{t('interrogation.page.code')}</summary>
-                <pre className="overflow-x-auto border-t-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink">{kase.code}</pre>
-              </details>
-            )}
-          </aside>
         </div>
       )}
     </AppShell>
