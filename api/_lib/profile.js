@@ -15,6 +15,7 @@ import {
 import { activityCalendar } from '../../shared/activity.js'
 import { computeProgress } from '../../shared/progress.js'
 import { loadDuel } from './duel/solved.js'
+import { loadInterrogation } from './interrogation/solved.js'
 import { loadDaily } from './puzzles/solved.js'
 import { loadRiddle } from './riddle/solved.js'
 
@@ -184,8 +185,10 @@ export async function summarize(store, userId, today) {
   const duel = await loadDuel(store, userId)
   // Community events: entries sent, places won, votes received, events hosted.
   const events = await store.eventStats(userId)
+  // Interrogations finished, for their XP and the scientific-method badge.
+  const interrogation = await loadInterrogation(store, userId)
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events }),
+    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events, interrogation }),
     // Only a count per day: what was done stays private, that something was done is shown.
     activity: activityCalendar({ cases, challenges, notes, study, riddle, duel, events }, today),
     counts: {

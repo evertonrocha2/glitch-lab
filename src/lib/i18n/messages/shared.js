@@ -53,6 +53,7 @@ const BADGES_EN = {
   competitor: ['Competitor', 'Send an entry to a community event.'],
   champion: ['Champion', 'Win first place in a community event.'],
   host: ['Host', 'Organize an event that gets 3 or more entries.'],
+  'scientific-method': ['Scientific method', 'Finish every step of an interrogation.'],
 }
 const BADGES_PT = {
   'first-clue': ['Primeira pista', 'Investigue seu primeiro erro.'],
@@ -78,6 +79,7 @@ const BADGES_PT = {
   competitor: ['Competidor', 'Envie uma participação para um evento da comunidade.'],
   champion: ['Campeão', 'Fique em primeiro lugar num evento da comunidade.'],
   host: ['Anfitrião', 'Organize um evento que receba 3 ou mais participações.'],
+  'scientific-method': ['Método científico', 'Conclua todas as etapas de um interrogatório.'],
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']

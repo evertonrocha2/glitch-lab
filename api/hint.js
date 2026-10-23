@@ -1,8 +1,19 @@
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
+import { answerInterrogation, getInterrogation } from './_lib/interrogation/handler.js'
 import { getStore } from './_lib/store/index.js'
+
+// ?mode=interrogate is the guided debugging coach (see _lib/interrogation/handler.js). It shares this
+// function to stay under Vercel's free-plan limit.
+const interrogating = (request) => new URL(request.url).searchParams.get('mode') === 'interrogate'
+
+export async function GET(request) {
+  if (interrogating(request)) return getInterrogation(request)
+  return fail(405, 'Method not allowed.')
+}
 
 // Hands out the next hint, vaguest first. No AI call: hints were written with the challenge.
 export async function POST(request) {
+  if (interrogating(request)) return answerInterrogation(request)
   const auth = await requireUser(request)
   if (auth.response) return auth.response
 

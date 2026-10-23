@@ -5,6 +5,7 @@ import { kindLabel, trailViews } from '../../../shared/trails.js'
 import { loadDaily } from '../puzzles/solved.js'
 import { loadRiddle } from '../riddle/solved.js'
 import { loadDuel } from '../duel/solved.js'
+import { loadInterrogation } from '../interrogation/solved.js'
 import { serverDay } from '../days.js'
 import { APP_GUIDE } from './guide.js'
 import { clip, firstLines } from './text.js'
@@ -149,7 +150,9 @@ async function studyContext({ store, userId, needs }) {
     const duel = await loadDuel(store, userId)
     // Community events too, so the XP matches /api/progress.
     const events = await store.eventStats(userId)
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, duel, events })
+    // Interrogations too, so the XP matches /api/progress.
+    const interrogation = await loadInterrogation(store, userId)
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, duel, events, interrogation })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(

@@ -184,6 +184,13 @@ const en = {
   'server.linkLabel.repository': 'repository',
   'server.linkLabel.video': 'video',
   'server.linkLabel.demo': 'demo',
+
+  // Interrogation (guided debugging on a case).
+  'server.writeAnswer': 'Write your answer first.',
+  'server.interrogationDone': 'This interrogation is finished.',
+  'server.interrogationFull': 'This interrogation has too many answers.',
+  'server.interrogationClash': 'Another answer landed at the same time. Try again.',
+  'server.what.answer': 'answer',
 }
 
 const ptBR = {
@@ -351,6 +358,12 @@ const ptBR = {
   'server.linkLabel.repository': 'do repositório',
   'server.linkLabel.video': 'do vídeo',
   'server.linkLabel.demo': 'da demo',
+
+  'server.writeAnswer': 'Escreva sua resposta primeiro.',
+  'server.interrogationDone': 'Este interrogatório já terminou.',
+  'server.interrogationFull': 'Este interrogatório já tem respostas demais.',
+  'server.interrogationClash': 'Outra resposta chegou ao mesmo tempo. Tente de novo.',
+  'server.what.answer': 'sua resposta',
 }
 
 export default { en, 'pt-BR': ptBR }

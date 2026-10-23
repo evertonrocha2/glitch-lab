@@ -27,6 +27,8 @@ const GLYPHS = {
   competitor: ['#........', '#######..', '#o#o#o#..', '##o#o##..', '#o#o#o#..', '#######..', '#........', '#........', '##.......'],
   champion: ['.#######.', '##ooooo##', '#.#ooo#.#', '.##ooo##.', '...#o#...', '....#....', '...###...', '..#ooo#..', '..#####..'],
   host: ['.......#.', '.....##o#', '..###ooo#', '.#oooooo#', '.#oooooo#', '..###ooo#', '...#.##o#', '...#...#.', '...##....'],
+  // A lab flask with a bubble: the debugging method followed step by step.
+  'scientific-method': ['..#####..', '...#.#...', '...#.#...', '..#...#..', '.#.....#.', '.#ooooo#.', '#oo.oooo#', '#ooooooo#', '.#######.'],
 }
 
 function cells(rows, char) {

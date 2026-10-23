@@ -4,6 +4,7 @@ import { dailySummary } from './daily.js'
 import { riddleSummary } from './riddle/game.js'
 import { duelSummary } from './duel.js'
 import { eventsXp, NO_EVENTS } from './events.js'
+import { INTERROGATION_XP, NO_INTERROGATION } from './interrogation.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -56,7 +57,8 @@ function streaks(study, today) {
 // riddle (optional): { results: [{ day, mode, guessCount, solved }] }, the Glitchdle games played.
 // duel (optional): { results: [{ day, outcome, vsBot, fastestMs }] }, the duels finished (shared/duel.js).
 // events (optional): community events taken part in, won, voted on and hosted (see shared/events.js).
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel, events = NO_EVENTS }) {
+// interrogation (optional): { completed }, cases interrogated from start to end (shared/interrogation.js).
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel, events = NO_EVENTS, interrogation = NO_INTERROGATION }) {
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
@@ -80,7 +82,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     glitchdle.xp +
     duels.xp +
     communityXp(community) +
-    eventsXp(events)
+    eventsXp(events) +
+    interrogation.completed * INTERROGATION_XP
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -104,6 +107,7 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     eventEntries: events.entries,
     eventWins: events.first,
     eventsHosted: events.hosted,
+    interrogations: interrogation.completed,
   }
 
   return {

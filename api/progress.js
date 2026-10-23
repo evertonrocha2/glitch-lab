@@ -4,6 +4,7 @@ import { clientDay, serverDay } from './_lib/days.js'
 import { POST as addStudyTime } from './_lib/handlers/study.js'
 import { ok, requireUser } from './_lib/http.js'
 import { loadDuel } from './_lib/duel/solved.js'
+import { loadInterrogation } from './_lib/interrogation/solved.js'
 import { loadDaily } from './_lib/puzzles/solved.js'
 import { loadRiddle } from './_lib/riddle/solved.js'
 import { getStore } from './_lib/store/index.js'
@@ -34,6 +35,8 @@ export async function GET(request) {
   const duel = await loadDuel(store, userId)
   // Community events: entries sent, places won, votes received, events hosted.
   const events = await store.eventStats(userId)
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events })
+  // Interrogations finished, for their XP and the scientific-method badge.
+  const interrogation = await loadInterrogation(store, userId)
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events, interrogation })
   return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, duel, events }, today) } })
 }

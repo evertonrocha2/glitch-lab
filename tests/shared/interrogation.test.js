@@ -5,6 +5,7 @@ import {
   emptyInterrogation,
   FIX_STEP,
   INTERROGATION_LIMITS,
+  INTERROGATION_XP,
   INTERROGATION_STEPS,
   interrogationSummary,
   isFinished,
@@ -72,4 +73,15 @@ it('counts only finished interrogations for progress', () => {
   const halfway = advance(emptyInterrogation('c2'), 'a', pass, AT)
   expect(interrogationSummary([done, halfway])).toEqual({ completed: 1 })
   expect(interrogationSummary()).toEqual({ completed: 0 })
+})
+
+it('pays interrogation XP per finished case and gives the scientific-method badge', async () => {
+  const { computeProgress } = await import('../../shared/progress.js')
+  const base = { cases: [], challenges: [], notes: [], study: [], today: '2026-10-23' }
+  const none = computeProgress(base)
+  const two = computeProgress({ ...base, interrogation: { completed: 2 } })
+  expect(two.xp - none.xp).toBe(2 * INTERROGATION_XP)
+  const badge = (progress) => progress.badges.find((item) => item.id === 'scientific-method').earned
+  expect(badge(none)).toBe(false)
+  expect(badge(two)).toBe(true)
 })

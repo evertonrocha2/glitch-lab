@@ -24,6 +24,8 @@ export const BADGES = [
   { id: 'competitor', name: 'Competitor', how: 'Send an entry to a community event.', earned: (s) => s.eventEntries >= 1 },
   { id: 'champion', name: 'Champion', how: 'Win first place in a community event.', earned: (s) => s.eventWins >= 1 },
   { id: 'host', name: 'Host', how: 'Organize an event that gets 3 or more entries.', earned: (s) => s.eventsHosted >= 1 },
+  // Interrogation: the debugging method walked from start to end.
+  { id: 'scientific-method', name: 'Scientific method', how: 'Finish every step of an interrogation.', earned: (s) => s.interrogations >= 1 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)
