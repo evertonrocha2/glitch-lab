@@ -59,6 +59,15 @@ it('falls back to the pool when the week has no global challenge yet', async () 
   expect(body.puzzle).toMatchObject({ kind: 'global', difficulty: 'hard', day: '2026-10-26' })
 })
 
+it("shows the week's global challenge in Portuguese to a pt-BR reader, English to the rest", async () => {
+  vi.setSystemTime(new Date('2026-10-29T15:00:00Z'))
+  const pt = { title: 'O próximo desafio', symptom: 'Imprime 0.', hints: ['a', 'b', 'c'] }
+  const next = await store.createPuzzle({ ...puzzleFor('2026-10-26', { kind: 'global', difficulty: 'hard', title: 'The next big one' }), pt }, PUZZLE_SECRET)
+  const body = await (await api('/api/daily/weekly', { method: 'GET', locale: 'pt-BR' })).json()
+  expect(body.puzzle).toMatchObject({ id: next.id, title: 'O próximo desafio', symptom: 'Imprime 0.' })
+  expect((await (await global()).json()).puzzle).toMatchObject({ id: next.id, title: 'The next big one' })
+})
+
 it('ranks by time from start to pass, then fewer attempts, and marks the first solver', async () => {
   const ada = await person('ada', { handle: 'ada-lab', displayName: 'Ada', isPublic: true })
   const cy = await person('cy', { handle: 'cy-dev', isPublic: true })

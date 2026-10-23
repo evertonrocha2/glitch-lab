@@ -4,7 +4,7 @@ import { AppError, badRequest, conflict, notFound } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { buildChallengePrompt, CHALLENGE_SCHEMA, challengeSystem } from './challenge.prompt.js'
-import { parseChallenge, toPublicChallenge } from './challenges.model.js'
+import { hintAt, parseChallenge, toPublicChallenge, toPublicPuzzleChallenge } from './challenges.model.js'
 import { buildCheckPrompt, CHECK_SCHEMA, checkSystem } from './check.prompt.js'
 
 export const PASSES_TO_SOLVE = 2
@@ -45,27 +45,26 @@ export async function startChallenge({ store, ai }, user, body, locale) {
   return { challenge: toPublicChallenge(record, kase.concept), created: true }
 }
 
-// One of my challenges, a case one or a daily/global puzzle one.
-export async function getChallenge(store, user, id) {
+// One of my challenges, a case one or a daily/global puzzle one (that one in the reader's language;
+// a case challenge was already written in the language of its reader).
+export async function getChallenge(store, user, id, locale = 'en') {
   const record = await store.getChallenge(user.id, id)
   if (!record) throw notFound(NOT_FOUND)
-  if (record.puzzleId) {
-    const puzzle = await store.getPuzzle(record.puzzleId)
-    return toPublicChallenge(record, puzzle?.concept ?? 'other', puzzle)
-  }
+  if (record.puzzleId) return toPublicPuzzleChallenge(record, await store.getPuzzle(record.puzzleId), locale)
   const kase = await store.getCase(user.id, record.caseId)
   return toPublicChallenge(record, kase?.concept ?? 'other')
 }
 
 // Hands out the next hint, vaguest first. No AI call: hints were written with the challenge.
-export async function revealHint(store, user, id) {
+export async function revealHint(store, user, id, locale = 'en') {
   const record = await store.getChallenge(user.id, id)
   if (!record) throw notFound(NOT_FOUND)
   if (record.hintsRevealed >= record.hints.length) throw conflict('No more hints.')
 
   const hintsRevealed = record.hintsRevealed + 1
   await store.updateChallenge(user.id, record.id, { hintsRevealed })
-  return { hint: record.hints[hintsRevealed - 1], hintsRevealed }
+  const puzzle = record.puzzleId ? await store.getPuzzle(record.puzzleId) : null
+  return { hint: hintAt(record, puzzle, hintsRevealed - 1, locale), hintsRevealed }
 }
 
 // The AI grades the student's fix against the secret solution; passing twice solves the case.

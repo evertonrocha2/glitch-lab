@@ -6,11 +6,11 @@ export async function start(req, res) {
 }
 
 export async function get(req, res) {
-  res.json({ challenge: await challenges.getChallenge(req.deps.store, req.user, req.params.id) })
+  res.json({ challenge: await challenges.getChallenge(req.deps.store, req.user, req.params.id, req.locale) })
 }
 
 export async function hint(req, res) {
-  res.json(await challenges.revealHint(req.deps.store, req.user, req.params.id))
+  res.json(await challenges.revealHint(req.deps.store, req.user, req.params.id, req.locale))
 }
 
 export async function check(req, res) {

@@ -1,3 +1,5 @@
+import { puzzleText } from '../daily/puzzle-text.js'
+
 export const HINTS_PER_CHALLENGE = 3
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
@@ -20,6 +22,23 @@ export function toPublicChallenge(record, concept, puzzle = null) {
     status: record.status,
     attempts: record.attempts,
   }
+}
+
+// A daily or global challenge in the reader's language. The challenge copied the puzzle's English
+// symptom and hints when it started; the puzzle keeps the Portuguese copy, read here at view time,
+// so the same challenge follows the reader when they switch languages.
+export function toPublicPuzzleChallenge(record, puzzle, locale = 'en') {
+  if (!puzzle) return toPublicChallenge(record, 'other')
+  const text = puzzleText(puzzle, locale)
+  const hints = text.hints.length === record.hints.length ? text.hints : record.hints
+  const symptom = record.symptom === puzzle.symptom ? text.symptom : record.symptom
+  return toPublicChallenge({ ...record, symptom, hints }, puzzle.concept, { ...puzzle, title: text.title })
+}
+
+// The next hint of a challenge, in the reader's language for a daily or global one.
+export function hintAt(record, puzzle, index, locale = 'en') {
+  const hints = puzzle ? puzzleText(puzzle, locale).hints : record.hints
+  return (hints.length === record.hints.length ? hints : record.hints)[index]
 }
 
 // Splits the AI answer into the public part and the secret part; throws if anything is missing.

@@ -1,6 +1,7 @@
 import { addDays, challengeDay, DIFFICULTIES, weekStart } from '../../../shared/daily.js'
 import { generatePuzzle } from './puzzle-generate.js'
 import { pickFromPool } from './puzzle-pool.js'
+import { puzzleText } from './puzzle-text.js'
 
 // The cron avoids titles from this many days back.
 const RECENT_DAYS = 30
@@ -76,17 +77,20 @@ export async function runCron(store, now = new Date()) {
   return { today, created }
 }
 
-// A daily card: what the puzzle is about, never its code, hints or solution.
-export const toPuzzleCard = (puzzle) => ({
-  id: puzzle.id,
-  kind: puzzle.kind,
-  day: puzzle.day,
-  difficulty: puzzle.difficulty,
-  language: puzzle.language,
-  concept: puzzle.concept,
-  title: puzzle.title,
-  symptom: puzzle.symptom,
-})
+// A daily card in the reader's language: what the puzzle is about, never its code, hints or solution.
+export function toPuzzleCard(puzzle, locale = 'en') {
+  const { title, symptom } = puzzleText(puzzle, locale)
+  return {
+    id: puzzle.id,
+    kind: puzzle.kind,
+    day: puzzle.day,
+    difficulty: puzzle.difficulty,
+    language: puzzle.language,
+    concept: puzzle.concept,
+    title,
+    symptom,
+  }
+}
 
 // The card plus where I am on it: new (not started), open or passed.
 export const withStatus = (card, challenge) => ({

@@ -162,3 +162,41 @@ it('keeps a failed puzzle fix open', async () => {
   expect(await (await check(challenge.id, 'print(1)')).json()).toEqual({ passed: false, feedback: 'Still skips lamp.', case: null })
   expect(await store.getChallenge('alice', challenge.id)).toMatchObject({ status: 'open', attempts: 1, passedAt: null })
 })
+
+// Daily puzzles are shared, so each reader gets the language they picked.
+const PT = { title: 'Quebra-cabeça fácil', symptom: 'Imprime 1 e 2, mas nunca 3.', hints: ['Conte as linhas.', 'Olhe onde o range para.', 'O range para um antes do fim.'] }
+const ptGet = (url) => api(url, { method: 'GET', locale: 'pt-BR' })
+const ptPost = (url) => api(url, { locale: 'pt-BR' })
+
+it('shows the cards, the gym view and the hints in Portuguese to a pt-BR reader, and English to the rest', async () => {
+  const puzzle = await store.createPuzzle({ ...puzzleFor(TODAY, { title: 'Easy one' }), pt: PT }, { ...PUZZLE_SECRET, pt: { bugExplanation: 'Pula o último.' } })
+  const cards = await (await ptGet('/api/daily')).json()
+  expect(cards.puzzles.find((item) => item.id === puzzle.id)).toMatchObject({ title: PT.title, symptom: PT.symptom })
+  expect((await (await daily()).json()).puzzles.find((item) => item.id === puzzle.id)).toMatchObject({ title: 'Easy one', symptom: puzzle.symptom })
+
+  const { challenge } = await (await ptPost(`/api/daily/puzzles/${puzzle.id}/challenge`)).json()
+  expect(challenge).toMatchObject({ symptom: PT.symptom, puzzle: { title: PT.title }, hintsTotal: 3, brokenCode: puzzle.brokenCode })
+  expect(await (await ptPost(`/api/challenges/${challenge.id}/hints`)).json()).toEqual({ hint: PT.hints[0], hintsRevealed: 1 })
+  // The same challenge follows the reader when they switch languages.
+  expect((await (await read(challenge.id)).json()).challenge).toMatchObject({ symptom: puzzle.symptom, hints: [puzzle.hints[0]], puzzle: { title: 'Easy one' } })
+  expect((await (await ptGet(`/api/challenges/${challenge.id}`)).json()).challenge.hints).toEqual([PT.hints[0]])
+})
+
+it('falls back to the pool translation for an older pool puzzle saved in English only', async () => {
+  const { puzzle, secret } = pickFromPool({ kind: 'daily', day: TODAY, difficulty: 'easy' })
+  const { pt, ...englishOnly } = puzzle
+  const saved = await store.createPuzzle(englishOnly, { solution: secret.solution, bugExplanation: secret.bugExplanation })
+  expect(saved.pt).toBeNull()
+  const card = (await (await ptGet('/api/daily')).json()).puzzles.find((item) => item.id === saved.id)
+  expect(card.title).toBe(pt.title)
+  const { challenge } = await (await ptPost(`/api/daily/puzzles/${saved.id}/challenge`)).json()
+  expect(await (await ptPost(`/api/challenges/${challenge.id}/hints`)).json()).toMatchObject({ hint: pt.hints[0] })
+})
+
+it('keeps an older AI puzzle with no Portuguese copy in English for everyone', async () => {
+  const puzzle = await store.createPuzzle(puzzleFor(TODAY, { title: 'Old AI one', brokenCode: 'print(1)' }), PUZZLE_SECRET)
+  const card = (await (await ptGet('/api/daily')).json()).puzzles.find((item) => item.id === puzzle.id)
+  expect(card).toMatchObject({ title: 'Old AI one', symptom: puzzle.symptom })
+  const { challenge } = await (await ptPost(`/api/daily/puzzles/${puzzle.id}/challenge`)).json()
+  expect(await (await ptPost(`/api/challenges/${challenge.id}/hints`)).json()).toMatchObject({ hint: puzzle.hints[0] })
+})
