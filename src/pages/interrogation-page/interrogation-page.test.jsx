@@ -129,3 +129,28 @@ it('shows what went wrong when the case is missing', async () => {
   renderAt('/interrogate/zzz', { user: 'alice' })
   expect(await screen.findByRole('alert')).toHaveTextContent('Case not found.')
 })
+
+// A question card (from a doubt chat) walks the same six steps from the doubt.
+const questionCase = () =>
+  makeCase({ kind: 'question', error: '', question: 'Why does my loop skip the last item?', topic: 'range end', title: 'range stops before its end', concept: 'off-by-one', language: 'python' })
+
+it('walks a question card from the doubt, with steps named for it', async () => {
+  vi.mocked(getInterrogation).mockResolvedValue({ case: questionCase(), interrogation: view(emptyInterrogation('c1')) })
+  renderAt('/interrogate/c1', { user: 'alice' })
+  const box = await answerBox()
+  expect(screen.getByRole('heading', { name: 'Pin down the doubt' })).toBeInTheDocument()
+  expect(screen.getByText('What exactly is unclear, and where did it show up?')).toBeInTheDocument()
+  expect(box).toHaveAttribute('placeholder', expect.stringMatching(/^Ex\.: /))
+  expect(screen.getByText('Step 1, Pin down the doubt: current')).toBeInTheDocument()
+  const aside = screen.getByRole('complementary', { name: 'The case' })
+  expect(within(aside).getByText('range stops before its end')).toBeInTheDocument()
+  expect(within(aside).getByText('Why does my loop skip the last item?')).toBeInTheDocument()
+  expect(within(aside).getByText('Question')).toBeInTheDocument()
+})
+
+it('names the question steps in Portuguese', async () => {
+  vi.mocked(getInterrogation).mockResolvedValue({ case: questionCase(), interrogation: view(emptyInterrogation('c1')) })
+  renderAt('/interrogate/c1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByRole('heading', { name: 'Delimitar a dúvida' })).toBeInTheDocument()
+  expect(screen.getByText('Dúvida')).toBeInTheDocument()
+})

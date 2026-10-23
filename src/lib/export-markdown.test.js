@@ -83,3 +83,35 @@ it('makes safe file names', () => {
   expect(slug('Undefined: again & again!')).toBe('undefined-again-again')
   expect(slug('***')).toBe('untitled')
 })
+
+const QUESTION = {
+  id: 'q1',
+  kind: 'question',
+  status: 'new',
+  passedCount: 0,
+  error: '',
+  code: '',
+  question: 'Why does my loop skip the last item?',
+  topic: 'range end',
+  title: 'range stops before its end',
+  recap: 'Asked why the loop skips the last item.',
+  concept: 'off-by-one',
+  language: 'python',
+  analysis: { explicacao: 'range(n) stops at n - 1.', causa: 'The end is left out.', correcao: '', exercicio: { enunciado: 'Print 1 to 5.', resposta: 'range(1, 6)' } },
+}
+
+it('writes a question card with its question, recap, summary and exercise, and no fix', () => {
+  const md = boardToMarkdown({ cases: [QUESTION], notes: [{ id: 'n2', title: 'Ranges', blocks: [{ id: 'b1', type: 'case', caseId: 'q1' }] }], date: '2026-10-23' })
+  expect(md).toContain('### range stops before its end')
+  expect(md).toContain('*Question · range end · Off by one · python · New (0/2)*')
+  expect(md).toContain('**Question.** Why does my loop skip the last item?')
+  expect(md).toContain('**From the chat.** Asked why the loop skips the last item.')
+  expect(md).toContain('**In short.** range(n) stops at n - 1.')
+  expect(md).toContain('**How it works.** The end is left out.')
+  expect(md).toContain('Print 1 to 5.')
+  expect(md).not.toContain('**Fix**')
+  expect(md).toContain('> **Case:** range stops before its end')
+  const pt = boardToMarkdown({ cases: [QUESTION], notes: [], date: '2026-10-23', t: (key, vars) => translate('pt-BR', key, vars) })
+  expect(pt).toContain('**Dúvida.** Why does my loop skip the last item?')
+  expect(pt).toContain('*Dúvida · range end ·')
+})

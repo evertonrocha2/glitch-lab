@@ -61,3 +61,14 @@ it('knows which notes mention a case', () => {
   expect(mentionsCase(note, 'c1')).toBe(true)
   expect(mentionsCase(note, 'c2')).toBe(false)
 })
+
+it('finds a question card by its question, topic or title for an @mention', () => {
+  const cases = [
+    { id: '1', error: 'TypeError: x', concept: 'undefined-access', language: 'javascript' },
+    { id: 'q', kind: 'question', error: '', question: 'Why does my loop skip?', topic: 'range end', title: 'range stops early', concept: 'off-by-one', language: 'python' },
+  ]
+  const label = () => 'Off by one'
+  expect(matchCases(cases, 'skip', label).map((item) => item.id)).toEqual(['q'])
+  expect(matchCases(cases, 'range end', label).map((item) => item.id)).toEqual(['q'])
+  expect(matchCases(cases, 'stops early', label).map((item) => item.id)).toEqual(['q'])
+})
