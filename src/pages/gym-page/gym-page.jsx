@@ -194,7 +194,7 @@ export default function GymPage() {
                 <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{challenge.language}</span>
               </div>
               <div className="mt-2">
-                <CodeEditor id="fix-input" value={code} onChange={setCode} minLines={6} maxLength={LIMITS.code} readOnly={passed} />
+                <CodeEditor id="fix-input" value={code} onChange={setCode} minLines={6} maxLength={LIMITS.code} readOnly={passed} language={challenge.language} />
               </div>
             </div>
 
