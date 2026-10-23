@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
+import { BADGES } from '../../shared/badges.js'
 import { getPublicProfile, listPublicNotes } from '../lib/api.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
@@ -168,7 +169,7 @@ it('speaks Brazilian Portuguese: stats, badges, notes and dates', async () => {
   expect(within(stats).getByText('desafios concluídos')).toBeInTheDocument()
   expect(screen.getByText(/Membro desde outubro de 2026/)).toBeInTheDocument()
   expect(within(screen.getByRole('list', { name: 'Medalhas conquistadas' })).getByText('Caso encerrado')).toBeInTheDocument()
-  expect(screen.getByText('4/18 conquistadas')).toBeInTheDocument()
+  expect(screen.getByText(`4/${BADGES.length} conquistadas`)).toBeInTheDocument()
   const notes = await screen.findByRole('region', { name: 'Notas' })
   expect(await within(notes).findByText('Sem título')).toBeInTheDocument()
   expect(within(notes).getByText(/4 blocos · 21 de out\. de 2026/)).toBeInTheDocument()

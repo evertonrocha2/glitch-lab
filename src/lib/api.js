@@ -95,6 +95,22 @@ export function guessRiddle({ mode, guess, day }, token) {
   return request('/api/challenge', { method: 'POST', body: { riddle: true, mode, guess, day }, token })
 }
 
+// Duel lobby: { rating, recent, leaderboard, active, isDemo }.
+export function getDuelLobby(token) {
+  return request('/api/challenge?duel=lobby', { token })
+}
+
+// One duel as I see it right now, with the server's clock in `now`.
+export async function getDuel(id, token) {
+  return (await request(`/api/challenge?duel=${encodeURIComponent(id)}`, { token })).duel
+}
+
+// A duel move: 'create' | 'join' | 'queue' | 'bot' | 'answer' | 'focus' | 'leave' | 'rematch'.
+// Answers with { duel } ('focus' with { recorded }). keepalive lets a tab-leave report out as the tab hides.
+export function sendDuel(action, fields, token, { keepalive = false } = {}) {
+  return request('/api/challenge', { method: 'POST', body: { duel: action, ...fields }, token, keepalive })
+}
+
 export async function listNotes(token) {
   return (await request('/api/notes', { token })).notes
 }

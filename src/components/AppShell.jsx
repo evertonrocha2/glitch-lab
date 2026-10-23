@@ -65,6 +65,9 @@ export default function AppShell({ children }) {
               <NavLink to="/glitchdle" className={navClass}>
                 {t('app.nav.glitchdle')}
               </NavLink>
+              <NavLink to="/duel" className={navClass}>
+                {t('duel.nav')}
+              </NavLink>
               <NavLink to="/notes" className={navClass}>
                 {t('app.nav.notes')}
               </NavLink>
