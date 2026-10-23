@@ -57,7 +57,7 @@ export function Cross({ className = 'size-2.5' }) {
 export function Legend() {
   const t = useT()
   return (
-    <ul aria-label={t('app.glitchdle.legend')} className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+    <ul aria-label={t('app.glitchdle.legend')} className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-muted">
       {[
         ['match', t('app.glitchdle.legend.match')],
         ['partial', t('app.glitchdle.legend.partial')],
@@ -106,7 +106,7 @@ export function ClassicBoard({ guesses, animateId }) {
     return <p className="border-2 border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted">{t('app.glitchdle.empty')}</p>
   }
   return (
-    <ol aria-label={t('app.glitchdle.yourGuesses')} className="space-y-3">
+    <ol aria-label={t('app.glitchdle.yourGuesses')} className="@container space-y-3">
       {guesses.map((guess) => (
         <li key={guess.id} aria-label={guess.name} className="border-2 border-ink bg-ink shadow-pixel-muted">
           <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5">
@@ -117,7 +117,8 @@ export function ClassicBoard({ guesses, animateId }) {
               </span>
             )}
           </div>
-          <div className="grid grid-cols-4 gap-[2px] border-t-2 border-ink lg:grid-cols-8">
+          {/* Eight across only when the board itself is wide enough, not just the screen. */}
+          <div className="grid grid-cols-2 gap-[2px] border-t-2 border-ink @sm:grid-cols-4 @3xl:grid-cols-8">
             {guess.cells.map((cell, index) => (
               <Cell key={cell.key} cell={cell} index={index} animate={guess.id === animateId} />
             ))}
