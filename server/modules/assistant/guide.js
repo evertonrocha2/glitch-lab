@@ -132,9 +132,8 @@ export const GUIDE_SECTIONS = [
 ]
 
 const ALWAYS = `Everywhere when signed in:
-- Top bar: Lab assistant button, notifications bell (comments, likes and ratings on your articles, event joins, votes and winners; "Mark all read"), your avatar (opens your profile) and Sign out.
+- Top bar: language select (EN or PT), Lab assistant button, notifications bell (comments, likes and ratings on your articles, event joins, votes and winners; "Mark all read"), your avatar (opens your profile) and Sign out.
 - Nav: Board, Daily, Glitchdle, Duel, Notes, Trail, Articles, Events, Progress. Line hunt opens from Daily, People from Progress or Profile.
-- Language select (EN or PT) at the end of the nav.
 - Study timer, bottom left: Start, Pause, Reset. It survives reloads and counts toward the streak.
 - New badges pop up bottom right.
 - Lab assistant (this assistant): five specialists (Board analyst, Gym coach, Notes keeper, Study planner, App guide). Open or close it with the top bar button, Alt+A or Ctrl+/ (Cmd+/ on a Mac); Escape closes it. Enter sends, Shift+Enter adds a line, "New chat" starts over, and answers can have buttons that open a case, a note or a page.
