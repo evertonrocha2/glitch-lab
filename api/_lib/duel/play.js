@@ -17,8 +17,9 @@ import { publicDuel } from './view.js'
 export const QUEUE_FRESH_MS = 12_000
 // How often a player's "still here" time is written (each poll would be one write a second).
 export const SEEN_EVERY_MS = 5_000
-// A player reports leaving and coming back at most this many times per duel.
-const MAX_FOCUS_EVENTS = 120
+// A player reports leaving and coming back at most this many times per duel. The last report kept
+// is always "hidden", so a player who uses them all up counts as away from then on (fails closed).
+export const MAX_FOCUS_EVENTS = 120
 const RECENT_DUELS = 10
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 6
@@ -253,8 +254,11 @@ async function focus(store, user, body, now) {
   const { error, written } = await mutate(store, body.id, (current) => {
     if (!isPlayer(current, user.id)) return { error: fail(403, 'You are not in this duel.') }
     if (current.status !== 'active') return {}
-    if (current.focus.filter((event) => event.userId === user.id).length >= MAX_FOCUS_EVENTS) return {}
-    return { fields: { focus: [...current.focus, { userId: user.id, state: body.state, at: iso(now) }] } }
+    const count = current.focus.filter((event) => event.userId === user.id).length
+    if (count >= MAX_FOCUS_EVENTS) return {}
+    // Out of reports: spamming them and then leaving for free doesn't work, the last one says hidden.
+    const state = count === MAX_FOCUS_EVENTS - 1 ? 'hidden' : body.state
+    return { fields: { focus: [...current.focus, { userId: user.id, state, at: iso(now) }] } }
   })
   if (error) return error
   return ok({ recorded: Boolean(written) })

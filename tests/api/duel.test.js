@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { MAX_FOCUS_EVENTS } from '../../api/_lib/duel/play.js'
 import { GET, POST } from '../../api/challenge.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'
 import { apiRequest, useTempStore } from './helpers.js'
@@ -329,6 +330,26 @@ it('forfeits a player whose page stops checking in during the duel', async () =>
   at(START + STALE_MS + 1)
   const end = await state(id)
   expect(end.body.duel).toMatchObject({ status: 'finished', result: { reason: 'forfeit', winner: 0, forfeit: 1, rated: true, rating: { after: 1016 } } })
+})
+
+it('fails closed when a player runs out of tab reports: they count as away from then on', async () => {
+  const { id } = await privateDuel()
+  const open = await openAtOf(id, 0)
+  // Bob already sent all but one report (leave, come back, over and over).
+  const spam = Array.from({ length: MAX_FOCUS_EVENTS - 1 }, (_, index) => ({ userId: 'bob', state: index % 2 ? 'hidden' : 'visible', at: new Date(START + index).toISOString() }))
+  const saved = await secret(id)
+  await store.updateDuel(id, { focus: spam }, saved.version)
+  at(open + 1000)
+  // His last report says "visible", but the last slot is always kept as "hidden".
+  expect(await act('focus', { id, state: 'visible' }, 'dev:bob')).toEqual({ status: 200, body: { recorded: true } })
+  expect((await secret(id)).focus.at(-1)).toMatchObject({ userId: 'bob', state: 'hidden' })
+  // No more reports, so he can't say he's back.
+  expect(await act('focus', { id, state: 'visible' }, 'dev:bob')).toEqual({ status: 200, body: { recorded: false } })
+  expect((await state(id, 'dev:bob')).body.duel.away).toBe(true)
+  expect((await state(id)).body.duel.current.left).toEqual([false, true])
+  // The next round is void for him too.
+  at(open + ROUND_MS + REVEAL_MS + 1000)
+  expect((await state(id)).body.duel.current).toMatchObject({ index: 1, left: [false, true] })
 })
 
 it('leaving cancels a waiting room and forfeits a duel in progress', async () => {
