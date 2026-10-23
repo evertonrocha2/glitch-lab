@@ -6,7 +6,7 @@ import { localDay } from '../../../lib/day.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
 import { useLabels } from '../../../lib/i18n/labels.js'
-import { useProgress } from '../../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../../lib/progress/progress-provider.jsx'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import ReviewSession from '../review-session/review-session.jsx'
@@ -17,7 +17,7 @@ const SHOWN_CONCEPTS = 5
 // "Today's review" on the daily page: what's due, and the session itself once opened.
 export default function ReviewToday({ className = '' }) {
   const { getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const t = useT()
   const labels = useLabels()
   const format = useFormat()

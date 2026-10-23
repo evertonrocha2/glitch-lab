@@ -11,7 +11,7 @@ import { AuthError, getDuel, sendDuel } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { playerName, secondsUntil } from '../../lib/duel.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import { joinDuel, nudgeDuel } from '../../lib/realtime/index.js'
 import DuelPageSkeleton from './duel-page-skeleton.jsx'
 
@@ -62,7 +62,7 @@ export default function DuelPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getToken, signOut } = useAuth()
-  const { refresh } = useProgress()
+  const refresh = useProgressRefresh()
   const t = useT()
   const [duel, setDuel] = useState(null)
   const [message, setMessage] = useState('')

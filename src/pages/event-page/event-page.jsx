@@ -15,7 +15,7 @@ import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, closeEvent, getEvent, pickWinners, submitEntry, updateEntry, voteEntry } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import EventPageSkeleton from './event-page-skeleton.jsx'
 
 function Section({ title, children }) {
@@ -166,7 +166,7 @@ export default function EventPage() {
   const t = useT()
   const now = useNow(1000)
   const { user, getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [state, setState] = useState({ status: 'loading' })
   const [message, setMessage] = useState('')
   const [notice, setNotice] = useState('')

@@ -13,7 +13,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { newBlock } from '../../lib/notes/blocks.js'
 import { useMyProfile } from '../../lib/profile/my-profile.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import NotesPageSkeleton from './notes-page-skeleton.jsx'
 
 const EXPORTS = { md: exportNoteMarkdown, png: exportNoteImage, pdf: exportNotePdf }
@@ -65,7 +65,7 @@ export default function NotesPage() {
   const t = useT()
   const { user, getToken, signOut } = useAuth()
   const myProfile = useMyProfile()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [notes, setNotes] = useState(null)
   const [cases, setCases] = useState([])
   const [message, setMessage] = useState('')

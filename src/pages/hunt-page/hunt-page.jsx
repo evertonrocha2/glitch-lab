@@ -10,7 +10,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
 import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import HuntPageSkeleton, { ModeTabsSkeleton } from './hunt-page-skeleton.jsx'
 
 const MODES = ['daily', 'practice']
@@ -240,7 +240,7 @@ function useNow() {
 // The server times every round; this page only shows the clock.
 export default function HuntPage() {
   const { getToken, signOut } = useAuth()
-  const { refresh } = useProgress()
+  const refresh = useProgressRefresh()
   // The snippets' symptoms and explanations come in the reader's language: a switch fetches them again.
   const { t, locale } = useI18n()
   const now = useNow()

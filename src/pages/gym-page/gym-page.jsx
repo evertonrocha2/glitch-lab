@@ -14,7 +14,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { saveGymDraft, takeGymDraft } from '../../lib/draft.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import GymPageSkeleton from './gym-page-skeleton.jsx'
 
 export default function GymPage() {
@@ -22,7 +22,7 @@ export default function GymPage() {
   const { t, locale } = useI18n()
   const labels = useLabels()
   const { getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [challenge, setChallenge] = useState(null)
   const [code, setCode] = useState('')
   const [hints, setHints] = useState([])

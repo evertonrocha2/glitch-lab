@@ -14,7 +14,7 @@ import { splitError } from '../../lib/case-info.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useExportInterrogation } from '../../lib/interrogation/use-export-interrogation.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import InterrogationPageSkeleton from './interrogation-page-skeleton.jsx'
 
 // What the coach said about the last answer. Lives in a polite live region, so a screen reader
@@ -45,7 +45,7 @@ export default function InterrogationPage() {
   const t = useT()
   const labels = useLabels()
   const { getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [data, setData] = useState(null)
   const [answer, setAnswer] = useState('')
   const [sending, setSending] = useState(false)

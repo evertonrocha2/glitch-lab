@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { badgeById } from '../../../../shared/badges.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
-import { useProgress } from '../../../lib/progress/progress-provider.jsx'
+import { useBadgeToasts } from '../../../lib/progress/progress-provider.jsx'
 import BadgeIcon from '../../ui/badge-icon/badge-icon.jsx'
 
 const SHOW_MS = 7000
@@ -40,7 +40,7 @@ function Toast({ id, onDismiss }) {
 
 // Announces badges as they're earned, on any signed-in page.
 export default function BadgeToasts() {
-  const { toasts, dismissToast } = useProgress()
+  const { toasts, dismissToast } = useBadgeToasts()
   const t = useT()
   return (
     <ul aria-live="polite" aria-label={t('app.toast.list')} className="fixed right-4 bottom-4 z-40 flex w-[calc(100vw-2rem)] max-w-80 flex-col gap-3">
