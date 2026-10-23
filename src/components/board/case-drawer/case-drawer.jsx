@@ -79,11 +79,11 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
         <div className="p-6 sm:p-8">
           <h2 id="case-title">
             <span className="block wrap-break-word font-pixel text-3xl font-bold text-ink">{type}</span>
-            <span className="sr-only">:</span>{' '}
-            {question ? (
-              <span className="sr-only">{message}</span>
-            ) : (
-              <span className="mt-2 block wrap-break-word font-mono text-sm leading-relaxed text-ink/80">{message}</span>
+            {/* A question card's heading is its title: the question itself follows in full. */}
+            {!question && (
+              <>
+                <span className="sr-only">:</span> <span className="mt-2 block wrap-break-word font-mono text-sm leading-relaxed text-ink/80">{message}</span>
+              </>
             )}
           </h2>
 
