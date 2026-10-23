@@ -7,7 +7,8 @@ const MAX_OPTIONS = 8
 
 // The guess box: type to filter the languages, arrows to move, Enter to guess, Escape to close.
 // Languages already guessed stay in the list, greyed out, so nobody guesses one twice.
-export default function LanguagePicker({ mode, guessed = [], onGuess, busy = false }) {
+// left/max: the guesses still open, shown at the end of the box and read out with it.
+export default function LanguagePicker({ mode, guessed = [], onGuess, busy = false, left, max }) {
   const t = useT()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -69,30 +70,42 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
         <label htmlFor={`${listId}-input`} className="sr-only">
           {t('app.glitchdle.guessLabel')}
         </label>
-        <input
-          id={`${listId}-input`}
-          ref={input}
-          type="text"
-          role="combobox"
-          aria-expanded={showList}
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-activedescendant={showList && options[active] ? optionId(options[active].id) : undefined}
-          autoComplete="off"
-          spellCheck="false"
-          placeholder={mode === 'classic' ? t('app.glitchdle.placeholderClassic') : t('app.glitchdle.placeholderOther')}
-          value={query}
-          readOnly={busy}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setOpen(true)
-            setActive(-1)
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-          onKeyDown={onKeyDown}
-          className="min-w-0 flex-1 border-2 border-ink bg-white px-3 py-2.5 font-mono text-sm text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel read-only:bg-mist"
-        />
+        <div className="flex min-w-0 flex-1 border-2 border-ink bg-white focus-within:shadow-pixel has-[input:read-only]:bg-mist">
+          <input
+            id={`${listId}-input`}
+            ref={input}
+            type="text"
+            role="combobox"
+            aria-expanded={showList}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={showList && options[active] ? optionId(options[active].id) : undefined}
+            aria-describedby={left === undefined ? undefined : `${listId}-left`}
+            autoComplete="off"
+            spellCheck="false"
+            placeholder={mode === 'classic' ? t('app.glitchdle.placeholderClassic') : t('app.glitchdle.placeholderOther')}
+            value={query}
+            readOnly={busy}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setOpen(true)
+              setActive(-1)
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+            onKeyDown={onKeyDown}
+            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 font-mono text-sm text-ink placeholder:text-muted/70 focus:outline-none"
+          />
+          {left !== undefined && (
+            <span id={`${listId}-left`} className="flex shrink-0 items-center border-l-2 border-dashed border-line px-2.5 font-label text-[10px] text-muted tabular-nums">
+              <span aria-hidden="true">
+                <span className="text-ink">{left}</span>/{max}
+                <span className="hidden sm:inline"> {t('app.glitchdle.leftShort')}</span>
+              </span>
+              <span className="sr-only">{t('app.glitchdle.guessesLeft', { left, max })}</span>
+            </span>
+          )}
+        </div>
         <PixelButton onClick={submit} disabled={busy || !query.trim() || enabled.length === 0} className="shrink-0">
           {t('app.glitchdle.guess')}
         </PixelButton>
