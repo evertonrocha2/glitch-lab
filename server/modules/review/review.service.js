@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { isDue, newReviewItem, REVIEW_SESSION_CARDS, REVIEW_XP, REVIEW_XP_CARDS_PER_DAY, reviewDayXp, reviewQueue, scheduleReview } from '../../../shared/review.js'
 import { clientDay, serverDay } from '../../core/days.js'
 import { badRequest, conflict } from '../../core/errors.js'
-import { poolEntryFor, poolText } from '../daily/puzzle-pool.js'
+import { puzzleText } from '../daily/puzzle-text.js'
 import { buildCard, poolSamples, publicCard, seededRandom } from './cards.js'
 
 // Spaced review: today's overview, opening (or resuming) a session and grading one card.
@@ -50,9 +50,8 @@ async function samplesFor(store, concept, { cases, challenges, puzzles }, locale
   const puzzle = puzzles.find((item) => item.concept === concept)
   const puzzleSecret = puzzle && (await store.getPuzzleSecret(puzzle.id))
   if (puzzleSecret) {
-    // A day the cron fell back to the pool saved the English text; the pool has it translated.
-    const pool = poolEntryFor(puzzle.brokenCode)
-    const text = pool ? poolText(pool, locale) : { symptom: puzzle.symptom, bugExplanation: puzzleSecret.bugExplanation }
+    // The puzzle's own Portuguese copy, or the pool's for an older pool puzzle saved in English only.
+    const text = puzzleText(puzzle, locale, puzzleSecret)
     samples.push({ symptom: text.symptom, code: puzzle.brokenCode, solution: puzzleSecret.solution, explanation: text.bugExplanation, language: puzzle.language })
   }
   return [...samples, ...poolSamples(concept, locale)]

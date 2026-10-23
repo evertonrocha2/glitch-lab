@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { pickFromPool, POOL } from '../../server/modules/daily/puzzle-pool.js'
 import { REVIEW_XP, REVIEW_XP_CARDS_PER_DAY } from '../../shared/review.js'
 import { api, useTempStore } from './helpers.js'
-import { CASE, challengeFor, SECRET } from './store-contract.js'
+import { CASE, challengeFor, PUZZLE_SECRET, puzzleFor, SECRET } from './store-contract.js'
 
 let store
 const TODAY = '2026-10-22'
@@ -146,6 +146,20 @@ it('gives a Portuguese reader the pool explanation and symptom in Portuguese', a
   const { result } = await (await answer({ sessionId: session.id, index: 0, choice: card.answer })).json()
   expect(result.explanation).toBe(entry.pt.bugExplanation)
   expect(result.explanation).not.toBe(secret.bugExplanation)
+})
+
+it("gives a Portuguese reader an AI puzzle's own Portuguese symptom and explanation", async () => {
+  const pt = { title: 'O último item', symptom: 'Imprime 1 e 2, mas nunca 3.', hints: ['a', 'b', 'c'] }
+  const saved = await store.createPuzzle({ ...puzzleFor(TODAY), symptom: 'It prints 1 and 2, never 3.', pt }, { ...PUZZLE_SECRET, pt: { bugExplanation: 'O range para um índice antes.' } })
+  const challenge = await store.createChallenge('alice', { caseId: null, puzzleId: saved.id, brokenCode: saved.brokenCode, symptom: saved.symptom, language: saved.language, hints: saved.hints }, PUZZLE_SECRET)
+  await store.updateChallenge('alice', challenge.id, { status: 'passed' })
+  await store.saveReviewItem('alice', { concept: saved.concept, box: 2, dueDay: TODAY, lastDay: '2026-10-19', right: 1, wrong: 0 })
+
+  const { session } = await (await api('/api/review/sessions', { body: { today: TODAY }, locale: 'pt-BR' })).json()
+  expect(session.cards[0]).toMatchObject({ type: 'line', prompt: { symptom: pt.symptom } })
+  const [card] = await secretCards()
+  const { result } = await (await answer({ sessionId: session.id, index: 0, choice: card.answer })).json()
+  expect(result.explanation).toBe('O range para um índice antes.')
 })
 
 it('keeps the pool explanation in English for an English reader', async () => {
