@@ -5,7 +5,7 @@ import { AuthProvider } from '../lib/auth/AuthProvider.jsx'
 import { I18nProvider } from '../lib/i18n/I18nProvider.jsx'
 import { ProgressProvider } from '../lib/progress/ProgressProvider.jsx'
 import { StudyTimerProvider } from '../lib/timer/StudyTimerProvider.jsx'
-import { AppRoutes } from '../routes.jsx'
+import { AppRoutes } from '../app/routes.jsx'
 
 function LocationProbe() {
   const location = useLocation()
