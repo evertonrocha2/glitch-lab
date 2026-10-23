@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import Countdown from '../../components/hunt/Countdown.jsx'
+import Countdown from '../../components/hunt/countdown/countdown.jsx'
 import { getHunt, getPracticeSnippet, sendHunt } from '../../lib/api.js'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import { renderAt } from '../../test/render.jsx'

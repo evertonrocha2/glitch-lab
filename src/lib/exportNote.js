@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import NoteSheet from '../components/notes/NoteSheet.jsx'
+import NoteSheet from '../components/notes/note-sheet/note-sheet.jsx'
 import { downloadText, noteToMarkdown, slug } from './exportMarkdown.js'
 import { currentLocale, I18nProvider, translate } from './i18n/I18nProvider.jsx'
 import { dateIn } from './i18n/format.js'

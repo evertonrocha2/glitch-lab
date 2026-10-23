@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it } from 'vitest'
-import LanguageSelect from '../../components/LanguageSelect.jsx'
+import LanguageSelect from '../../components/ui/language-select/language-select.jsx'
 import { currentLocale, I18nProvider, initialLocale, translate, useT } from './I18nProvider.jsx'
 import { MESSAGES } from './catalog.js'
 import { capitalize, timeAgoIn } from './format.js'

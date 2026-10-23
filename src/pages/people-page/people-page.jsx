@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import ErrorNotice from '../../components/ErrorNotice.jsx'
-import PixelButton from '../../components/pixel/PixelButton.jsx'
-import PersonCard from '../../components/profile/PersonCard.jsx'
-import PublicHeader from '../../components/profile/PublicHeader.jsx'
+import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
+import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
+import PersonCard from '../../components/profile/person-card/person-card.jsx'
+import PublicHeader from '../../components/layout/public-header/public-header.jsx'
 import { searchProfiles } from '../../lib/api.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 

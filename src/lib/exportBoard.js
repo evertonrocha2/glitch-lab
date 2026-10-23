@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import BoardSheet from '../components/board/BoardSheet.jsx'
+import BoardSheet from '../components/board/board-sheet/board-sheet.jsx'
 import { localDay } from './day.js'
 import { boardToMarkdown, downloadText } from './exportMarkdown.js'
 import { exportSheetImage, exportSheetPdf } from './exportNote.js'
