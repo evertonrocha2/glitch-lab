@@ -12,6 +12,7 @@ import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
 import StudyTimer from '../study-timer/study-timer.jsx'
+import MessagesNavLink from '../../chat/messages-nav-link/messages-nav-link.jsx'
 
 const navClass = ({ isActive }) =>
   `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors before:absolute before:inset-x-0 before:-inset-y-2 sm:text-xs ${
@@ -81,6 +82,10 @@ export default function AppShell({ children }) {
               <NavLink to="/events" className={navClass}>
                 {t('events.nav')}
               </NavLink>
+              <NavLink to="/communities" className={navClass}>
+                {t('chat.nav.communities')}
+              </NavLink>
+              <MessagesNavLink className={navClass} />
               <NavLink to="/progress" className={navClass}>
                 {t('app.nav.progress')}{' '}
                 {progress ? (

@@ -107,3 +107,66 @@ export function joinDuel(id, { seat = null, onChange, onStatus, onPresence }) {
     },
   }
 }
+
+// Chats use the same nudges: `dm:<conversationId>` and `community:<communityId>`. The message is
+// still only { type: 'changed', v }; the page then asks the API what's new.
+export const dmTopic = (id) => `dm:${id}`
+export const communityTopic = (id) => `community:${id}`
+
+// Says "changed" on a topic without joining it. Never throws.
+export async function nudgeTopic(topic, v = null) {
+  const settings = config()
+  if (!settings) return false
+  try {
+    const response = await fetch(`${settings.url}/realtime/v1/api/broadcast`, {
+      method: 'POST',
+      headers: { apikey: settings.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ topic, event: EVENT, payload: changedMessage(v), private: false }] }),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+// Joins a chat's topic. onChange() when someone else says it changed; onStatus('live' | 'off').
+// Returns { nudge(v), leave() }. Without config it reports 'off' and does nothing.
+export function joinTopic(topic, { onChange, onStatus }) {
+  let channel = null
+  let joined = false
+  let left = false
+  const status = (value) => {
+    if (!left) onStatus?.(value)
+  }
+  if (!config()) {
+    status('off')
+    return { nudge: () => {}, leave: () => {} }
+  }
+  getClient()
+    .then(async (client) => {
+      const closing = client.getChannels().find((item) => item.subTopic === topic)
+      if (closing) await client.removeChannel(closing)
+      if (left) return
+      channel = client.channel(topic, { config: { broadcast: { self: false } } })
+      channel.on('broadcast', { event: EVENT }, () => {
+        if (!left) onChange?.()
+      })
+      channel.subscribe((state) => {
+        joined = state === 'SUBSCRIBED'
+        status(joined ? 'live' : 'off')
+      })
+    })
+    .catch(() => status('off'))
+  return {
+    nudge(v) {
+      if (left) return
+      if (joined) channel.send({ type: 'broadcast', event: EVENT, payload: changedMessage(v) }).catch(() => {})
+      else nudgeTopic(topic, v)
+    },
+    leave() {
+      left = true
+      joined = false
+      if (channel) getClient().then((client) => client.removeChannel(channel))
+    },
+  }
+}

@@ -23,6 +23,10 @@ import TrailPage from '../pages/trail-page/trail-page.jsx'
 import EventEditorPage from '../pages/event-editor-page/event-editor-page.jsx'
 import EventPage from '../pages/event-page/event-page.jsx'
 import EventsPage from '../pages/events-page/events-page.jsx'
+import CommunitiesPage from '../pages/communities-page/communities-page.jsx'
+import CommunityNewPage from '../pages/community-new-page/community-new-page.jsx'
+import CommunityPage from '../pages/community-page/community-page.jsx'
+import MessagesPage from '../pages/messages-page/messages-page.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -183,6 +187,26 @@ export function AppRoutes() {
         }
       />
       <Route path="/events/:id" element={<EventPage />} />
+      {/* Direct messages: the inbox and an open conversation on one route, so opening one keeps the list. */}
+      <Route
+        path="/messages/:id?"
+        element={
+          <RequireAuth>
+            <MessagesPage />
+          </RequireAuth>
+        }
+      />
+      {/* Communities: reading is public, creating, joining and posting need an account. */}
+      <Route path="/communities" element={<CommunitiesPage />} />
+      <Route
+        path="/communities/new"
+        element={
+          <RequireAuth>
+            <CommunityNewPage />
+          </RequireAuth>
+        }
+      />
+      <Route path="/communities/:slug" element={<CommunityPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
