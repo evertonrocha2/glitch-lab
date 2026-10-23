@@ -38,6 +38,27 @@ it('opens a live sample event by the sample team, with entries and votes', async
   expect(await store.eventStats(demo.id)).toMatchObject({ entries: 0, votesReceived: 0 })
 })
 
+it('opens a live sample event in Portuguese for a pt-BR demo, once', async () => {
+  const store = await freshStore()
+  await seedDemo(store, (await demoUser(store)).id, '2026-10-22', 'pt-BR')
+  await seedDemo(store, (await demoUser(store)).id, '2026-10-22', 'pt-BR')
+  const { events } = await liveNow(store)
+  expect(events).toHaveLength(1)
+  const [event] = events
+  expect(event).toMatchObject({ title: 'Rinha de Backend: edição Glitch', kind: 'battle' })
+  expect(event.summary).toMatch(/Construa uma API de pagamentos/)
+  expect(event.rules).toMatch(/Uma participação por pessoa/)
+  const entries = await store.listEntries(event.id)
+  expect(entries.map((item) => item.title).sort()).toEqual(['Fila primeiro, depois Postgres', 'Um arquivo, zero dependências'])
+  expect(entries.every((item) => item.description.startsWith('Participação de exemplo.'))).toBe(true)
+  const dash = new RegExp(String.fromCharCode(0x2014))
+  for (const text of [event.title, event.summary, event.description, event.rules, event.prizes, ...entries.map((item) => item.description)]) expect(text).not.toMatch(dash)
+
+  // An English demo still gets its own English event next to it.
+  await seedDemo(store, (await demoUser(store)).id, '2026-10-22')
+  expect((await liveNow(store)).events.map((item) => item.title).sort()).toEqual(['Rinha de Backend: Glitch Edition', 'Rinha de Backend: edição Glitch'])
+})
+
 it('makes the sample once while it runs, and a new one once it is over', async () => {
   const store = await freshStore()
   await seedDemo(store, (await demoUser(store)).id, '2026-10-22')

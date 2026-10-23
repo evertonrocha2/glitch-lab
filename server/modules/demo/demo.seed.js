@@ -302,7 +302,8 @@ function demoTrail(byConcept, startDay, locale) {
 
 // Returns false (and changes nothing) when the account already has cases.
 // today is the visitor's own date, so the streak lines up with their clock. locale is the
-// visitor's language ('pt-BR' seeds the Portuguese texts); the shared community samples stay English.
+// visitor's language: 'pt-BR' seeds the Portuguese texts, and the community samples and live event
+// in Portuguese too (made once per language, shared by every demo in it).
 export async function seedDemo(store, userId, today = serverDay(), locale = 'en') {
   if ((await store.listCases(userId)).length > 0) return false
 
@@ -328,7 +329,7 @@ export async function seedDemo(store, userId, today = serverDay(), locale = 'en'
   await store.createTrail(userId, demoTrail(byConcept, daysBefore(today, DEMO_STUDY_MINUTES.length), locale))
   // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
   if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, locale === 'pt-BR' ? { ...DEMO_PROFILE, ...DEMO_PROFILE_PT } : DEMO_PROFILE)
-  // Sample community articles (made once for everyone) and one notification for this demo to open.
-  await seedCommunity(store, userId)
+  // Sample community articles (made once per language) and one notification for this demo to open.
+  await seedCommunity(store, userId, locale)
   return true
 }
