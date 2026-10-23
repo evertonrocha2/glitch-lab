@@ -3,8 +3,8 @@ import { getUnreadMessages } from '../api.js'
 import { useAuth } from '../auth/auth-provider.jsx'
 
 // How many conversations have unread messages, for the "Messages" nav badge. Kept per account for
-// the whole visit (every page draws its own header) and checked about every 45 seconds.
-export const UNREAD_POLL_MS = 45_000
+// the whole visit (every page draws its own header). The message alerts (message-alerts.jsx) keep it
+// fresh: a realtime nudge or their poll refetches the inbox and sets it here.
 const FRESH_MS = 15_000
 
 const counts = new Map()
@@ -29,12 +29,17 @@ export function forgetUnreadMessages() {
   for (const listener of listeners) listener()
 }
 
+// Just the stored count, without asking the server.
+export function useUnreadCount(userId) {
+  return useSyncExternalStore(subscribe, () => (userId ? (counts.get(userId) ?? 0) : 0))
+}
+
 export function useUnreadMessages() {
   const { user, getToken } = useAuth()
   const userId = user?.id
   // Demo accounts can't have conversations, so they never ask.
   const active = Boolean(userId && !user.isDemo)
-  const count = useSyncExternalStore(subscribe, () => (userId ? (counts.get(userId) ?? 0) : 0))
+  const count = useUnreadCount(userId)
 
   const refresh = useCallback(async () => {
     if (!active || document.hidden) return
@@ -47,14 +52,7 @@ export function useUnreadMessages() {
   }, [active, userId, getToken])
 
   useEffect(() => {
-    if (!active) return undefined
-    if (Date.now() - (checkedAt.get(userId) ?? 0) > FRESH_MS) refresh()
-    const timer = setInterval(refresh, UNREAD_POLL_MS)
-    window.addEventListener('focus', refresh)
-    return () => {
-      clearInterval(timer)
-      window.removeEventListener('focus', refresh)
-    }
+    if (active && Date.now() - (checkedAt.get(userId) ?? 0) > FRESH_MS) refresh()
   }, [active, userId, refresh])
 
   return count

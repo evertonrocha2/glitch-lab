@@ -5,6 +5,11 @@ const ROWS = [
   ['chat.nav.communities', 'Communities', 'Comunidades'],
   ['chat.nav.unread', { one: '({count} unread conversation)', other: '({count} unread conversations)' }, { one: '({count} conversa não lida)', other: '({count} conversas não lidas)' }],
   ['chat.bell.message', '{name} sent you a message', '{name} mandou uma mensagem para você'],
+  // The toast when a DM arrives while the app is open.
+  ['chat.toast.list', 'New messages', 'Mensagens novas'],
+  ['chat.toast.new', 'New message', 'Mensagem nova'],
+  ['chat.toast.title', { one: '{name} sent you a message', other: '{count} new messages from {name}' }, { one: '{name} mandou uma mensagem', other: '{count} mensagens novas de {name}' }],
+  ['chat.toast.dismiss', 'Close the message from {name}', 'Fechar a mensagem de {name}'],
 
   // The chat log and composer, shared by DMs and communities.
   ['chat.today', 'Today', 'Hoje'],

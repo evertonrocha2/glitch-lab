@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter } from 'react-router'
 import { AssistantProvider } from '../lib/assistant/assistant-provider.jsx'
 import { AuthProvider } from '../lib/auth/auth-provider.jsx'
+import { MessageAlertsProvider } from '../lib/chat/message-alerts.jsx'
 import { I18nProvider } from '../lib/i18n/I18nProvider.jsx'
 import { ProgressProvider } from '../lib/progress/progress-provider.jsx'
 import { StudyTimerProvider } from '../lib/timer/study-timer-provider.jsx'
@@ -15,6 +16,7 @@ export default function App() {
     <I18nProvider>
       <AuthProvider>
       <ProgressProvider>
+      <MessageAlertsProvider>
         <StudyTimerProvider>
           <AssistantProvider>
             <BrowserRouter>
@@ -22,6 +24,7 @@ export default function App() {
             </BrowserRouter>
           </AssistantProvider>
         </StudyTimerProvider>
+      </MessageAlertsProvider>
       </ProgressProvider>
       </AuthProvider>
     </I18nProvider>
