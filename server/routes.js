@@ -14,6 +14,7 @@ import { interrogationRoutes } from './modules/interrogation/interrogation.route
 import { notesRoutes } from './modules/notes/notes.routes.js'
 import { profileRoutes } from './modules/profile/profile.routes.js'
 import { progressRoutes } from './modules/progress/progress.routes.js'
+import { questionsRoutes } from './modules/questions/questions.routes.js'
 import { reviewRoutes } from './modules/review/review.routes.js'
 import { trailsRoutes } from './modules/trails/trails.routes.js'
 
@@ -36,6 +37,7 @@ export function apiRouter() {
     articlesRoutes,
     eventsRoutes,
     assistantRoutes,
+    questionsRoutes,
     cronRoutes,
   )
 }

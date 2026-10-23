@@ -5,18 +5,22 @@
 export const ACTIONS_MARKER = 'ACTIONS:'
 
 // Models sometimes dress the marker up ("**ACTIONS:**"), so leading spaces and markdown are allowed.
-const MARKER_LINE = /(^|\n)[ \t*_`>#-]*ACTIONS:/
+// Other streams end with their own marker (the doubt tutor's CARD:), held back the same way.
+// Markers are a word and a colon, so they need no escaping.
+export const markerLine = (marker) => new RegExp(`(^|\\n)[ \\t*_\`>#-]*${marker}`)
+const MARKER_LINE = markerLine(ACTIONS_MARKER)
 const lineHead = (line) => line.replace(/^[ \t*_`>#-]+/, '')
 
 // True while a line typed so far could still turn into the marker line.
-const couldBeMarker = (line) => {
+const couldBeMarker = (line, marker) => {
   const head = lineHead(line)
-  return ACTIONS_MARKER.startsWith(head) || head.startsWith(ACTIONS_MARKER)
+  return marker.startsWith(head) || head.startsWith(marker)
 }
 
 // Passes text through to onText as it streams, holding back a last line that may be the start of
 // the marker, and nothing at all once the marker shows up. push(chunk) per delta, end() at the end.
-export function createReplyFilter(onText) {
+export function createReplyFilter(onText, marker = ACTIONS_MARKER) {
+  const pattern = marker === ACTIONS_MARKER ? MARKER_LINE : markerLine(marker)
   let text = ''
   let sent = 0
   let stopped = false
@@ -28,14 +32,14 @@ export function createReplyFilter(onText) {
     push(chunk) {
       if (stopped || !chunk) return
       text += chunk
-      const marker = MARKER_LINE.exec(text)
-      if (marker) {
+      const found = pattern.exec(text)
+      if (found) {
         stopped = true
-        emit(marker.index + marker[1].length)
+        emit(found.index + found[1].length)
         return
       }
       const lastLine = text.slice(text.lastIndexOf('\n') + 1)
-      emit(couldBeMarker(lastLine) ? text.length - lastLine.length : text.length)
+      emit(couldBeMarker(lastLine, marker) ? text.length - lastLine.length : text.length)
     },
     end() {
       if (!stopped) emit(text.length)

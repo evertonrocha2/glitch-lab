@@ -96,6 +96,11 @@ const en = {
   // Assistant.
   'server.tooLongMessage': 'Too long. Keep each message under {max} characters.',
 
+  // Ask a question (the doubt chat and its board card).
+  'server.writeQuestion': 'Write your question first.',
+  'server.questionTurnCap': 'This chat reached its limit of {max} questions. Start a new chat to keep going.',
+  'server.cardIncomplete': 'This card is incomplete. Keep chatting so the tutor can propose a new one.',
+
   // Notes.
   'server.noteNotFound': 'Note not found.',
   'server.noPublicNote': 'No public note here.',
@@ -289,6 +294,10 @@ const ptBR = {
   'server.trailFinished': 'Esta trilha já terminou. Marque missões na sua trilha atual.',
 
   'server.tooLongMessage': 'Muito longo. Deixe cada mensagem com menos de {max} caracteres.',
+
+  'server.writeQuestion': 'Escreva sua dúvida primeiro.',
+  'server.questionTurnCap': 'Esta conversa chegou ao limite de {max} perguntas. Comece uma nova para continuar.',
+  'server.cardIncomplete': 'Este card está incompleto. Continue a conversa para o tutor propor outro.',
 
   'server.noteNotFound': 'Nota não encontrada.',
   'server.noPublicNote': 'Não tem nota pública aqui.',
