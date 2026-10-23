@@ -159,6 +159,10 @@ it('gives the organizer the tools for each stage', async () => {
   const podium = await screen.findByRole('region', { name: 'Winners' })
   expect(within(podium).getByRole('img', { name: '1st place' })).toBeInTheDocument()
   expect(within(podium).getByRole('img', { name: '2nd place' })).toBeInTheDocument()
+  // Read in place order; only CSS puts 2nd on the left of 1st.
+  const places = within(podium).getAllByRole('listitem')
+  expect(places.map((item) => within(item).getByRole('img').getAttribute('aria-label'))).toEqual(['1st place', '2nd place'])
+  expect(places.map((item) => item.className.match(/order-\d/)[0])).toEqual(['order-2', 'order-1'])
   expect(screen.getByText('Ended', { selector: 'span' })).toBeInTheDocument()
 })
 

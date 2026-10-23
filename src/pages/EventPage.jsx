@@ -26,17 +26,19 @@ function Section({ title, children }) {
   )
 }
 
-// The top three on blocks of different heights: 2nd, 1st, 3rd.
+// The top three on blocks of different heights. Screen readers and the tab order get 1st, 2nd, 3rd;
+// CSS order only moves them on screen to 2nd, 1st, 3rd.
 function Podium({ entries }) {
   const t = useT()
-  const order = [2, 1, 3].map((place) => entries.find((item) => item.place === place)).filter(Boolean)
+  const placed = [1, 2, 3].map((place) => entries.find((item) => item.place === place)).filter(Boolean)
   const height = { 1: 'min-h-24', 2: 'min-h-16', 3: 'min-h-12' }
+  const spot = { 1: 'order-2', 2: 'order-1', 3: 'order-3' }
   return (
     <section aria-label={t('events.page.winners')} className="mt-10">
       <h2 className="font-pixel text-2xl font-bold text-ink">{t('events.page.winners')}</h2>
       <ol className="mt-5 grid grid-cols-3 items-end gap-2 sm:gap-4">
-        {order.map((entry) => (
-          <li key={entry.id} className={`flex min-w-0 flex-col items-center text-center ${entry.place === 1 ? 'order-2' : entry.place === 2 ? 'order-1' : 'order-3'}`}>
+        {placed.map((entry) => (
+          <li key={entry.id} className={`flex min-w-0 flex-col items-center text-center ${spot[entry.place]}`}>
             <Medal place={entry.place} className="size-10 sm:size-12" />
             <span className="mt-2 w-full break-words font-pixel text-sm font-bold leading-tight text-ink sm:text-base">{entry.title}</span>
             <span className="w-full truncate text-xs text-muted">{entry.author.name}</span>
