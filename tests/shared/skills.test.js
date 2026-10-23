@@ -49,3 +49,12 @@ it('mixes the review box with cases solved and challenges passed', () => {
 it('turns mastery into the five color steps', () => {
   expect([masteryLevel(0, false), masteryLevel(0, true), masteryLevel(30, true), masteryLevel(60, true), masteryLevel(90, true)]).toEqual([0, 1, 2, 3, 4])
 })
+
+it('counts a question card toward its concept, and can point at it to train', () => {
+  const map = skillMap({
+    cases: [{ id: 'q1', kind: 'question', concept: 'off-by-one', status: 'solved' }],
+    challenges: [{ id: 'g1', caseId: 'q1', status: 'passed' }],
+  })
+  expect(byConcept(map)['off-by-one']).toMatchObject({ met: true, cases: 1, solved: 1, passes: 1, mastery: 25 })
+  expect(map).toMatchObject({ weakest: 'off-by-one', trainCaseId: 'q1' })
+})

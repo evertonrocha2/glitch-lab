@@ -99,7 +99,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     passes: passes.length,
     cleanPasses,
     solved,
-    languages: new Set(cases.map((item) => item.language)).size,
+    // A doubt not tied to a language (or an error the AI couldn't place) is no language for Polyglot.
+    languages: new Set(cases.map((item) => item.language).filter((language) => language && language !== 'unknown')).size,
     linkedNotes: notes.filter((note) => note.blocks.some((block) => block.type === 'case')).length,
     bestDaySeconds: Math.max(0, ...study.map((entry) => entry.seconds)),
     totalSeconds,

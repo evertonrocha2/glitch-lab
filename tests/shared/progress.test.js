@@ -201,3 +201,15 @@ it('adds community event xp and earns the event badges', () => {
   expect(earned(progress)).toEqual(['competitor', 'champion', 'host'])
   expect(earned(computeProgress({ ...empty, events: { ...events, first: 0, hosted: 0 } }))).toEqual(['competitor'])
 })
+
+// A question card (from a doubt chat) is a case like an investigated error: same XP, and it earns
+// "First clue" on its own. A doubt not tied to a language adds no language toward Polyglot.
+it('counts a question card like a case, without an unknown language for Polyglot', () => {
+  const question = kase({ kind: 'question', language: 'unknown' })
+  const progress = computeProgress({ ...empty, cases: [question] })
+  expect(progress.xp).toBe(10)
+  expect(earned(progress)).toContain('first-clue')
+  const mixed = computeProgress({ ...empty, cases: [kase(), kase({ language: 'python' }), question] })
+  expect(earned(mixed)).not.toContain('polyglot')
+  expect(earned(computeProgress({ ...empty, cases: [kase(), kase({ language: 'python' }), kase({ kind: 'question', language: 'go' })] }))).toContain('polyglot')
+})

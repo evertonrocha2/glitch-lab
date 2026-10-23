@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { isQuestion } from '../../../shared/question.js'
 import { isDue, newReviewItem, REVIEW_SESSION_CARDS, REVIEW_XP, REVIEW_XP_CARDS_PER_DAY, reviewDayXp, reviewQueue, scheduleReview } from '../../../shared/review.js'
 import { clientDay, serverDay } from '../../core/days.js'
 import { badRequest, conflict } from '../../core/errors.js'
@@ -40,7 +41,11 @@ export async function loadReview(store, userId, challenges) {
 // fix, for "which line?" and "pick the fix"), then the hand-written pool.
 async function samplesFor(store, concept, { cases, challenges, puzzles }, locale) {
   const own = newestFirst(cases.filter((item) => item.concept === concept))
-  const samples = own.slice(0, 2).map((kase) => ({ error: kase.error, code: kase.code, explanation: kase.analysis?.causa ?? null, language: kase.language }))
+  // A question card has no error to read, so only its gym challenge (below) makes a card from it.
+  const samples = own
+    .filter((kase) => !isQuestion(kase))
+    .slice(0, 2)
+    .map((kase) => ({ error: kase.error, code: kase.code, explanation: kase.analysis?.causa ?? null, language: kase.language }))
   const ownIds = new Set(own.map((item) => item.id))
   const challenge = newestFirst(challenges.filter((item) => item.caseId && ownIds.has(item.caseId)))[0]
   const challengeSecret = challenge && (await store.getChallengeSecret(challenge.id))
