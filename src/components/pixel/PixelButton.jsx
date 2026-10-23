@@ -9,6 +9,8 @@ const SIZE = [
   { test: /(^|\s)(sm:|md:|lg:)?(px|p)-/, value: 'px-4' },
   { test: /(^|\s)(sm:|md:|lg:)?(py|p)-/, value: 'py-2.5' },
   { test: /(^|\s)(sm:|md:|lg:)?text-(\[|xs|sm|base|lg|xl)/, value: 'text-xs' },
+  // At least 40px tall, so every button is an easy tap on a phone. A className with min-h-* opts out.
+  { test: /(^|\s)(sm:|md:|lg:)?min-h-/, value: 'min-h-10' },
 ]
 
 // Colored buttons sit on a hard ink shadow that shrinks when pressed.

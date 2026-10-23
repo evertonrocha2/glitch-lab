@@ -43,6 +43,12 @@ it('PixelButton lets a className replace the default padding and text size', asy
   expect(buttonClasses('ghost', 'px-5')).not.toMatch(/\bpx-4\b/)
 })
 
+it('PixelButton is at least 40px tall unless a className sets its own min height', async () => {
+  const { buttonClasses } = await import('./PixelButton.jsx')
+  expect(buttonClasses('primary', '').split(' ')).toContain('min-h-10')
+  expect(buttonClasses('ghost', 'min-h-0').split(' ')).not.toContain('min-h-10')
+})
+
 it('PixelButton can be hidden on phones', async () => {
   const { buttonClasses } = await import('./PixelButton.jsx')
   const classes = buttonClasses('primary', 'hidden sm:inline-flex')

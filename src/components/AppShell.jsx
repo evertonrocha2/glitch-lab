@@ -14,7 +14,7 @@ import PixelLogo from './pixel/PixelLogo.jsx'
 import StudyTimer from './StudyTimer.jsx'
 
 const navClass = ({ isActive }) =>
-  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors sm:text-xs ${
+  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors before:absolute before:inset-x-0 before:-inset-y-2 sm:text-xs ${
     isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
   }`
 
@@ -28,23 +28,23 @@ export default function AppShell({ children }) {
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
         {/* Top row: the brand on the left, everything about you on the right. */}
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-3 sm:gap-3 sm:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
             <PixelLogo className="size-5 shrink-0 sm:size-7" />
             <span className="truncate">Glitch Detective</span>
           </Link>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <AssistantButton />
             <NotificationBell />
-            <Link to="/profile" aria-label={t('app.shell.profile')} className="block transition-transform hover:-translate-y-0.5">
+            <Link to="/profile" aria-label={t('app.shell.profile')} className="block shrink-0 transition-transform hover:-translate-y-0.5">
               {avatar ? (
-                <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-7 sm:size-9" />
+                <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-10" />
               ) : (
-                <span aria-hidden="true" className="block size-7 border-2 border-ink bg-mist sm:size-9" />
+                <span aria-hidden="true" className="block size-10 border-2 border-ink bg-mist" />
               )}
             </Link>
             {/* Phones show just an exit icon; the name stays "Sign out". */}
-            <PixelButton variant="ghost" onClick={signOut} aria-label={t('app.shell.signOut')} className="px-1.5 py-1.5 sm:px-3 sm:py-2">
+            <PixelButton variant="ghost" onClick={signOut} aria-label={t('app.shell.signOut')} className="min-w-10 px-1.5 py-1.5 sm:px-3 sm:py-2">
               <CommunityIcon name="exit" className="size-4 sm:hidden" />
               <span className="hidden sm:inline">{t('app.shell.signOut')}</span>
             </PixelButton>

@@ -63,7 +63,7 @@ export default function NotificationBell() {
         aria-expanded={open}
         aria-haspopup="true"
         aria-label={unread ? t('notes.bell.unread', { count: unread }) : t('notes.bell.label')}
-        className="relative grid size-8 place-items-center border-2 border-ink bg-white text-ink transition-transform hover:-translate-y-0.5 sm:size-9"
+        className="relative grid size-10 place-items-center border-2 border-ink bg-white text-ink transition-transform hover:-translate-y-0.5"
       >
         <CommunityIcon name="bell" className="size-4" />
         {unread > 0 && (

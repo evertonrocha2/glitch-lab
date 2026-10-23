@@ -256,7 +256,7 @@ export function AssistantButton() {
   const { open } = useAssistant()
   const t = useT()
   return (
-    <PixelButton variant="primary" onClick={open} aria-label={t('app.assistant.open')} aria-keyshortcuts="Alt+A Control+/" className="px-1.5 py-1.5 sm:px-3 sm:py-2">
+    <PixelButton variant="primary" onClick={open} aria-label={t('app.assistant.open')} aria-keyshortcuts="Alt+A Control+/" className="min-w-10 px-1.5 py-1.5 sm:px-3 sm:py-2">
       <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
         <PixelLogo className="size-3.5" />
       </span>

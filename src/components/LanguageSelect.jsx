@@ -17,7 +17,7 @@ export default function LanguageSelect({ compact = false, className = '' }) {
         id={id}
         value={locale}
         onChange={(event) => setLocale(event.target.value)}
-        className="cursor-pointer appearance-none border-2 border-ink bg-white py-1.5 pr-7 pl-2.5 font-label text-xs text-ink transition-colors hover:bg-mist focus-visible:outline-2"
+        className="min-h-10 cursor-pointer appearance-none border-2 border-ink bg-white py-1.5 pr-7 pl-2.5 font-label text-xs text-ink transition-colors hover:bg-mist focus-visible:outline-2"
       >
         {LOCALES.map((value) => (
           <option key={value} value={value}>
