@@ -114,7 +114,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install # instala as dependências
-    startCommand: ...         # liga a API
+    startCommand: node server/index.js # liga a API
     healthCheckPath: /healthz # o Render chama isso para saber se está vivo
     envVars: ...              # as variáveis de ambiente
 ```
@@ -172,7 +172,7 @@ jobs:
 O script [scripts/run-cron.mjs](../scripts/run-cron.mjs) faz duas coisas:
 
 1. Chama `/healthz` até a API acordar (até 5 tentativas).
-2. Chama o endpoint do cron com `Authorization: Bearer <CRON_SECRET>`. Sem essa senha, a API responde 401.
+2. Chama `POST /api/cron/daily` com `Authorization: Bearer <CRON_SECRET>`. Sem essa senha, a API responde 401. (O endereço antigo, `GET /api/challenge?cron=1`, ainda funciona por uma versão.)
 
 A API então gera e salva no Supabase:
 
@@ -265,17 +265,20 @@ O backend é um app **Express** organizado em **camadas** e dividido em **módul
 server/
   index.js               liga o servidor (listen)
   app.js                 monta o Express: middlewares, rotas, erros
+  routes.js              junta as rotas de todos os módulos em /api
   config/                lê e valida as variáveis de ambiente
   core/                  o que todo módulo usa
     errors.js            AppError (status + mensagem)
-    middlewares/         auth, idioma, 404, tratamento de erro
+    middlewares/         auth, idioma, corpo JSON, 404, tratamento de erro
+    validation.js        ajudantes para validar ids e campos
   infra/                 conversa com o mundo de fora
     database/            o store: Supabase e JSON local
     ai/                  Gemini, generateJson, limite diário
+    security/            senhas (scrypt) e sessões assinadas
   modules/               uma pasta por funcionalidade
-    auth/  cases/  gym/  daily/  glitchdle/  hunt/  duels/  events/
-    articles/  notes/  profile/  progress/  review/  trails/
-    interrogation/  assistant/  cron/
+    auth/  profile/  cases/  challenges/  daily/  glitchdle/  hunt/
+    duels/  events/  articles/  notes/  progress/  review/  trails/
+    interrogation/  assistant/  cron/  demo/
 shared/                  regras usadas pelo servidor e pelo navegador
 ```
 
@@ -286,7 +289,7 @@ Dentro de cada módulo, os arquivos seguem o mesmo padrão:
 | `hunt.routes.js` | Rotas | Liga URL + método ao controller, aplica middlewares (ex: login obrigatório) | Regra de negócio |
 | `hunt.controller.js` | Controller | Lê a requisição, chama o service, devolve status e JSON | Acessar o banco |
 | `hunt.service.js` | Service | As regras: pontuação, tempo, quem pode jogar | Saber o que é HTTP |
-| `hunt.repository.js` | Repositório | Lê e grava pelo store | Regra de negócio |
+| `infra/database` | Repositório | O store: lê e grava no Supabase ou no JSON local. O controller entrega o store ao service (`req.deps.store`) | Regra de negócio |
 
 A regra das dependências vai num sentido só: **rotas → controller → service → repositório/infra**. Um service nunca importa um controller, e um controller nunca fala direto com o banco. Assim cada camada pode ser testada sozinha, e trocar o banco ou a IA mexe só em `infra/`.
 
