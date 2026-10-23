@@ -8,7 +8,7 @@ import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { AuthError, getHunt, getPracticeSnippet, sendHunt } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { formatCountdown } from '../../lib/daily.js'
-import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
@@ -240,7 +240,8 @@ function useNow() {
 export default function HuntPage() {
   const { getToken, signOut } = useAuth()
   const { refresh } = useProgress()
-  const t = useT()
+  // The snippets' symptoms and explanations come in the reader's language: a switch fetches them again.
+  const { t, locale } = useI18n()
   const now = useNow()
   const [mode, setMode] = useState('daily')
   const [data, setData] = useState(null)
@@ -271,7 +272,7 @@ export default function HuntPage() {
     } catch (err) {
       await handleError(err)
     }
-  }, [apply, getToken, handleError])
+  }, [apply, getToken, handleError, locale])
 
   useEffect(() => {
     load()

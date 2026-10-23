@@ -200,3 +200,18 @@ it('names a daily puzzle in Portuguese and says how the fix went', async () => {
   expect(screen.getByText('Ajuste sua correção e envie de novo.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '< Voltar aos diários' })).toHaveAttribute('href', '/daily')
 })
+
+it('reads a daily puzzle again in the new language after a switch, keeping the fix being written', async () => {
+  vi.mocked(getChallenge)
+    .mockResolvedValueOnce(puzzleChallenge({ hints: ['Count the lines.'], hintsRevealed: 1 }))
+    .mockResolvedValueOnce(puzzleChallenge({ puzzle: { ...PUZZLE, title: 'O último item sumido' }, hints: ['Conte as linhas.'], hintsRevealed: 1 }))
+  renderAt('/gym/ch1', { user: 'alice' })
+  expect(await screen.findByText('Count the lines.')).toBeInTheDocument()
+  await userEvent.type(screen.getByLabelText('Your fix'), '# mine')
+  await userEvent.selectOptions(screen.getAllByLabelText('Language')[0], 'pt-BR')
+  expect(await screen.findByRole('heading', { name: 'O último item sumido' })).toBeInTheDocument()
+  expect(screen.getByText('Conte as linhas.')).toBeInTheDocument()
+  expect(screen.queryByText('Count the lines.')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Sua correção').value).toMatch(/# mine$/)
+  expect(getChallenge).toHaveBeenCalledTimes(2)
+})

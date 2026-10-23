@@ -11,13 +11,13 @@ import Working from '../../components/ui/working/working.jsx'
 import { AuthError, checkFix, getChallenge, revealHint } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { saveGymDraft, takeGymDraft } from '../../lib/draft.js'
-import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
 
 export default function GymPage() {
   const { id } = useParams()
-  const t = useT()
+  const { t, locale } = useI18n()
   const labels = useLabels()
   const { getToken, signOut } = useAuth()
   const { refresh: refreshProgress } = useProgress()
@@ -64,6 +64,26 @@ export default function GymPage() {
       alive = false
     }
   }, [id, getToken, handleError, savedFix])
+
+  // A daily or global challenge's symptom, title and hints come in the reader's language: after a
+  // language switch, read them again and keep the code being written.
+  const loadedIn = useRef(locale)
+  useEffect(() => {
+    if (loadedIn.current === locale) return
+    loadedIn.current = locale
+    let alive = true
+    getToken()
+      .then((token) => getChallenge(id, token))
+      .then((loaded) => {
+        if (!alive) return
+        setChallenge(loaded)
+        setHints(loaded.hints)
+      })
+      .catch((err) => alive && handleError(err))
+    return () => {
+      alive = false
+    }
+  }, [locale, id, getToken, handleError])
 
   async function nextHint() {
     if (hintBusy.current) return
