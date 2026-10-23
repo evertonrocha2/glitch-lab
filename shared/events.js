@@ -111,11 +111,55 @@ export function rankEntries(entries) {
 }
 
 // What taking part is worth, and how many of each count at most (so nobody farms XP).
-// hosted: events you organized that got at least HOST_MIN_ENTRIES entries.
+// hosted: real events you organized (see isRealEvent). Podium places count only from real events,
+// and at most podiumsPerWeek of them in each week (by when the event ended), best places first.
 export const EVENT_XP = { entry: 30, first: 120, second: 80, third: 50, voteReceived: 2, hosted: 40 }
-export const EVENT_XP_CAPS = { entries: 20, votes: 50, hosted: 10 }
+export const EVENT_XP_CAPS = { entries: 20, votes: 50, hosted: 10, podiumsPerWeek: 2 }
 export const HOST_MIN_ENTRIES = 3
 export const NO_EVENTS = { entries: 0, first: 0, second: 0, third: 0, votesReceived: 0, hosted: 0, days: [] }
+
+// Accounts the app makes itself (demo visitors, sample authors): same domains as api/_lib/accounts.js.
+const MADE_UP = /@(demo|sample)\.glitch$/i
+export const isSampleAccount = ({ email, isDemo }) => Boolean(isDemo) || MADE_UP.test(email ?? '')
+
+// A real event lasted at least an hour and got entries from HOST_MIN_ENTRIES different people, not
+// counting the organizer or sample accounts. Only real events pay podium and hosting XP.
+// entrants: [{ userId, sample }] for this event's entries.
+export function isRealEvent(event, entrants) {
+  if (Date.parse(event.endsAt) - Date.parse(event.startsAt) < EVENT_LIMITS.minMs) return false
+  const people = new Set(entrants.filter((item) => !item.sample && item.userId !== event.organizerId).map((item) => item.userId))
+  return people.size >= HOST_MIN_ENTRIES
+}
+
+// Weeks start on Monday (UTC). 1970-01-01 was a Thursday, hence the 3 days.
+const weekOf = (iso) => Math.floor((Date.parse(iso) + 3 * DAY) / (7 * DAY))
+
+// What both stores answer for eventStats, worked out from the same rows:
+// mine: the person's entries [{ eventId, place, createdAt }], oldest first.
+// events: [{ id, organizerId, startsAt, endsAt }] for every event a place in `mine` came from, and
+//   every event the person organized that might count as hosted.
+// entrants: [{ eventId, userId, sample }] for the entries of those events.
+export function summarizeEventStats({ userId, mine, events, entrants, votesReceived }) {
+  const real = new Map(events.filter((event) => isRealEvent(event, entrants.filter((item) => item.eventId === event.id))).map((event) => [event.id, event]))
+  // Best places first, so a capped week keeps its golds.
+  const placed = mine.filter((item) => item.place && real.has(item.eventId)).sort((a, b) => a.place - b.place)
+  const perWeek = {}
+  const places = { 1: 0, 2: 0, 3: 0 }
+  for (const item of placed) {
+    const week = weekOf(real.get(item.eventId).endsAt)
+    perWeek[week] = (perWeek[week] ?? 0) + 1
+    if (perWeek[week] <= EVENT_XP_CAPS.podiumsPerWeek) places[item.place] += 1
+  }
+  return {
+    entries: mine.length,
+    first: places[1],
+    second: places[2],
+    third: places[3],
+    votesReceived,
+    hosted: [...real.values()].filter((event) => event.organizerId === userId).length,
+    days: mine.map((item) => new Date(item.createdAt).toISOString().slice(0, 10)),
+  }
+}
 
 export const eventsXp = ({ entries, first, second, third, votesReceived, hosted }) =>
   Math.min(entries, EVENT_XP_CAPS.entries) * EVENT_XP.entry +

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { cleanQuery } from '../../../shared/community.js'
-import { HOST_MIN_ENTRIES } from '../../../shared/events.js'
+import { HOST_MIN_ENTRIES, isSampleAccount, summarizeEventStats } from '../../../shared/events.js'
 
 const now = () => new Date().toISOString()
 const copy = (value) => (value == null ? null : structuredClone(value))
@@ -136,21 +136,20 @@ export function createLocalEvents({ load, save }) {
       return { voted: Boolean(voted), votes: entry.votes }
     },
 
-    // What computeProgress reads: entries sent, placings, votes received, events hosted with
-    // enough entries, and the day of each entry (oldest first) for the activity graph.
+    // What computeProgress reads: entries sent, placings and events hosted (real events only, see
+    // summarizeEventStats), votes received, and the day of each entry for the activity graph.
     async eventStats(userId) {
       const data = lists(await load())
       const mine = data.eventEntries.filter((item) => item.userId === userId)
-      const place = (value) => mine.filter((item) => item.place === value).length
-      return {
-        entries: mine.length,
-        first: place(1),
-        second: place(2),
-        third: place(3),
-        votesReceived: data.eventVotes.filter((item) => item.authorId === userId).length,
-        hosted: data.events.filter((item) => item.organizerId === userId && item.entryCount >= HOST_MIN_ENTRIES).length,
-        days: mine.map((item) => item.createdAt.slice(0, 10)),
-      }
+      const placedIds = new Set(mine.filter((item) => item.place).map((item) => item.eventId))
+      const events = data.events.filter((item) => placedIds.has(item.id) || (item.organizerId === userId && item.entryCount >= HOST_MIN_ENTRIES))
+      const ids = new Set(events.map((item) => item.id))
+      const users = new Map((data.users ?? []).map((user) => [user.id, user]))
+      const entrants = data.eventEntries
+        .filter((item) => ids.has(item.eventId))
+        .map((item) => ({ eventId: item.eventId, userId: item.userId, sample: isSampleAccount(users.get(item.userId) ?? {}) }))
+      const votesReceived = data.eventVotes.filter((item) => item.authorId === userId).length
+      return summarizeEventStats({ userId, mine, events, entrants, votesReceived })
     },
   }
 }

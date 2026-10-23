@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import { canSubmit, canVote, EVENT_XP, eventStatus, LINK_KINDS, rankEntries } from '../../shared/events.js'
+import { canSubmit, canVote, EVENT_XP, EVENT_XP_CAPS, eventStatus, LINK_KINDS, rankEntries } from '../../shared/events.js'
 import ArticleBody from '../components/community/ArticleBody.jsx'
 import AuthorChip from '../components/community/AuthorChip.jsx'
 import CommunityShell from '../components/community/CommunityShell.jsx'
@@ -96,14 +96,17 @@ function Points() {
     [t('events.xp.host'), `+${EVENT_XP.hosted}`],
   ]
   return (
-    <ul className="space-y-1.5 text-sm">
-      {rows.map(([label, xp]) => (
-        <li key={label} className="flex items-baseline justify-between gap-3">
-          <span className="text-ink">{label}</span>
-          <span className="shrink-0 font-label text-xs text-primary">{xp} XP</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-1.5 text-sm">
+        {rows.map(([label, xp]) => (
+          <li key={label} className="flex items-baseline justify-between gap-3">
+            <span className="text-ink">{label}</span>
+            <span className="shrink-0 font-label text-xs text-primary">{xp} XP</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-muted">{t('events.xp.fine', { max: EVENT_XP_CAPS.podiumsPerWeek })}</p>
+    </>
   )
 }
 

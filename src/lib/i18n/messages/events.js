@@ -90,7 +90,12 @@ const ROWS = [
   ['events.xp.entry', 'Send an entry', 'Envie uma participação'],
   ['events.xp.podium', 'Podium: 1st, 2nd, 3rd', 'Pódio: 1º, 2º, 3º'],
   ['events.xp.vote', 'Each vote you get', 'Cada voto que você recebe'],
-  ['events.xp.host', 'Host an event with 3+ entries', 'Organize um evento com 3+ participações'],
+  ['events.xp.host', 'Host an event with 3+ people', 'Organize um evento com 3+ pessoas'],
+  [
+    'events.xp.fine',
+    'Podium and hosting points count for events of 1 hour or more with 3+ people taking part, up to {max} podiums a week.',
+    'Os pontos de pódio e de organizar valem para eventos de 1 hora ou mais com 3+ pessoas participando, até {max} pódios por semana.',
+  ],
 
   // Entry form.
   ['events.entry.title', 'Title', 'Título'],

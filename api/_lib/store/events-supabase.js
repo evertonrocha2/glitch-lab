@@ -1,5 +1,5 @@
 import { cleanQuery } from '../../../shared/community.js'
-import { HOST_MIN_ENTRIES } from '../../../shared/events.js'
+import { HOST_MIN_ENTRIES, isSampleAccount, summarizeEventStats } from '../../../shared/events.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
@@ -42,6 +42,9 @@ const toEntry = (row) =>
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+
+// What isRealEvent reads from an event row.
+const EVENT_RULE_COLUMNS = 'id, organizer_id, starts_at, ends_at'
 
 const defined = (object) => Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined))
 
@@ -174,23 +177,32 @@ export function createSupabaseEvents(db) {
       return { voted: Boolean(voted), votes: (await getEntry(entryId)).votes }
     },
 
+    // The rows summarizeEventStats needs: my entries, the events I hosted and the ones my places came
+    // from, and who entered those events (with their accounts, to leave sample ones out).
     async eventStats(userId) {
-      const [entries, votesReceived, hosted] = await Promise.all([
-        db.from('event_entries').select('place, created_at').eq('user_id', userId).order('created_at', { ascending: true }),
+      const [entries, votesReceived, hostedRows] = await Promise.all([
+        db.from('event_entries').select('event_id, place, created_at').eq('user_id', userId).order('created_at', { ascending: true }),
         count('event_votes').eq('author_id', userId),
-        count('events').eq('organizer_id', userId).gte('entry_count', HOST_MIN_ENTRIES),
+        db.from('events').select(EVENT_RULE_COLUMNS).eq('organizer_id', userId).gte('entry_count', HOST_MIN_ENTRIES),
       ])
-      const mine = unwrap(entries) ?? []
-      const place = (value) => mine.filter((row) => row.place === value).length
-      return {
-        entries: mine.length,
-        first: place(1),
-        second: place(2),
-        third: place(3),
-        votesReceived: counted(votesReceived),
-        hosted: counted(hosted),
-        days: mine.map((row) => new Date(row.created_at).toISOString().slice(0, 10)),
-      }
+      const mine = (unwrap(entries) ?? []).map((row) => ({ eventId: row.event_id, place: row.place, createdAt: row.created_at }))
+      const hosted = unwrap(hostedRows) ?? []
+      const placedIds = [...new Set(mine.filter((item) => item.place).map((item) => item.eventId))].filter((id) => !hosted.some((row) => row.id === id))
+      const placedRows = placedIds.length ? (unwrap(await db.from('events').select(EVENT_RULE_COLUMNS).in('id', placedIds)) ?? []) : []
+      const events = [...hosted, ...placedRows].map((row) => ({
+        id: row.id,
+        organizerId: row.organizer_id,
+        startsAt: new Date(row.starts_at).toISOString(),
+        endsAt: new Date(row.ends_at).toISOString(),
+      }))
+      const ids = events.map((event) => event.id)
+      const entrantRows = ids.length ? (unwrap(await db.from('event_entries').select('event_id, user_id, users!inner(email, is_demo)').in('event_id', ids)) ?? []) : []
+      const entrants = entrantRows.map((row) => ({
+        eventId: row.event_id,
+        userId: row.user_id,
+        sample: isSampleAccount({ email: row.users?.email, isDemo: row.users?.is_demo }),
+      }))
+      return summarizeEventStats({ userId, mine, events, entrants, votesReceived: counted(votesReceived) })
     },
   }
 }

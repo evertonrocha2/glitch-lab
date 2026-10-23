@@ -165,10 +165,58 @@ export function eventsStoreContract(storeOf, newUser) {
     await store.setPlaces(small.id, { [second.id]: 2 })
 
     const stats = await store.eventStats(bob.id)
-    expect(stats).toMatchObject({ entries: 2, first: 1, second: 1, third: 0, votesReceived: 3, hosted: 0 })
+    // The second place came from an event with one person in it: it doesn't count.
+    expect(stats).toMatchObject({ entries: 2, first: 1, second: 0, third: 0, votesReceived: 3, hosted: 0 })
     expect(stats.days).toEqual([won.createdAt.slice(0, 10), second.createdAt.slice(0, 10)])
     // Hosting counts once an event has three entries.
     expect(await store.eventStats(ada.id)).toMatchObject({ entries: 0, hosted: 1 })
+  })
+
+  it('counts places and hosting only from real events: three real people, an hour long', async () => {
+    const store = storeOf()
+    const [ada, bob, cy] = [await newUser(), await newUser(), await newUser()]
+    const sample = await store.createUser({ email: `sample-${crypto.randomUUID()}@sample.glitch`, passwordHash: null, isDemo: false })
+    const demo = await store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })
+    const now = Date.now()
+
+    // Three entries, but two of them from accounts the app made.
+    const padded = await store.createEvent(ada.id, eventFields())
+    const won = await store.createEntry(padded.id, bob.id, entryFields())
+    await store.createEntry(padded.id, sample.id, entryFields())
+    await store.createEntry(padded.id, demo.id, entryFields())
+    await store.setPlaces(padded.id, { [won.id]: 1 })
+    // Three real people, but over in half an hour (closed early).
+    const short = await store.createEvent(ada.id, eventFields({ startsAt: new Date(now - HOUR / 2).toISOString(), endsAt: new Date(now).toISOString() }))
+    const quick = await store.createEntry(short.id, bob.id, entryFields())
+    await store.createEntry(short.id, cy.id, entryFields())
+    await store.createEntry(short.id, (await newUser()).id, entryFields())
+    await store.setPlaces(short.id, { [quick.id]: 1 })
+
+    expect(await store.eventStats(bob.id)).toMatchObject({ entries: 2, first: 0, second: 0, third: 0 })
+    expect(await store.eventStats(ada.id)).toMatchObject({ hosted: 0 })
+  })
+
+  it('counts at most two podium places a week, the best ones', async () => {
+    const store = storeOf()
+    const [ada, bob, cy, di] = [await newUser(), await newUser(), await newUser(), await newUser()]
+    const now = Date.now()
+    const ago = (days) => ({ startsAt: new Date(now - days * 24 * HOUR - HOUR).toISOString(), endsAt: new Date(now - days * 24 * HOUR).toISOString() })
+    // Three podiums in one week, one more a week and a day earlier.
+    const runs = [
+      [eventFields(), 3],
+      [eventFields(), 1],
+      [eventFields(), 2],
+      [eventFields(ago(8)), 3],
+    ]
+    for (const [fields, place] of runs) {
+      const event = await store.createEvent(ada.id, fields)
+      const mine = await store.createEntry(event.id, bob.id, entryFields())
+      await store.createEntry(event.id, cy.id, entryFields())
+      await store.createEntry(event.id, di.id, entryFields())
+      await store.setPlaces(event.id, { [mine.id]: place })
+    }
+    expect(await store.eventStats(bob.id)).toMatchObject({ entries: 4, first: 1, second: 1, third: 1 })
+    expect(await store.eventStats(ada.id)).toMatchObject({ hosted: 4 })
   })
 
   it('keeps event notifications with the event title, without repeats', async () => {

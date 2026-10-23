@@ -9,9 +9,12 @@ import {
   eventStatus,
   eventsXp,
   eventTab,
+  isRealEvent,
+  isSampleAccount,
   linkProblem,
   NO_EVENTS,
   rankEntries,
+  summarizeEventStats,
   timeLeft,
   VOTING_MS,
   youtubeId,
@@ -112,5 +115,51 @@ describe('xp', () => {
     expect(eventsXp(farmed)).toBe(
       EVENT_XP_CAPS.entries * EVENT_XP.entry + EVENT_XP_CAPS.votes * EVENT_XP.voteReceived + EVENT_XP_CAPS.hosted * EVENT_XP.hosted,
     )
+  })
+})
+
+describe('real events and podium caps', () => {
+  const real = (overrides = {}) => ({ id: 'e1', organizerId: 'org', ...event(-3 * HOUR, -HOUR), ...overrides })
+  const people = (eventId, ...ids) => ids.map((userId) => ({ eventId, userId, sample: false }))
+
+  it('tells sample and demo accounts apart from real ones', () => {
+    expect(isSampleAccount({ email: 'ana@sample.glitch', isDemo: false })).toBe(true)
+    expect(isSampleAccount({ email: 'demo-1@demo.glitch', isDemo: true })).toBe(true)
+    expect(isSampleAccount({ email: 'x@example.com', isDemo: true })).toBe(true)
+    expect(isSampleAccount({ email: 'ada@example.com', isDemo: false })).toBe(false)
+    expect(isSampleAccount({})).toBe(false)
+  })
+
+  it('needs three different real people besides the organizer, and an hour', () => {
+    expect(isRealEvent(real(), people('e1', 'a', 'b', 'c'))).toBe(true)
+    expect(isRealEvent(real(), people('e1', 'a', 'b'))).toBe(false)
+    expect(isRealEvent(real(), [...people('e1', 'a', 'b'), { userId: 'c', sample: true }])).toBe(false)
+    expect(isRealEvent(real(), people('e1', 'a', 'b', 'org'))).toBe(false)
+    expect(isRealEvent(real(), people('e1', 'a', 'a', 'b'))).toBe(false)
+    expect(isRealEvent(real(event(-HOUR, -HOUR / 2)), people('e1', 'a', 'b', 'c'))).toBe(false)
+  })
+
+  it('counts places from real events only, at most two a week, best first', () => {
+    const week = (days) => ({ ...event(days * 24 * HOUR - HOUR, days * 24 * HOUR) })
+    const events = [
+      { id: 'w1', organizerId: 'org', ...week(0) },
+      { id: 'w2', organizerId: 'org', ...week(0) },
+      { id: 'w3', organizerId: 'org', ...week(0) },
+      { id: 'next', organizerId: 'org', ...week(7) },
+      { id: 'fake', organizerId: 'org', ...week(14) },
+      { id: 'mine', organizerId: 'me', ...week(14) },
+    ]
+    // 'fake' has only me in it; 'mine' is the one I organized.
+    const entrants = [...['w1', 'w2', 'w3', 'next'].flatMap((id) => people(id, 'me', 'a', 'b')), ...people('fake', 'me'), ...people('mine', 'a', 'b', 'c')]
+    const mine = [
+      { eventId: 'w1', place: 3, createdAt: at(0) },
+      { eventId: 'w2', place: 2, createdAt: at(0) },
+      { eventId: 'w3', place: 1, createdAt: at(0) },
+      { eventId: 'next', place: 3, createdAt: at(7 * 24 * HOUR) },
+      { eventId: 'fake', place: 1, createdAt: at(14 * 24 * HOUR) },
+    ]
+    const stats = summarizeEventStats({ userId: 'me', mine, events, entrants, votesReceived: 4 })
+    expect(stats).toEqual({ entries: 5, first: 1, second: 1, third: 1, votesReceived: 4, hosted: 1, days: mine.map((item) => item.createdAt.slice(0, 10)) })
+    expect(EVENT_XP_CAPS.podiumsPerWeek).toBe(2)
   })
 })
