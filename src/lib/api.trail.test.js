@@ -14,7 +14,7 @@ it('loads my trail page with my token', async () => {
   fetch.mockResolvedValue(Response.json(data))
   await expect(getTrail('t1')).resolves.toEqual(data)
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/trail')
+  expect(url).toBe('/api/trails')
   expect(init.headers).toEqual({ 'Accept-Language': 'en', Authorization: 'Bearer t1' })
 })
 
@@ -23,16 +23,16 @@ it('builds a new trail with my date', async () => {
   fetch.mockResolvedValue(Response.json(data, { status: 201 }))
   await expect(buildTrail('2026-10-22', 't1')).resolves.toEqual(data)
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/trail')
+  expect(url).toBe('/api/trails')
   expect(init.method).toBe('POST')
   expect(JSON.parse(init.body)).toEqual({ today: '2026-10-22' })
 })
 
-it('ticks a mission with PUT and returns the updated trail', async () => {
+it('ticks a mission with PATCH and returns the updated trail', async () => {
   fetch.mockResolvedValue(Response.json({ trail: { id: 'tr1', doneCount: 1 } }))
   await expect(setTrailMission({ trailId: 'tr1', missionId: 'm6', done: true }, 't1')).resolves.toEqual({ id: 'tr1', doneCount: 1 })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/trail')
-  expect(init.method).toBe('PUT')
-  expect(JSON.parse(init.body)).toEqual({ trailId: 'tr1', missionId: 'm6', done: true })
+  expect(url).toBe('/api/trails/tr1/missions/m6')
+  expect(init.method).toBe('PATCH')
+  expect(JSON.parse(init.body)).toEqual({ done: true })
 })

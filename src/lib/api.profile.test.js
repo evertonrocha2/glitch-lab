@@ -14,16 +14,16 @@ it('loads my profile with my token', async () => {
   fetch.mockResolvedValue(Response.json(data))
   await expect(getMyProfile('2026-10-22', 't1')).resolves.toEqual(data)
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/profile?today=2026-10-22')
+  expect(url).toBe('/api/me?today=2026-10-22')
   expect(init.headers).toEqual({ 'Accept-Language': 'en', Authorization: 'Bearer t1' })
 })
 
-it('saves profile changes with PUT', async () => {
+it('saves profile changes with PATCH', async () => {
   fetch.mockResolvedValue(Response.json({ profile: { handle: 'ada' } }))
   await expect(saveProfile({ handle: 'ada' }, 't1')).resolves.toEqual({ handle: 'ada' })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/profile')
-  expect(init.method).toBe('PUT')
+  expect(url).toBe('/api/me')
+  expect(init.method).toBe('PATCH')
   expect(JSON.parse(init.body)).toEqual({ handle: 'ada' })
 })
 
@@ -36,7 +36,7 @@ it('loads a public profile without a token', async () => {
   fetch.mockResolvedValue(Response.json({ profile: { handle: 'ada' } }))
   await expect(getPublicProfile('Ada Dev', '2026-10-22')).resolves.toEqual({ profile: { handle: 'ada' }, preview: false })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/profile?handle=Ada%20Dev&today=2026-10-22')
+  expect(url).toBe('/api/profiles/Ada%20Dev?today=2026-10-22')
   expect(init.headers).toEqual({ 'Accept-Language': 'en' })
 })
 

@@ -2,11 +2,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { credentialsProblem } from '../../api/_lib/accounts.js'
-import { validateInput } from '../../api/_lib/analysis.js'
-import { parseAssistantRequest } from '../../api/_lib/assistant/request.js'
-import { parseNote } from '../../api/_lib/notes.js'
-import { parseProfile } from '../../api/_lib/profile.js'
+import { credentialsProblem } from '../../server/modules/auth/credentials.js'
+import { validateInput } from '../../server/modules/cases/analysis.js'
+import { parseAssistantRequest } from '../../server/modules/assistant/request.js'
+import { parseNote } from '../../server/modules/notes/notes.model.js'
+import { parseProfile } from '../../server/modules/profile/profile.model.js'
 import { AuthError, listCases, getPublicProfile, listPublicNotes } from './api.js'
 import { translateServerMessage } from './i18n/serverMessages.js'
 
@@ -58,7 +58,8 @@ it('gives back anything it does not know, unchanged', () => {
   expect(pt(undefined)).toBe(undefined)
 })
 
-// Every literal message in api/ (fail(...), { message: ... } and the message constants) has a translation.
+// Every literal message in server/ (AppError and its helpers, { message: ... }, default messages and
+// the message constants) has a translation.
 function sourceFiles(dir) {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
@@ -67,8 +68,9 @@ function sourceFiles(dir) {
 }
 
 it('knows every fixed message the API can send', () => {
-  const root = join(import.meta.dirname, '../../api')
-  const literal = /(?:fail\(\d+,\s*|message:\s*|const (?:NOT_FOUND|NOT_SHARED|DEMO_SHARE|WRONG|NO_CASES|TOO_LONG)\s*=\s*)(['"])((?:(?!\1).)+)\1/g
+  const root = join(import.meta.dirname, '../../server')
+  const literal =
+    /(?:new AppError\(\d+,\s*|\b(?:badRequest|unauthorized|forbidden|notFound|conflict|tooLarge|tooMany)\(|message:\s*|message = |const (?:NOT_FOUND|NOT_SHARED|NOTE_NOT_FOUND|DEMO_SHARE|WRONG|NO_CASES|TOO_LONG|ALREADY_IN|INVALID_REQUEST)\s*=\s*)(['"])((?:(?!\1).)+)\1/g
   const found = new Set()
   for (const file of sourceFiles(root)) {
     for (const match of readFileSync(file, 'utf8').matchAll(literal)) found.add(match[2])

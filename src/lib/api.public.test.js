@@ -9,21 +9,21 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-it('shares a note with PUT and my token', async () => {
+it('shares a note with PATCH and my token', async () => {
   fetch.mockResolvedValue(Response.json({ note: { id: 'n1', isPublic: true } }))
   await expect(setNotePublic('n1', true, 't1')).resolves.toEqual({ id: 'n1', isPublic: true })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/notes')
-  expect(init.method).toBe('PUT')
+  expect(url).toBe('/api/notes/n1')
+  expect(init.method).toBe('PATCH')
   expect(init.headers.Authorization).toBe('Bearer t1')
-  expect(JSON.parse(init.body)).toEqual({ id: 'n1', isPublic: true })
+  expect(JSON.parse(init.body)).toEqual({ isPublic: true })
 })
 
 it('lists public notes without a token', async () => {
   fetch.mockResolvedValue(Response.json({ notes: [{ id: 'n1' }] }))
   await expect(listPublicNotes('Ada Dev')).resolves.toEqual([{ id: 'n1' }])
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/notes?handle=Ada%20Dev')
+  expect(url).toBe('/api/profiles/Ada%20Dev/notes')
   expect(init.headers).toEqual({ 'Accept-Language': 'en' })
 })
 
@@ -31,7 +31,7 @@ it('opens one public note with its author', async () => {
   const data = { note: { id: 'n 1' }, author: { handle: 'ada' } }
   fetch.mockResolvedValue(Response.json(data))
   await expect(getPublicNote('ada', 'n 1')).resolves.toEqual(data)
-  expect(fetch.mock.calls[0][0]).toBe('/api/notes?handle=ada&id=n%201')
+  expect(fetch.mock.calls[0][0]).toBe('/api/profiles/ada/notes/n%201')
 })
 
 it('returns null when a public note or list is not there', async () => {
@@ -44,7 +44,7 @@ it('returns null when a public note or list is not there', async () => {
 it('searches public profiles', async () => {
   fetch.mockResolvedValue(Response.json({ profiles: [{ handle: 'ada' }] }))
   await expect(searchProfiles('ada lo')).resolves.toEqual([{ handle: 'ada' }])
-  expect(fetch.mock.calls[0][0]).toBe('/api/profile?search=ada%20lo')
+  expect(fetch.mock.calls[0][0]).toBe('/api/profiles?search=ada%20lo')
 })
 
 it("shows the server's reason when a search is refused", async () => {

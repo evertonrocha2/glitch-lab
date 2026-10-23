@@ -15,7 +15,7 @@ it('sends the token as a Bearer header', async () => {
   fetch.mockResolvedValue(Response.json({ case: CASE }, { status: 201 }))
   await analyzeError({ error: 'E', code: 'C' }, 'dev:alice')
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/analyze')
+  expect(url).toBe('/api/cases/analyze')
   expect(init.method).toBe('POST')
   expect(init.headers).toEqual({ 'Accept-Language': 'en', 'Content-Type': 'application/json', Authorization: 'Bearer dev:alice' })
   expect(JSON.parse(init.body)).toEqual({ error: 'E', code: 'C' })
@@ -37,7 +37,7 @@ it('signs in without sending a token', async () => {
   fetch.mockResolvedValue(Response.json({ token: 't1', user: { id: 'u1' } }))
   await expect(signIn({ email: 'ada@example.com', password: 'pw' })).resolves.toEqual({ token: 't1', user: { id: 'u1' } })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/auth?action=login')
+  expect(url).toBe('/api/auth/login')
   expect(init.headers).toEqual({ 'Accept-Language': 'en', 'Content-Type': 'application/json' })
   expect(JSON.parse(init.body)).toEqual({ email: 'ada@example.com', password: 'pw' })
 })
@@ -73,15 +73,15 @@ it('updates a note by id', async () => {
   fetch.mockResolvedValue(Response.json({ note: { id: 'n1', title: 'T' } }))
   await expect(updateNote('n1', { title: 'T', blocks: [] }, 'tok')).resolves.toEqual({ id: 'n1', title: 'T' })
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/notes')
-  expect(init.method).toBe('PUT')
-  expect(JSON.parse(init.body)).toEqual({ id: 'n1', title: 'T', blocks: [] })
+  expect(url).toBe('/api/notes/n1')
+  expect(init.method).toBe('PATCH')
+  expect(JSON.parse(init.body)).toEqual({ title: 'T', blocks: [] })
 })
 
-it('deletes a note with its id in the query', async () => {
+it('deletes a note with its id in the path', async () => {
   fetch.mockResolvedValue(Response.json({ deleted: true }))
   await deleteNote('n 1', 'tok')
-  expect(fetch.mock.calls[0][0]).toBe('/api/notes?id=n%201')
+  expect(fetch.mock.calls[0][0]).toBe('/api/notes/n%201')
   expect(fetch.mock.calls[0][1].method).toBe('DELETE')
 })
 
@@ -89,7 +89,7 @@ it('reports study time, with keepalive when the tab is closing', async () => {
   fetch.mockResolvedValue(Response.json({ todaySeconds: 120 }))
   await expect(addStudyTime({ seconds: 60, day: '2026-10-22' }, 'tok', { keepalive: true })).resolves.toBe(120)
   const [url, init] = fetch.mock.calls[0]
-  expect(url).toBe('/api/progress')
+  expect(url).toBe('/api/progress/study-time')
   expect(init.keepalive).toBe(true)
   expect(JSON.parse(init.body)).toEqual({ seconds: 60, day: '2026-10-22' })
 })

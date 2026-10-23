@@ -1,6 +1,6 @@
 // Every message the API can answer with ({ message }), plus the API client's own fallbacks.
 // The English text is the exact text the server sends, with {name} where it puts a number or a word:
-// ../serverMessages.js matches incoming messages against it, so keep the two in step with api/.
+// ../serverMessages.js matches incoming messages against it, so keep the two in step with server/.
 // {problem} is a second message (also listed here) that gets translated on its own.
 // server.what.* and server.linkLabel.* are the words that fill {what} and {label}.
 
@@ -16,8 +16,9 @@ const en = {
   'server.methodNotAllowed': 'Method not allowed.',
   'server.notAllowed': 'Not allowed.',
   'server.notConfigured': 'Server is not configured.',
-  // Only the local dev server sends this one (vite.config.js).
+  // The API's last-resort answers (server/core/middlewares/error-handler.js).
   'server.serverError': 'Server error.',
+  'server.requestTooLarge': 'Request too large.',
 
   // The AI.
   'server.aiBusy': 'The AI is busy right now. Try again in a minute.',
@@ -216,6 +217,7 @@ const ptBR = {
   'server.notAllowed': 'Não permitido.',
   'server.notConfigured': 'O servidor não está configurado.',
   'server.serverError': 'Erro no servidor.',
+  'server.requestTooLarge': 'Pedido grande demais.',
 
   'server.aiBusy': 'A IA está ocupada agora. Tente de novo em um minuto.',
   'server.aiSlow': 'A IA demorou demais. Tente de novo.',

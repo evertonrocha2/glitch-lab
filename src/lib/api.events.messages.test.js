@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { parseEntry, parseEvent } from '../../api/_lib/events/parse.js'
+import { parseEntry, parseEvent } from '../../server/modules/events/parse.js'
 import { translateServerMessage } from './i18n/serverMessages.js'
 
 const pt = (message) => translateServerMessage(message, 'pt-BR')
