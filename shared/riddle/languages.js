@@ -6,6 +6,8 @@
 // When a classification is debatable we pick the mainstream answer and say why in a comment.
 // Players are graded on these values, so change them with care.
 
+import { searchItems } from './search.js'
+
 export const PARADIGMS = ['imperative', 'object-oriented', 'functional', 'concurrent', 'logic', 'declarative']
 export const TYPING = ['static', 'dynamic', 'gradual']
 export const STRENGTH = ['strong', 'weak']
@@ -606,28 +608,5 @@ const BY_ID = new Map(LANGUAGES.map((item) => [item.id, item]))
 
 export const languageById = (id) => BY_ID.get(id) ?? null
 
-const normalize = (text) => text.toLowerCase().replace(/\s+/g, ' ').trim()
-
-// The guess box: languages whose name or an alias starts with the query come first, then any
-// that contain it. An empty query lists everything, alphabetically.
-export function searchLanguages(query, list = LANGUAGES) {
-  const needle = normalize(query ?? '')
-  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name))
-  if (!needle) return sorted
-  // Best match first: an exact name, id or alias, then names that start with it, then aliases that
-  // do, then anything containing it. So "ts" is TypeScript (not T-SQL) and "f" is F# (not Flutter's Dart).
-  const words = (item) => [item.name, item.id, ...item.aliases].map(normalize)
-  const tier = (item) => {
-    const name = normalize(item.name)
-    if (words(item).includes(needle)) return 0
-    if (name.startsWith(needle) || normalize(item.id).startsWith(needle)) return 1
-    if (words(item).some((word) => word.startsWith(needle))) return 2
-    if (words(item).some((word) => word.includes(needle))) return 3
-    return null
-  }
-  return sorted
-    .map((item) => ({ item, rank: tier(item) }))
-    .filter(({ rank }) => rank !== null)
-    .sort((a, b) => a.rank - b.rank)
-    .map(({ item }) => item)
-}
+// The guess box: accents don't matter, best match first (see search.js).
+export const searchLanguages = (query, list = LANGUAGES) => searchItems(query, list)
