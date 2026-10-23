@@ -334,10 +334,23 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(puzzle.id).toEqual(expect.any(String))
       expect(puzzle).not.toHaveProperty('solution')
       expect(await store.getPuzzle(puzzle.id)).toEqual(puzzle)
-      expect(await store.getPuzzleSecret(puzzle.id)).toEqual(PUZZLE_SECRET)
+      // No Portuguese copy given: it reads as null, like a puzzle saved before it existed.
+      expect(puzzle.pt).toBeNull()
+      expect(await store.getPuzzleSecret(puzzle.id)).toEqual({ ...PUZZLE_SECRET, pt: null })
       expect(await store.createPuzzle(puzzleFor(day, { title: 'Second try' }), PUZZLE_SECRET)).toBeNull()
       expect(await store.getPuzzle(crypto.randomUUID())).toBeNull()
       expect(await store.getPuzzle('not-an-id')).toBeNull()
+    })
+
+    it('keeps the Portuguese copy of a puzzle and of its secret', async () => {
+      const day = randomDay()
+      const pt = { title: 'O último item sumido', symptom: 'Imprime 1 e 2, mas nunca 3.', hints: ['Conte as linhas.', 'Olhe o range.', 'O range para antes do fim.'] }
+      const secretPt = { bugExplanation: 'range(len(items) - 1) pula o último índice.' }
+      const puzzle = await store.createPuzzle({ ...puzzleFor(day), pt }, { ...PUZZLE_SECRET, pt: secretPt })
+      expect(puzzle.pt).toEqual(pt)
+      expect(await store.getPuzzle(puzzle.id)).toEqual(puzzle)
+      expect((await store.listPuzzles({ ids: [puzzle.id] }))[0].pt).toEqual(pt)
+      expect(await store.getPuzzleSecret(puzzle.id)).toEqual({ ...PUZZLE_SECRET, pt: secretPt })
     })
 
     it('lists puzzles by kind, day, start day or ids', async () => {

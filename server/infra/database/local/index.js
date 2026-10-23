@@ -50,6 +50,8 @@ export function createLocalStore({ file }) {
   // Daily and global puzzles came later too; their secrets sit apart like challenge secrets.
   const puzzlesOf = (data) => (data.puzzles ??= [])
   const puzzleSecretsOf = (data) => (data.puzzleSecrets ??= {})
+  // Puzzles (and secrets) saved before the Portuguese copy existed read as pt: null.
+  const withPt = (item) => item && { ...item, pt: item.pt ?? null }
   // Glitchdle: one riddle per day and mode, and one result per player, day and mode.
   const riddlesOf = (data) => (data.riddles ??= [])
   const riddleResultsOf = (data) => (data.riddleResults ??= [])
@@ -145,13 +147,15 @@ export function createLocalStore({ file }) {
     },
 
     // One puzzle per slot (kind, day, difficulty): null when the slot is already taken.
-    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints }, { solution, bugExplanation }) {
+    // pt: the Brazilian Portuguese copy ({ title, symptom, hints } and the secret's { bugExplanation }),
+    // null for a puzzle saved before puzzles kept both languages.
+    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints, pt = null }, { solution, bugExplanation, pt: secretPt = null }) {
       const data = await load()
       const puzzles = puzzlesOf(data)
       if (puzzles.some((item) => item.kind === kind && item.day === day && item.difficulty === difficulty)) return null
-      const created = { id: randomUUID(), kind, day, difficulty, language, concept, title, brokenCode, symptom, hints, createdAt: now() }
+      const created = { id: randomUUID(), kind, day, difficulty, language, concept, title, brokenCode, symptom, hints, pt, createdAt: now() }
       puzzles.push(created)
-      puzzleSecretsOf(data)[created.id] = { solution, bugExplanation }
+      puzzleSecretsOf(data)[created.id] = { solution, bugExplanation, pt: secretPt }
       await save()
       return copy(created)
     },
@@ -165,15 +169,15 @@ export function createLocalStore({ file }) {
           (since === undefined || item.day >= since) &&
           (ids === undefined || ids.includes(item.id)),
       )
-      return copy(puzzles.sort((a, b) => a.day.localeCompare(b.day)))
+      return copy(puzzles.sort((a, b) => a.day.localeCompare(b.day)).map(withPt))
     },
 
     async getPuzzle(id) {
-      return copy(puzzlesOf(await load()).find((item) => item.id === id))
+      return copy(withPt(puzzlesOf(await load()).find((item) => item.id === id)))
     },
 
     async getPuzzleSecret(puzzleId) {
-      return copy(puzzleSecretsOf(await load())[puzzleId])
+      return copy(withPt(puzzleSecretsOf(await load())[puzzleId]))
     },
 
     async findPuzzleChallenge(userId, puzzleId) {

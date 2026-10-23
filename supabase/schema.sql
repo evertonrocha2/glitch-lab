@@ -190,6 +190,12 @@ alter table public.challenges add column if not exists passed_at timestamptz;
 create unique index if not exists challenges_user_puzzle on public.challenges (user_id, puzzle_id) where puzzle_id is not null;
 create index if not exists challenges_puzzle_status on public.challenges (puzzle_id, status) where puzzle_id is not null;
 
+-- Everyone gets the same puzzle, so it keeps a Brazilian Portuguese copy next to the English text:
+-- puzzles.pt is { title, symptom, hints }, puzzle_secrets.pt is { bugExplanation }. Null on puzzles
+-- saved before this, which the app reads in English (or from the pool's translation).
+alter table public.puzzles add column if not exists pt jsonb;
+alter table public.puzzle_secrets add column if not exists pt jsonb;
+
 alter table public.puzzles enable row level security;
 alter table public.puzzle_secrets enable row level security;
 

@@ -61,6 +61,7 @@ const toPuzzle = (row) =>
     brokenCode: row.broken_code,
     symptom: row.symptom,
     hints: row.hints,
+    pt: row.pt ?? null,
     createdAt: row.created_at,
   }
 
@@ -214,15 +215,17 @@ export function createSupabaseStore({ url, serviceKey }) {
     },
 
     // One puzzle per slot (kind, day, difficulty): null when the slot is already taken.
-    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints }, { solution, bugExplanation }) {
+    // pt: the Brazilian Portuguese copy ({ title, symptom, hints } and the secret's { bugExplanation }),
+    // null for a puzzle saved before puzzles kept both languages.
+    async createPuzzle({ kind, day, difficulty, language, concept, title, brokenCode, symptom, hints, pt = null }, { solution, bugExplanation, pt: secretPt = null }) {
       const inserted = await db
         .from('puzzles')
-        .insert({ kind, day, difficulty, language, concept, title, broken_code: brokenCode, symptom, hints })
+        .insert({ kind, day, difficulty, language, concept, title, broken_code: brokenCode, symptom, hints, pt })
         .select()
         .single()
       if (inserted.error?.code === UNIQUE_VIOLATION) return null
       const row = unwrap(inserted)
-      const secret = await db.from('puzzle_secrets').insert({ puzzle_id: row.id, solution, bug_explanation: bugExplanation })
+      const secret = await db.from('puzzle_secrets').insert({ puzzle_id: row.id, solution, bug_explanation: bugExplanation, pt: secretPt })
       if (secret.error) {
         // A puzzle nobody can be judged on must not take the slot.
         await db.from('puzzles').delete().eq('id', row.id)
@@ -249,7 +252,7 @@ export function createSupabaseStore({ url, serviceKey }) {
 
     async getPuzzleSecret(puzzleId) {
       const row = unwrap(await db.from('puzzle_secrets').select('*').eq('puzzle_id', puzzleId).maybeSingle())
-      return row && { solution: row.solution, bugExplanation: row.bug_explanation }
+      return row && { solution: row.solution, bugExplanation: row.bug_explanation, pt: row.pt ?? null }
     },
 
     async findPuzzleChallenge(userId, puzzleId) {
