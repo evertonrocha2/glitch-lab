@@ -92,7 +92,9 @@ function Intro({ onStart, busy }) {
   )
 }
 
-function Done({ data, now, onPractice }) {
+function Done({ data, onPractice }) {
+  // Ticks here, not in the page: only this panel shows the countdown.
+  const now = useNow()
   const t = useT()
   const labels = useLabels()
   const { run } = data
@@ -243,7 +245,6 @@ export default function HuntPage() {
   const refresh = useProgressRefresh()
   // The snippets' symptoms and explanations come in the reader's language: a switch fetches them again.
   const { t, locale } = useI18n()
-  const now = useNow()
   const [mode, setMode] = useState('daily')
   const [data, setData] = useState(null)
   const [deadline, setDeadline] = useState(0)
@@ -341,7 +342,7 @@ export default function HuntPage() {
         busy={busy}
       />
     )
-  } else if (data && run?.finished) panel = <Done data={data} now={now} onPractice={() => setMode('practice')} />
+  } else if (data && run?.finished) panel = <Done data={data} onPractice={() => setMode('practice')} />
 
   return (
     <AppShell>

@@ -25,7 +25,19 @@ function useNow() {
   return now
 }
 
-function GlobalChallenge({ data, now, onStart, starting }) {
+// The ticking text on its own, so the page around it doesn't re-render every second.
+function TimeLeft({ until }) {
+  const now = useNow()
+  return formatCountdown(Date.parse(until) - now)
+}
+
+function EndsIn({ until }) {
+  const t = useT()
+  const now = useNow()
+  return <p className="font-label text-xs text-muted">{t('board.global.endsIn', { time: formatCountdown(Date.parse(until) - now) })}</p>
+}
+
+function GlobalChallenge({ data, onStart, starting }) {
   const t = useT()
   const { day } = useFormat()
   const { puzzle, solvedCount, leaderboard, you } = data
@@ -38,7 +50,7 @@ function GlobalChallenge({ data, now, onStart, starting }) {
             {t('board.global.title')}
           </h2>
         </div>
-        <p className="font-label text-xs text-muted">{t('board.global.endsIn', { time: formatCountdown(Date.parse(data.endsAt) - now) })}</p>
+        <EndsIn until={data.endsAt} />
       </div>
       <p className="mt-2 max-w-2xl text-muted">{t('board.global.lead')}</p>
 
@@ -117,7 +129,6 @@ export default function DailyPage() {
   const [starting, setStarting] = useState(null)
   // Blocks a second start before the disabled buttons re-render.
   const busy = useRef(false)
-  const now = useNow()
 
   // An expired session signs out; the route guard brings the person back here after login.
   const handleError = useCallback(
@@ -144,13 +155,20 @@ export default function DailyPage() {
     load()
   }, [load])
 
-  // When the countdown runs out, fetch the new set (once per set).
+  // When the countdown runs out, fetch the new set (once per set). Checked every second without
+  // re-rendering the page: only the countdown text ticks.
   const reloadedFor = useRef(null)
   useEffect(() => {
-    if (!daily || Date.parse(daily.nextResetAt) > now || reloadedFor.current === daily.nextResetAt) return
-    reloadedFor.current = daily.nextResetAt
-    load()
-  }, [daily, now, load])
+    if (!daily) return
+    const check = () => {
+      if (Date.parse(daily.nextResetAt) > Date.now() || reloadedFor.current === daily.nextResetAt) return
+      reloadedFor.current = daily.nextResetAt
+      load()
+    }
+    check()
+    const timer = setInterval(check, 1000)
+    return () => clearInterval(timer)
+  }, [daily, load])
 
   async function start(puzzle) {
     if (busy.current) return
@@ -190,7 +208,7 @@ export default function DailyPage() {
             {[
               { label: t('board.daily.streak'), value: `${daily.streak}d`, tone: 'text-primary', note: t('board.daily.streakNote') },
               { label: t('board.daily.today'), value: `${solvedToday}/${daily.puzzles.length}`, tone: 'text-secondary', note: t('board.daily.todayNote') },
-              { label: t('board.daily.next'), value: formatCountdown(Date.parse(daily.nextResetAt) - now), tone: 'text-ink', note: t('board.daily.nextNote') },
+              { label: t('board.daily.next'), value: <TimeLeft until={daily.nextResetAt} />, tone: 'text-ink', note: t('board.daily.nextNote') },
             ].map((item) => (
               <li key={item.label} className="min-w-0 bg-white px-3 py-3 sm:px-4">
                 <span className="font-label text-[10px] text-muted sm:text-xs">{item.label}</span>
@@ -218,7 +236,7 @@ export default function DailyPage() {
       {/* Spaced review of the bug types already met (see components/review). */}
       <ReviewToday className="mt-14" />
 
-      {global ? <GlobalChallenge data={global} now={now} onStart={start} starting={starting} /> : !daily && !message && <GlobalChallengeSkeleton />}
+      {global ? <GlobalChallenge data={global} onStart={start} starting={starting} /> : !daily && !message && <GlobalChallengeSkeleton />}
     </AppShell>
   )
 }
