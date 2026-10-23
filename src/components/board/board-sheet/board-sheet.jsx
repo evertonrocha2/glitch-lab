@@ -1,8 +1,10 @@
-import { splitError, weakSpot } from '../../../lib/case-info.js'
+import { isQuestion } from '../../../../shared/question.js'
+import { caseHeading, weakSpot } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import StepIcon from '../../ui/step-icon/step-icon.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import QuestionBadge from '../question-badge/question-badge.jsx'
 
 // The board's own colors, stacked: a PDF page is tall, not wide.
 const COLUMNS = [
@@ -72,7 +74,8 @@ function Summary({ cases }) {
 function SheetCard({ item }) {
   const t = useT()
   const labels = useLabels()
-  const { type, message } = splitError(item.error)
+  const { type, message } = caseHeading(item)
+  const question = isQuestion(item)
   const passed = Math.min(item.passedCount, 2)
   const clues = item.analysis?.pistas ?? []
   return (
@@ -80,8 +83,9 @@ function SheetCard({ item }) {
       <span aria-hidden="true" className={`w-2 shrink-0 ${STRIPE[item.status]}`} />
       <div className="min-w-0 flex-1 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2 text-xs">
+          {question && <QuestionBadge topic={item.topic} />}
           <span className="bg-primary-soft px-1.5 py-0.5 font-semibold text-primary">{labels.concept(item.concept)}</span>
-          <span className="border border-line px-1.5 py-0.5 font-mono text-muted">{item.language}</span>
+          {!(question && item.language === 'unknown') && <span className="border border-line px-1.5 py-0.5 font-mono text-muted">{item.language}</span>}
           <span className="ml-auto flex items-center gap-1.5 text-muted">
             <span aria-hidden="true" className="flex gap-1">
               {[0, 1].map((step) => (
@@ -92,10 +96,10 @@ function SheetCard({ item }) {
           </span>
         </div>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{type}</p>
-        {message && <p className="mt-1 line-clamp-2 font-mono text-sm leading-snug wrap-break-word text-ink/75">{message}</p>}
+        {message && <p className={`mt-1 line-clamp-2 text-sm leading-snug wrap-break-word text-ink/75 ${question ? '' : 'font-mono'}`}>{message}</p>}
         {item.analysis?.causa && (
           <div className="mt-3 border-t-2 border-dashed border-line pt-2.5">
-            <p className="font-label text-[10px] text-primary">{t('board.sheet.whyItBroke')}</p>
+            <p className="font-label text-[10px] text-primary">{question ? t('question.sheet.howItWorks') : t('board.sheet.whyItBroke')}</p>
             <p className="mt-1 line-clamp-3 text-sm leading-snug wrap-break-word text-ink">{item.analysis.causa}</p>
           </div>
         )}

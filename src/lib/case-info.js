@@ -1,3 +1,5 @@
+import { isQuestion } from '../../shared/question.js'
+
 // "TypeError: message" style first lines (also dotted Java/C# names). Anything else is a plain "Error".
 const TYPED_ERROR = /^([A-Za-z_$][\w$.]*)\s*:\s*(.*)$/
 
@@ -5,6 +7,13 @@ export function splitError(text) {
   const firstLine = text.split('\n')[0].trim()
   const match = TYPED_ERROR.exec(firstLine)
   return match ? { type: match[1], message: match[2] } : { type: 'Error', message: firstLine }
+}
+
+// The big line and the small line of a case on a card: the error type and its message, or, for a
+// question card from a doubt chat, its title and the first line of the question.
+export function caseHeading(item) {
+  if (!isQuestion(item)) return splitError(item.error)
+  return { type: item.title || item.topic, message: (item.question ?? '').split('\n')[0].trim() }
 }
 
 const MINUTE = 60_000

@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
-import { splitError } from '../../../lib/case-info.js'
+import { isQuestion } from '../../../../shared/question.js'
+import { caseHeading } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import ResultCards from '../../investigate/result-cards/result-cards.jsx'
 import { ProgressBlocks } from '../case-card/case-card.jsx'
+import QuestionBadge from '../question-badge/question-badge.jsx'
 
 const STATUS = {
   new: { style: 'border border-ink bg-white text-ink' },
@@ -21,7 +23,9 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
   const labels = useLabels()
   const { timeAgo } = useFormat()
   const panel = useRef(null)
-  const { type, message } = splitError(item.error)
+  const { type, message } = caseHeading(item)
+  // A question card (from a doubt chat): the question and a recap of the chat instead of an error.
+  const question = isQuestion(item)
   const status = STATUS[item.status]
   const solved = item.status === 'solved'
   const passed = Math.min(item.passedCount, 2)
@@ -62,8 +66,9 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b-2 border-ink bg-white px-6 py-3 sm:px-8">
           <p className="flex flex-wrap items-center gap-1.5">
             <span className={`px-1.5 py-0.5 text-xs font-semibold ${status.style}`}>{labels.status(item.status)}</span>
+            {question && <QuestionBadge topic={item.topic} />}
             <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{labels.concept(item.concept)}</span>
-            <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{item.language}</span>
+            {!(question && item.language === 'unknown') && <span className="border border-line bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{item.language}</span>}
             <span className="text-xs text-muted">{t('board.drawer.opened', { time: timeAgo(item.createdAt) })}</span>
           </p>
           <PixelButton variant="ghost" onClick={onClose} className="shrink-0 px-3 py-2">
@@ -75,8 +80,27 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
           <h2 id="case-title">
             <span className="block wrap-break-word font-pixel text-3xl font-bold text-ink">{type}</span>
             <span className="sr-only">:</span>{' '}
-            <span className="mt-2 block wrap-break-word font-mono text-sm leading-relaxed text-ink/80">{message}</span>
+            {question ? (
+              <span className="sr-only">{message}</span>
+            ) : (
+              <span className="mt-2 block wrap-break-word font-mono text-sm leading-relaxed text-ink/80">{message}</span>
+            )}
           </h2>
+
+          {question && (
+            <div className="mt-5 space-y-3">
+              <div className="border-2 border-ink bg-white p-4">
+                <p className="font-label text-[10px] text-secondary">{t('question.drawer.asked')}</p>
+                <p className="mt-1.5 whitespace-pre-wrap wrap-break-word leading-relaxed text-ink">{item.question}</p>
+              </div>
+              {item.recap && (
+                <p className="border-2 border-dashed border-secondary/50 bg-secondary-soft px-3 py-2 text-sm text-ink">
+                  <span className="font-label text-[10px] text-secondary">{t('question.drawer.recap')}</span>{' '}
+                  <span className="whitespace-pre-line">{item.recap}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {item.context && (
             <p className="mt-5 text-ink">
@@ -98,7 +122,7 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
             </details>
           ))}
 
-          <ResultCards analysis={item.analysis} />
+          <ResultCards analysis={item.analysis} question={question} />
 
           <div className="mt-10 border-2 border-ink bg-secondary-soft p-5 shadow-pixel-secondary">
             <div className="flex items-center justify-between gap-3">

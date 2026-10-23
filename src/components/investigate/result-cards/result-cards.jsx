@@ -5,7 +5,9 @@ import Reveal from '../../ui/reveal/reveal.jsx'
 const codeClass =
   'whitespace-pre-wrap wrap-break-word border-2 border-ink bg-mist p-4 font-mono text-sm leading-relaxed text-ink'
 
-export default function ResultCards({ analysis }) {
+// question: a card from a doubt chat, so "what happened" is the summary, "why" is how the idea
+// works, and there is no fix to reveal.
+export default function ResultCards({ analysis, question = false }) {
   const t = useT()
   const { explicacao, causa, correcao, exercicio, pistas, local } = analysis
 
@@ -41,18 +43,21 @@ export default function ResultCards({ analysis }) {
       )}
 
       <PixelCard as="section" tone="muted" className="p-6">
-        <h2 className="font-pixel text-xl font-bold text-ink">{t('board.result.whatHappened')}</h2>
+        <h2 className="font-pixel text-xl font-bold text-ink">{question ? t('question.result.inShort') : t('board.result.whatHappened')}</h2>
         <p className="mt-3 leading-relaxed text-ink">{explicacao}</p>
       </PixelCard>
 
       <PixelCard as="section" className="bg-primary-soft p-6">
         <h2 className="font-pixel text-xl font-bold text-ink">
-          <span className="bg-primary px-1.5 text-white">{t('board.result.whyLead')}</span> {t('board.result.whyTail')}
+          <span className="bg-primary px-1.5 text-white">{question ? t('question.result.howLead') : t('board.result.whyLead')}</span>{' '}
+          {question ? t('question.result.howTail') : t('board.result.whyTail')}
         </h2>
-        <p className="mt-3 leading-relaxed text-ink">{causa}</p>
-        <Reveal label={t('board.result.fix')} className="text-primary">
-          <pre className={codeClass}>{correcao}</pre>
-        </Reveal>
+        <p className={`mt-3 leading-relaxed text-ink ${question ? 'whitespace-pre-wrap wrap-break-word' : ''}`}>{causa}</p>
+        {correcao && (
+          <Reveal label={t('board.result.fix')} className="text-primary">
+            <pre className={codeClass}>{correcao}</pre>
+          </Reveal>
+        )}
       </PixelCard>
 
       <PixelCard as="section" tone="secondary" className="bg-secondary-soft p-6">
