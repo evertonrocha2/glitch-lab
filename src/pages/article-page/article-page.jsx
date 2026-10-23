@@ -14,7 +14,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import ArticlePageSkeleton from './article-page-skeleton.jsx'
 
 const NO_REACTION = { liked: false, rating: null }
@@ -173,7 +173,7 @@ export default function ArticlePage() {
   const t = useT()
   const { date, since } = useFormat()
   const { user, getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [state, setState] = useState({ status: 'loading' })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)

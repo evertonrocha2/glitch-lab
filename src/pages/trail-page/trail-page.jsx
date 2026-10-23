@@ -17,7 +17,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { newBlock } from '../../lib/notes/blocks.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import { useStudyTimer } from '../../lib/timer/study-timer-provider.jsx'
 import TrailPageSkeleton from './trail-page-skeleton.jsx'
 
@@ -180,7 +180,7 @@ function History({ history }) {
 export default function TrailPage() {
   const t = useT()
   const { getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const { running, start } = useStudyTimer()
   const navigate = useNavigate()
   const [data, setData] = useState(null)

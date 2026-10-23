@@ -17,7 +17,7 @@ import SkillMap from '../../components/review/skill-map/skill-map.jsx'
 import { formatDuration, localDay } from '../../lib/day.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressData, useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import ProgressPageSkeleton from './progress-page-skeleton.jsx'
 
 const SEGMENTS = 20
@@ -66,7 +66,8 @@ const EARN = [
 ]
 
 export default function ProgressPage() {
-  const { progress, refresh } = useProgress()
+  const progress = useProgressData()
+  const refresh = useProgressRefresh()
   const t = useT()
   const labels = useLabels()
 

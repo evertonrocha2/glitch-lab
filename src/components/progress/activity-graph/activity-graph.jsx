@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { activityLevel, calendarDay, WEEKS } from '../../../../shared/activity.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
@@ -43,6 +43,29 @@ function monthTotals(activity, today, format) {
   return [...totals]
 }
 
+// The year's squares. Memoized: moving the mouse only moves the outline drawn over them.
+const DayCells = memo(function DayCells({ days, start, lastDay }) {
+  return days.map((count, index) => {
+    const day = calendarDay(start, index)
+    if (day > lastDay) return null
+    const week = Math.floor(index / 7)
+    return (
+      <rect
+        // biome-ignore lint/suspicious/noArrayIndexKey: one fixed cell per day position
+        key={index}
+        data-index={index}
+        x={LEFT + week * STEP}
+        y={TOP + (index % 7) * STEP}
+        width={CELL}
+        height={CELL}
+        fill={LEVEL_FILL[activityLevel(count)]}
+        stroke="none"
+        strokeWidth={0}
+      />
+    )
+  })
+})
+
 // A GitHub-style year of activity: each square is a day, darker means more done that day.
 export default function ActivityGraph({ activity, today, title: titleProp, className = '' }) {
   const t = useT()
@@ -72,10 +95,16 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
   function onMove(event) {
     const index = event.target.dataset?.index
     if (index === undefined) return setHover(null)
+    // Still on the same square: nothing to redraw.
+    if (hover?.index === Number(index)) return
     const box = event.target.getBoundingClientRect()
     const frame = scroller.current.getBoundingClientRect()
     setHover({ index: Number(index), x: box.left - frame.left + scroller.current.scrollLeft + CELL / 2, y: box.top - frame.top })
   }
+
+  // Hundreds of dates to name: worked out again only when the data or the language change.
+  const months = useMemo(() => monthLabels(activity.start, format), [activity.start, format])
+  const totals = useMemo(() => monthTotals(activity, lastDay, format), [activity, lastDay, format])
 
   return (
     <section aria-labelledby="activity-title" className={className}>
@@ -102,7 +131,7 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
             onMouseLeave={() => setHover(null)}
             className="block h-auto w-full"
           >
-            {monthLabels(activity.start, format).map(({ week, month }) => (
+            {months.map(({ week, month }) => (
               <text key={`${week}-${month}`} x={LEFT + week * STEP} y={10} className="fill-muted font-label text-[10px]">
                 {month}
               </text>
@@ -112,25 +141,21 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
                 {short(format.day(calendarDay(A_SUNDAY, row), { weekday: 'short' }))}
               </text>
             ))}
-            {activity.days.map((count, index) => {
-              const day = calendarDay(activity.start, index)
-              if (day > lastDay) return null
-              const week = Math.floor(index / 7)
-              return (
-                <rect
-                  // biome-ignore lint/suspicious/noArrayIndexKey: one fixed cell per day position
-                  key={index}
-                  data-index={index}
-                  x={LEFT + week * STEP}
-                  y={TOP + (index % 7) * STEP}
-                  width={CELL}
-                  height={CELL}
-                  fill={LEVEL_FILL[activityLevel(count)]}
-                  stroke={hover?.index === index ? 'var(--color-ink)' : 'none'}
-                  strokeWidth={hover?.index === index ? 1.5 : 0}
-                />
-              )
-            })}
+            <DayCells days={activity.days} start={activity.start} lastDay={lastDay} />
+            {/* The hovered square's outline, drawn over it (the gap between squares is wider than the stroke). */}
+            {hover && (
+              <rect
+                aria-hidden="true"
+                pointerEvents="none"
+                x={LEFT + Math.floor(hover.index / 7) * STEP}
+                y={TOP + (hover.index % 7) * STEP}
+                width={CELL}
+                height={CELL}
+                fill={LEVEL_FILL[activityLevel(activity.days[hover.index])]}
+                stroke="var(--color-ink)"
+                strokeWidth={1.5}
+              />
+            )}
           </svg>
           {hover && (
             <p
@@ -161,7 +186,7 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
           </tr>
         </thead>
         <tbody>
-          {monthTotals(activity, lastDay, format).map(([month, total]) => (
+          {totals.map(([month, total]) => (
             <tr key={month}>
               <th scope="row">{month}</th>
               <td>{total}</td>

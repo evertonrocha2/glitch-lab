@@ -11,7 +11,7 @@ import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { splitError } from '../../lib/case-info.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
-import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import ArticleEditorPageSkeleton from './article-editor-page-skeleton.jsx'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
@@ -41,7 +41,7 @@ export default function ArticleEditorPage() {
   const t = useT()
   const labels = useLabels()
   const { user, getToken, signOut } = useAuth()
-  const { refresh: refreshProgress } = useProgress()
+  const refreshProgress = useProgressRefresh()
   const [draft, setDraft] = useState(EMPTY)
   const [cases, setCases] = useState([])
   const [tab, setTab] = useState('write')

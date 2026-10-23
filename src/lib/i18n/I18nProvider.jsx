@@ -26,11 +26,18 @@ export function initialLocale() {
   return browser.toLowerCase().startsWith('pt') ? 'pt-BR' : DEFAULT_LOCALE
 }
 
+// One PluralRules per language, made on first use (building one is the slow part).
+const pluralRules = new Map()
+function pluralRule(locale) {
+  if (!pluralRules.has(locale)) pluralRules.set(locale, new Intl.PluralRules(locale))
+  return pluralRules.get(locale)
+}
+
 // Intl calls 0 singular in Portuguese ("0 curtida"), but people say "0 curtidas": zero takes the plural
 // form, or its own `zero` message when one exists ("Nenhum caso ainda").
 function pluralForm(message, locale, count) {
   if (count === 0 && message.zero !== undefined) return message.zero
-  const form = count === 0 && locale.startsWith('pt') ? 'other' : new Intl.PluralRules(locale).select(count)
+  const form = count === 0 && locale.startsWith('pt') ? 'other' : pluralRule(locale).select(count)
   return message[form] ?? message.other
 }
 

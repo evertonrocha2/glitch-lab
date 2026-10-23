@@ -193,6 +193,36 @@ it('keeps the chat for the session and starts over with New chat', async () => {
   await userEvent.click(within(panel()).getByRole('button', { name: 'New chat' }))
   expect(within(panel()).queryByText('remember me')).toBeNull()
   expect(within(panel()).getByRole('button', { name: 'Plan my next 30 minutes' })).toBeInTheDocument()
+  // The button leaves with the chat, and focus goes back to the question box.
+  expect(within(panel()).queryByRole('button', { name: 'New chat' })).toBeNull()
+  expect(screen.getByLabelText('Your question')).toHaveFocus()
+})
+
+it('puts New chat in the header by Close, only once there is a chat', async () => {
+  const dialog = await openPanel()
+  const header = dialog.querySelector('header')
+  expect(within(header).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Close'])
+  await userEvent.type(screen.getByLabelText('Your question'), 'hi{Enter}')
+  await within(dialog).findByText('Answered by Board analyst')
+  const newChat = within(header).getByRole('button', { name: 'New chat' })
+  expect(newChat).toHaveAttribute('title', 'New chat')
+  expect(within(header).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['New chat', 'Close'])
+  // The title can shrink and cut off; the buttons can't, so they never sit on top of it.
+  expect(within(header).getByRole('heading', { name: 'Lab assistant' })).toHaveClass('truncate')
+  expect(newChat).toHaveClass('shrink-0')
+  expect(dialog.querySelector('form')).toHaveTextContent('Enter sends. Shift+Enter adds a line. Alt+A opens and closes me.')
+  expect(within(dialog.querySelector('form')).queryByRole('button', { name: 'New chat' })).toBeNull()
+})
+
+it('leaves Ctrl+/ to whatever already used it, like the code editor', async () => {
+  renderAt('/board', { user: 'alice' })
+  const used = (event) => event.preventDefault()
+  document.body.addEventListener('keydown', used)
+  await userEvent.keyboard('{Control>}/{/Control}')
+  expect(screen.queryByRole('dialog')).toBeNull()
+  document.body.removeEventListener('keydown', used)
+  await userEvent.keyboard('{Control>}/{/Control}')
+  expect(panel()).toBeInTheDocument()
 })
 
 it('shows the error and tries again', async () => {

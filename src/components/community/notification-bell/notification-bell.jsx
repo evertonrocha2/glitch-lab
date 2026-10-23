@@ -7,7 +7,7 @@ import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import Skeleton, { Bone, Line } from '../../ui/skeleton/skeleton.jsx'
 import CommunityIcon from '../community-icon/community-icon.jsx'
 
-// Light polling: once a minute, and whenever the tab comes back into focus.
+// Light polling: once a minute while the tab is visible, and whenever it comes back into focus.
 export const POLL_MS = 60_000
 
 const MESSAGE = { comment: 'notes.bell.comment', like: 'notes.bell.like', rating_valid: 'notes.bell.valid' }
@@ -30,7 +30,8 @@ export default function NotificationBell() {
   const box = useRef(null)
 
   useEffect(() => {
-    const timer = setInterval(refresh, POLL_MS)
+    // A hidden tab skips its polls; the focus on the way back asks right away.
+    const timer = setInterval(() => !document.hidden && refresh(), POLL_MS)
     window.addEventListener('focus', refresh)
     return () => {
       clearInterval(timer)

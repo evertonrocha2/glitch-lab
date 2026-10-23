@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { createNote } from '../api.js'
 import { useAuth } from '../auth/auth-provider.jsx'
 import { useT } from '../i18n/I18nProvider.jsx'
-import { useProgress } from '../progress/progress-provider.jsx'
+import { useProgressRefresh } from '../progress/progress-provider.jsx'
 import { interrogationNote } from './note.js'
 
 // "Export as note": writes the interrogation into a new note and opens it.
@@ -12,7 +12,7 @@ export function useExportInterrogation({ onError }) {
   const t = useT()
   const navigate = useNavigate()
   const { getToken } = useAuth()
-  const { refresh } = useProgress()
+  const refresh = useProgressRefresh()
   const [exporting, setExporting] = useState(false)
   const busy = useRef(false)
 

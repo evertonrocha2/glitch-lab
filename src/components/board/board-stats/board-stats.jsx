@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { weakSpot } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
@@ -5,7 +6,8 @@ import { useLabels } from '../../../lib/i18n/labels.js'
 const pad = (count) => String(count).padStart(2, '0')
 
 // One glance: how much is on the board and which kind of bug keeps coming back.
-export default function BoardStats({ cases }) {
+// Memoized: opening a case doesn't recount the board.
+export default memo(function BoardStats({ cases }) {
   const t = useT()
   const labels = useLabels()
   const count = (status) => cases.filter((item) => item.status === status).length
@@ -36,4 +38,4 @@ export default function BoardStats({ cases }) {
       </li>
     </ul>
   )
-}
+})
