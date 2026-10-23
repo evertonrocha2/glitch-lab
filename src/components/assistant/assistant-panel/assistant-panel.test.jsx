@@ -32,8 +32,8 @@ beforeEach(() => {
   vi.mocked(listNotes).mockReset().mockResolvedValue([])
 })
 
-const openButton = () => screen.getByRole('button', { name: 'Ask the detective' })
-const panel = () => screen.getByRole('dialog', { name: 'Ask the detective' })
+const openButton = () => screen.getByRole('button', { name: 'Lab assistant' })
+const panel = () => screen.getByRole('dialog', { name: 'Lab assistant' })
 
 async function openPanel(path = '/board') {
   renderAt(path, { user: 'alice' })
@@ -45,7 +45,7 @@ it('opens from the header and closes with Escape, giving focus back', async () =
   await openPanel()
   expect(screen.getByLabelText('Your question')).toHaveFocus()
   await userEvent.keyboard('{Escape}')
-  expect(screen.queryByRole('dialog', { name: 'Ask the detective' })).toBeNull()
+  expect(screen.queryByRole('dialog', { name: 'Lab assistant' })).toBeNull()
   expect(openButton()).toHaveFocus()
 })
 
@@ -153,7 +153,7 @@ it('opens a case from a reply action and closes the panel', async () => {
   await userEvent.type(screen.getByLabelText('Your question'), 'hi{Enter}')
   await userEvent.click(await within(panel()).findByRole('button', { name: 'Open the case' }))
   await waitFor(() => expect(currentLocation()).toBe('/board'))
-  expect(screen.queryByRole('dialog', { name: 'Ask the detective' })).toBeNull()
+  expect(screen.queryByRole('dialog', { name: 'Lab assistant' })).toBeNull()
   expect(await screen.findByRole('dialog', { name: /TypeError/ })).toBeInTheDocument()
 })
 
@@ -172,7 +172,7 @@ it('starts the study timer from a reply action', async () => {
   await openPanel('/progress')
   await userEvent.type(screen.getByLabelText('Your question'), 'plan{Enter}')
   await userEvent.click(await within(panel()).findByRole('button', { name: 'Start the study timer' }))
-  expect(screen.queryByRole('dialog', { name: 'Ask the detective' })).toBeNull()
+  expect(screen.queryByRole('dialog', { name: 'Lab assistant' })).toBeNull()
   expect(within(screen.getByRole('region', { name: 'Study timer' })).getByText('Studying')).toBeInTheDocument()
 })
 
@@ -217,13 +217,13 @@ it('knows which case is open on the board, and Escape closes only the assistant'
   await userEvent.type(screen.getByLabelText('Your question'), 'why does this case happen?{Enter}')
   expect(askAssistant).toHaveBeenCalledWith(expect.objectContaining({ page: { path: '/board', caseId: 'c1' } }), 'token-alice')
   await userEvent.keyboard('{Escape}')
-  expect(screen.queryByRole('dialog', { name: 'Ask the detective' })).toBeNull()
+  expect(screen.queryByRole('dialog', { name: 'Lab assistant' })).toBeNull()
   expect(screen.getByRole('dialog', { name: /TypeError/ })).toBeInTheDocument()
 })
 
 it('is not on signed-out pages', () => {
   renderAt('/')
-  expect(screen.queryByRole('button', { name: 'Ask the detective' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Lab assistant' })).toBeNull()
 })
 
 it('speaks Brazilian Portuguese: chips, thinking steps and the answer trace', async () => {
@@ -234,8 +234,8 @@ it('speaks Brazilian Portuguese: chips, thinking steps and the answer trace', as
     }),
   )
   renderAt('/board', { user: 'alice', locale: 'pt-BR' })
-  await userEvent.click(screen.getByRole('button', { name: 'Pergunte ao detetive' }))
-  const dialog = screen.getByRole('dialog', { name: 'Pergunte ao detetive' })
+  await userEvent.click(screen.getByRole('button', { name: 'Assistente do Lab' }))
+  const dialog = screen.getByRole('dialog', { name: 'Assistente do Lab' })
   expect(within(dialog).getByLabelText('Sua pergunta')).toHaveAttribute('placeholder', 'Ex.: Qual bug eu mais repito?')
   const chips = within(dialog).getByRole('list', { name: 'Perguntas sugeridas' })
   await userEvent.click(within(chips).getByRole('button', { name: 'Qual é o meu ponto fraco?' }))

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { pickSpecialists } from '../../../../shared/assistant.js'
 import { translate, useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelBug from '../../ui/pixel-bug/pixel-bug.jsx'
-import DetectiveAvatar from '../detective-avatar/detective-avatar.jsx'
+import LabAvatar from '../lab-avatar/lab-avatar.jsx'
 import { routingStep, workingStep, writingStep } from '../names.js'
 
 const STEP_MS = 2500
@@ -27,7 +27,7 @@ export default function ThinkingSteps({ question, page }) {
 
   return (
     <div className="flex items-start gap-2.5">
-      <DetectiveAvatar />
+      <LabAvatar />
       <div role="status" className="min-w-0 flex-1 border-2 border-ink bg-white p-3 shadow-pixel">
         <div className="flex items-center gap-2.5">
           <PixelBug className="h-5 w-auto shrink-0 motion-safe:animate-walk" />

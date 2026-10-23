@@ -179,7 +179,7 @@
   opacity: 0.35;
 }
 
-/* Ask the detective: the panel slides in from the left in a few hard steps. */
+/* Lab assistant: the panel slides in from the left in a few hard steps. */
 @theme {
   --animate-panel-in: panel-in 200ms steps(4, end) both;
 

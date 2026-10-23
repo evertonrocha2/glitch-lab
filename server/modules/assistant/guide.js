@@ -12,6 +12,6 @@ Pages (top bar: Board, Notes, Trail, Progress):
 
 Always there:
 - Study timer, bottom left: Start, Pause, Reset. It keeps running through reloads and counts toward your streak.
-- Ask the detective (this assistant): the button in the top bar, or Alt+A or Ctrl+/ from any signed-in page. Escape closes it.
+- Lab assistant (this assistant): the button in the top bar, or Alt+A or Ctrl+/ from any signed-in page. Escape closes it.
 - New badges pop up bottom right.
 - Each account has a daily AI limit. Sign out is in the top bar.`

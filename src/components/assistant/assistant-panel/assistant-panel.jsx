@@ -10,7 +10,7 @@ import { useStudyTimer } from '../../../lib/timer/study-timer-provider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
 import { AssistantBubble, UserBubble } from '../assistant-message/assistant-message.jsx'
-import DetectiveAvatar from '../detective-avatar/detective-avatar.jsx'
+import LabAvatar from '../lab-avatar/lab-avatar.jsx'
 import { suggestionsFor } from '../names.js'
 import ThinkingSteps from '../thinking-steps/thinking-steps.jsx'
 
@@ -120,7 +120,7 @@ function Dialog() {
         {/* Just the title and a close button: "New chat" lives by the composer, so the title never gets squeezed. */}
         <header className="flex items-center gap-3 border-b-2 border-ink bg-primary px-4 py-3 text-white">
           <span className="grid size-10 shrink-0 place-items-center border-2 border-ink bg-white">
-            <DetectiveAvatar className="size-7 border-0" />
+            <LabAvatar className="size-7 border-0" />
           </span>
           <span className="min-w-0 flex-1">
             <h2 id="assistant-title" className="font-pixel text-xl leading-tight font-bold">
@@ -145,7 +145,7 @@ function Dialog() {
           {empty && (
             <div className="space-y-4">
               <div className="flex items-start gap-2.5">
-                <DetectiveAvatar />
+                <LabAvatar />
                 <div className="min-w-0 flex-1 border-2 border-ink bg-white p-3 text-sm shadow-pixel">
                   <p>{t('app.assistant.hello')}</p>
                 </div>
@@ -260,7 +260,7 @@ export function AssistantButton() {
       <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
         <PixelLogo className="size-3.5" />
       </span>
-      {/* Phones and tablets show just the icon so the top row fits; the name stays "Ask the detective". */}
+      {/* Phones and tablets show just the icon so the top row fits; the name stays "Lab assistant". */}
       <span className="hidden lg:inline">{t('app.assistant.open')}</span>
     </PixelButton>
   )

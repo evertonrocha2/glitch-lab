@@ -1,4 +1,4 @@
-// The "Ask the detective" assistant: used by the API (limits, fallback routing) and the panel (names, chips).
+// The Lab assistant: used by the API (limits, fallback routing) and the panel (names, chips).
 
 // How much of the conversation the API reads, and how long each message may be.
 export const ASSISTANT_LIMITS = { messages: 12, content: 2000, actions: 3 }

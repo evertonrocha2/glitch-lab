@@ -1,6 +1,6 @@
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
-import DetectiveAvatar from '../detective-avatar/detective-avatar.jsx'
+import LabAvatar from '../lab-avatar/lab-avatar.jsx'
 import { actionLabel, specialistLabel, stepLabel } from '../names.js'
 import ReplyText from '../reply-text/reply-text.jsx'
 
@@ -24,7 +24,7 @@ export function AssistantBubble({ message, onAction, busy }) {
 
   return (
     <div className="flex items-start gap-2.5">
-      <DetectiveAvatar />
+      <LabAvatar />
       <div className="min-w-0 flex-1 border-2 border-ink bg-white p-3 shadow-pixel">
         {agents.length > 0 && <p className="font-label text-[10px] text-primary">{t('app.assistant.answeredBy', { names: agents.map(name).join(' + ') })}</p>}
         <div className={`mt-1.5 ${several ? 'space-y-3' : ''}`}>

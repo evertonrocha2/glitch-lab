@@ -4,7 +4,7 @@ import { spendAiCall, takeAiCall } from '../../infra/ai/quota.js'
 import { runAssistant } from './orchestrator.js'
 import { parseAssistantRequest } from './request.js'
 
-// "Ask the detective": a router agent hands the question to 1-2 specialist agents.
+// The Lab assistant: a router agent hands the question to 1-2 specialist agents.
 // The question takes one AI call from the daily limit up front; a second specialist takes another
 // afterwards, so the limit keeps tracking the real Gemini usage.
 export async function ask({ store, ai }, user, body, locale) {

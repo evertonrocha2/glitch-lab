@@ -189,7 +189,7 @@ export async function setTrailMission({ trailId, missionId, done }, token) {
   return (await request(`/api/trails/${encodeURIComponent(trailId)}/missions/${encodeURIComponent(missionId)}`, { method: 'PATCH', body: { done }, token })).trail
 }
 
-// "Ask the detective": { reply, parts, actions, agents, steps }.
+// The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
 }
