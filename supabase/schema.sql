@@ -464,3 +464,35 @@ create table if not exists public.interrogations (
 create index if not exists interrogations_user_updated on public.interrogations (user_id, updated_at desc);
 
 alter table public.interrogations enable row level security;
+
+-- Spaced review (Leitner boxes). One row per student and bug concept: the box it sits in (1 to 5)
+-- and the day it's due again. A right answer moves it up a box, a wrong one back to box 1.
+create table if not exists public.review_items (
+  user_id uuid not null references public.users (id) on delete cascade,
+  concept text not null,
+  box int not null default 1 check (box between 1 and 5),
+  due_day date not null,
+  last_day date,
+  right_count int not null default 0,
+  wrong_count int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, concept)
+);
+
+-- One row per student and day: the open review session (its cards with their answers, which stay
+-- on the server) and the day's tally. Every write checks `version`, so two answers landing
+-- together never overwrite each other.
+create table if not exists public.review_days (
+  user_id uuid not null references public.users (id) on delete cascade,
+  day date not null,
+  session jsonb,
+  cards int not null default 0,
+  right_count int not null default 0,
+  completed boolean not null default false,
+  version int not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+
+alter table public.review_items enable row level security;
+alter table public.review_days enable row level security;

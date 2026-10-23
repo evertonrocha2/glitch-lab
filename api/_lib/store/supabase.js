@@ -3,6 +3,7 @@ import { PROFILE_COLUMNS as SHARED_PROFILE_COLUMNS, profileFromRow } from './pro
 import { createSupabaseCommunity } from './community-supabase.js'
 import { createSupabaseDuels } from './duel-supabase.js'
 import { createSupabaseEvents } from './events-supabase.js'
+import { createSupabaseReview } from './review-supabase.js'
 import { createSupabaseInterrogations } from './interrogation-supabase.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
@@ -450,6 +451,8 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabaseDuels(db),
     // Community events, entries and votes: see events-supabase.js.
     ...createSupabaseEvents(db),
+    // Spaced review boxes and sessions: see review-supabase.js.
+    ...createSupabaseReview(db),
     // Interrogations (guided debugging per case): see interrogation-supabase.js.
     ...createSupabaseInterrogations(db),
   }
