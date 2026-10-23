@@ -158,7 +158,6 @@ function demoCases(locale) {
 }
 
 import { MISSION_XP } from '../../../shared/trails.js'
-import { seedCommunity } from '../articles/articles.seed.js'
 import { serverDay } from '../../core/days.js'
 
 // Earlier, shorter sessions over the past two months, so the demo's activity graph has a history.
@@ -329,7 +328,6 @@ export async function seedDemo(store, userId, today = serverDay(), locale = 'en'
   await store.createTrail(userId, demoTrail(byConcept, daysBefore(today, DEMO_STUDY_MINUTES.length), locale))
   // Only a fresh profile gets the sample one, so a demo's own edits are never overwritten.
   if (!(await store.getProfile(userId))?.displayName) await store.updateProfile(userId, locale === 'pt-BR' ? { ...DEMO_PROFILE, ...DEMO_PROFILE_PT } : DEMO_PROFILE)
-  // Sample community articles (made once per language) and one notification for this demo to open.
-  await seedCommunity(store, userId, locale)
+  // Nothing public: the demo never writes articles, events or people into the shared feeds.
   return true
 }
