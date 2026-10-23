@@ -1,3 +1,4 @@
+import { createSseParser } from '../../shared/sse.js'
 import { currentLocale, translate } from './i18n/I18nProvider.jsx'
 import { translateServerMessage } from './i18n/serverMessages.js'
 
@@ -192,6 +193,78 @@ export async function setTrailMission({ trailId, missionId, done }, token) {
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
+}
+
+// The streamed answer goes through the same /api as everything else, unless VITE_API_STREAM_URL
+// points it straight at the API (for a proxy that would hold the stream back).
+export const ASSISTANT_STREAM_URL = `${(import.meta.env?.VITE_API_STREAM_URL ?? '').replace(/\/$/, '')}/api/assistant/stream`
+
+// The stream could not be used at all (blocked, buffered into something else, cut before any text):
+// the caller asks askAssistant instead.
+export class StreamUnavailableError extends Error {}
+
+// The Lab assistant, streamed over Server-Sent Events. fetch and a reader, since EventSource can't
+// POST or send the Authorization header. onEvent({ type, data }) gets each `step` and `delta` as it
+// comes; resolves with the `done` payload (the same as askAssistant's), or throws: the translated
+// `error` message, AuthError, the abort when `signal` fires, or StreamUnavailableError.
+export async function streamAssistant({ messages, page }, token, { onEvent, signal } = {}) {
+  const headers = { Accept: 'text/event-stream', 'Accept-Language': currentLocale(), 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let res
+  try {
+    res = await fetch(ASSISTANT_STREAM_URL, { method: 'POST', headers, body: JSON.stringify({ messages, page }), signal })
+  } catch (err) {
+    if (signal?.aborted) throw err
+    throw new StreamUnavailableError(offlineMessage())
+  }
+
+  if (!(res.headers.get('content-type') ?? '').startsWith('text/event-stream') || !res.body) {
+    const data = await res.json().catch(() => null)
+    if (res.status === 401) throw new AuthError(serverMessage(data, () => translate(currentLocale(), 'server.signIn')))
+    // The API's own answer (a bad request, the daily limit): asking again the other way won't help.
+    if (!res.ok && data?.message) throw new Error(serverMessage(data, genericMessage))
+    throw new StreamUnavailableError(genericMessage())
+  }
+
+  let result = null
+  let failure = null
+  let wrote = false
+  const parser = createSseParser(({ event, data }) => {
+    let payload
+    try {
+      payload = JSON.parse(data)
+    } catch {
+      return
+    }
+    if (event === 'done') result = payload
+    else if (event === 'error') failure = payload
+    else {
+      if (event === 'delta') wrote = true
+      onEvent?.({ type: event, data: payload })
+    }
+  })
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      parser.push(decoder.decode(value, { stream: true }))
+    }
+    parser.push(decoder.decode())
+    parser.end()
+  } catch (err) {
+    if (signal?.aborted) throw err
+    if (!wrote) throw new StreamUnavailableError(genericMessage())
+    throw new Error(genericMessage())
+  }
+
+  if (result) return result
+  if (failure) throw new Error(serverMessage(failure, genericMessage))
+  if (!wrote) throw new StreamUnavailableError(genericMessage())
+  throw new Error(genericMessage())
 }
 
 // { profile, earnedBadges, progress } for the profile editor.
