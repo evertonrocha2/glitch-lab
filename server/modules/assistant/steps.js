@@ -21,6 +21,7 @@ const PT_BR = {
   fellBack: 'Escolhendo especialistas por palavras-chave (o roteador não respondeu)',
   failed: (name) => `${name} não conseguiu responder desta vez`,
   merging: 'Juntando as respostas',
+  handing: (names) => `Passando para ${names.join(' e ')}`,
 }
 
 const EN = {
@@ -28,12 +29,13 @@ const EN = {
   fellBack: 'Picking specialists by keywords (the router did not answer)',
   failed: (name) => `${name} could not answer this time`,
   merging: 'Putting the answers together',
+  handing: (names) => `Handing it to ${names.join(' and ')}`,
 }
 
 const nameOf = (id, locale) => (locale === 'pt-BR' ? PT_BR.names[id] : undefined) ?? specialistName(id)
 const doingOf = (id, locale) => (locale === 'pt-BR' ? PT_BR.doing[id] : undefined) ?? SPECIALISTS.find((item) => item.id === id)?.doing
 
-// { routing, fellBack, merging, working(id), failed(id) } in the reader's language.
+// { routing, fellBack, merging, working(id), failed(id), handing(ids) } in the reader's language.
 export function stepText(locale = 'en') {
   const words = locale === 'pt-BR' ? PT_BR : EN
   return {
@@ -42,5 +44,6 @@ export function stepText(locale = 'en') {
     merging: words.merging,
     working: (id) => `${nameOf(id, locale)} ${doingOf(id, locale)}`,
     failed: (id) => words.failed(nameOf(id, locale)),
+    handing: (ids) => words.handing(ids.map((id) => nameOf(id, locale))),
   }
 }

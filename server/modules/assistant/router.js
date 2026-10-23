@@ -63,7 +63,8 @@ export const fallbackRoute = (messages, page) =>
 export const ROUTER_TIMEOUT_MS = 25_000
 
 // The router agent's choice, or a keyword and page based one if the AI call fails or answers nonsense.
-export async function routeQuestion(generate, { messages, page }) {
+// signal: the streamed answer stops routing when the student goes away.
+export async function routeQuestion(generate, { messages, page, signal }) {
   try {
     const answer = await generate({
       system: ROUTER_SYSTEM,
@@ -71,6 +72,7 @@ export async function routeQuestion(generate, { messages, page }) {
       schema: ROUTER_SCHEMA,
       timeoutMs: ROUTER_TIMEOUT_MS,
       retry: false,
+      ...(signal ? { signal } : {}),
     })
     return { route: parseRoute(answer), fellBack: false }
   } catch {
