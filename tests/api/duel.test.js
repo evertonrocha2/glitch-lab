@@ -294,7 +294,7 @@ it('pairs two quick-match players, and a newer waiting player joins an older one
 it('offers the Glitch Bot: it gives up the waiting room and plays from its plan', async () => {
   const waiting = await act('queue')
   at(START + 20_000)
-  const game = await act('bot', { from: waiting.body.duel.id })
+  const game = await act('bot')
   expect(game.status).toBe(201)
   expect((await store.getDuel(waiting.body.duel.id)).status).toBe('cancelled')
   const id = game.body.duel.id
@@ -401,6 +401,19 @@ it('rematches: the first to ask opens a private duel, the second joins it', asyn
   const theirs = await act('rematch', { id }, 'dev:bob')
   expect(theirs.body.duel).toMatchObject({ id: mine.body.duel.id, status: 'active', you: 1 })
   expect((await act('rematch', { id }, 'dev:carol')).status).toBe(403)
+})
+
+it('gives up every waiting room of mine before a bot game or a quick match, so I sit in one duel at a time', async () => {
+  const room = await act('create')
+  const queued = await act('queue')
+  expect((await store.getDuel(room.body.duel.id)).status).toBe('cancelled')
+  expect(queued.body.duel).toMatchObject({ kind: 'queue', status: 'waiting' })
+  const another = await act('create')
+  const game = await act('bot')
+  expect(game.body.duel.kind).toBe('bot')
+  expect((await store.getDuel(queued.body.duel.id)).status).toBe('cancelled')
+  expect((await store.getDuel(another.body.duel.id)).status).toBe('cancelled')
+  expect((await store.listDuels('alice', { status: 'waiting' })).length).toBe(0)
 })
 
 it('rejects unknown actions and ids', async () => {

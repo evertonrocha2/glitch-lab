@@ -95,18 +95,36 @@ async function settle(store, duel, userId, now) {
   return settled ?? duel
 }
 
+// Gives up a waiting room of mine. Returns the duel as it is now: cancelled, or already active
+// when someone took the other seat first.
+async function cancelRoom(store, id, userId) {
+  const { duel } = await mutate(store, id, (current) => (current.status === 'waiting' && isPlayer(current, userId) ? { fields: { status: 'cancelled' } } : {}), 3)
+  return duel
+}
+
+// Gives up every waiting room of mine before I start or join another duel, so nobody sits in
+// several at once. Returns a room that someone joined in the meantime (I'm playing that one), or null.
+async function cancelWaiting(store, userId) {
+  const rooms = await store.listDuels(userId, { status: 'waiting' })
+  const after = await Promise.all(rooms.map((room) => cancelRoom(store, room.id, userId)))
+  return after.find((duel) => duel?.status === 'active') ?? null
+}
+
 // Quick match, second half: a waiting player whose duel is newer than another waiting one joins
-// the older one, so two people who queued at the same moment still meet.
+// the older one, so two people who queued at the same moment still meet. Their own room is given
+// up first (if someone took that seat meanwhile, they stay there), and opened again when no older
+// duel could be joined after all.
 async function joinOlderQueue(store, duel, user, now) {
   if (duel.kind !== 'queue' || duel.status !== 'waiting' || duel.players[0].userId !== user.id) return null
   const older = (await store.findQueueDuels(user.id, iso(now - QUEUE_FRESH_MS))).filter((item) => item.createdAt < duel.createdAt || (item.createdAt === duel.createdAt && item.id < duel.id))
+  if (!older.length) return null
+  const mine = await cancelRoom(store, duel.id, user.id)
+  if (mine?.status !== 'cancelled') return null
   for (const candidate of older) {
     const joined = await store.updateDuel(candidate.id, { players: [...candidate.players, seatFor(user, now)], status: 'active', startAt: iso(now) }, candidate.version)
-    if (joined) {
-      await mutate(store, duel.id, (current) => (current.status === 'waiting' ? { fields: { status: 'cancelled' } } : {}), 3)
-      return joined
-    }
+    if (joined) return joined
   }
+  await mutate(store, duel.id, (current) => (current.status === 'cancelled' ? { fields: { status: 'waiting' } } : {}), 3)
   return null
 }
 
@@ -163,7 +181,7 @@ export async function duelAction(user, body, now = Date.now()) {
     return respond(store, duel, user.id, now, 201)
   }
   if (action === 'queue') return queue(store, user, now)
-  if (action === 'bot') return playBot(store, user, body, now)
+  if (action === 'bot') return playBot(store, user, now)
   if (action === 'join') return join(store, user, body, now)
   if (!isId(body.id)) return fail(400, 'Invalid request.')
   if (action === 'answer') return answer(store, user, body, now)
@@ -199,6 +217,9 @@ async function queue(store, user, now) {
   const waiting = await store.listDuels(user.id, { status: 'waiting' })
   const own = waiting.find((duel) => duel.kind === 'queue')
   if (own) return respond(store, await settle(store, await store.getDuel(own.id), user.id, now), user.id, now)
+  // A private room I left open: given up, since I'm looking for someone else now.
+  const taken = await cancelWaiting(store, user.id)
+  if (taken) return respond(store, taken, user.id, now)
   for (const candidate of await store.findQueueDuels(user.id, iso(now - QUEUE_FRESH_MS))) {
     const outcome = joinFields(candidate, user, now)
     if (!outcome.fields) continue
@@ -209,13 +230,12 @@ async function queue(store, user, now) {
   return respond(store, duel, user.id, now, 201)
 }
 
-// The Glitch Bot, for when nobody else is around. `from` is a waiting duel to give up first.
-async function playBot(store, user, body, now) {
-  if (isId(body.from)) {
-    await mutate(store, body.from, (duel) =>
-      isPlayer(duel, user.id) && duel.status === 'waiting' && duel.players.length === 1 ? { fields: { status: 'cancelled' } } : {},
-    )
-  }
+// The Glitch Bot, for when nobody else is around. Every waiting room of mine is given up first
+// (the client still sends the one it showed as `from`); if someone just took a seat in one, I play
+// that duel instead.
+async function playBot(store, user, now) {
+  const taken = await cancelWaiting(store, user.id)
+  if (taken) return respond(store, taken, user.id, now)
   const rounds = buildRounds()
   const duel = await createWithCode(store, {
     kind: 'bot',
