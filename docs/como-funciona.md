@@ -36,8 +36,7 @@ São quatro serviços. Cada um faz uma coisa só.
 ```
                  ┌────────────────────────────┐
   Navegador ───► │ VERCEL                     │  o site (HTML, JS, CSS)
-                 │ hackaton-glitch-detective  │
-                 │ .vercel.app                │
+                 │ glitch-lab-app.vercel.app  │
                  └──────────┬─────────────────┘
                             │ /api/*  (a Vercel repassa)
                             ▼

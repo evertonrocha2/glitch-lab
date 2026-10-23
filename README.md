@@ -4,7 +4,7 @@
 
 A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Detective). In English and Brazilian Portuguese.
 
-**Live:** https://hackaton-glitch-detective.vercel.app (press *Use demo account*). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
+**Live:** https://glitch-lab-app.vercel.app (press *Use demo account*). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
 
 **How it all works** (hosting, cron, layers, flows), in Portuguese: [docs/como-funciona.md](docs/como-funciona.md).
 
