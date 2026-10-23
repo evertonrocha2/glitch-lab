@@ -112,6 +112,8 @@ export function joinDuel(id, { seat = null, onChange, onStatus, onPresence }) {
 // still only { type: 'changed', v }; the page then asks the API what's new.
 export const dmTopic = (id) => `dm:${id}`
 export const communityTopic = (id) => `community:${id}`
+// My own account's topic: the server nudges it when someone sends me a DM. Only I know my id.
+export const userTopic = (id) => `user:${id}`
 
 // Says "changed" on a topic without joining it. Never throws.
 export async function nudgeTopic(topic, v = null) {
