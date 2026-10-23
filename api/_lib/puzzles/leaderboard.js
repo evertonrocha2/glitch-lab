@@ -6,7 +6,7 @@ export const ANONYMOUS = 'Anonymous detective'
 
 // Only a public profile shows a name and picture. Built field by field: no email, no account id,
 // and a private profile's name stays private even when it has one.
-function who(profile, userId) {
+export function who(profile, userId) {
   if (!profile?.isPublic || !profile.handle) return { name: ANONYMOUS, handle: null, avatar: null }
   return {
     name: profile.displayName ?? profile.handle,

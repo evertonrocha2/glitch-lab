@@ -81,12 +81,14 @@ export const closedRounds = (rounds, now) => rounds.filter((round) => round.clos
 // asking right now (so they count as seen). Forfeit rule: during an active duel, a player whose
 // page hasn't checked in for STALE_MS loses, whatever the score; when both went quiet, the one
 // gone longer loses. Players who stay but don't answer just score 0 on those rounds.
-export function outcomeAt(duel, now, presentId = null) {
+// `leavingId` is a player who walked out on purpose: they forfeit right away (unless it was over).
+export function outcomeAt(duel, now, presentId = null, leavingId = null) {
   if (duel.status !== 'active') return null
   const rounds = timeline(duel, now)
   const over = now >= rounds.at(-1).closeAt
   let forfeitBy = null
-  if (!over) {
+  if (!over && leavingId) forfeitBy = leavingId
+  else if (!over) {
     const seenAt = (player) => (player.userId === presentId ? now : ms(player.seenAt))
     const stale = duel.players.filter((player) => !player.bot && now - seenAt(player) > STALE_MS).sort((a, b) => seenAt(a) - seenAt(b))
     if (!stale.length) return null

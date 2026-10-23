@@ -2,6 +2,7 @@ import { conceptLabel } from '../shared/concepts.js'
 import { generateJson } from './_lib/ai/index.js'
 import { parseChallenge, toPublicChallenge } from './_lib/challenges.js'
 import { cron, getDaily, getGlobal, startPuzzle } from './_lib/handlers/daily.js'
+import { duelAction, getDuel } from './_lib/duel/play.js'
 import { fail, ok, readJson, requireUser } from './_lib/http.js'
 import { localeOf } from './_lib/locale.js'
 import { getRiddle, guessRiddle } from './_lib/riddle/play.js'
@@ -18,6 +19,8 @@ export async function POST(request) {
   if (auth.response) return auth.response
 
   const body = await readJson(request)
+  // Duel: { duel: 'create' | 'join' | 'queue' | 'bot' | 'answer' | 'focus' | 'leave' | 'rematch', ... }.
+  if (body?.duel !== undefined) return duelAction(auth.user, body)
   if (body?.riddle !== undefined) return guessRiddle(auth.user, body)
   if (body?.daily !== undefined || body?.puzzleId !== undefined) {
     return typeof body.puzzleId === 'string' ? startPuzzle(auth.user, body.puzzleId) : fail(400, 'Invalid request.')
@@ -71,6 +74,8 @@ export async function GET(request) {
   if (params.has('daily')) return getDaily(auth.user)
   if (params.has('global')) return getGlobal(auth.user)
   if (params.has('riddle')) return getRiddle(auth.user)
+  // Duel: ?duel=lobby for the lobby, ?duel=<id> for one duel's live state.
+  if (params.has('duel')) return getDuel(auth.user, params.get('duel'))
 
   const id = params.get('id') ?? ''
   const store = getStore()
