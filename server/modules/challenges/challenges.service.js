@@ -3,6 +3,7 @@ import { LIMITS } from '../../../shared/limits.js'
 import { isQuestion } from '../../../shared/question.js'
 import { AppError, badRequest, conflict, notFound } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
+import { createBoundary, findLeak, guardText, screenInput, secretLines } from '../../infra/ai/guard/index.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { buildChallengePrompt, CHALLENGE_SCHEMA, challengeSystem } from './challenge.prompt.js'
 import { hintAt, parseChallenge, toPublicChallenge, toPublicPuzzleChallenge } from './challenges.model.js'
@@ -41,11 +42,12 @@ export async function startChallenge({ store, ai }, user, body, locale) {
 
   await spendAiCall(store, user)
   const language = challengeLanguage(kase)
+  const boundary = createBoundary()
   // Hints and the bug explanation in the reader's language; the symptom stays the real error text.
   const parsed = await withAi(async () => {
     const answer = await ai.generateJson({
-      system: challengeSystem(locale),
-      prompt: buildChallengePrompt({ conceptName: conceptLabel(kase.concept), language, error: kase.error, why: kase.analysis.causa, question: questionOf(kase) }, locale),
+      system: challengeSystem(locale, { boundary }),
+      prompt: buildChallengePrompt({ conceptName: conceptLabel(kase.concept), language, error: kase.error, why: kase.analysis.causa, question: questionOf(kase) }, locale, boundary),
       schema: CHALLENGE_SCHEMA,
     })
     return parseChallenge(answer)
@@ -94,16 +96,27 @@ export async function checkFix({ store, ai }, user, id, body, locale) {
   // Sending the untouched exercise back is a free "no", not a paid AI call.
   if (body.code.trim() === challenge.brokenCode.trim()) return { passed: false, feedback: UNCHANGED[locale], case: kase }
 
+  // Instructions to the grader inside the code: refused before any AI call, no attempt counted.
+  const blocked = await screenInput(store, user, { fields: [{ text: body.code, prose: false }], feature: 'gym' })
+  if (blocked) return { passed: false, feedback: guardText(`gym_${blocked.kind === 'injection' ? 'injection' : 'off_topic'}`, locale), case: kase, guard: blocked.kind }
+
   await spendAiCall(store, user)
+  const boundary = createBoundary()
   const verdict = await withAi(async () => {
     const secret = await store.getChallengeSecret(challenge.id)
     const answer = await ai.generateJson({
-      system: checkSystem(locale),
-      prompt: buildCheckPrompt({ ...challenge, ...secret, studentCode: body.code }, locale),
+      system: checkSystem(locale, { boundary }),
+      prompt: buildCheckPrompt({ ...challenge, ...secret, studentCode: body.code }, locale, boundary),
       schema: CHECK_SCHEMA,
     })
-    return parseVerdict(answer)
+    if (answer?.off_topic === true) return { guard: 'off_topic' }
+    const parsed = parseVerdict(answer)
+    // Solution lines the student's code doesn't have yet, or the prompt itself, never reach them.
+    const lines = secretLines(secret?.solution, `${challenge.brokenCode}\n${body.code}`)
+    return findLeak(parsed.feedback, { boundary, lines }) ? { ...parsed, feedback: guardText('leak', locale), leaked: true } : parsed
   })
+  // Not an attempt at the exercise: said kindly, and not counted as one.
+  if (verdict.guard) return { passed: false, feedback: guardText('gym_off_topic', locale), case: kase, guard: verdict.guard }
 
   await store.updateChallenge(userId, challenge.id, { attempts: challenge.attempts + 1, status: verdict.passed ? 'passed' : 'open' })
 

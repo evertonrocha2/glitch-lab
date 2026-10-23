@@ -2,6 +2,7 @@ import { computeProgress } from '../../../shared/progress.js'
 import { trailSummary, trailView, trailViews } from '../../../shared/trails.js'
 import { badRequest, conflict, notFound } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
+import { createBoundary, findLeak } from '../../infra/ai/guard/index.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { buildTrailPrompt, TRAIL_SCHEMA, trailSystem } from './trail.prompt.js'
 import { parseTrail, trailFacts } from './trails.model.js'
@@ -42,9 +43,16 @@ export async function buildTrail({ store, ai }, user, today, locale) {
   await spendAiCall(store, user)
 
   const progress = computeProgress({ ...data, today })
+  const boundary = createBoundary()
   // Titles and mission texts are written in the reader's language and saved that way.
   const parsed = await withAi(async () => {
-    const answer = await ai.generateJson({ system: trailSystem(locale), prompt: buildTrailPrompt(trailFacts({ ...data, progress }), locale), schema: TRAIL_SCHEMA })
+    const answer = await ai.generateJson({
+      system: trailSystem(locale, { boundary }),
+      prompt: buildTrailPrompt(trailFacts({ ...data, progress }), locale, boundary),
+      schema: TRAIL_SCHEMA,
+    })
+    // A note that talked the model into reciting its prompt: no trail rather than a leaked one.
+    if (findLeak(JSON.stringify(answer), { boundary })) throw new Error('AI trail leaked its instructions')
     return parseTrail(answer, data.cases, locale)
   })
 
