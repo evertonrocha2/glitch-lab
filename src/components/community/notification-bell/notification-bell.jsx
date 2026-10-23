@@ -16,6 +16,7 @@ const MESSAGE = { comment: 'notes.bell.comment', like: 'notes.bell.like', rating
 // Event notifications ("Bo joined Rinha de Backend") point at an event instead.
 export function notificationText({ type, actor, articleTitle, eventTitle }, t = (key, vars) => translate('en', key, vars)) {
   if (type.startsWith('event_')) return t(`events.bell.${type}`, { name: actor.name, title: eventTitle ?? t('events.bell.someEvent') })
+  if (type === 'message') return t('chat.bell.message', { name: actor.name })
   const title = articleTitle ?? t('notes.bell.yourArticle')
   return t(MESSAGE[type] ?? 'notes.bell.bad', { name: actor.name, title })
 }
@@ -105,7 +106,7 @@ export default function NotificationBell() {
               {notifications.map((item) => (
                 <li key={item.id}>
                   <Link
-                    to={item.eventId ? `/events/${item.eventId}` : `/articles/${item.articleId}`}
+                    to={item.type === 'message' ? '/messages' : item.eventId ? `/events/${item.eventId}` : `/articles/${item.articleId}`}
                     onClick={() => openItem(item)}
                     className={`flex items-start gap-2.5 px-3 py-2.5 hover:bg-mist ${item.read ? '' : 'bg-primary-soft'}`}
                   >

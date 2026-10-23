@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { BADGES } from '../../../shared/badges.js'
 import { AVATAR_COLORS, handleProblem, LANGUAGES, LINKS, linkProblem, OPEN_TO, PROFILE_LIMITS, ROLES } from '../../../shared/profile.js'
+import MessagePrivacy from '../../components/chat/message-privacy/message-privacy.jsx'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
@@ -428,6 +429,7 @@ export default function ProfilePage() {
             </p>
           </section>
 
+          <div className="space-y-8">
           <PixelCard tone="secondary" as="form" onSubmit={save} className="space-y-6 p-5 sm:p-7">
             <div>
               <label htmlFor="display-name" className={LABEL}>
@@ -533,6 +535,9 @@ export default function ProfilePage() {
 
             {saved.isPublic && saved.handle && <PublicLink handle={saved.handle} />}
           </PixelCard>
+          {/* Saved on its own, as soon as it's picked. */}
+          <MessagePrivacy />
+          </div>
         </div>
       )}
     </AppShell>

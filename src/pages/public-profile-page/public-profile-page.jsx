@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { BADGES } from '../../../shared/badges.js'
+import MessageButton from '../../components/chat/message-button/message-button.jsx'
 import ActivityGraph from '../../components/progress/activity-graph/activity-graph.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import BadgeIcon from '../../components/ui/badge-icon/badge-icon.jsx'
@@ -152,6 +153,7 @@ export default function PublicProfilePage() {
             <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               <ProfileCard profile={profile} large headingLevel={1} />
               <div>
+                <MessageButton handle={profile.handle} className="mb-5" />
                 <Stats profile={profile} />
                 {profile.memberSince && (
                   <p className="mt-4 font-label text-[10px] text-muted">

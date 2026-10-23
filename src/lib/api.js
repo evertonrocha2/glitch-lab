@@ -462,3 +462,99 @@ export async function startReview(today, token) {
 export function answerReview({ sessionId, index, choice, today }, token) {
   return request('/api/review/answers', { method: 'POST', body: { sessionId, index, choice, today }, token })
 }
+
+// Direct messages. { conversations, unread } (unread: conversations with news).
+export function listConversations(token) {
+  return request('/api/conversations', { token })
+}
+
+// How many conversations have unread messages, for the nav badge.
+export async function getUnreadMessages(token) {
+  return (await request('/api/conversations/unread', { token })).unread
+}
+
+// Opens (or reopens) my conversation with a public profile: { id, other, blocked, canSend, reason }.
+export async function startConversation(handle, token) {
+  return (await request('/api/conversations', { method: 'POST', body: { handle }, token })).conversation
+}
+
+// { conversation, messages (oldest first), hasMore }. before: an older page; after: what's new.
+export function getConversationMessages(id, { before, after } = {}, token) {
+  return request(withQuery(`${at('/api/conversations', id)}/messages`, { before, after }), { token })
+}
+
+export async function sendConversationMessage(id, body, token) {
+  return (await request(`${at('/api/conversations', id)}/messages`, { method: 'POST', body: { body }, token })).message
+}
+
+// Returns how many conversations are still unread.
+export async function markConversationRead(id, token) {
+  return (await request(`${at('/api/conversations', id)}/read`, { method: 'POST', token })).unread
+}
+
+// For the "Send message" button: { canMessage, reason, blocked, conversationId }.
+export function getMessagingWith(handle, token) {
+  return request(at('/api/messaging/with', handle), { token })
+}
+
+// "Who can message me": 'everyone' or 'nobody'.
+export async function getMessageSettings(token) {
+  return (await request('/api/messaging/settings', { token })).allowMessages
+}
+
+export async function saveMessageSettings(allowMessages, token) {
+  return (await request('/api/messaging/settings', { method: 'PATCH', body: { allowMessages }, token })).allowMessages
+}
+
+// target: { handle } or { conversationId }.
+export function blockPerson(target, token) {
+  return request('/api/blocks', { method: 'POST', body: target, token })
+}
+
+export function unblockPerson(target, token) {
+  return request('/api/blocks', { method: 'DELETE', body: target, token })
+}
+
+// { kind: 'dm' | 'community', messageId, reason, note }
+export function reportMessage(fields, token) {
+  return request('/api/reports', { method: 'POST', body: fields, token })
+}
+
+// Communities. Reading works signed out (token may be null). { communities, page, hasMore, mine }.
+export function listCommunities({ q, topic, page } = {}, token) {
+  return request(withQuery('/api/communities', { q, topic, page }), { token })
+}
+
+export async function createCommunity(fields, token) {
+  return (await request('/api/communities', { method: 'POST', body: fields, token })).community
+}
+
+// { community, membership, canPost, members }. Joining and leaving answer the same.
+export function getCommunity(slug, token) {
+  return request(at('/api/communities', slug), { token })
+}
+
+export function joinCommunity(slug, token) {
+  return request(`${at('/api/communities', slug)}/join`, { method: 'POST', token })
+}
+
+export function leaveCommunity(slug, token) {
+  return request(`${at('/api/communities', slug)}/leave`, { method: 'POST', token })
+}
+
+// { messages (oldest first), hasMore }, like a conversation.
+export function getCommunityMessages(slug, { before, after } = {}, token) {
+  return request(withQuery(`${at('/api/communities', slug)}/messages`, { before, after }), { token })
+}
+
+export async function postCommunityMessage(slug, body, token) {
+  return (await request(`${at('/api/communities', slug)}/messages`, { method: 'POST', body: { body }, token })).message
+}
+
+export async function deleteCommunityMessage(id, token) {
+  await request(at('/api/community-messages', id), { method: 'DELETE', token })
+}
+
+export async function removeCommunityMember(slug, userId, token) {
+  await request(`${at('/api/communities', slug)}/members/${encodeURIComponent(userId)}`, { method: 'DELETE', token })
+}

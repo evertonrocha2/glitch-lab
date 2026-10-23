@@ -12,6 +12,9 @@ const {
   ArticlePage,
   ArticlesPage,
   BoardPage,
+  CommunitiesPage,
+  CommunityNewPage,
+  CommunityPage,
   DailyPage,
   DuelLobbyPage,
   DuelPage,
@@ -22,6 +25,7 @@ const {
   GymPage,
   HuntPage,
   InterrogationPage,
+  MessagesPage,
   NotesPage,
   PeoplePage,
   ProfilePage,
@@ -50,7 +54,7 @@ function PageLoading() {
   const { user } = useAuth()
   const { pathname } = useLocation()
   if (pathname.startsWith('/u/')) return null
-  if (/^\/(articles|events|people)(\/|$)/.test(pathname)) return <CommunityShell />
+  if (/^\/(articles|events|people|communities)(\/|$)/.test(pathname)) return <CommunityShell />
   return user ? <AppShell /> : null
 }
 
@@ -201,6 +205,26 @@ export function AppRoutes() {
           }
         />
         <Route path="/events/:id" element={<EventPage />} />
+        {/* Direct messages: the inbox and an open conversation on one route, so opening one keeps the list. */}
+        <Route
+          path="/messages/:id?"
+          element={
+            <RequireAuth>
+              <MessagesPage />
+            </RequireAuth>
+          }
+        />
+        {/* Communities: reading is public, creating, joining and posting need an account. */}
+        <Route path="/communities" element={<CommunitiesPage />} />
+        <Route
+          path="/communities/new"
+          element={
+            <RequireAuth>
+              <CommunityNewPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="/communities/:slug" element={<CommunityPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
