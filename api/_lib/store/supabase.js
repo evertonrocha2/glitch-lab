@@ -194,13 +194,13 @@ export function createSupabaseStore({ url, serviceKey }) {
 
     async updateChallenge(userId, id, { hintsRevealed, status, attempts }) {
       const patch = defined({ hints_revealed: hintsRevealed, status, attempts })
-      const mine = () => db.from('challenges').update(patch).eq('id', id).eq('user_id', userId)
+      const mine = (fields) => db.from('challenges').update(fields).eq('id', id).eq('user_id', userId)
       // The first pass is the one the leaderboard times: stamped in the same write as the status.
       if (status === 'passed') {
-        const stamped = unwrap(await mine().update({ ...patch, passed_at: new Date().toISOString() }).is('passed_at', null).select().maybeSingle())
+        const stamped = unwrap(await mine({ ...patch, passed_at: new Date().toISOString() }).is('passed_at', null).select().maybeSingle())
         if (stamped) return toChallenge(stamped)
       }
-      return toChallenge(unwrap(await mine().select().maybeSingle()))
+      return toChallenge(unwrap(await mine(patch).select().maybeSingle()))
     },
 
     async listChallenges(userId) {

@@ -6,6 +6,9 @@ const UNIQUE_VIOLATION = '23505'
 // A list shows no rounds (they hold the answers), no bot plan, answers or focus events.
 const SUMMARY_COLUMNS = 'id, code, kind, status, players, start_at, finished_at, result, rematch_of, rematch_id, created_at, updated_at'
 
+// Postgres prints "2026-10-22T15:00:00+00:00"; the app and the local store use the ISO "Z" form.
+const iso = (value) => (value ? new Date(value).toISOString() : null)
+
 const toSummary = (row) =>
   row && {
     id: row.id,
@@ -13,13 +16,13 @@ const toSummary = (row) =>
     kind: row.kind,
     status: row.status,
     players: row.players ?? [],
-    startAt: row.start_at ?? null,
-    finishedAt: row.finished_at ?? null,
+    startAt: iso(row.start_at),
+    finishedAt: iso(row.finished_at),
     result: row.result ?? null,
     rematchOf: row.rematch_of ?? null,
     rematchId: row.rematch_id ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
   }
 
 const toDuel = (row) =>

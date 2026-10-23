@@ -196,7 +196,7 @@ export function createSupabaseEvents(db) {
         endsAt: new Date(row.ends_at).toISOString(),
       }))
       const ids = events.map((event) => event.id)
-      const entrantRows = ids.length ? (unwrap(await db.from('event_entries').select('event_id, user_id, users!inner(email, is_demo)').in('event_id', ids)) ?? []) : []
+      const entrantRows = ids.length ? (unwrap(await db.from('event_entries').select('event_id, user_id, users!event_entries_user_id_fkey!inner(email, is_demo)').in('event_id', ids)) ?? []) : []
       const entrants = entrantRows.map((row) => ({
         eventId: row.event_id,
         userId: row.user_id,

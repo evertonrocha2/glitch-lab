@@ -8,7 +8,7 @@ import { storeContract } from './store-contract.js'
 const url = process.env.SUPABASE_TEST_URL
 const serviceKey = process.env.SUPABASE_TEST_SERVICE_KEY
 
-describe.skipIf(!url || !serviceKey)('supabase', () => {
+describe.skipIf(!url || !serviceKey)('supabase', { timeout: 30_000 }, () => {
   const ids = {}
 
   storeContract(
