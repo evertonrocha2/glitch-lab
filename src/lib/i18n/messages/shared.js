@@ -48,6 +48,8 @@ const BADGES_EN = {
   'lingo-master': ['Lingo master', 'Solve all three Glitchdle modes in one day.'],
   author: ['Author', 'Publish a community article.'],
   trusted: ['Trusted', 'Get 5 valid ratings on your articles.'],
+  duelist: ['Duelist', 'Win a duel against a person.'],
+  'speed-demon': ['Speed demon', 'Answer a duel round right in under 2 seconds.'],
 }
 const BADGES_PT = {
   'first-clue': ['Primeira pista', 'Investigue seu primeiro erro.'],
@@ -68,6 +70,8 @@ const BADGES_PT = {
   'lingo-master': ['Mestre das linguagens', 'Resolva os três modos do Glitchdle no mesmo dia.'],
   author: ['Autor', 'Publique um artigo na comunidade.'],
   trusted: ['Confiável', 'Receba 5 avaliações válidas nos seus artigos.'],
+  duelist: ['Duelista', 'Vença um duelo contra uma pessoa.'],
+  'speed-demon': ['Relâmpago', 'Acerte uma rodada de duelo em menos de 2 segundos.'],
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']

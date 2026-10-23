@@ -181,3 +181,15 @@ it('earns lingo master for solving all three Glitchdle modes in one day', () => 
   expect(earned(computeProgress({ ...empty, riddle: split }))).not.toContain('lingo-master')
   expect(earned(computeProgress({ ...empty, riddle: { results: day('2026-10-21', ['classic', 'error', 'snippet']) } }))).toEqual(['lingo-master'])
 })
+
+it('adds duel xp, and the duelist and speed-demon badges', () => {
+  const result = (fields) => ({ day: '2026-10-22', outcome: 'win', vsBot: false, fastestMs: null, ...fields })
+  // A bot win pays half; the duelist badge needs a person.
+  const botOnly = computeProgress({ ...empty, duel: { results: [result({ vsBot: true, fastestMs: 2500 })] } })
+  expect(botOnly.xp).toBe(20)
+  expect(earned(botOnly)).toEqual([])
+  const fast = computeProgress({ ...empty, duel: { results: [result({ vsBot: true, fastestMs: 1900 }), result({ outcome: 'loss' })] } })
+  expect(fast.xp).toBe(20 + 10)
+  expect(earned(fast)).toEqual(['speed-demon'])
+  expect(earned(computeProgress({ ...empty, duel: { results: [result({})] } }))).toEqual(['duelist'])
+})

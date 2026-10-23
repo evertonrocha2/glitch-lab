@@ -14,6 +14,7 @@ import {
 } from '../../shared/profile.js'
 import { activityCalendar } from '../../shared/activity.js'
 import { computeProgress } from '../../shared/progress.js'
+import { loadDuel } from './duel/solved.js'
 import { loadDaily } from './puzzles/solved.js'
 import { loadRiddle } from './riddle/solved.js'
 
@@ -180,10 +181,11 @@ export async function summarize(store, userId, today) {
     store.communityStats(userId),
   ])
   const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
+  const duel = await loadDuel(store, userId)
   return {
-    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle }),
+    progress: computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel }),
     // Only a count per day: what was done stays private, that something was done is shown.
-    activity: activityCalendar({ cases, challenges, notes, study, riddle }, today),
+    activity: activityCalendar({ cases, challenges, notes, study, riddle, duel }, today),
     counts: {
       cases: cases.length,
       solved: cases.filter((item) => item.status === 'solved').length,

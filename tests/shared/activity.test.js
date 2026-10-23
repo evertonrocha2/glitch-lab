@@ -67,3 +67,11 @@ it('counts a Glitchdle day once when any mode was solved', () => {
 it('turns counts into five levels', () => {
   expect([0, 1, 2, 3, 4, 6, 7, 40].map(activityLevel)).toEqual([0, 1, 2, 2, 3, 3, 4, 4])
 })
+
+it('counts each finished duel on its day, at most three a day', () => {
+  const duel = { results: [...Array(5).fill({ day: '2026-10-21', outcome: 'win', vsBot: true }), { day: '2026-10-20', outcome: 'loss', vsBot: false }] }
+  const calendar = activityCalendar({ duel }, TODAY)
+  expect(at(calendar, '2026-10-21')).toBe(3)
+  expect(at(calendar, '2026-10-20')).toBe(1)
+  expect(calendar.total).toBe(4)
+})

@@ -3,6 +3,7 @@ import { computeProgress } from '../shared/progress.js'
 import { clientDay, serverDay } from './_lib/days.js'
 import { POST as addStudyTime } from './_lib/handlers/study.js'
 import { ok, requireUser } from './_lib/http.js'
+import { loadDuel } from './_lib/duel/solved.js'
 import { loadDaily } from './_lib/puzzles/solved.js'
 import { loadRiddle } from './_lib/riddle/solved.js'
 import { getStore } from './_lib/store/index.js'
@@ -29,6 +30,8 @@ export async function GET(request) {
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
   // Daily and global puzzles passed, and Glitchdle games, for their XP, streaks and badges.
   const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle })
-  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle }, today) } })
+  // Duels finished, for their XP, the duel badges and the activity graph.
+  const duel = await loadDuel(store, userId)
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel })
+  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, duel }, today) } })
 }

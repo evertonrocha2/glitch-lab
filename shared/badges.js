@@ -18,6 +18,8 @@ export const BADGES = [
   { id: 'lingo-master', name: 'Lingo master', how: 'Solve all three Glitchdle modes in one day.', earned: (s) => s.riddlePerfectDays >= 1 },
   { id: 'author', name: 'Author', how: 'Publish a community article.', earned: (s) => s.articles >= 1 },
   { id: 'trusted', name: 'Trusted', how: 'Get 5 valid ratings on your articles.', earned: (s) => s.validReceived >= 5 },
+  { id: 'duelist', name: 'Duelist', how: 'Win a duel against a person.', earned: (s) => s.duelHumanWins >= 1 },
+  { id: 'speed-demon', name: 'Speed demon', how: 'Answer a duel round right in under 2 seconds.', earned: (s) => s.duelFastestMs != null && s.duelFastestMs < 2000 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)

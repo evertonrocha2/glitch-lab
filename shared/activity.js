@@ -1,5 +1,6 @@
 // A year of activity, one count per day, for the GitHub-style graph on profiles and the progress page.
 // Worked out from what's already stored, like XP: nothing to keep in sync.
+import { MAX_DUEL_ACTIVITY } from './duel.js'
 
 export const WEEKS = 53
 const DAY_MS = 24 * 3_600_000
@@ -25,7 +26,8 @@ export function activityLevel(count) {
 // { start, days, total, activeDays, best }. `days` holds WEEKS*7 counts starting on a Sunday, the
 // last week ending on the Saturday of `today`'s week (days after today stay 0).
 // riddle (optional): { results } from Glitchdle; a day with any mode solved counts once.
-export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle }, today) {
+// duel (optional): { results } from duels; each finished duel counts, up to MAX_DUEL_ACTIVITY a day.
+export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, duel }, today) {
   const counts = new Map()
   const add = (day, amount = 1) => {
     if (day) counts.set(day, (counts.get(day) ?? 0) + amount)
@@ -34,6 +36,9 @@ export function activityCalendar({ cases = [], challenges = [], notes = [], stud
   for (const item of challenges) if (item.status === 'passed') add(dayOf(item.passedAt ?? item.createdAt))
   for (const note of notes) add(dayOf(note.createdAt))
   for (const day of new Set((riddle?.results ?? []).filter((item) => item.solved).map((item) => item.day))) add(day)
+  const duelDays = new Map()
+  for (const item of duel?.results ?? []) duelDays.set(item.day, (duelDays.get(item.day) ?? 0) + 1)
+  for (const [day, count] of duelDays) add(day, Math.min(count, MAX_DUEL_ACTIVITY))
   for (const entry of study) {
     if (entry.seconds >= STUDY_DAY_SECONDS) add(entry.day, Math.min(MAX_STUDY_PER_DAY, 1 + Math.floor(entry.seconds / STUDY_BLOCK_SECONDS)))
   }

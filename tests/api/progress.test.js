@@ -108,3 +108,36 @@ it('includes a year of activity, one count per day', async () => {
   expect(progress.activity.total).toBe(1)
   expect(progress.activity.best).toEqual({ day: "2026-10-22", count: 1 })
 })
+
+it('adds duel xp, the duel badges and the duels to the activity graph', async () => {
+  const seat = (userId, bot = false) => ({ userId, isDemo: false, bot, joinedAt: '2026-10-21T10:00:00.000Z', seenAt: '2026-10-21T10:00:00.000Z' })
+  const finished = async (code, players, result) => {
+    const duel = await store.createDuel({ code, kind: players[1].bot ? 'bot' : 'private', status: 'active', players, rounds: [], startAt: '2026-10-21T10:00:00.000Z' })
+    await store.updateDuel(duel.id, { status: 'finished', finishedAt: '2026-10-21T10:02:00.000Z', result }, 0)
+  }
+  await finished('AAAAAA', [seat('alice'), seat('bob')], {
+    reason: 'score',
+    winner: 'alice',
+    rated: true,
+    players: [
+      { userId: 'alice', score: 900, fastestMs: 1500, outcome: 'win' },
+      { userId: 'bob', score: 300, fastestMs: null, outcome: 'loss' },
+    ],
+  })
+  await finished('BBBBBB', [seat('alice'), seat('bot', true)], {
+    reason: 'score',
+    winner: 'bot',
+    rated: false,
+    players: [
+      { userId: 'alice', score: 0, fastestMs: null, outcome: 'loss' },
+      { userId: 'bot', score: 600, fastestMs: null, outcome: 'win' },
+    ],
+  })
+  // An open duel pays nothing yet.
+  await store.createDuel({ code: 'CCCCCC', kind: 'private', status: 'waiting', players: [seat('alice')], rounds: [] })
+
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress.xp).toBe(40 + 5)
+  expect(earned(progress)).toEqual(['duelist', 'speed-demon'])
+  expect(progress.activity.best).toEqual({ day: '2026-10-21', count: 2 })
+})
