@@ -85,6 +85,6 @@ describe('the share text', () => {
   })
 
   it('has no em dashes or middle dots', () => {
-    for (const locale of ['en', 'pt-BR']) expect(sample(locale)).not.toMatch(/—|·/)
+    for (const locale of ['en', 'pt-BR']) expect(sample(locale)).not.toMatch(/\u2014|·/)
   })
 })

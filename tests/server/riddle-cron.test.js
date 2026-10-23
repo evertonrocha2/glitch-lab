@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { giveawayIn } from '../../server/modules/glitchdle/clues.js'
+import { knownClues } from '../../server/modules/glitchdle/riddle-daily.js'
 import { answersFor, datasetPayload } from '../../server/modules/glitchdle/schedule.js'
 import { languageById } from '../../shared/riddle/languages.js'
+import { SAMPLES } from '../../shared/riddle/samples.js'
 import { api, geminiAnswer, useTempStore } from './helpers.js'
 import { AI_PUZZLE } from './puzzle-fixtures.js'
 
@@ -122,4 +124,32 @@ it('keeps the dataset snippet when the AI snippet names its language', async () 
   await runCron()
   const [snippet] = (await store.listRiddles({ day: TODAY })).filter((item) => item.mode === 'snippet')
   expect(snippet).toMatchObject({ source: 'dataset', payload: datasetPayload(TODAY, 'snippet', answersFor(TODAY).snippet) })
+})
+
+it("grows each language's clue pool with the AI's past clues, and never saves a repeat", async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  const language = answersFor(TODAY).error
+  const old = 'error: value `count` used here after move (line 4)'
+  // A clue the AI wrote for the same language weeks ago.
+  await store.createRiddle({ day: '2026-09-01', mode: 'error', answer: language, payload: { text: old }, source: 'ai' })
+  expect(knownClues(await store.listRiddles(), language, 'error')).toEqual([...SAMPLES[language].errors, old])
+  // The AI answers with that same clue: it's refused, and the prompt listed it to stay away from.
+  riddleAnswer = (prompt) => (prompt.includes('snippet clue') ? { code: FRESH_SNIPPET } : { error: old })
+  await runCron()
+  expect(riddlePrompts().find((text) => text.includes('error clue') && text.includes(languageById(language).name))).toContain(old.split('\n')[0])
+  const [error] = (await store.listRiddles({ day: TODAY })).filter((item) => item.mode === 'error')
+  // The fallback picks from the dataset and the past AI clues together.
+  expect([...SAMPLES[language].errors, old]).toContain(error.payload.text)
+})
+
+it('dedupes known clues by their text, whitespace and case aside', () => {
+  const language = 'rust'
+  const history = [
+    { mode: 'error', answer: language, source: 'ai', payload: { text: SAMPLES[language].errors[0].toUpperCase() } },
+    { mode: 'snippet', answer: language, source: 'ai', payload: { lines: ['fn a() {}', 'fn b() {}'] } },
+    { mode: 'error', answer: 'go', source: 'ai', payload: { text: 'not rust' } },
+    { mode: 'error', answer: language, source: 'dataset', payload: { text: 'from the dataset' } },
+  ]
+  expect(knownClues(history, language, 'error')).toEqual(SAMPLES[language].errors)
+  expect(knownClues(history, language, 'snippet')).toEqual([...SAMPLES[language].snippets, 'fn a() {}\nfn b() {}'])
 })
