@@ -167,6 +167,39 @@ describe('messages', () => {
     expect((await call('GET', '/api/notifications', { token: ada.token })).body.unread).toBe(0)
   })
 
+  it("nudges only the other person's own topic, with no content", async () => {
+    vi.stubEnv('SUPABASE_URL', 'https://demo.supabase.co/')
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'pk')
+    const fetchMock = vi.fn(async () => new Response('{}'))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const { id } = await talk()
+      expect((await send(id, 'a secret plan', ada.token)).status).toBe(201)
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('https://demo.supabase.co/realtime/v1/api/broadcast')
+      expect(init.headers.apikey).toBe('pk')
+      expect(JSON.parse(init.body)).toEqual({ messages: [{ topic: `user:${bob.id}`, event: 'changed', payload: { type: 'changed', v: null }, private: false }] })
+      expect(init.body).not.toMatch(/secret/)
+      expect(init.body).not.toContain(ada.id)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('still sends when realtime is off or the nudge fails', async () => {
+    const { id } = await talk()
+    expect((await send(id, 'no realtime here', ada.token)).status).toBe(201)
+    vi.stubEnv('SUPABASE_URL', 'https://demo.supabase.co')
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'pk')
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))))
+    try {
+      expect((await send(id, 'still fine', ada.token)).status).toBe(201)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('stops sending once the other person closes their messages', async () => {
     const { id } = await talk()
     await call('PATCH', '/api/messaging/settings', { body: { allowMessages: 'nobody' }, token: bob.token })

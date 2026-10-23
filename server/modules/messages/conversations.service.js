@@ -2,6 +2,7 @@ import { MESSAGE_LIMITS } from '../../../shared/messages.js'
 import { normalizeHandle } from '../../../shared/profile.js'
 import { serverDay } from '../../core/days.js'
 import { badRequest, forbidden, notFound, tooMany } from '../../core/errors.js'
+import { nudgeUser } from '../../infra/realtime/index.js'
 import { loadPeople } from '../articles/people.js'
 import { parseCursor, parseMessageBody, refuseDemo, spendMessage, trimPage, UNAVAILABLE, YOU_BLOCKED } from './messages.model.js'
 
@@ -139,6 +140,8 @@ export async function sendMessage(store, user, id, input) {
   await spendMessage(store, user)
   const message = await store.createMessage(conversation.id, user.id, body)
   await store.addNotification({ userId: otherId, type: 'message', actorId: user.id })
+  // Their open pages refetch the inbox and the bell right away (and show a toast). Not awaited.
+  nudgeUser(otherId)
   const people = await loadPeople(store, [user.id])
   return messageView(message, people, user.id)
 }
