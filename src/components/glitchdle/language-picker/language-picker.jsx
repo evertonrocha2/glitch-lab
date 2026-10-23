@@ -1,14 +1,15 @@
-import { useId, useMemo, useRef, useState } from 'react'
-import { searchLanguages } from '../../../../shared/riddle/languages.js'
+import { useDeferredValue, useId, useMemo, useRef, useState } from 'react'
+import { searchItems } from '../../../../shared/riddle/search.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 
 const MAX_OPTIONS = 8
 
-// The guess box: type to filter the languages, arrows to move, Enter to guess, Escape to close.
-// Languages already guessed stay in the list, greyed out, so nobody guesses one twice.
+// The guess box: type to filter the items, arrows to move, Enter to guess, Escape to close.
+// Items already guessed stay in the list, greyed out, so nobody guesses one twice.
+// items: the board's list (languages, frameworks or databases); category names the words.
 // left/max: the guesses still open, shown at the end of the box and read out with it.
-export default function LanguagePicker({ mode, guessed = [], onGuess, busy = false, left, max }) {
+export default function LanguagePicker({ mode, items, category = 'languages', guessed = [], onGuess, busy = false, left, max }) {
   const t = useT()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -16,7 +17,9 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
   const input = useRef(null)
   const listId = useId()
   const taken = useMemo(() => new Set(guessed), [guessed])
-  const options = useMemo(() => searchLanguages(query).slice(0, MAX_OPTIONS), [query])
+  // The list filters a beat behind fast typing, so every keystroke paints the letter first.
+  const search = useDeferredValue(query)
+  const options = useMemo(() => searchItems(search, items).slice(0, MAX_OPTIONS), [search, items])
   const enabled = options.filter((item) => !taken.has(item.id))
   const optionId = (id) => `${listId}-${id}`
 
@@ -60,7 +63,10 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
     // The highlight wins even when the list just closed (clicking the button blurs the input first).
     const highlighted = options[active]
     if (highlighted && !taken.has(highlighted.id)) return pick(highlighted)
-    if (query.trim()) pick(enabled[0])
+    if (!query.trim()) return
+    // The list may still show an older query: the best match is worked out from what's typed now.
+    const fresh = search === query ? enabled : searchItems(query, items).filter((item) => !taken.has(item.id))
+    pick(fresh[0])
   }
 
   const showList = open && options.length > 0
@@ -68,7 +74,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
     <div className="relative">
       <div className="flex gap-2">
         <label htmlFor={`${listId}-input`} className="sr-only">
-          {t('app.glitchdle.guessLabel')}
+          {t(category === 'languages' ? 'app.glitchdle.guessLabel' : `app.glitchdle.guessLabel.${category}`)}
         </label>
         <div className="flex min-w-0 flex-1 border-2 border-ink bg-white focus-within:shadow-pixel has-[input:read-only]:bg-mist">
           <input
@@ -83,7 +89,13 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
             aria-describedby={left === undefined ? undefined : `${listId}-left`}
             autoComplete="off"
             spellCheck="false"
-            placeholder={mode === 'classic' ? t('app.glitchdle.placeholderClassic') : t('app.glitchdle.placeholderOther')}
+            placeholder={
+              category !== 'languages'
+                ? t(`app.glitchdle.placeholder.${category}`)
+                : mode === 'classic'
+                  ? t('app.glitchdle.placeholderClassic')
+                  : t('app.glitchdle.placeholderOther')
+            }
             value={query}
             readOnly={busy}
             onChange={(event) => {
@@ -114,7 +126,7 @@ export default function LanguagePicker({ mode, guessed = [], onGuess, busy = fal
         <ul
           id={listId}
           role="listbox"
-          aria-label={t('app.glitchdle.languages')}
+          aria-label={t(`app.glitchdle.category.${category}`)}
           className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto border-2 border-ink bg-white shadow-pixel-ink"
         >
           {options.map((item, index) => {

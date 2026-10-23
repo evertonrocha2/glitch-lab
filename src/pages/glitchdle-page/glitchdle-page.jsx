@@ -1,62 +1,137 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { MAX_GUESSES, MODES, shareText } from '../../../shared/riddle/game.js'
-import AppShell from '../../components/layout/app-shell/app-shell.jsx'
-import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
+import { CATEGORIES, categoryById, categoryOfSlot } from '../../../shared/riddle/categories.js'
+import { MAX_GUESSES } from '../../../shared/riddle/game.js'
+import { shareText } from '../../../shared/riddle/share.js'
 import { Check, ClassicBoard, ErrorBoard, GuessList, Legend, SnippetBoard } from '../../components/glitchdle/boards/boards.jsx'
+import Countdown from '../../components/glitchdle/countdown/countdown.jsx'
 import LanguagePicker from '../../components/glitchdle/language-picker/language-picker.jsx'
 import { CommunityPanel, DistributionPanel, ResultCard, StatsPanel } from '../../components/glitchdle/panels/panels.jsx'
+import AppShell from '../../components/layout/app-shell/app-shell.jsx'
+import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import { AuthError, getRiddle, guessRiddle } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
-import { formatCountdown } from '../../lib/daily.js'
-import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { dayIn } from '../../lib/i18n/format.js'
+import { useI18n, useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
 import GlitchdlePageSkeleton, { CountdownSkeleton } from './glitchdle-page-skeleton.jsx'
 
-function useNow() {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-  return now
+// The day as the share text writes it: "23/10" in Portuguese, "Oct 23" in English.
+const SHARE_DATE = { 'pt-BR': { day: '2-digit', month: '2-digit' }, en: { month: 'short', day: 'numeric' } }
+const LANGUAGE_MODES = categoryById('languages').modes
+
+// One tab's second line: how a board (or a set of boards) is going.
+function useBoardNote() {
+  const t = useT()
+  return (state) => {
+    if (state.solved) return t('app.glitchdle.guesses', { count: state.guessCount })
+    if (state.over) return t('app.glitchdle.missed')
+    if (state.guessCount) return t('app.glitchdle.tries', { count: state.guessCount })
+    return null
+  }
 }
 
-// What the share text needs: guesses per mode and the Classic grid, first guess on top.
-const shareModes = (modes) =>
-  Object.fromEntries(
-    MODES.map((mode) => {
-      const state = modes[mode]
-      const rows = mode === 'classic' ? [...state.guesses].reverse().map((guess) => guess.cells.map((cell) => cell.status)) : undefined
-      return [mode, { solved: state.solved, over: state.over, guesses: state.guessCount, rows }]
-    }),
-  )
+// Arrow keys move between tabs, like a native tab list.
+function arrowStep(event) {
+  return event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+}
 
+function TabNote({ text, selected }) {
+  const t = useT()
+  // An unplayed board gets a small "new" pill, the same height as the text line it replaces.
+  return (
+    <span className="mt-1 flex h-4 items-center">
+      {text ? (
+        <span className={`truncate text-xs leading-4 ${selected ? 'text-white' : 'text-muted'}`}>{text}</span>
+      ) : (
+        <span className={`px-1 font-label text-[10px] leading-4 ${selected ? 'bg-white/20 text-white' : 'bg-secondary-soft text-secondary'}`}>{t('app.glitchdle.new')}</span>
+      )}
+    </span>
+  )
+}
+
+function SolvedMark({ selected }) {
+  const t = useT()
+  return (
+    <>
+      <span className={`grid size-4 place-items-center border-2 ${selected ? 'border-white' : 'border-primary text-primary'}`}>
+        <Check className="size-2" />
+      </span>
+      <span className="sr-only">{t('app.glitchdle.solvedSr')}</span>
+    </>
+  )
+}
+
+// Languages, Frameworks, Databases: a segmented control over the board.
+function CategoryTabs({ categories, modes, active, onPick }) {
+  const tabs = useRef([])
+  const t = useT()
+  const note = useBoardNote()
+  function onKeyDown(event, index) {
+    const step = arrowStep(event)
+    if (!step) return
+    event.preventDefault()
+    const next = (index + step + categories.length) % categories.length
+    onPick(categories[next].id)
+    tabs.current[next]?.focus()
+  }
+  return (
+    <div role="tablist" aria-label={t('app.glitchdle.categories')} className="grid grid-cols-3 gap-2 sm:gap-3">
+      {categories.map((category, index) => {
+        const selected = category.id === active
+        const states = category.modes.map((mode) => modes[mode]).filter(Boolean)
+        const done = states.filter((state) => state.solved).length
+        const played = states.some((state) => state.guessCount || state.over)
+        const text = states.length > 1 ? (played ? t('app.glitchdle.categorySolved', { done, total: states.length, count: done }) : null) : note(states[0])
+        return (
+          <button
+            key={category.id}
+            ref={(element) => {
+              tabs.current[index] = element
+            }}
+            type="button"
+            role="tab"
+            id={`category-${category.id}`}
+            aria-selected={selected}
+            aria-controls="glitchdle-board"
+            tabIndex={selected ? 0 : -1}
+            onClick={() => onPick(category.id)}
+            onKeyDown={(event) => onKeyDown(event, index)}
+            className={`min-w-0 border-2 border-ink px-3 py-2 text-left transition-colors sm:px-4 ${
+              selected ? 'bg-primary text-white shadow-pixel-ink' : 'bg-white text-ink shadow-pixel-muted hover:bg-primary-soft'
+            }`}
+          >
+            <span className="flex items-center gap-1.5 font-label text-xs sm:text-sm">
+              <span className="truncate">{t(`app.glitchdle.category.${category.id}`)}</span>
+              {done === states.length && done > 0 && <SolvedMark selected={selected} />}
+            </span>
+            <TabNote text={text} selected={selected} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Classic, Error, Snippet: the three ways to guess the language.
 function ModeTabs({ modes, active, onPick }) {
   const tabs = useRef([])
   const t = useT()
   const labels = useLabels()
+  const note = useBoardNote()
   function onKeyDown(event, index) {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+    const step = arrowStep(event)
     if (!step) return
     event.preventDefault()
-    const next = (index + step + MODES.length) % MODES.length
-    onPick(MODES[next])
+    const next = (index + step + LANGUAGE_MODES.length) % LANGUAGE_MODES.length
+    onPick(LANGUAGE_MODES[next])
     tabs.current[next]?.focus()
   }
   return (
     <div role="tablist" aria-label={t('app.glitchdle.modes')} className="grid grid-cols-3 gap-[2px] border-b-2 border-ink bg-ink">
-      {MODES.map((mode, index) => {
+      {LANGUAGE_MODES.map((mode, index) => {
         const state = modes[mode]
         const selected = mode === active
-        const fresh = !state.over && !state.guessCount
-        const note = state.solved
-          ? t('app.glitchdle.guesses', { count: state.guessCount })
-          : state.over
-            ? t('app.glitchdle.missed')
-            : state.guessCount
-              ? t('app.glitchdle.tries', { count: state.guessCount })
-              : t('app.glitchdle.new')
         return (
           <button
             key={mode}
@@ -75,23 +150,9 @@ function ModeTabs({ modes, active, onPick }) {
           >
             <span className="flex items-center gap-1.5 font-label text-xs sm:text-sm">
               {labels.glitchdleMode(mode)}
-              {state.solved && (
-                <>
-                  <span className={`grid size-4 place-items-center border-2 ${selected ? 'border-white' : 'border-primary text-primary'}`}>
-                    <Check className="size-2" />
-                  </span>
-                  <span className="sr-only">{t('app.glitchdle.solvedSr')}</span>
-                </>
-              )}
+              {state.solved && <SolvedMark selected={selected} />}
             </span>
-            {/* An unplayed mode gets a small "new" pill, the same height as the text line it replaces. */}
-            <span className="mt-1 flex h-4 items-center">
-              {fresh ? (
-                <span className={`px-1 font-label text-[10px] leading-4 ${selected ? 'bg-white/20 text-white' : 'bg-secondary-soft text-secondary'}`}>{note}</span>
-              ) : (
-                <span className={`truncate text-xs leading-4 ${selected ? 'text-white/80' : 'text-muted'}`}>{note}</span>
-              )}
-            </span>
+            <TabNote text={note(state)} selected={selected} />
           </button>
         )
       })}
@@ -99,19 +160,41 @@ function ModeTabs({ modes, active, onPick }) {
   )
 }
 
-// Glitchdle: a programming-language riddle a day in three modes, the same for every player.
+// Where the framework and database data comes from, as the sources ask.
+function Credits() {
+  const t = useT()
+  const link = 'text-secondary underline decoration-2 underline-offset-2 hover:text-primary'
+  return (
+    <p className="mt-10 border-t-2 border-dashed border-line pt-4 text-xs text-muted">
+      {t('app.glitchdle.credits')}{' '}
+      <a className={link} href="https://www.wikidata.org" target="_blank" rel="noreferrer">
+        Wikidata (CC0)
+      </a>
+      {', '}
+      <a className={link} href="https://stackoverflow.com/tags" target="_blank" rel="noreferrer">
+        Stack Overflow (CC BY-SA 4.0)
+      </a>
+      .
+    </p>
+  )
+}
+
+// Glitchdle: a riddle a day per board, the same for every player: the language in three modes,
+// a framework and a database.
 export default function GlitchdlePage() {
   const { getToken, signOut } = useAuth()
   const { refresh } = useProgress()
+  const { locale } = useI18n()
   const t = useT()
+  const labels = useLabels()
   const [game, setGame] = useState(null)
+  const [category, setCategory] = useState('languages')
   const [mode, setMode] = useState(null)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [last, setLast] = useState(null)
   const [copied, setCopied] = useState(false)
   const sending = useRef(false)
-  const now = useNow()
 
   const handleError = useCallback(
     async (err) => {
@@ -125,8 +208,8 @@ export default function GlitchdlePage() {
     try {
       const next = await getRiddle(await getToken())
       setGame(next)
-      // Open on the first mode still to play.
-      setMode((current) => current ?? MODES.find((item) => !next.modes[item].over) ?? 'classic')
+      // Open on the first language mode still to play.
+      setMode((current) => current ?? LANGUAGE_MODES.find((item) => !next.modes[item].over) ?? 'classic')
     } catch (err) {
       await handleError(err)
     }
@@ -136,15 +219,23 @@ export default function GlitchdlePage() {
     load()
   }, [load])
 
-  // At midnight in Brasilia the countdown hits zero: fetch the new game (once).
-  const reloadedFor = useRef(null)
+  // At midnight in Brasilia the day turns: fetch the new game once, from a single timer instead
+  // of checking every second.
+  const resetAt = game?.nextResetAt
   useEffect(() => {
-    if (!game || Date.parse(game.nextResetAt) > now || reloadedFor.current === game.nextResetAt) return
-    reloadedFor.current = game.nextResetAt
-    setMode(null)
-    setLast(null)
-    load()
-  }, [game, now, load])
+    if (!resetAt) return
+    const timer = setTimeout(
+      () => {
+        setMode(null)
+        setLast(null)
+        load()
+      },
+      Math.max(0, Date.parse(resetAt) - Date.now()) + 500,
+    )
+    return () => clearTimeout(timer)
+  }, [resetAt, load])
+
+  const slot = category === 'languages' ? mode : categoryById(category).modes[0]
 
   async function guess(id) {
     if (sending.current) return
@@ -153,9 +244,9 @@ export default function GlitchdlePage() {
     setMessage('')
     setCopied(false)
     try {
-      const next = await guessRiddle({ mode, guess: id, day: game.day }, await getToken())
+      const next = await guessRiddle({ mode: slot, guess: id, day: game.day }, await getToken())
       setGame(next)
-      setLast({ mode, id, correct: next.correct })
+      setLast({ mode: slot, id, correct: next.correct })
       // XP and maybe a badge: let the header and the toasts know.
       if (next.correct) refresh()
     } catch (err) {
@@ -169,7 +260,30 @@ export default function GlitchdlePage() {
   }
 
   async function share() {
-    const text = shareText({ number: game.number, modes: shareModes(game.modes), url: `${window.location.origin}/glitchdle` })
+    const state = game.modes[slot]
+    // The grid is the classic board being shared, or the language's Classic for Error and Snippet.
+    const gridSlot = categoryOfSlot(slot).id === 'languages' ? 'classic' : slot
+    const rows = [...(game.modes[gridSlot]?.guesses ?? [])].reverse().map((item) => item.cells.map((cell) => cell.status))
+    const boards = Object.fromEntries(Object.entries(game.modes).map(([key, item]) => [key, { solved: item.solved, over: item.over, guesses: item.guessCount }]))
+    const text = shareText({
+      t,
+      name: (key) => labels.glitchdleMode(key),
+      number: game.number,
+      date: dayIn(locale, game.day, SHARE_DATE[locale] ?? SHARE_DATE.en),
+      boards,
+      rows,
+      streak: game.stats.streak,
+      host: window.location.origin.replace(/^https?:\/\//, ''),
+    })
+    // Phones get the system share sheet; everything else (or a sheet that fails) copies the text.
+    if (navigator.share && window.matchMedia?.('(pointer: coarse)').matches) {
+      try {
+        await navigator.share({ text })
+        return
+      } catch (err) {
+        if (err?.name === 'AbortError') return
+      }
+    }
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
@@ -178,9 +292,16 @@ export default function GlitchdlePage() {
     }
   }
 
-  const state = game && mode ? game.modes[mode] : null
-  const msLeft = game ? Date.parse(game.nextResetAt) - now : 0
-  const justWon = Boolean(last?.correct && last.mode === mode)
+  const categories = game ? CATEGORIES.filter((item) => item.modes.some((key) => game.modes[key])) : []
+  const state = game && slot ? game.modes[slot] : null
+  const active = categoryById(category)
+  const justWon = Boolean(last?.correct && last.mode === slot)
+  const classic = slot === 'classic' || category !== 'languages'
+
+  function pickCategory(next) {
+    setCategory(next)
+    setCopied(false)
+  }
 
   return (
     <AppShell>
@@ -192,7 +313,7 @@ export default function GlitchdlePage() {
           <h1 className="font-pixel text-3xl font-bold text-ink sm:text-4xl">Glitchdle{game ? ` #${game.number}` : ''}</h1>
           {game && (
             <p className="border-2 border-ink bg-white px-3 py-2 font-label text-xs text-muted shadow-pixel-muted">
-              {t('app.glitchdle.nextIn')} <span className="text-ink tabular-nums">{formatCountdown(msLeft)}</span>
+              {t('app.glitchdle.nextIn')} <Countdown resetAt={game.nextResetAt} className="text-ink tabular-nums" />
             </p>
           )}
           {!game && !message && <CountdownSkeleton />}
@@ -211,55 +332,70 @@ export default function GlitchdlePage() {
       {game && state && (
         // The game on the left; my numbers and today's community in a sidebar on wide screens, below on phones.
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
-          <div className="border-2 border-ink bg-white shadow-pixel-ink">
-            <ModeTabs
-              modes={game.modes}
-              active={mode}
-              onPick={(next) => {
-                setMode(next)
-                setCopied(false)
-              }}
-            />
+          <div className="space-y-4">
+            <CategoryTabs categories={categories} modes={game.modes} active={category} onPick={pickCategory} />
 
-            <section id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`} className="space-y-4 p-4 sm:p-5">
-              <p className="max-w-2xl text-sm text-ink">{t(`app.glitchdle.intro.${mode}`)}</p>
-
-              {mode === 'error' && <ErrorBoard state={state} />}
-              {mode === 'snippet' && <SnippetBoard state={state} />}
-
-              {state.over ? (
-                <ResultCard key={`${game.day}-${mode}`} state={state} justWon={justWon} msLeft={msLeft} onShare={share} copied={copied} />
-              ) : (
-                <LanguagePicker
-                  key={mode}
-                  mode={mode}
-                  guessed={state.guesses.map((item) => item.id)}
-                  onGuess={guess}
-                  busy={busy}
-                  left={state.guessesLeft}
-                  max={MAX_GUESSES}
+            <div id="glitchdle-board" role="tabpanel" aria-labelledby={`category-${category}`} className="border-2 border-ink bg-white shadow-pixel-ink">
+              {category === 'languages' && (
+                <ModeTabs
+                  modes={game.modes}
+                  active={mode}
+                  onPick={(next) => {
+                    setMode(next)
+                    setCopied(false)
+                  }}
                 />
               )}
 
-              {mode === 'classic' ? (
-                <>
-                  <Legend />
-                  <ClassicBoard guesses={state.guesses} animateId={last?.mode === 'classic' ? last.id : null} />
-                </>
-              ) : (
-                <GuessList guesses={state.guesses} animateId={last?.mode === mode ? last.id : null} />
-              )}
-            </section>
+              <section
+                id={`panel-${slot}`}
+                role={category === 'languages' ? 'tabpanel' : 'region'}
+                aria-labelledby={category === 'languages' ? `tab-${slot}` : `category-${category}`}
+                className="space-y-4 p-4 sm:p-5"
+              >
+                <p className="max-w-2xl text-sm text-ink">{t(`app.glitchdle.intro.${slot}`)}</p>
+
+                {slot === 'error' && <ErrorBoard state={state} />}
+                {slot === 'snippet' && <SnippetBoard state={state} />}
+
+                {state.over ? (
+                  <ResultCard key={`${game.day}-${slot}`} state={state} justWon={justWon} resetAt={game.nextResetAt} onShare={share} copied={copied} />
+                ) : (
+                  <LanguagePicker
+                    key={slot}
+                    mode={slot}
+                    category={category}
+                    items={active.items}
+                    guessed={state.guesses.map((item) => item.id)}
+                    onGuess={guess}
+                    busy={busy}
+                    left={state.guessesLeft}
+                    max={MAX_GUESSES}
+                  />
+                )}
+
+                {classic ? (
+                  <>
+                    <Legend ranked={category !== 'languages'} />
+                    <ClassicBoard guesses={state.guesses} category={category} attributes={active.attributes} animateId={last?.mode === slot ? last.id : null} />
+                  </>
+                ) : (
+                  <GuessList guesses={state.guesses} animateId={last?.mode === slot ? last.id : null} />
+                )}
+              </section>
+            </div>
           </div>
 
           {/* Sticky only when the whole sidebar fits on screen, so its bottom is never out of reach. */}
           <aside aria-label={t('app.glitchdle.sidebar')} className="space-y-6 lg:[@media(min-height:860px)]:sticky lg:[@media(min-height:860px)]:top-6">
             <StatsPanel stats={game.stats} />
-            <DistributionPanel stats={game.stats} mode={mode} todayGuesses={state.solved ? state.guessCount : null} />
+            <DistributionPanel stats={game.stats} mode={slot} todayGuesses={state.solved ? state.guessCount : null} />
             <CommunityPanel community={game.community} modes={game.modes} />
           </aside>
         </div>
       )}
+
+      {game && <Credits />}
     </AppShell>
   )
 }

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
+import { categoryById, itemById } from '../../../shared/riddle/categories.js'
 import { compareGuess, MAX_GUESSES } from '../../../shared/riddle/game.js'
 import { languageById } from '../../../shared/riddle/languages.js'
 import { getProgress, getRiddle, guessRiddle } from '../../lib/api.js'
@@ -16,8 +17,15 @@ vi.mock('../../lib/api.js', () => ({
 
 const inHours = (hours) => new Date(Date.now() + hours * 3_600_000).toISOString()
 const classicGuess = (id, answer = 'rust') => ({ id, name: languageById(id).name, ...compareGuess(languageById(id), languageById(answer)) })
-const open = (mode, fields = {}) => ({ mode, solved: false, over: false, guessCount: 0, guessesLeft: MAX_GUESSES, answer: null, guesses: [], ...fields })
+const frameworkGuess = (id, answer = 'react') => ({
+  id,
+  name: itemById('frameworks', id).name,
+  ...compareGuess(itemById('frameworks', id), itemById('frameworks', answer), categoryById('frameworks').attributes),
+})
+const open = (mode, fields = {}) => ({ mode, category: 'languages', solved: false, over: false, guessCount: 0, guessesLeft: MAX_GUESSES, answer: null, guesses: [], ...fields })
 const zeros = () => Array(10).fill(0)
+const SLOT_ZEROS = () => ({ classic: zeros(), error: zeros(), snippet: zeros(), frameworks: zeros(), databases: zeros() })
+const NOBODY = { players: 0, solved: 0, averageGuesses: null }
 
 const GAME = (overrides = {}) => ({
   day: '2026-10-22',
@@ -29,12 +37,25 @@ const GAME = (overrides = {}) => ({
     snippet: open('snippet', {
       lines: [{ text: 'fn main() {' }, { hidden: true, width: 24 }, { text: '' }, { hidden: true, width: 1 }],
     }),
+    frameworks: open('frameworks', { category: 'frameworks' }),
+    databases: open('databases', { category: 'databases' }),
   },
-  stats: { xp: 0, played: 1, perfectDays: 0, streak: 0, longestStreak: 0, solved: { classic: 0, error: 0, snippet: 0 }, distribution: { classic: zeros(), error: zeros(), snippet: zeros() } },
+  stats: {
+    xp: 0,
+    played: 1,
+    perfectDays: 0,
+    fullDays: 0,
+    streak: 0,
+    longestStreak: 0,
+    solved: { classic: 0, error: 0, snippet: 0, frameworks: 0, databases: 0 },
+    distribution: SLOT_ZEROS(),
+  },
   community: {
     classic: { players: 4, solved: 3, averageGuesses: 5.3 },
-    error: { players: 0, solved: 0, averageGuesses: null },
-    snippet: { players: 0, solved: 0, averageGuesses: null },
+    error: NOBODY,
+    snippet: NOBODY,
+    frameworks: NOBODY,
+    databases: NOBODY,
   },
   ...overrides,
 })
@@ -49,7 +70,7 @@ const WON = () => {
       ...game.modes,
       classic: { ...game.modes.classic, solved: true, over: true, guessCount: 2, guessesLeft: MAX_GUESSES - 2, answer: { id: 'rust', name: 'Rust' }, guesses: [classicGuess('rust'), classicGuess('python')] },
     },
-    stats: { ...game.stats, xp: 25, solved: { classic: 1, error: 0, snippet: 0 }, distribution },
+    stats: { ...game.stats, xp: 25, solved: { ...game.stats.solved, classic: 1 }, distribution },
   }
 }
 
@@ -59,7 +80,13 @@ beforeEach(() => {
   vi.mocked(getProgress).mockClear()
 })
 
-const board = () => screen.findByRole('tabpanel')
+// The board being played: the innermost panel (a language mode inside the Languages category).
+const board = async () => (await screen.findAllByRole('tabpanel')).at(-1)
+const P = '\u{1F7EA}'
+const Y = '\u{1F7E8}'
+const W = '⬜'
+const squares = (guess) => guess.cells.map((cell) => ({ match: P, partial: Y, miss: W })[cell.status]).join('')
+const host = () => window.location.origin.replace(/^https?:\/\//, '')
 
 it('shows the game number, countdown, modes and my Classic board', async () => {
   renderAt('/glitchdle', { user: 'alice' })
@@ -124,12 +151,106 @@ it('celebrates a win, shows the answer and copies a spoiler-free result', async 
   // The progress refreshes for the XP and the badge toasts.
   await waitFor(() => expect(getProgress.mock.calls.length).toBeGreaterThan(1))
 
-  await user.click(screen.getByRole('button', { name: 'Share result' }))
+  await user.click(screen.getByRole('button', { name: 'Copy result' }))
   const text = await navigator.clipboard.readText()
-  expect(text.split('\n')[0]).toBe('Glitchdle #1  Classic 2 · Error ? · Snippet ?')
-  expect(text.split('\n')[2]).toBe('\u{1F7EA}'.repeat(8))
+  expect(text).toBe(
+    [
+      '\u{1F50D} Glitchdle #1 (Oct 22)',
+      '',
+      '\u{1F9E9} Classic: solved in 2 guesses',
+      '⚠️ Error: not played',
+      '✂️ Snippet: not played',
+      '\u{1F9F1} Frameworks: not played',
+      '\u{1F5C4}️ Databases: not played',
+      '',
+      squares(classicGuess('python')),
+      P.repeat(8),
+      '',
+      `Can you do better? ${host()}/glitchdle`,
+    ].join('\n'),
+  )
   expect(text).not.toMatch(/rust/i)
-  expect(screen.getByRole('button', { name: 'Copied!' })).toBeInTheDocument()
+  expect(await screen.findByText('Copied!')).toBeInTheDocument()
+})
+
+it('copies the result in Brazilian Portuguese, with the streak and the earlier guesses', async () => {
+  const user = userEvent.setup()
+  const won = WON()
+  const wrong = ['python', 'go', 'java', 'c', 'ruby']
+  won.modes.classic = { ...won.modes.classic, guessCount: 6, guesses: [classicGuess('rust'), ...wrong.map((id) => classicGuess(id))] }
+  won.modes.error = { ...won.modes.error, solved: true, over: true, guessCount: 1, answer: { id: 'rust', name: 'Rust' }, guesses: [{ id: 'rust', name: 'Rust', correct: true }] }
+  won.stats = { ...won.stats, streak: 3 }
+  vi.mocked(getRiddle).mockResolvedValue(won)
+  renderAt('/glitchdle', { user: 'alice', locale: 'pt-BR' })
+  await user.click(await screen.findByRole('tab', { name: /Clássico/ }))
+  await user.click(screen.getByRole('button', { name: 'Copiar resultado' }))
+  const rows = ['go', 'python'].map((id) => squares(classicGuess(id)))
+  expect(await navigator.clipboard.readText()).toBe(
+    [
+      '\u{1F50D} Glitchdle #1 (22/10)',
+      '',
+      '\u{1F9E9} Clássico: acertei em 6 palpites',
+      '⚠️ Erro: acertei em 1 palpite',
+      '✂️ Trecho: não joguei',
+      '\u{1F9F1} Frameworks: não joguei',
+      '\u{1F5C4}️ Bancos de dados: não joguei',
+      '',
+      squares(classicGuess('java')),
+      ...rows,
+      P.repeat(8),
+      '(+2 palpites antes)',
+      '',
+      '\u{1F525} 3 dias seguidos',
+      `Consegue fazer melhor? ${host()}/glitchdle`,
+    ].join('\n'),
+  )
+  expect(await screen.findByText('Copiado!')).toBeInTheDocument()
+})
+
+it('switches to the framework board and grades it with its own traits', async () => {
+  const user = userEvent.setup()
+  const game = GAME()
+  vi.mocked(guessRiddle).mockResolvedValue({
+    ...game,
+    correct: false,
+    modes: { ...game.modes, frameworks: { ...game.modes.frameworks, guessCount: 1, guessesLeft: MAX_GUESSES - 1, guesses: [frameworkGuess('django')] } },
+  })
+  renderAt('/glitchdle', { user: 'alice' })
+  const categories = within(await screen.findByRole('tablist', { name: 'Categories' })).getAllByRole('tab')
+  expect(categories.map((tab) => tab.textContent)).toEqual(['Languages0/3 solved', 'FrameworksNew', 'DatabasesNew'])
+  await user.click(categories[1])
+  expect(categories[1]).toHaveAttribute('aria-selected', 'true')
+  expect(screen.queryByRole('tablist', { name: 'Game modes' })).not.toBeInTheDocument()
+  const input = screen.getByRole('combobox', { name: 'Guess a framework' })
+  expect(input).toHaveAttribute('placeholder', 'e.g. React, Django, Flutter')
+  await user.type(input, 'rails')
+  expect(within(screen.getByRole('listbox', { name: 'Frameworks' })).getAllByRole('option')[0]).toHaveTextContent('Ruby on Rails')
+  await user.clear(input)
+  await user.type(input, 'django{Enter}')
+  expect(guessRiddle).toHaveBeenCalledWith({ mode: 'frameworks', guess: 'django', day: '2026-10-22' }, 'token-alice')
+  const card = await within(screen.getByRole('list', { name: 'Your guesses' })).findByRole('listitem', { name: 'Django' })
+  expect(card).toHaveTextContent('Main language')
+  expect(card).toHaveTextContent('Python')
+  expect(card).toHaveTextContent('Backend')
+  expect(screen.getByRole('list', { name: 'What the colors mean' })).toHaveTextContent('Answer is newer or more asked')
+  expect(screen.getByRole('heading', { name: 'Frameworks guess distribution' })).toBeInTheDocument()
+})
+
+it('shows the database board in Brazilian Portuguese, and where the data comes from', async () => {
+  const user = userEvent.setup()
+  const game = GAME()
+  const db = (id) => ({ id, name: itemById('databases', id).name, ...compareGuess(itemById('databases', id), itemById('databases', 'postgresql'), categoryById('databases').attributes) })
+  game.modes.databases = { ...game.modes.databases, guessCount: 1, guesses: [db('mongodb')] }
+  vi.mocked(getRiddle).mockResolvedValue(game)
+  renderAt('/glitchdle', { user: 'alice', locale: 'pt-BR' })
+  await user.click(await screen.findByRole('tab', { name: /Bancos de dados/ }))
+  expect(screen.getByRole('combobox', { name: 'Dê um palpite de banco de dados' })).toBeInTheDocument()
+  const card = within(screen.getByRole('list', { name: 'Seus palpites' })).getByRole('listitem', { name: 'MongoDB' })
+  expect(card).toHaveTextContent('Modelo de dados')
+  expect(card).toHaveTextContent('Documentos')
+  expect(card).toHaveTextContent('Escrito em')
+  expect(screen.getByText(/Dados de frameworks e bancos de dados/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Wikidata (CC0)' })).toHaveAttribute('href', 'https://www.wikidata.org')
 })
 
 it('shows the error message and its hints in Error mode', async () => {
@@ -160,6 +281,7 @@ it("shows my stats and today's community numbers", async () => {
   expect(numbers).toHaveTextContent('1Played')
   const table = screen.getByRole('table')
   expect(within(table).getByRole('row', { name: /Classic/ })).toHaveTextContent('3/45.31 try')
+  expect(within(table).getAllByRole('row')).toHaveLength(6)
 })
 
 it('says what went wrong and reloads the board when a guess is refused', async () => {
@@ -209,5 +331,5 @@ it('puts my stats and the community in a sidebar, and reads the guesses left wit
   const table = within(sidebar).getByRole('table')
   // The column says "Avg" on screen and the whole name to screen readers.
   expect(within(table).getByRole('columnheader', { name: 'Avg guesses' })).toHaveTextContent('Avg')
-  expect(screen.getByRole('tabpanel')).not.toContainElement(sidebar)
+  expect(await board()).not.toContainElement(sidebar)
 })
