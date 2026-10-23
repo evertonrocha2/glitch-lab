@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { buildResult, leftDuring, outcomeAt, phaseAt, scoreRound, timeline } from '../../api/_lib/duel/clock.js'
+import { DUEL_BUGS } from '../../api/_lib/duel/bugs.js'
 import { botPlan, buildRounds, OPTION_COUNT, optionsFor } from '../../api/_lib/duel/questions.js'
+import { POOL } from '../../api/_lib/puzzles/pool.js'
 import { CONCEPTS } from '../../shared/concepts.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'
 import { languageById } from '../../shared/riddle/languages.js'
@@ -41,6 +43,24 @@ describe('questions', () => {
     expect(byType.bug.prompt).toEqual({ code: expect.any(String), symptom: expect.any(String), language: expect.any(String) })
     expect(CONCEPTS.map((item) => item.id)).toContain(byType.bug.answer)
     expect(byType.bug.answer).not.toBe('other')
+  })
+
+  it('draws bug rounds from the duel set only, never the daily challenge pool', () => {
+    const duelCodes = new Set(DUEL_BUGS.map((bug) => bug.code))
+    const poolCodes = new Set(POOL.map((puzzle) => puzzle.brokenCode))
+    for (const bug of DUEL_BUGS) {
+      expect(poolCodes.has(bug.code)).toBe(false)
+      expect(languageById(bug.language)).not.toBeNull()
+      expect(CONCEPTS.map((item) => item.id)).toContain(bug.concept)
+      expect(bug.concept).not.toBe('other')
+      expect(bug.symptom).toEqual(expect.any(String))
+    }
+    expect(DUEL_BUGS.length).toBeGreaterThanOrEqual(DUEL_ROUNDS)
+    for (let seed = 1; seed < 40; seed++) {
+      const bug = buildRounds(seeded(seed)).find((round) => round.type === 'bug')
+      expect(duelCodes.has(bug.prompt.code)).toBe(true)
+      expect(poolCodes.has(bug.prompt.code)).toBe(false)
+    }
   })
 
   it("shuffles each player's options the same way every time, and differently per player", () => {

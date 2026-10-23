@@ -3,12 +3,12 @@ import { CONCEPTS, conceptLabel } from '../../../shared/concepts.js'
 import { DUEL_ROUNDS, ROUND_MS } from '../../../shared/duel.js'
 import { LANGUAGES, languageById } from '../../../shared/riddle/languages.js'
 import { SAMPLES } from '../../../shared/riddle/samples.js'
-import { POOL } from '../puzzles/pool.js'
 import { hash } from '../riddle/schedule.js'
+import { DUEL_BUGS } from './bugs.js'
 
-// Duel questions, built on the server from data the app already has. Server only: the error
-// samples, the snippets and the puzzle pool never ship to the browser, and neither does a
-// round's answer until that round is over.
+// Duel questions, built on the server. Server only: the error samples, the snippets and the
+// duel's own bug set (bugs.js, never the daily challenge's pool) never ship to the browser, and
+// neither does a round's answer until that round is over.
 
 export const QUESTION_TYPES = ['error', 'snippet', 'bug']
 // Every duel: two "which language printed this error?", two "which language is this snippet?"
@@ -52,7 +52,6 @@ function languageDistractors(answerId, random) {
 }
 
 const BUG_CONCEPTS = CONCEPTS.filter((item) => item.id !== 'other').map((item) => item.id)
-const BUG_PUZZLES = POOL.filter((item) => item.kind === 'daily' && BUG_CONCEPTS.includes(item.concept))
 
 function languageQuestion(type, answerId, random) {
   const samples = SAMPLES[answerId]
@@ -61,17 +60,17 @@ function languageQuestion(type, answerId, random) {
   return { type, prompt, options, answer: answerId }
 }
 
-function bugQuestion(puzzle, random) {
+function bugQuestion(bug, random) {
   const wrong = sample(
-    BUG_CONCEPTS.filter((id) => id !== puzzle.concept),
+    BUG_CONCEPTS.filter((id) => id !== bug.concept),
     OPTION_COUNT - 1,
     random,
   )
   return {
     type: 'bug',
-    prompt: { code: puzzle.brokenCode, symptom: puzzle.symptom, language: languageById(puzzle.language)?.name ?? puzzle.language },
-    options: shuffle([puzzle.concept, ...wrong], random).map(conceptOption),
-    answer: puzzle.concept,
+    prompt: { code: bug.code, symptom: bug.symptom, language: languageById(bug.language)?.name ?? bug.language },
+    options: shuffle([bug.concept, ...wrong], random).map(conceptOption),
+    answer: bug.concept,
   }
 }
 
@@ -84,8 +83,8 @@ export function buildRounds(random = cryptoRandom) {
     types.length,
     random,
   )
-  const puzzles = sample(BUG_PUZZLES, types.length, random)
-  return types.map((type, index) => (type === 'bug' ? bugQuestion(puzzles[index], random) : languageQuestion(type, languages[index], random)))
+  const bugs = sample(DUEL_BUGS, types.length, random)
+  return types.map((type, index) => (type === 'bug' ? bugQuestion(bugs[index], random) : languageQuestion(type, languages[index], random)))
 }
 
 // The Glitch Bot: right about 70% of the time, answering after 2.5 to 9.5 seconds, so a quick
