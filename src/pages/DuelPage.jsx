@@ -172,7 +172,9 @@ export default function DuelPage() {
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('blur', onBlur)
     window.addEventListener('focus', onFocus)
-    if (hidden && document.visibilityState === 'visible') report('visible')
+    // On mount, the page says where it really is when the server thinks otherwise: back after a
+    // reload, or opened in a background tab (no blur or visibilitychange would ever tell).
+    report(document.visibilityState === 'hidden' ? 'hidden' : 'visible')
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('blur', onBlur)

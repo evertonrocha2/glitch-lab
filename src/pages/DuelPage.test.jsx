@@ -158,6 +158,19 @@ it('says it is back after a reload, when the server still has me away', async ()
   expect(sendDuel).toHaveBeenCalledTimes(1)
 })
 
+it('says it is away on load when the page opens in a background tab', async () => {
+  vi.mocked(getDuel).mockResolvedValue(round())
+  vi.mocked(sendDuel).mockResolvedValue({ recorded: true })
+  Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+  try {
+    renderAt('/duel/d1', { user: 'alice' })
+    await waitFor(() => expect(sendDuel).toHaveBeenCalledWith('focus', { id: 'd1', state: 'hidden' }, 'token-alice', { keepalive: true }))
+    expect(sendDuel).toHaveBeenCalledTimes(1)
+  } finally {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
+  }
+})
+
 it("shows the server's tab flag for me and for the other player", async () => {
   vi.mocked(getDuel).mockResolvedValue(round({ left: [true, true], answered: [false, true] }))
   renderAt('/duel/d1', { user: 'alice' })
