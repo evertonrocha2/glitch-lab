@@ -141,7 +141,7 @@ it('guide: covers every page, including the newer games and community features',
     expect(APP_GUIDE).toContain(feature)
   }
   for (const level of ['Rookie', 'Apprentice', 'Debugger', 'Engineer', 'Senior Engineer', 'Bug Whisperer']) expect(APP_GUIDE).toContain(level)
-  expect(APP_GUIDE).toContain('26 badges')
+  expect(APP_GUIDE).toContain('27 badges')
   expect(APP_GUIDE).not.toMatch(/—/)
   expect(APP_GUIDE.length).toBeLessThan(GUIDE_BUDGET - 1000)
 })
