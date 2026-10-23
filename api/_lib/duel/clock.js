@@ -67,6 +67,16 @@ export function leftDuring(focus, userId, openAt, closeAt) {
 
 // One player's round: what they picked, if it was right, how long it took, if they left the tab,
 // and the points. Only call it for a closed round (or the result would leak the answer).
+//
+// Fairness: `ms` is the server time the answer arrived minus the server time the round opened.
+// No time sent by a browser is read, so a page can't claim it was faster. How a page hears about
+// changes (polling every second, or the realtime nudge plus slower polling) never moves either
+// time: a nudge only makes the other page ask again sooner. What a slow network still costs is
+// its own latency: the page asks for the question right when the round opens (by its estimate of
+// the server clock) and the answer needs one more trip back. Speed is worth 1 point per 150 ms
+// (SPEED_POINTS over ROUND_MS), so 100 ms of extra latency is under a point. Compensating per
+// player would mean trusting the browser's clock or a write each time a question is served, so it
+// isn't done.
 export function scoreRound(duel, round, userId) {
   const answer = round.answers[userId]
   const left = leftDuring(duel.focus, userId, round.openAt, round.closeAt)
