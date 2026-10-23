@@ -303,7 +303,12 @@ async function rematch(store, user, body, now) {
   if (!old) return fail(404, 'Duel not found.')
   if (!isPlayer(old, user.id)) return fail(403, 'You are not in this duel.')
   if (old.status !== 'finished' || old.kind === 'bot') return fail(409, 'Invalid request.')
-  if (old.rematchId) return join(store, user, { id: old.rematchId }, now)
+  if (old.rematchId) {
+    const next = await store.getDuel(old.rematchId)
+    if (next && next.status !== 'cancelled') return join(store, user, { id: old.rematchId }, now)
+    // The rematch room is gone or was given up: forget it and open a fresh one below.
+    await mutate(store, old.id, (current) => (current.rematchId === old.rematchId ? { fields: { rematchId: null } } : {}))
+  }
 
   const fresh = await createWithCode(store, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds(), rematchOf: old.id })
   const { duel: linked } = await mutate(store, old.id, (current) => (current.rematchId ? {} : { fields: { rematchId: fresh.id } }))

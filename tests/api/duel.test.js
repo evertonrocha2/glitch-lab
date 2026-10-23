@@ -425,6 +425,20 @@ it('gives up every waiting room of mine before a bot game or a quick match, so I
   expect((await store.listDuels('alice', { status: 'waiting' })).length).toBe(0)
 })
 
+it('opens a new rematch when the one linked was given up', async () => {
+  const { id } = await privateDuel()
+  await playOut(id)
+  const first = await act('rematch', { id })
+  await act('leave', { id: first.body.duel.id })
+  const again = await act('rematch', { id }, 'dev:bob')
+  expect(again.status).toBe(201)
+  expect(again.body.duel).toMatchObject({ kind: 'private', status: 'waiting', you: 0 })
+  expect(again.body.duel.id).not.toBe(first.body.duel.id)
+  expect((await state(id)).body.duel.rematchId).toBe(again.body.duel.id)
+  // And Alice now joins Bob's.
+  expect((await act('rematch', { id })).body.duel).toMatchObject({ id: again.body.duel.id, status: 'active', you: 1 })
+})
+
 it('rejects unknown actions and ids', async () => {
   expect((await act('dance')).status).toBe(400)
   expect((await act('answer', { round: 0, choice: 'x' })).status).toBe(400)
