@@ -97,12 +97,13 @@ function CategoryTabs({ categories, modes, active, onPick }) {
             tabIndex={selected ? 0 : -1}
             onClick={() => onPick(category.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`min-w-0 border-2 border-ink px-3 py-2 text-left transition-colors sm:px-4 ${
+            className={`min-w-0 border-2 border-ink px-2 py-2 text-left transition-colors sm:px-4 ${
               selected ? 'bg-primary text-white shadow-pixel-ink' : 'bg-white text-ink shadow-pixel-muted hover:bg-primary-soft'
             }`}
           >
-            <span className="flex items-center gap-1.5 font-label text-xs sm:text-sm">
-              <span className="truncate">{t(`app.glitchdle.category.${category.id}`)}</span>
+            {/* Wraps instead of cutting the name off on a phone ("Bancos de dados"). */}
+            <span className="flex items-start gap-1.5 font-label text-[11px] leading-tight sm:text-sm">
+              <span className="min-w-0 wrap-break-word">{t(`app.glitchdle.category.${category.id}`)}</span>
               {done === states.length && done > 0 && <SolvedMark selected={selected} />}
             </span>
             <TabNote text={text} selected={selected} />

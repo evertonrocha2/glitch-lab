@@ -93,14 +93,15 @@ const DIRECTION_HINTS = {
   rank: { higher: 'app.glitchdle.more', lower: 'app.glitchdle.fewer' },
 }
 
-function Cell({ cell, kind, label, name, index, animate }) {
+// wide: the last of an odd number of cells fills the row, so no empty slot shows.
+function Cell({ cell, kind, label, name, index, animate, wide }) {
   const style = STATUS[cell.status]
   const t = useT()
   const hint = cell.direction ? t(DIRECTION_HINTS[kind]?.[cell.direction] ?? DIRECTION_HINTS.year[cell.direction]) : ''
   return (
     <div
       style={{ ...style.style, ...(animate ? { animationDelay: `${index * 90}ms` } : null) }}
-      className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
+      className={`flex min-h-16 min-w-0 flex-col justify-between gap-1 px-2 py-1.5 ${wide ? 'col-span-2 @3xl:col-span-1' : ''} ${style.cell} ${animate ? 'motion-safe:animate-flip-in' : ''}`}
     >
       <span className={`flex items-start justify-between gap-1 font-label text-[10px] leading-tight ${style.label}`}>
         <span className="min-w-0">{label}</span>
@@ -139,7 +140,16 @@ const GuessCard = memo(function GuessCard({ guess, attributes, columns, labelOf,
       {/* All across only when the board itself is wide enough, not just the screen. */}
       <div className={`grid grid-cols-2 gap-[2px] border-t-2 border-ink @sm:grid-cols-4 ${columns === 7 ? '@3xl:grid-cols-7' : '@3xl:grid-cols-8'}`}>
         {guess.cells.map((cell, index) => (
-          <Cell key={cell.key} cell={cell} kind={attributes[index]?.kind} label={labelOf(cell.key)} name={name} index={index} animate={animate} />
+          <Cell
+            key={cell.key}
+            cell={cell}
+            kind={attributes[index]?.kind}
+            label={labelOf(cell.key)}
+            name={name}
+            index={index}
+            animate={animate}
+            wide={columns % 2 === 1 && index === columns - 1}
+          />
         ))}
       </div>
     </li>
