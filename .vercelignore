@@ -1,0 +1,6 @@
+# Vercel only hosts the built site; the API runs on Render (render.yaml) and /api/* is forwarded there.
+api
+server.js
+scripts
+supabase
+tests
