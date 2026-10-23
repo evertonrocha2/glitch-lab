@@ -17,7 +17,7 @@ const MARGIN_MM = 12
 // A page that would end before this share of its height cuts through a block instead.
 const MIN_FILL = 0.25
 // Every face the sheet uses, so none is still loading when it's drawn.
-const FONTS = ['500 16px "Pixelify Sans"', '700 16px "Pixelify Sans"', '16px Silkscreen', '400 16px Geist', '600 16px Geist', '400 16px "Geist Mono"']
+const FONTS = ['400 16px "Geist Pixel"', '400 16px Geist', '600 16px Geist', '400 16px "Geist Mono"']
 
 export const noteFileName = (title, format) => `${slug(title)}.${format}`
 

@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  /* Pixel Lab: pixel headings, pixel labels, Geist for reading, Geist Mono for code. */
-  --font-pixel: "Pixelify Sans", ui-monospace, monospace;
-  --font-label: "Silkscreen", ui-monospace, monospace;
+  /* Pixel Lab: Geist Pixel for headings and labels (pixel, but easy to read even at 10px), Geist for
+     reading, Geist Mono for code. One family, three cuts. */
+  --font-pixel: "Geist Pixel", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Geist Pixel", "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -111,13 +112,24 @@
     @apply bg-white font-sans text-ink antialiased;
   }
 
-  /* Pixelify Sans draws a broken "fi" ligature ("Desafios" came out as "DesaAos"): pixel type never joins letters. */
+  /* Pixel type never joins letters (a "fi" ligature once rendered "Desafios" as "DesaAos"). */
   .font-pixel,
   .font-label {
     font-variant-ligatures: none;
     font-feature-settings:
       "liga" 0,
       "clig" 0;
+  }
+
+  /* Labels are small: a faked bold would smear their pixels. */
+  .font-label {
+    font-synthesis: none;
+  }
+
+  /* Labels keep the small-caps look the old all-caps pixel face gave them. */
+  .font-label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   button:not(:disabled) {
