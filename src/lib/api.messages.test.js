@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { GUARD_TEXT, LOCKED_MESSAGE } from '../../server/infra/ai/guard/messages.js'
 import { credentialsProblem } from '../../server/modules/auth/credentials.js'
 import { validateInput } from '../../server/modules/cases/analysis.js'
 import { parseAssistantRequest } from '../../server/modules/assistant/request.js'
@@ -110,6 +111,13 @@ it('knows the messages the API builds from limits and checks', () => {
     expect(typeof message).toBe('string')
     expect(pt(message), message).not.toBe(message)
   }
+})
+
+// The guard writes its refusals in the reader's language on the server (they show as answers) and
+// sends English in AppErrors (a new investigation it won't take, the lockout): both must read the same.
+it("knows the AI guard's messages, in the same words the server uses", () => {
+  for (const text of Object.values(GUARD_TEXT)) expect(pt(text.en)).toBe(text['pt-BR'])
+  expect(pt(LOCKED_MESSAGE)).toBe('Muitas tentativas bloqueadas hoje. As funções de IA ficam pausadas na sua conta até amanhã.')
 })
 
 it('throws Portuguese errors from the API client when the reader picked Portuguese', async () => {

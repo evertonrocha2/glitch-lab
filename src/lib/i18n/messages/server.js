@@ -25,6 +25,15 @@ const en = {
   'server.aiSlow': 'The AI took too long. Try again.',
   'server.aiFailed': 'Something went wrong talking to the AI. Please try again.',
   'server.dailyLimit': 'Daily limit reached. Come back tomorrow.',
+  // The AI guard (server/infra/ai/guard/messages.js): refusals, shown like a normal answer, and the lockout.
+  'server.guardInjection': "I can't follow instructions that try to change my rules. Tell me your programming question.",
+  'server.guardOffTopic': 'I only help with programming and Glitch Lab. Want to ask a coding question?',
+  'server.guardGibberish': "I couldn't understand that. Tell me your programming question in a sentence or two.",
+  'server.guardLeak': "I can't share that. Let's get back to your code: what are you stuck on?",
+  'server.guardGymInjection': "I only grade the code itself and can't follow instructions written inside it. Fix the bug and submit again.",
+  'server.guardGymOffTopic': "This doesn't look like a fix for the exercise. Change the code so the bug is gone and submit again.",
+  'server.guardNotAnError': "This doesn't look like a programming error. Paste the error message your code printed.",
+  'server.guardLocked': 'Too many blocked requests today. The AI features are paused for your account until tomorrow.',
 
   // Accounts.
   'server.wrongPassword': 'Wrong email or password.',
@@ -268,6 +277,14 @@ const ptBR = {
   'server.aiSlow': 'A IA demorou demais. Tente de novo.',
   'server.aiFailed': 'Algo deu errado ao falar com a IA. Tente de novo.',
   'server.dailyLimit': 'Limite diário atingido. Volte amanhã.',
+  'server.guardInjection': 'Não posso seguir instruções que tentam mudar minhas regras. Me conta sua dúvida de programação.',
+  'server.guardOffTopic': 'Eu só ajudo com programação e com o Glitch Lab. Quer tirar uma dúvida de código?',
+  'server.guardGibberish': 'Não consegui entender. Me conta sua dúvida de programação em uma ou duas frases.',
+  'server.guardLeak': 'Não posso compartilhar isso. Vamos voltar ao seu código: onde você travou?',
+  'server.guardGymInjection': 'Eu só avalio o código e não sigo instruções escritas nele. Corrija o bug e envie de novo.',
+  'server.guardGymOffTopic': 'Isso não parece uma correção do exercício. Mude o código para tirar o bug e envie de novo.',
+  'server.guardNotAnError': 'Isso não parece um erro de programação. Cole a mensagem de erro que seu código mostrou.',
+  'server.guardLocked': 'Muitas tentativas bloqueadas hoje. As funções de IA ficam pausadas na sua conta até amanhã.',
 
   'server.wrongPassword': 'E-mail ou senha incorretos.',
   'server.tooManyWrong': 'Muitas senhas erradas para este e-mail. Tente de novo amanhã.',
