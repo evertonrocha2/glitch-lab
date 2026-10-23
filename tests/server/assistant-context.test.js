@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { CONTEXT_BUDGET, CONTEXT_LOADERS, loadContext } from '../../server/modules/assistant/context.js'
+import { CONTEXT_BUDGET, CONTEXT_LOADERS, GUIDE_BUDGET, loadContext } from '../../server/modules/assistant/context.js'
+import { APP_GUIDE, guideSection } from '../../server/modules/assistant/guide.js'
 import { DATA_NEEDS } from '../../server/modules/assistant/agents.js'
 import { useTempStore } from './helpers.js'
 import { CASE, challengeFor, SECRET } from './store-contract.js'
@@ -133,6 +134,30 @@ it('guide: static app knowledge, no student data', async () => {
   const text = await loadContext('guide', noStore, 'alice', { page: { path: '/' }, needs: ['app_guide'] })
   expect(text).toContain('Board')
   expect(text).toContain('Alt+A')
+})
+
+it('guide: covers every page, including the newer games and community features', () => {
+  for (const feature of ['Line hunt', 'Spaced review', 'interrogation', 'Duel', 'Events', 'Glitchdle', 'Articles', 'People directory', 'Your profile', 'notifications']) {
+    expect(APP_GUIDE).toContain(feature)
+  }
+  for (const level of ['Rookie', 'Apprentice', 'Debugger', 'Engineer', 'Senior Engineer', 'Bug Whisperer']) expect(APP_GUIDE).toContain(level)
+  expect(APP_GUIDE).toContain('26 badges')
+  expect(APP_GUIDE).not.toMatch(/—/)
+  expect(APP_GUIDE.length).toBeLessThan(GUIDE_BUDGET - 1000)
+})
+
+it('guide: knows a section for every route the app has', () => {
+  const paths = ['/', '/login', '/board', '/gym/g1', '/interrogate/c1', '/daily', '/glitchdle', '/hunt', '/duel', '/duel/d1', '/notes', '/notes/n1', '/trail', '/progress', '/profile', '/u/ada', '/u/ada/notes/n1', '/people', '/articles', '/articles/new', '/articles/a1', '/articles/a1/edit', '/events', '/events/new', '/events/e1', '/events/e1/edit']
+  for (const path of paths) expect(guideSection(path), path).not.toBeNull()
+  expect(guideSection('/nope/nope/nope')).toBeNull()
+})
+
+it('guide: leads with the page the student is on', async () => {
+  const text = await loadContext('guide', store, 'alice', { page: { path: '/profile' }, needs: ['app_guide'] })
+  expect(text.startsWith('The student is on this page now. Your profile:')).toBe(true)
+  expect(text).toContain('Make my profile public')
+  expect(text).toContain('Line hunt')
+  expect(text.length).toBeLessThanOrEqual(GUIDE_BUDGET)
 })
 
 it('stays inside the budget', async () => {

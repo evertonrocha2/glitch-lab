@@ -1,4 +1,5 @@
 // Small text helpers shared by the assistant's prompts and context loaders.
+import { pageName } from './guide.js'
 
 export function clip(value, max) {
   const text = String(value ?? '')
@@ -21,12 +22,13 @@ export function conversationBlock(messages) {
   return fence('conversation', messages.map((item) => `${SPEAKER[item.role]}: ${clip(item.content, 2000)}`).join('\n\n'))
 }
 
-// "Current page: /board (open case: c1)", so "this case" and "this note" can be resolved.
+// "Current page: /board (Board; open case: c1)", so "here", "this case" and "this note" can be resolved.
 export function describePage(page) {
-  const open = [
+  const details = [
+    pageName(page.path),
     page.caseId && `open case: ${page.caseId}`,
     page.noteId && `open note: ${page.noteId}`,
     page.challengeId && `open gym challenge: ${page.challengeId}`,
   ].filter(Boolean)
-  return `Current page: ${page.path}${open.length ? ` (${open.join(', ')})` : ''}`
+  return `Current page: ${page.path}${details.length ? ` (${details.join('; ')})` : ''}`
 }

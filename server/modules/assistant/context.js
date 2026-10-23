@@ -8,11 +8,13 @@ import { loadDuel } from '../duels/solved.js'
 import { loadHunt } from '../hunt/solved.js'
 import { loadInterrogation } from '../interrogation/solved.js'
 import { serverDay } from '../../core/days.js'
-import { APP_GUIDE } from './guide.js'
+import { guideFor } from './guide.js'
 import { clip, firstLines } from './text.js'
 
 // Characters of data one specialist gets, so prompts stay small and fast on the free tier.
 export const CONTEXT_BUDGET = 6000
+// The app guide is static text covering every page, so it gets more room.
+export const GUIDE_BUDGET = 11_000
 const MAX_CASES = 15
 const MAX_CHALLENGES = 10
 const MAX_NOTES = 20
@@ -183,7 +185,8 @@ async function studyContext({ store, userId, needs }) {
   return parts.join('\n')
 }
 
-const guideContext = async () => APP_GUIDE
+// Leads with the page the student is on, so "what can I do here?" has an answer.
+const guideContext = async ({ page }) => guideFor(page)
 
 // One loader per specialist. Each reads only the signed-in student's data, only the keys it was given.
 export const CONTEXT_LOADERS = {
@@ -196,5 +199,5 @@ export const CONTEXT_LOADERS = {
 
 export async function loadContext(name, store, userId, { page, needs }) {
   const text = await CONTEXT_LOADERS[name]({ store, userId, page, needs })
-  return clip(text?.trim() || 'Nothing here yet.', CONTEXT_BUDGET)
+  return clip(text?.trim() || 'Nothing here yet.', name === 'guide' ? GUIDE_BUDGET : CONTEXT_BUDGET)
 }
