@@ -115,7 +115,7 @@ it('prints in Portuguese inside a Portuguese provider', () => {
   expect(screen.getByText('Exportado em 22 de out. de 2026')).toBeInTheDocument()
   const level = screen.getByRole('list', { name: 'Progresso' })
   expect(level).toHaveTextContent('Nível 2')
-  expect(level).toHaveTextContent('Detetive Júnior')
+  expect(level).toHaveTextContent('Detetive júnior')
   expect(level).toHaveTextContent('3 dias')
   expect(screen.getByRole('region', { name: 'Treinando' })).toHaveTextContent('Praticando no gym')
   expect(screen.getAllByText('Por que quebrou')).toHaveLength(CASES.length)

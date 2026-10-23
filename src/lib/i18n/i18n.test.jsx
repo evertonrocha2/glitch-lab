@@ -24,7 +24,7 @@ it('has a Portuguese entry for every English one', () => {
 it('names shared data in the chosen language', () => {
   const pt = (key, vars) => translate('pt-BR', key, vars)
   expect(conceptName(pt, 'off-by-one')).toBe('Erro de um a mais')
-  expect(levelTitle(pt, 6)).toBe('Encantador de Bugs')
+  expect(levelTitle(pt, 6)).toBe('Encantador de bugs')
   expect(conceptName((key) => key, 'off-by-one')).toBe('Off by one')
 })
 

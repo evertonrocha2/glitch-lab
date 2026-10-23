@@ -140,7 +140,7 @@ const ROWS = [
   ['events.tools.close', 'Close entries now', 'Encerrar participações agora'],
   ['events.tools.closeAsk', 'Close entries now? Voting stays open for 2 more days.', 'Encerrar agora? A votação fica aberta por mais 2 dias.'],
   ['events.tools.closeYes', 'Yes, close', 'Sim, encerrar'],
-  ['events.tools.winners', 'Pick the winners', 'Escolha os vencedores'],
+  ['events.tools.winners', 'Pick the winners', 'Escolher os vencedores'],
   [
     'events.tools.winnersHint',
     'Announcing ends the voting and tells everyone who took part. You can change the pick for 2 days after.',

@@ -68,7 +68,7 @@ it('writes the board in Portuguese when given a Portuguese t', () => {
   const progress = { level: 2, title: 'Junior Detective', xp: 145, streak: 3, totalSeconds: 3900, badges: [{ id: 'first-clue', earned: true }] }
   const md = boardToMarkdown({ cases: CASES, notes: [NOTE], progress, date: '2026-10-22', t })
   expect(md).toContain('# Board do Glitch Detective\n\nExportado em 2026-10-22')
-  expect(md).toContain('**Nível 2 · Detetive Júnior** · 145 XP · 3 dias de sequência · 1h 05m de estudo')
+  expect(md).toContain('**Nível 2 · Detetive júnior** · 145 XP · 3 dias de sequência · 1h 05m de estudo')
   expect(md).toContain('Medalhas: Primeira pista')
   expect(md).toContain('## Novo (0)\n\n_Nada aqui._')
   expect(md).toContain('## Treinando (1)')

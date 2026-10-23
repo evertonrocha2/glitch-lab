@@ -72,7 +72,7 @@ it('announces a badge earned since the last visit, but not on the first one', as
 it('speaks Brazilian Portuguese: header, level, timer and badges', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   renderAt('/progress', { user: 'alice', locale: 'pt-BR' })
-  expect(await screen.findByRole('heading', { name: 'Detetive Júnior' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Detetive júnior' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: 'Seu progresso' })).toBeInTheDocument()
   expect(screen.getByText(/155 XP para o nível 3/)).toBeInTheDocument()
   expect(screen.getByRole('progressbar', { name: 'Experiência até o próximo nível' })).toBeInTheDocument()

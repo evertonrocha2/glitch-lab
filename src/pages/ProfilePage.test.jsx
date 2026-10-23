@@ -248,7 +248,7 @@ it('speaks Brazilian Portuguese: fields, hints, choices and the preview', async 
   expect(screen.getByRole('heading', { level: 1, name: 'Seu perfil' })).toBeInTheDocument()
   const card = screen.getByRole('region', { name: 'Como os outros veem você' })
   expect(within(card).getByText('Nv 2')).toBeInTheDocument()
-  expect(within(card).getByText('Detetive Júnior')).toBeInTheDocument()
+  expect(within(card).getByText('Detetive júnior')).toBeInTheDocument()
   expect(screen.getByText('Letras minúsculas, números, _ e -. De 3 a 20 caracteres.')).toBeInTheDocument()
   await userEvent.type(field('Nome de usuário'), 'ab')
   expect(screen.getByText('Use pelo menos 3 caracteres.')).toBeInTheDocument()

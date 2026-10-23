@@ -277,7 +277,7 @@ export default {
     'landing.profile.makePublic': 'Make it public',
     'landing.profile.kicker': '> detective file',
     'landing.profile.memberSince': 'Member since {date}',
-    'landing.profile.badges': 'Medalhas',
+    'landing.profile.badges': 'Badges',
     'landing.profile.badgesEarned': '{earned}/{total} earned',
     'landing.profile.badgesList': 'Earned badges',
     'landing.profile.badgesNone': 'No badges yet. Every detective starts somewhere.',

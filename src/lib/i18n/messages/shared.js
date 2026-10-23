@@ -81,7 +81,7 @@ const BADGES_PT = {
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']
-const LEVELS_PT = ['Novato', 'Detetive Júnior', 'Detetive', 'Inspetor', 'Inspetor-Chefe', 'Encantador de Bugs']
+const LEVELS_PT = ['Novato', 'Detetive júnior', 'Detetive', 'Inspetor', 'Inspetor-chefe', 'Encantador de bugs']
 
 const TRAIL_EN = {
   train: ['Train', 'Pass a gym challenge on this case.'],
