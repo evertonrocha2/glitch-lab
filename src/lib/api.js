@@ -195,25 +195,27 @@ export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
 }
 
-// The streamed answer goes through the same /api as everything else, unless VITE_API_STREAM_URL
-// points it straight at the API (for a proxy that would hold the stream back).
-export const ASSISTANT_STREAM_URL = `${(import.meta.env?.VITE_API_STREAM_URL ?? '').replace(/\/$/, '')}/api/assistant/stream`
+// The streamed answers go through the same /api as everything else, unless VITE_API_STREAM_URL
+// points them straight at the API (for a proxy that would hold the stream back).
+const STREAM_BASE = (import.meta.env?.VITE_API_STREAM_URL ?? '').replace(/\/$/, '')
+export const ASSISTANT_STREAM_URL = `${STREAM_BASE}/api/assistant/stream`
+export const QUESTION_STREAM_URL = `${STREAM_BASE}/api/questions/stream`
 
 // The stream could not be used at all (blocked, buffered into something else, cut before any text):
 // the caller asks askAssistant instead.
 export class StreamUnavailableError extends Error {}
 
-// The Lab assistant, streamed over Server-Sent Events. fetch and a reader, since EventSource can't
-// POST or send the Authorization header. onEvent({ type, data }) gets each `step` and `delta` as it
-// comes; resolves with the `done` payload (the same as askAssistant's), or throws: the translated
-// `error` message, AuthError, the abort when `signal` fires, or StreamUnavailableError.
-export async function streamAssistant({ messages, page }, token, { onEvent, signal } = {}) {
+// POSTs `body` to a Server-Sent Events endpoint and reads it. fetch and a reader, since EventSource
+// can't POST or send the Authorization header. onEvent({ type, data }) gets each event but `done`
+// and `error` as it comes; resolves with the `done` payload, or throws: the translated `error`
+// message, AuthError, the abort when `signal` fires, or StreamUnavailableError.
+async function streamEvents(url, body, token, { onEvent, signal } = {}) {
   const headers = { Accept: 'text/event-stream', 'Accept-Language': currentLocale(), 'Content-Type': 'application/json' }
   if (token) headers.Authorization = `Bearer ${token}`
 
   let res
   try {
-    res = await fetch(ASSISTANT_STREAM_URL, { method: 'POST', headers, body: JSON.stringify({ messages, page }), signal })
+    res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal })
   } catch (err) {
     if (signal?.aborted) throw err
     throw new StreamUnavailableError(offlineMessage())
@@ -265,6 +267,23 @@ export async function streamAssistant({ messages, page }, token, { onEvent, sign
   if (failure) throw new Error(serverMessage(failure, genericMessage))
   if (!wrote) throw new StreamUnavailableError(genericMessage())
   throw new Error(genericMessage())
+}
+
+// The Lab assistant, streamed: `step` and `delta` events, then the same payload as askAssistant's.
+export function streamAssistant({ messages, page }, token, options) {
+  return streamEvents(ASSISTANT_STREAM_URL, { messages, page }, token, options)
+}
+
+// One tutor turn of a doubt chat, streamed: `delta` events ({ text }) as it writes, then
+// { reply, card, turns, turnsLeft }. messages: [{ role, content, code?, cardTopic? }], the
+// student's doubt first and their new question last.
+export function streamQuestion({ messages }, token, options) {
+  return streamEvents(QUESTION_STREAM_URL, { messages }, token, options)
+}
+
+// A board card from a doubt chat and the card the tutor proposed: the new (or same) question case.
+export async function createCaseFromQuestion({ messages, card }, token) {
+  return (await request('/api/cases/from-question', { method: 'POST', body: { messages, card }, token })).case
 }
 
 // { profile, earnedBadges, progress } for the profile editor.

@@ -4,6 +4,7 @@ import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import Board from '../../components/board/board/board.jsx'
 import BoardStats from '../../components/board/board-stats/board-stats.jsx'
 import CaseDrawer from '../../components/board/case-drawer/case-drawer.jsx'
+import DoubtChat from '../../components/board/doubt-chat/doubt-chat.jsx'
 import ErrorForm from '../../components/investigate/error-form/error-form.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import CaseInterrogation from '../../components/interrogation/case-interrogation/case-interrogation.jsx'
@@ -16,7 +17,7 @@ import Working from '../../components/ui/working/working.jsx'
 import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../../lib/api.js'
 import { useAssistantFocus } from '../../lib/assistant/assistant-provider.jsx'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
-import { splitError } from '../../lib/case-info.js'
+import { caseHeading } from '../../lib/case-info.js'
 import { saveDraft, takeDraft } from '../../lib/draft.js'
 import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../../lib/export-board.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
@@ -44,6 +45,8 @@ export default function BoardPage() {
   const [formKey, setFormKey] = useState(0)
   const [formOpen, setFormOpen] = useState(Boolean(draft))
   const [training, setTraining] = useState(false)
+  // "Ask a question": the doubt chat panel. Opening it calls nothing; only a sent question does.
+  const [asking, setAsking] = useState(false)
   const navigate = useNavigate()
   // Guard against double clicks even before the disabled buttons re-render.
   const busy = useRef(false)
@@ -153,7 +156,7 @@ export default function BoardPage() {
       setWriting(true)
       try {
         const blocks = [newBlock('case', { caseId: item.id }), newBlock('text')]
-        const note = await createNote({ title: t('board.page.noteTitle', { type: splitError(item.error).type }), blocks }, await getToken())
+        const note = await createNote({ title: t('board.page.noteTitle', { type: caseHeading(item).type }), blocks }, await getToken())
         refreshProgress()
         navigate(`/notes/${note.id}`)
       } catch (err) {
@@ -177,6 +180,20 @@ export default function BoardPage() {
     }
   }
 
+  // A card made from the doubt chat lands in New (once, even if the same card comes back again).
+  const addQuestionCase = useCallback(
+    (made) => {
+      setCases((current) => [made, ...(current ?? []).filter((item) => item.id !== made.id)])
+      refreshProgress()
+    },
+    [refreshProgress],
+  )
+  const closeChat = useCallback(() => setAsking(false), [])
+  const openFromChat = useCallback((id) => {
+    setAsking(false)
+    setOpenId(id)
+  }, [])
+
   const closeDrawer = useCallback(() => setOpenId(null), [])
   const openCaseCard = useCallback((item) => setOpenId(item.id), [])
   const openCase = cases?.find((item) => item.id === openId)
@@ -197,12 +214,18 @@ export default function BoardPage() {
               <Bone className="h-11 w-40" />
             </>
           ) : (
-            hasCases &&
             !investigating && (
               <>
-                <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
-                <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
-                  {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
+                {hasCases && (
+                  <>
+                    <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
+                    <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+                      {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
+                    </PixelButton>
+                  </>
+                )}
+                <PixelButton variant="secondary" onClick={() => setAsking(true)} aria-haspopup="dialog" className="px-5 py-3">
+                  {t('question.open')}
                 </PixelButton>
               </>
             )
@@ -249,6 +272,8 @@ export default function BoardPage() {
           </>
         )}
       </div>
+
+      {asking && <DoubtChat onClose={closeChat} onCreated={addQuestionCase} onOpenCase={openFromChat} />}
 
       {openCase && (
         <CaseDrawer
