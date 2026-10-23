@@ -5,10 +5,13 @@ import ArticleList from '../../components/community/article-list/article-list.js
 import CommunityShell from '../../components/layout/community-shell/community-shell.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
+import { Bone } from '../../components/ui/skeleton/skeleton.jsx'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 const MAX_CHIPS = 10
+// The gray tag chips shown before the first list arrives.
+const CHIP_WIDTHS = ['w-24', 'w-16', 'w-24', 'w-14', 'w-24', 'w-24', 'w-20', 'w-20']
 
 // The community: everyone's articles, searchable. Filters live in the address, so a search can be shared.
 export default function ArticlesPage() {
@@ -19,7 +22,8 @@ export default function ArticlesPage() {
   const tag = params.get('tag') ?? ''
   const sort = SORT_IDS.includes(params.get('sort')) ? params.get('sort') : 'new'
   const [typed, setTyped] = useState(q)
-  const [loaded, setLoaded] = useState([])
+  // null until the first list arrives: the tag chips are drawn gray until then.
+  const [loaded, setLoaded] = useState(null)
 
   useEffect(() => setTyped(q), [q])
 
@@ -40,7 +44,7 @@ export default function ArticlesPage() {
 
   const pickTag = useCallback((value) => setFilter({ tag: value }), [setFilter])
   // Tags from what's on screen, so every chip finds something.
-  const chips = [...new Set(loaded.flatMap((article) => article.tags))].filter((value) => value !== tag).slice(0, MAX_CHIPS)
+  const chips = [...new Set((loaded ?? []).flatMap((article) => article.tags))].filter((value) => value !== tag).slice(0, MAX_CHIPS)
 
   return (
     <CommunityShell>
@@ -113,6 +117,13 @@ export default function ArticlesPage() {
               </button>
             </li>
           )}
+          {loaded === null &&
+            CHIP_WIDTHS.map((width, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: fixed decorative chips
+              <li key={index} aria-hidden="true">
+                <Bone className={`h-6 ${width}`} />
+              </li>
+            ))}
           {chips.map((value) => (
             <li key={value}>
               <button

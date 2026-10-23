@@ -3,11 +3,14 @@ import { listArticles } from '../../../lib/api.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
+import Skeleton from '../../ui/skeleton/skeleton.jsx'
 import ArticleCard from '../article-card/article-card.jsx'
+import ArticleCardSkeleton from '../article-card/article-card-skeleton.jsx'
 
 // Community articles matching the filters, a page at a time. Works signed out.
 // author: only that handle's articles (for a profile page). onTag: makes tags clickable filters.
-// onArticles: hears every article loaded so far (the list page builds its tag chips from them).
+// onArticles: hears every article loaded so far, once a load settles (the list page builds its tag
+// chips from them).
 export default function ArticleList({ q = '', tag = '', author = '', sort = 'new', onTag, onArticles, emptyMessage }) {
   const t = useT()
   const [state, setState] = useState({ status: 'loading', articles: [], page: 1, hasMore: false })
@@ -22,9 +25,10 @@ export default function ArticleList({ q = '', tag = '', author = '', sort = 'new
       .catch((err) => call === latest.current && setState({ status: 'error', articles: [], page: 1, hasMore: false, message: err.message }))
   }, [q, tag, author, sort])
 
+  // Only settled lists: while a new filter loads, the page keeps the chips it had.
   useEffect(() => {
-    onArticles?.(state.articles)
-  }, [state.articles, onArticles])
+    if (state.status !== 'loading') onArticles?.(state.articles)
+  }, [state.status, state.articles, onArticles])
 
   async function loadMore() {
     const call = latest.current
@@ -48,9 +52,13 @@ export default function ArticleList({ q = '', tag = '', author = '', sort = 'new
 
   if (state.status === 'loading') {
     return (
-      <p role="status" className="font-label text-xs text-muted">
-        {t('notes.articles.loading')}
-      </p>
+      <Skeleton label={t('notes.articles.loading')} className="grid gap-5 md:grid-cols-2">
+        {[1, 2, 3, 4].map((slot) => (
+          <div key={slot} className="flex">
+            <ArticleCardSkeleton />
+          </div>
+        ))}
+      </Skeleton>
     )
   }
   if (state.status === 'error') return <ErrorNotice message={state.message} />

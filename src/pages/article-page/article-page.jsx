@@ -15,6 +15,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import ArticlePageSkeleton from './article-page-skeleton.jsx'
 
 const NO_REACTION = { liked: false, rating: null }
 const EDIT_GRACE_MS = 60_000
@@ -275,11 +276,7 @@ export default function ArticlePage() {
           &lt; {t('notes.article.all')}
         </Link>
 
-        {state.status === 'loading' && (
-          <p role="status" className="mt-8 font-label text-xs text-muted">
-            {t('notes.article.opening')}
-          </p>
-        )}
+        {state.status === 'loading' && <ArticlePageSkeleton />}
         {state.status === 'error' && (
           <div className="mt-8">
             <ErrorNotice message={state.message} />

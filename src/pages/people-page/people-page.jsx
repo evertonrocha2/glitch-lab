@@ -5,6 +5,7 @@ import PersonCard from '../../components/profile/person-card/person-card.jsx'
 import PublicHeader from '../../components/layout/public-header/public-header.jsx'
 import { searchProfiles } from '../../lib/api.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import PeoplePageSkeleton from './people-page-skeleton.jsx'
 
 const SEARCH_MAX = 40
 
@@ -65,11 +66,7 @@ export default function PeoplePage() {
 
         <div className="mt-10">
           {state.status === 'error' && <ErrorNotice message={state.message} />}
-          {state.status === 'loading' && !state.people && (
-            <p role="status" className="font-label text-xs text-muted">
-              {t('landing.people.loading')}
-            </p>
-          )}
+          {state.status === 'loading' && !state.people && <PeoplePageSkeleton />}
           {state.people?.length === 0 && <p className="text-muted">{t('landing.people.none')}</p>}
           {state.people?.length > 0 && (
             <>

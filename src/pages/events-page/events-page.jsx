@@ -11,6 +11,7 @@ import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { listEvents } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import EventsPageSkeleton from './events-page-skeleton.jsx'
 
 const EMPTY = { status: 'loading', events: [], page: 1, hasMore: false }
 
@@ -131,11 +132,7 @@ export default function EventsPage() {
       </div>
 
       <div className="mt-8">
-        {state.status === 'loading' && (
-          <p role="status" className="font-label text-xs text-muted">
-            {t('events.list.loading')}
-          </p>
-        )}
+        {state.status === 'loading' && <EventsPageSkeleton />}
         {state.status === 'error' && <ErrorNotice message={state.message} />}
         {state.status === 'ready' &&
           (state.events.length === 0 ? (

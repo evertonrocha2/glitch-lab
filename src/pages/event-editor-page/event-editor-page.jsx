@@ -9,6 +9,7 @@ import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, createEvent, getEvent, updateEvent } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import EventEditorPageSkeleton from './event-editor-page-skeleton.jsx'
 
 const INPUT = 'w-full border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus-visible:shadow-pixel'
 const LABEL = 'font-label text-xs text-ink'
@@ -186,11 +187,7 @@ export default function EventEditorPage() {
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{id ? t('events.editor.titleEdit') : t('events.editor.titleNew')}</h1>
       <p className="mt-2 max-w-xl text-muted">{t('events.editor.lede')}</p>
 
-      {status === 'loading' && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('events.editor.loading')}
-        </p>
-      )}
+      {status === 'loading' && <EventEditorPageSkeleton />}
       {(status === 'forbidden' || status === 'started') && (
         <p className="mt-8 border-2 border-dashed border-ink/40 p-6 text-muted">{t(`events.editor.${status}`)}</p>
       )}

@@ -236,6 +236,7 @@ const ROWS = [
   ['notes.bell.unread', { one: 'Notifications ({count} unread)', other: 'Notifications ({count} unread)' }, { one: 'Notificações ({count} não lida)', other: 'Notificações ({count} não lidas)' }],
   ['notes.bell.markAll', 'Mark all read', 'Marcar todas como lidas'],
   ['notes.bell.empty', 'No notifications yet.', 'Nenhuma notificação ainda.'],
+  ['notes.bell.loading', 'Loading notifications...', 'Carregando notificações...'],
   ['notes.bell.unreadMark', '(unread)', '(não lida)'],
   ['notes.bell.yourArticle', 'your article', 'seu artigo'],
   ['notes.bell.comment', '{name} commented on {title}', '{name} comentou em {title}'],

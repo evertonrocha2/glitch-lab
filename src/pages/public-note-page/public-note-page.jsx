@@ -9,6 +9,7 @@ import PublicHeader from '../../components/layout/public-header/public-header.js
 import { getPublicNote } from '../../lib/api.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
+import PublicNotePageSkeleton from './public-note-page-skeleton.jsx'
 
 function NotShared() {
   const t = useT()
@@ -52,11 +53,7 @@ export default function PublicNotePage() {
         </Link>
 
         <div className="mt-6">
-          {state.status === 'loading' && (
-            <p role="status" className="font-label text-xs text-muted">
-              {t('landing.note.loading')}
-            </p>
-          )}
+          {state.status === 'loading' && <PublicNotePageSkeleton />}
           {state.status === 'error' && <ErrorNotice message={state.message} />}
           {state.status === 'missing' && <NotShared />}
         </div>

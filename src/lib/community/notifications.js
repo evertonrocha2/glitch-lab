@@ -31,11 +31,13 @@ export function forgetNotifications() {
   for (const listener of listeners) listener()
 }
 
-// { data: { notifications, unread }, refresh, markRead(id | null for all) }
+// { data: { notifications, unread }, loaded, refresh, markRead(id | null for all) }
+// loaded: the first check came back (or failed), so an empty list really is empty.
 export function useNotifications() {
   const { user, getToken } = useAuth()
   const userId = user?.id
-  const data = useSyncExternalStore(subscribe, () => (userId ? cache.get(userId) : undefined)) ?? EMPTY
+  const cached = useSyncExternalStore(subscribe, () => (userId ? cache.get(userId) : undefined))
+  const data = cached ?? EMPTY
 
   const refresh = useCallback(async () => {
     if (!userId || document.hidden) return
@@ -45,7 +47,8 @@ export function useNotifications() {
       const next = await listNotifications(await getToken())
       update(userId, () => next)
     } catch {
-      // The bell is a bonus: if it can't load, it just stays as it was.
+      // The bell is a bonus: if it can't load, it just stays as it was (empty the first time).
+      update(userId, (current) => current)
     }
   }, [userId, getToken])
 
@@ -78,5 +81,5 @@ export function useNotifications() {
     if (Date.now() - (checkedAt.get(userId) ?? 0) > FRESH_MS) refresh()
   }, [refresh, userId])
 
-  return { data, refresh, markRead }
+  return { data, loaded: cached !== undefined, refresh, markRead }
 }

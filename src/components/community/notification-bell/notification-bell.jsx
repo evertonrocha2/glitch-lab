@@ -4,6 +4,7 @@ import { useNotifications } from '../../../lib/community/notifications.js'
 import { translate, useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
 import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
+import Skeleton, { Bone, Line } from '../../ui/skeleton/skeleton.jsx'
 import CommunityIcon from '../community-icon/community-icon.jsx'
 
 // Light polling: once a minute, and whenever the tab comes back into focus.
@@ -21,7 +22,7 @@ export function notificationText({ type, actor, articleTitle, eventTitle }, t = 
 
 // The bell in the app header: an unread badge, and a dropdown list that opens each article.
 export default function NotificationBell() {
-  const { data, refresh, markRead } = useNotifications()
+  const { data, loaded, refresh, markRead } = useNotifications()
   const t = useT()
   const { since } = useFormat()
   const [open, setOpen] = useState(false)
@@ -84,7 +85,19 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
-          {notifications.length === 0 ? (
+          {!loaded ? (
+            <Skeleton label={t('notes.bell.loading')} className="divide-y-2 divide-line">
+              {[1, 2, 3].map((slot) => (
+                <div key={slot} className="flex items-start gap-2.5 px-3 py-2.5">
+                  <Bone className="size-7 shrink-0 border-2 border-ink" />
+                  <div className="min-w-0 flex-1">
+                    <Line className="text-sm" width="w-full" />
+                    <Line className="text-xs" width="w-16" />
+                  </div>
+                </div>
+              ))}
+            </Skeleton>
+          ) : notifications.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted">{t('notes.bell.empty')}</p>
           ) : (
             <ul aria-label={t('notes.bell.label')} className="max-h-96 divide-y-2 divide-line overflow-y-auto">

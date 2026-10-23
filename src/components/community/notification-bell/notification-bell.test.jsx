@@ -96,3 +96,23 @@ it('stays a plain bell when there is nothing new or it cannot load', async () =>
   await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
   expect(screen.getByText('No notifications yet.')).toBeInTheDocument()
 })
+
+it('draws placeholder rows until the first check comes back, then the list or the empty note', async () => {
+  let resolve
+  vi.mocked(listNotifications).mockReturnValue(new Promise((done) => (resolve = done)))
+  renderAt('/articles', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
+  expect(screen.getByRole('status', { name: 'Loading notifications...' })).toHaveAttribute('aria-busy', 'true')
+  expect(screen.queryByText('No notifications yet.')).not.toBeInTheDocument()
+
+  await act(async () => resolve({ notifications: [], unread: 0 }))
+  expect(await screen.findByText('No notifications yet.')).toBeInTheDocument()
+  expect(screen.queryByRole('status', { name: 'Loading notifications...' })).not.toBeInTheDocument()
+})
+
+it('stops loading when the first check fails', async () => {
+  vi.mocked(listNotifications).mockRejectedValue(new Error('offline'))
+  renderAt('/articles', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Notifications' }))
+  expect(await screen.findByText('No notifications yet.')).toBeInTheDocument()
+})

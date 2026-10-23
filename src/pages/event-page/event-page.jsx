@@ -16,6 +16,7 @@ import { AuthError, closeEvent, getEvent, pickWinners, submitEntry, updateEntry,
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useProgress } from '../../lib/progress/progress-provider.jsx'
+import EventPageSkeleton from './event-page-skeleton.jsx'
 
 function Section({ title, children }) {
   return (
@@ -272,11 +273,7 @@ export default function EventPage() {
         &lt; {t('events.page.all')}
       </Link>
 
-      {state.status === 'loading' && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('events.page.opening')}
-        </p>
-      )}
+      {state.status === 'loading' && <EventPageSkeleton />}
       {state.status === 'error' && (
         <div className="mt-8">
           <ErrorNotice message={state.message} />

@@ -14,6 +14,7 @@ import { formatDuration, localDay } from '../../lib/day.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { badgeHow, badgeName } from '../../lib/i18n/labels.js'
+import PublicProfileSkeleton, { PublicNotesSkeleton } from './public-profile-page-skeleton.jsx'
 
 // The notes this person shared. Each one opens read-only on its own page.
 function PublicNotes({ handle, notes }) {
@@ -27,7 +28,7 @@ function PublicNotes({ handle, notes }) {
         </h2>
         {notes?.length > 0 && <p className="font-label text-xs text-muted">{t('landing.profile.notesShared', { count: notes.length })}</p>}
       </div>
-      {notes === null && <p className="mt-4 font-label text-xs text-muted">{t('landing.profile.notesLoading')}</p>}
+      {notes === null && <PublicNotesSkeleton />}
       {notes?.length === 0 && <p className="mt-4 text-sm text-muted">{t('landing.profile.notesNone')}</p>}
       {notes?.length > 0 && (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -129,11 +130,7 @@ export default function PublicProfilePage() {
       <PublicHeader showTry={state.status !== 'missing'} />
 
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-20 sm:px-8 sm:pt-14">
-        {state.status === 'loading' && (
-          <p role="status" className="font-label text-xs text-muted">
-            {t('landing.profile.loading')}
-          </p>
-        )}
+        {state.status === 'loading' && <PublicProfileSkeleton />}
         {state.status === 'error' && <ErrorNotice message={state.message} />}
         {state.status === 'missing' && <NotFound handle={handle} />}
 
