@@ -59,6 +59,19 @@ const en = {
   'server.alreadyTried': 'You already tried that language.',
   'server.guessClash': 'Another guess landed at the same time. Try again.',
 
+  // Duel.
+  'server.duelNotFound': 'Duel not found.',
+  'server.duelFull': 'This duel is already full.',
+  'server.duelOver': 'This duel is over.',
+  'server.duelExpired': 'This duel expired. Ask for a new link.',
+  'server.duelCodeShape': 'Type the 6-character duel code.',
+  'server.duelNoCode': 'No duel has that code.',
+  'server.duelRoundClosed': 'This round is not open.',
+  'server.duelAnswered': 'You already answered this round.',
+  'server.duelPickOption': 'Pick one of the options.',
+  'server.duelNotPlayer': 'You are not in this duel.',
+  'server.duelClash': 'Another move landed at the same time. Try again.',
+
   // Study trail.
   'server.trailNeedsCases': 'Investigate an error on your board first: your trail is built from your cases.',
   'server.trailNotFound': 'Trail not found.',
@@ -175,6 +188,18 @@ const ptBR = {
   'server.noGuessesLeft': 'Seus palpites neste modo acabaram por hoje.',
   'server.alreadyTried': 'Você já tentou essa linguagem.',
   'server.guessClash': 'Outro palpite chegou ao mesmo tempo. Tente de novo.',
+
+  'server.duelNotFound': 'Duelo não encontrado.',
+  'server.duelFull': 'Este duelo já está cheio.',
+  'server.duelOver': 'Este duelo já acabou.',
+  'server.duelExpired': 'Este duelo expirou. Peça um link novo.',
+  'server.duelCodeShape': 'Digite o código do duelo, com 6 caracteres.',
+  'server.duelNoCode': 'Nenhum duelo tem esse código.',
+  'server.duelRoundClosed': 'Esta rodada não está aberta.',
+  'server.duelAnswered': 'Você já respondeu esta rodada.',
+  'server.duelPickOption': 'Escolha uma das opções.',
+  'server.duelNotPlayer': 'Você não está neste duelo.',
+  'server.duelClash': 'Outra jogada chegou ao mesmo tempo. Tente de novo.',
 
   'server.trailNeedsCases': 'Investigue um erro no seu board primeiro: sua trilha é montada com os seus casos.',
   'server.trailNotFound': 'Trilha não encontrada.',
