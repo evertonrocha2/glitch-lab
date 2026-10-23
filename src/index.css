@@ -146,6 +146,13 @@
     html {
       scroll-behavior: auto;
     }
+
+    /* Animations already run only with motion-safe:; hover and press transitions snap too. */
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0s !important;
+    }
   }
 }
 
