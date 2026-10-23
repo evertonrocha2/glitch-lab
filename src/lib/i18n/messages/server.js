@@ -58,6 +58,10 @@ const en = {
   'server.glitchdleSolved': 'You already solved this one. Come back tomorrow.',
   'server.noGuessesLeft': 'No guesses left in this mode today.',
   'server.alreadyTried': 'You already tried that language.',
+  'server.pickFramework': 'Pick a framework from the list.',
+  'server.pickDatabase': 'Pick a database from the list.',
+  'server.alreadyTriedItem': 'You already tried that one.',
+  'server.boardNotReady': 'This board is not ready yet. Try again later.',
   'server.guessClash': 'Another guess landed at the same time. Try again.',
 
   // Line hunt.
@@ -252,6 +256,10 @@ const ptBR = {
   'server.glitchdleSolved': 'Você já resolveu este. Volte amanhã.',
   'server.noGuessesLeft': 'Seus palpites neste modo acabaram por hoje.',
   'server.alreadyTried': 'Você já tentou essa linguagem.',
+  'server.pickFramework': 'Escolha um framework da lista.',
+  'server.pickDatabase': 'Escolha um banco de dados da lista.',
+  'server.alreadyTriedItem': 'Você já tentou esse.',
+  'server.boardNotReady': 'Este tabuleiro ainda não está pronto. Tente mais tarde.',
   'server.guessClash': 'Outro palpite chegou ao mesmo tempo. Tente de novo.',
 
   'server.newHunt': 'Uma nova caça à linha acabou de começar. Recarregue para jogar.',

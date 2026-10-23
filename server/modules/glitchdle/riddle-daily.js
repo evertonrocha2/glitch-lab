@@ -1,4 +1,5 @@
 import { addDays, challengeDay } from '../../../shared/daily.js'
+import { MODES } from '../../../shared/riddle/game.js'
 import { languageById } from '../../../shared/riddle/languages.js'
 import { SAMPLES } from '../../../shared/riddle/samples.js'
 import { generateJson } from '../../infra/ai/index.js'
@@ -18,14 +19,19 @@ const AI_TIMEOUT_MS = 60_000
 
 const byMode = (list) => Object.fromEntries(list.map((item) => [item.mode, item]))
 
-// The day's riddles by mode, filling any missing mode from the dataset first (the cron didn't
+// The day's riddles by slot, filling any missing slot from the dataset first (the cron didn't
 // run). The dataset pick depends only on the date, so two requests racing save the same riddle,
-// and the (day, mode) slot keeps just one.
+// and the (day, mode) slot keeps just one. A framework or database board that can't be saved
+// (a database not migrated yet, see supabase/schema.sql) is left out instead of breaking the
+// language game.
 export async function ensureRiddleSet(store, day) {
   const set = byMode(await store.listRiddles({ day }))
   const missing = datasetSet(day).filter((item) => !set[item.mode])
   if (missing.length === 0) return set
-  for (const item of missing) await store.createRiddle(item)
+  for (const item of missing) {
+    if (MODES.includes(item.mode)) await store.createRiddle(item)
+    else await store.createRiddle(item).catch((err) => console.error(`Glitchdle ${item.mode} board for ${day} not saved:`, err.message))
+  }
   return byMode(await store.listRiddles({ day }))
 }
 
@@ -88,7 +94,13 @@ export async function runRiddleCron(store, now = new Date()) {
             console.error(`Glitchdle ${item.mode} clue for ${day} failed, using the dataset:`, err.message)
           }
         }
-        const saved = await store.createRiddle(made)
+        // A category board that can't be saved never stops the language ones (see ensureRiddleSet).
+        const saved = MODES.includes(made.mode)
+          ? await store.createRiddle(made)
+          : await store.createRiddle(made).catch((err) => {
+              console.error(`Glitchdle ${made.mode} board for ${day} not saved:`, err.message)
+              return null
+            })
         if (saved) created.push({ day, mode: saved.mode, source: saved.source })
       }
       return created

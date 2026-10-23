@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { expect, it, vi } from 'vitest'
-import { answersFor, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../server/modules/glitchdle/schedule.js'
+import { answersFor, CATEGORY_NO_REPEAT_DAYS, datasetPayload, datasetSet, hash, NO_REPEAT_DAYS, revealOrder } from '../../server/modules/glitchdle/schedule.js'
+import { itemById, SLOTS } from '../../shared/riddle/categories.js'
 import { addDays } from '../../shared/daily.js'
 import { LAUNCH_DAY, MODES } from '../../shared/riddle/game.js'
 import { languageById } from '../../shared/riddle/languages.js'
@@ -11,13 +12,34 @@ it('hashes text the same way every time', () => {
   expect(hash('2026-10-22:classic')).not.toBe(hash('2026-10-22:error'))
 })
 
-it('picks the same answers for a day every time, three different languages', () => {
+it('picks the same answers for a day every time: three different languages, a framework and a database', () => {
   const set = answersFor('2026-10-22')
   expect(answersFor('2026-10-22')).toEqual(set)
-  expect(Object.keys(set)).toEqual(MODES)
-  for (const id of Object.values(set)) expect(languageById(id)).not.toBeNull()
-  expect(new Set(Object.values(set)).size).toBe(3)
+  expect(Object.keys(set)).toEqual(SLOTS)
+  for (const mode of MODES) expect(languageById(set[mode])).not.toBeNull()
+  expect(new Set(MODES.map((mode) => set[mode])).size).toBe(3)
+  expect(itemById('frameworks', set.frameworks)).not.toBeNull()
+  expect(itemById('databases', set.databases)).not.toBeNull()
   expect(answersFor('2026-10-23')).not.toEqual(set)
+})
+
+it(`never repeats a framework or a database within ${CATEGORY_NO_REPEAT_DAYS} days, and uses most of each catalog`, () => {
+  const days = Array.from({ length: 300 }, (_, index) => addDays(LAUNCH_DAY, index))
+  const sets = days.map(answersFor)
+  for (const slot of ['frameworks', 'databases']) {
+    for (let index = 0; index < sets.length; index++) {
+      const window = sets.slice(Math.max(0, index - CATEGORY_NO_REPEAT_DAYS), index).map((set) => set[slot])
+      expect(window, `${slot} on ${days[index]}`).not.toContain(sets[index][slot])
+    }
+    expect(new Set(sets.map((set) => set[slot])).size).toBeGreaterThan(40)
+  }
+})
+
+it('keeps the language answers it picked before the new categories existed', () => {
+  // Recorded with the fallback secret before frameworks and databases were added: adding a
+  // category must never move a language answer.
+  expect(answersFor('2026-10-24')).toMatchObject({ classic: 'ocaml', error: 'fsharp', snippet: 'bash' })
+  expect(answersFor('2026-10-10')).toMatchObject({ classic: 'ocaml', error: 'php', snippet: 'sql' })
 })
 
 it(`never repeats a language in the same mode within ${NO_REPEAT_DAYS} days`, () => {
@@ -35,15 +57,16 @@ it(`never repeats a language in the same mode within ${NO_REPEAT_DAYS} days`, ()
 
 it('still keeps the modes apart before the launch day', () => {
   const set = answersFor('2026-01-01')
-  expect(new Set(Object.values(set)).size).toBe(3)
+  expect(new Set(MODES.map((mode) => set[mode])).size).toBe(3)
 })
 
 it('builds Error and Snippet payloads from the dataset', () => {
   const day = '2026-10-22'
   const set = datasetSet(day)
-  expect(set.map((item) => item.mode)).toEqual(MODES)
+  expect(set.map((item) => item.mode)).toEqual(SLOTS)
   const byMode = Object.fromEntries(set.map((item) => [item.mode, item]))
   expect(byMode.classic).toMatchObject({ day, payload: {}, source: 'dataset' })
+  expect(byMode.frameworks).toMatchObject({ day, payload: {}, source: 'dataset' })
   expect(SAMPLES[byMode.error.answer].errors).toContain(byMode.error.payload.text)
   const { lines, order } = byMode.snippet.payload
   expect(SAMPLES[byMode.snippet.answer].snippets).toContain(lines.join('\n'))

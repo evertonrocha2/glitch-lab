@@ -54,7 +54,8 @@ it("writes today's and tomorrow's riddles, with a fresh AI error that names noth
   for (const day of [TODAY, TOMORROW]) expect(giveawayIn(FRESH, languageById(answersFor(day).error))).toBeNull()
   const body = await (await runCron()).json()
   expect(body.riddle.today).toBe(TODAY)
-  expect(body.riddle.created).toHaveLength(6)
+  // Five boards a day: three language modes, a framework and a database.
+  expect(body.riddle.created).toHaveLength(10)
   expect(body.riddle.created.filter((item) => item.mode === 'error').map((item) => item.source)).toEqual(['ai', 'ai'])
   // The report never carries answers.
   const report = JSON.stringify(body.riddle)
@@ -66,7 +67,7 @@ it("writes today's and tomorrow's riddles, with a fresh AI error that names noth
   // Snippet mode gets fresh code too, revealed in a fixed order for the day.
   expect(today.snippet).toMatchObject({ source: 'ai', payload: { lines: FRESH_SNIPPET.split('\n') } })
   expect([...today.snippet.payload.order].sort()).toEqual([0, 1, 2, 3, 4, 5])
-  expect(await store.listRiddles({ day: TOMORROW })).toHaveLength(3)
+  expect(await store.listRiddles({ day: TOMORROW })).toHaveLength(5)
   expect(riddlePrompts()).toHaveLength(4)
   expect(riddlePrompts()[0]).toContain(languageById(answersFor(TODAY).error).name)
 })
@@ -94,7 +95,7 @@ it('keeps the dataset error when the AI is down, and the puzzles still run', asy
   vi.spyOn(console, 'error').mockImplementation(() => {})
   fetch.mockImplementation(async () => new Response('{}', { status: 500 }))
   const body = await (await runCron()).json()
-  expect(body.riddle.created).toHaveLength(6)
+  expect(body.riddle.created).toHaveLength(10)
   expect(body.created.length).toBeGreaterThan(0)
 })
 
@@ -102,7 +103,7 @@ it('the day after only adds the new tomorrow', async () => {
   await runCron()
   vi.setSystemTime(new Date('2026-10-23T03:00:30Z'))
   const body = await (await runCron()).json()
-  expect(body.riddle.created.map((item) => item.day)).toEqual(['2026-10-24', '2026-10-24', '2026-10-24'])
+  expect(body.riddle.created.map((item) => item.day)).toEqual(Array(5).fill('2026-10-24'))
 })
 
 it('a game played before the cron keeps its riddles: the cron only fills what is missing', async () => {

@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { answersFor, datasetPayload } from '../../server/modules/glitchdle/schedule.js'
-import { MAX_GUESSES } from '../../shared/riddle/game.js'
+import { categoryById } from '../../shared/riddle/categories.js'
+import { MAX_GUESSES, RIDDLE_DAY_XP_CAP } from '../../shared/riddle/game.js'
 import { LANGUAGES } from '../../shared/riddle/languages.js'
 import { api, useTempStore } from './helpers.js'
 
@@ -25,8 +26,9 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-// A language that isn't the answer of `mode`, different for each `skip`.
-const wrongFor = (mode, skip = 0) => LANGUAGES.filter((item) => item.id !== answers[mode])[skip].id
+// An item that isn't the answer of `mode`, different for each `skip`.
+const ITEMS = { frameworks: categoryById('frameworks').items, databases: categoryById('databases').items }
+const wrongFor = (mode, skip = 0) => (ITEMS[mode] ?? LANGUAGES).filter((item) => item.id !== answers[mode])[skip].id
 const json = async (res) => ({ status: res.status, body: await res.json() })
 
 it('asks for sign in', async () => {
@@ -38,10 +40,12 @@ it("serves today's game without any answer, the same set for everyone", async ()
   const { status, body } = await json(await state())
   expect(status).toBe(200)
   expect(body).toMatchObject({ day: TODAY, number: 1, nextResetAt: '2026-10-23T03:00:00.000Z' })
-  expect(Object.keys(body.modes)).toEqual(['classic', 'error', 'snippet'])
-  for (const mode of ['classic', 'error', 'snippet']) {
+  expect(Object.keys(body.modes)).toEqual(['classic', 'error', 'snippet', 'frameworks', 'databases'])
+  for (const mode of Object.keys(body.modes)) {
     expect(body.modes[mode]).toMatchObject({ mode, solved: false, over: false, guessCount: 0, guessesLeft: MAX_GUESSES, answer: null, guesses: [] })
   }
+  expect(body.modes.frameworks.category).toBe('frameworks')
+  expect(body.modes.classic.category).toBe('languages')
   // Nothing in the answer names today's languages.
   const text = JSON.stringify(body)
   for (const id of Object.values(answers)) expect(text).not.toContain(`"${id}"`)
@@ -51,10 +55,10 @@ it("serves today's game without any answer, the same set for everyone", async ()
   expect(fetch).not.toHaveBeenCalled()
 
   const saved = await store.listRiddles({ day: TODAY })
-  expect(saved.map((item) => item.mode).sort()).toEqual(['classic', 'error', 'snippet'])
+  expect(saved.map((item) => item.mode).sort()).toEqual(['classic', 'databases', 'error', 'frameworks', 'snippet'])
   const bob = await json(await state('dev:bob'))
   expect(bob.body.modes).toEqual(body.modes)
-  expect(await store.listRiddles({ day: TODAY })).toHaveLength(3)
+  expect(await store.listRiddles({ day: TODAY })).toHaveLength(5)
 })
 
 it('hides all but one line of the snippet, keeping only the lengths of the rest', async () => {
@@ -97,7 +101,7 @@ describe('guessing', () => {
     expect(body.modes.classic.guesses[0].cells.every((item) => item.status === 'match')).toBe(true)
     // The other modes keep their secrets.
     expect(body.modes.error.answer).toBeNull()
-    expect(body.stats).toMatchObject({ xp: 25, played: 1, solved: { classic: 1, error: 0, snippet: 0 } })
+    expect(body.stats).toMatchObject({ xp: 25, played: 1, solved: { classic: 1, error: 0, snippet: 0, frameworks: 0, databases: 0 } })
     expect(body.stats.distribution.classic[1]).toBe(1)
   })
 
@@ -172,6 +176,8 @@ describe('community numbers', () => {
       classic: { players: 2, solved: 2, averageGuesses: 1.5 },
       error: { players: 1, solved: 0, averageGuesses: null },
       snippet: { players: 0, solved: 0, averageGuesses: null },
+      frameworks: { players: 0, solved: 0, averageGuesses: null },
+      databases: { players: 0, solved: 0, averageGuesses: null },
     })
   })
 })
@@ -180,4 +186,58 @@ it('keeps a streak of perfect days', async () => {
   for (const mode of ['classic', 'error', 'snippet']) await guess(mode, answers[mode])
   const { body } = await json(await state())
   expect(body.stats).toMatchObject({ perfectDays: 1, streak: 1, longestStreak: 1, played: 1, xp: 75 })
+})
+
+describe('frameworks and databases', () => {
+  it('grades a framework guess trait by trait and keeps the answer hidden', async () => {
+    const wrong = wrongFor('frameworks')
+    const { status, body } = await json(await guess('frameworks', wrong))
+    expect(status).toBe(200)
+    expect(body.correct).toBe(false)
+    const board = body.modes.frameworks
+    expect(board).toMatchObject({ category: 'frameworks', solved: false, guessCount: 1, answer: null })
+    expect(board.guesses[0].cells.map((cell) => cell.key)).toEqual(['language', 'area', 'kind', 'maker', 'license', 'popularity', 'year'])
+    expect(JSON.stringify(body.modes)).not.toContain(`"${answers.frameworks}"`)
+    expect((await store.getRiddleResult('alice', TODAY, 'frameworks')).guesses).toEqual([wrong])
+  })
+
+  it('solves a database board and reveals it, every other board still secret', async () => {
+    const { body } = await json(await guess('databases', answers.databases))
+    expect(body.correct).toBe(true)
+    expect(body.modes.databases).toMatchObject({ solved: true, over: true, answer: { id: answers.databases } })
+    expect(body.modes.databases.guesses[0].cells.every((cell) => cell.status === 'match')).toBe(true)
+    expect(body.modes.frameworks.answer).toBeNull()
+    expect(body.stats.solved.databases).toBe(1)
+    expect(body.stats.xp).toBe(25)
+  })
+
+  it("only takes items from the board's own list", async () => {
+    const language = await json(await guess('frameworks', 'python'))
+    expect(language.status).toBe(400)
+    expect(language.body.message).toBe('Pick a framework from the list.')
+    expect((await json(await guess('databases', wrongFor('frameworks')))).body.message).toBe('Pick a database from the list.')
+    const wrong = wrongFor('databases')
+    await guess('databases', wrong)
+    expect((await json(await guess('databases', wrong))).body.message).toBe('You already tried that one.')
+  })
+
+  it('counts a full day when every board is solved, with the day XP capped', async () => {
+    for (const mode of Object.keys(answers)) await guess(mode, answers[mode])
+    const { body } = await json(await state())
+    expect(body.stats).toMatchObject({ perfectDays: 1, fullDays: 1, streak: 1, xp: RIDDLE_DAY_XP_CAP })
+  })
+
+  it('still serves the language boards when a category board cannot be saved', async () => {
+    const create = store.createRiddle.bind(store)
+    store.createRiddle = async (item) => {
+      if (item.mode === 'frameworks') throw new Error('violates check constraint')
+      return create(item)
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { status, body } = await json(await state())
+    expect(status).toBe(200)
+    expect(Object.keys(body.modes)).toEqual(['classic', 'error', 'snippet', 'databases'])
+    expect((await json(await guess('frameworks', wrongFor('frameworks')))).status).toBe(409)
+    expect((await json(await guess('classic', wrongFor('classic')))).status).toBe(200)
+  })
 })
