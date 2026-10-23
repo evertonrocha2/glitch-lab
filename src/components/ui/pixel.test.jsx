@@ -25,7 +25,7 @@ it('Working announces progress', () => {
   render(<Working label="Investigating your error" />)
   const status = screen.getByRole('status')
   expect(status).toHaveTextContent('Investigating your error')
-  expect(status).toHaveTextContent('The free AI can take a minute or two.')
+  expect(status).not.toHaveTextContent(/free AI/i)
 })
 
 it('BadgeIcon draws its own glyph for every badge', () => {

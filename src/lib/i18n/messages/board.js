@@ -67,7 +67,6 @@ export default {
     'board.result.answer': 'answer',
     'board.reveal.show': 'Show {label}',
     'board.reveal.hide': 'Hide {label}',
-    'board.working.note': 'The free AI can take a minute or two.',
 
     // Printable sheet (PNG and PDF export)
     'board.sheet.progress': 'Progress',
@@ -251,7 +250,6 @@ export default {
     'board.result.answer': 'a resposta',
     'board.reveal.show': 'Mostrar {label}',
     'board.reveal.hide': 'Esconder {label}',
-    'board.working.note': 'A IA gratuita pode levar um ou dois minutos.',
 
     // Printable sheet (PNG and PDF export)
     'board.sheet.progress': 'Progresso',

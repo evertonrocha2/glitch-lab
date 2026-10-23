@@ -46,7 +46,6 @@ export default function ThinkingSteps({ question, page }) {
             </li>
           ))}
         </ol>
-        <p className="mt-2 text-xs text-muted">{t('app.assistant.slow')}</p>
       </div>
     </div>
   )
