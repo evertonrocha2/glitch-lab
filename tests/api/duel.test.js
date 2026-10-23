@@ -359,6 +359,15 @@ it('makes a forfeit before round 3 unrated, with no XP for either player', async
   expect((await progress('dev:alice')).badges.find((badge) => badge.id === 'duelist').earned).toBe(false)
 })
 
+it('forfeits a player who comes back after going quiet too long, even against the bot', async () => {
+  const game = await act('bot')
+  const id = game.body.duel.id
+  // Nobody else polls a bot game: Alice's late read must still find her own stored seenAt stale.
+  at(START + STALE_MS + 5000)
+  const back = await state(id)
+  expect(back.body.duel).toMatchObject({ status: 'finished', result: { reason: 'forfeit', forfeit: 0, winner: 1, early: true } })
+})
+
 it('fails closed when a player runs out of tab reports: they count as away from then on', async () => {
   const { id } = await privateDuel()
   const open = await openAtOf(id, 0)

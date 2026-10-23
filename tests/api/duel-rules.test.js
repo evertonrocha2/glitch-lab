@@ -196,7 +196,19 @@ describe('clock and scoring', () => {
     // Bob's page stops checking in: after STALE_MS he forfeits, whatever the score.
     const quiet = duel({ players: [{ userId: 'alice', seenAt: iso(OPEN0 + 20_000) }, { userId: 'bob', seenAt: iso(START) }] })
     expect(outcomeAt(quiet, START + STALE_MS)).toBeNull()
-    expect(outcomeAt(quiet, START + STALE_MS + 1, 'alice')).toMatchObject({ reason: 'forfeit', forfeitBy: 'bob', winner: 'alice', players: [{ outcome: 'win' }, { outcome: 'forfeit' }] })
+    expect(outcomeAt(quiet, START + STALE_MS + 1)).toMatchObject({ reason: 'forfeit', forfeitBy: 'bob', winner: 'alice', players: [{ outcome: 'win' }, { outcome: 'forfeit' }] })
+  })
+
+  it('decides forfeits from the stored seenAt only: coming back late still loses, and the one gone longer loses', () => {
+    const late = START + 60_000
+    // Alice asks now, but her page last checked in at START: she was gone too long.
+    const gone = duel({ players: [{ userId: 'alice', seenAt: iso(START) }, { userId: 'bob', seenAt: iso(late - 1000) }] })
+    expect(outcomeAt(gone, late)).toMatchObject({ forfeitBy: 'alice', winner: 'bob' })
+    // Both went quiet: Bob was gone longer.
+    const both = duel({ players: [{ userId: 'alice', seenAt: iso(START + 10_000) }, { userId: 'bob', seenAt: iso(START) }] })
+    expect(outcomeAt(both, late)).toMatchObject({ forfeitBy: 'bob', winner: 'alice' })
+    // Leaving on purpose forfeits right away.
+    expect(outcomeAt(duel(), OPEN0 + 1000, 'bob')).toMatchObject({ forfeitBy: 'bob', winner: 'alice' })
   })
 
   it('makes a forfeit before round 3 closed unrated and early, and a later one rated', () => {

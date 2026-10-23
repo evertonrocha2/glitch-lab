@@ -77,19 +77,20 @@ export function scoreRound(duel, round, userId) {
 
 export const closedRounds = (rounds, now) => rounds.filter((round) => round.closeAt <= now)
 
-// The final result once the duel is over, or null while it goes on. `presentId` is the player
-// asking right now (so they count as seen). Forfeit rule: during an active duel, a player whose
-// page hasn't checked in for STALE_MS loses, whatever the score; when both went quiet, the one
-// gone longer loses. Players who stay but don't answer just score 0 on those rounds.
-// `leavingId` is a player who walked out on purpose: they forfeit right away (unless it was over).
-export function outcomeAt(duel, now, presentId = null, leavingId = null) {
+// The final result once the duel is over, or null while it goes on. Forfeit rule: during an
+// active duel, a player whose page hasn't checked in for STALE_MS loses, whatever the score; when
+// both went quiet, the one gone longer loses. Only the seenAt stored on the server counts, so a
+// player who was gone too long can't come back and ask in time to dodge it (against the bot,
+// nobody else is polling to catch them). Players who stay but don't answer just score 0 on those
+// rounds. `leavingId` is a player who walked out on purpose: they forfeit right away (unless it was over).
+export function outcomeAt(duel, now, leavingId = null) {
   if (duel.status !== 'active') return null
   const rounds = timeline(duel, now)
   const over = now >= rounds.at(-1).closeAt
   let forfeitBy = null
   if (!over && leavingId) forfeitBy = leavingId
   else if (!over) {
-    const seenAt = (player) => (player.userId === presentId ? now : ms(player.seenAt))
+    const seenAt = (player) => ms(player.seenAt)
     const stale = duel.players.filter((player) => !player.bot && now - seenAt(player) > STALE_MS).sort((a, b) => seenAt(a) - seenAt(b))
     if (!stale.length) return null
     forfeitBy = stale[0].userId

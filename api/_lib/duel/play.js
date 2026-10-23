@@ -57,8 +57,8 @@ async function respond(store, duel, userId, now, status = 200) {
 }
 
 // The fields that finish an active duel now, or null while it goes on. `leavingId` forfeits on purpose.
-async function finishFields(store, duel, now, presentId, leavingId = null) {
-  const result = outcomeAt(duel, now, presentId, leavingId)
+async function finishFields(store, duel, now, leavingId = null) {
+  const result = outcomeAt(duel, now, leavingId)
   if (!result) return null
   return { status: 'finished', finishedAt: iso(now), result: { ...result, rating: await ratingChanges(store, duel, result) } }
 }
@@ -82,12 +82,13 @@ async function mutate(store, id, change, tries = 6) {
 }
 
 // Every read by a player: marks them as still here (every few seconds), and finishes the duel
-// when its last round closed or the other player went quiet (the forfeit rule in clock.js).
+// when its last round closed or a player went quiet (the forfeit rule in clock.js). The forfeit
+// check reads the seenAt stored before this visit, so coming back late doesn't undo going quiet.
 async function settle(store, duel, userId, now) {
   if (!isPlayer(duel, userId) || (duel.status !== 'active' && duel.status !== 'waiting')) return duel
   const { duel: settled } = await mutate(store, duel.id, async (current) => {
     if (current.status !== 'active' && current.status !== 'waiting') return {}
-    const fields = current.status === 'active' ? ((await finishFields(store, current, now, userId)) ?? {}) : {}
+    const fields = current.status === 'active' ? ((await finishFields(store, current, now)) ?? {}) : {}
     const me = current.players.find((player) => player.userId === userId)
     if (me && now - Date.parse(me.seenAt) >= SEEN_EVERY_MS) fields.players = touch(current.players, userId, now)
     return Object.keys(fields).length ? { fields } : {}
@@ -289,7 +290,7 @@ async function leave(store, user, body, now) {
   const { duel, error } = await mutate(store, body.id, async (current) => {
     if (!isPlayer(current, user.id)) return { error: fail(403, 'You are not in this duel.') }
     if (current.status === 'waiting') return { fields: { status: 'cancelled' } }
-    if (current.status === 'active') return { fields: await finishFields(store, current, now, null, user.id) }
+    if (current.status === 'active') return { fields: await finishFields(store, current, now, user.id) }
     return {}
   })
   if (error) return error
