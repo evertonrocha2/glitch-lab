@@ -1,6 +1,6 @@
 import { NOTE_LIMITS } from '../../../shared/limits.js'
 import { timeline } from '../../../shared/interrogation.js'
-import { splitError } from '../caseInfo.js'
+import { splitError } from '../case-info.js'
 import { newBlock } from '../notes/blocks.js'
 
 const fit = (text) => (text.length > NOTE_LIMITS.text ? `${text.slice(0, NOTE_LIMITS.text - 3)}...` : text)

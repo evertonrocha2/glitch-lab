@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { listNotifications, markNotificationsRead } from '../api.js'
-import { useAuth } from '../auth/AuthProvider.jsx'
+import { useAuth } from '../auth/auth-provider.jsx'
 
 // The bell's notifications, kept per account for the whole visit. Every page draws its own header,
 // so without this the badge would blink empty on each page change.

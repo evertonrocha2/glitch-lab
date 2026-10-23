@@ -1,0 +1,258 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
+import AppShell from '../../components/layout/app-shell/app-shell.jsx'
+import Board from '../../components/board/board/board.jsx'
+import BoardStats from '../../components/board/board-stats/board-stats.jsx'
+import CaseDrawer from '../../components/board/case-drawer/case-drawer.jsx'
+import ErrorForm from '../../components/investigate/error-form/error-form.jsx'
+import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
+import CaseInterrogation from '../../components/interrogation/case-interrogation/case-interrogation.jsx'
+import ExportMenu from '../../components/notes/export-menu/export-menu.jsx'
+import PageHeader from '../../components/ui/page-header/page-header.jsx'
+import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
+import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
+import Working from '../../components/ui/working/working.jsx'
+import { AuthError, analyzeError, createNote, listCases, listNotes, startChallenge } from '../../lib/api.js'
+import { useAssistantFocus } from '../../lib/assistant/assistant-provider.jsx'
+import { useAuth } from '../../lib/auth/auth-provider.jsx'
+import { splitError } from '../../lib/case-info.js'
+import { saveDraft, takeDraft } from '../../lib/draft.js'
+import { exportBoardImage, exportBoardMarkdown, exportBoardPdf } from '../../lib/export-board.js'
+import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
+import { mentionsCase, newBlock } from '../../lib/notes/blocks.js'
+import { useProgress } from '../../lib/progress/progress-provider.jsx'
+
+const EXPORTS = { md: exportBoardMarkdown, png: exportBoardImage, pdf: exportBoardPdf }
+
+export default function BoardPage() {
+  const { user, getToken, signOut } = useAuth()
+  const { locale, t } = useI18n()
+  const { progress, refresh: refreshProgress } = useProgress()
+  const [params, setParams] = useSearchParams()
+  const [notes, setNotes] = useState([])
+  const [writing, setWriting] = useState(false)
+  const [draft] = useState(() => takeDraft())
+  const [cases, setCases] = useState(null)
+  const [investigating, setInvestigating] = useState(false)
+  const [message, setMessage] = useState('')
+  const [openId, setOpenId] = useState(null)
+  // The assistant reads "this case" as the one open here.
+  useAssistantFocus({ caseId: openId })
+  const [formKey, setFormKey] = useState(0)
+  const [formOpen, setFormOpen] = useState(Boolean(draft))
+  const [training, setTraining] = useState(false)
+  const navigate = useNavigate()
+  // Guard against double clicks even before the disabled buttons re-render.
+  const busy = useRef(false)
+  const trainBusy = useRef(false)
+
+  // An expired session signs out; the route guard then sends the person to login and back here.
+  const recoverFromAuth = useCallback(
+    async (err, pasted) => {
+      if (!(err instanceof AuthError)) return false
+      if (pasted) saveDraft(pasted)
+      await signOut()
+      return true
+    },
+    [signOut],
+  )
+
+  const investigate = useCallback(
+    async (input) => {
+      if (busy.current) return
+      busy.current = true
+      setInvestigating(true)
+      setMessage('')
+      try {
+        const saved = await analyzeError(input, await getToken())
+        setCases((current) => [saved, ...(current ?? [])])
+        setOpenId(saved.id)
+        setFormKey((key) => key + 1)
+        setFormOpen(false)
+        refreshProgress()
+      } catch (err) {
+        if (!(await recoverFromAuth(err, input))) setMessage(err.message)
+      } finally {
+        busy.current = false
+        setInvestigating(false)
+      }
+    },
+    [getToken, recoverFromAuth, refreshProgress],
+  )
+
+  useEffect(() => {
+    let alive = true
+    getToken()
+      .then(listCases)
+      .then((list) => alive && setCases((current) => [...(current ?? []), ...list.filter((item) => !current?.some((c) => c.id === item.id))]))
+      .catch(async (err) => {
+        if (alive && !(await recoverFromAuth(err))) {
+          setMessage(err.message)
+          setCases((current) => current ?? [])
+        }
+      })
+    return () => {
+      alive = false
+    }
+  }, [getToken, recoverFromAuth])
+
+  // Notes only add to the board (the drawer links them, the export includes them): a failure is ignored.
+  useEffect(() => {
+    let alive = true
+    getToken()
+      .then(listNotes)
+      .then((list) => alive && setNotes(list))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [getToken])
+
+  // /board?case=<id> (from a note) opens that case once the board has loaded.
+  const caseParam = params.get('case')
+  useEffect(() => {
+    if (!caseParam || cases === null) return
+    if (cases.some((item) => item.id === caseParam)) setOpenId(caseParam)
+    setParams({}, { replace: true })
+  }, [caseParam, cases, setParams])
+
+  // The error pasted on the landing gets investigated as soon as the board opens.
+  useEffect(() => {
+    if (draft) investigate(draft)
+  }, [draft, investigate])
+
+  const train = useCallback(
+    async (item) => {
+      if (trainBusy.current) return
+      trainBusy.current = true
+      setTraining(true)
+      setMessage('')
+      try {
+        const challenge = await startChallenge(item.id, await getToken())
+        navigate(`/gym/${challenge.id}`)
+      } catch (err) {
+        if (!(await recoverFromAuth(err))) {
+          // Close the panel so the message underneath is visible.
+          setOpenId(null)
+          setMessage(err.message)
+        }
+      } finally {
+        trainBusy.current = false
+        setTraining(false)
+      }
+    },
+    [getToken, navigate, recoverFromAuth],
+  )
+
+  const writeNote = useCallback(
+    async (item) => {
+      if (writing) return
+      setWriting(true)
+      try {
+        const blocks = [newBlock('case', { caseId: item.id }), newBlock('text')]
+        const note = await createNote({ title: t('board.page.noteTitle', { type: splitError(item.error).type }), blocks }, await getToken())
+        refreshProgress()
+        navigate(`/notes/${note.id}`)
+      } catch (err) {
+        if (!(await recoverFromAuth(err))) {
+          setOpenId(null)
+          setMessage(err.message)
+        }
+      } finally {
+        setWriting(false)
+      }
+    },
+    [writing, getToken, navigate, recoverFromAuth, refreshProgress, t],
+  )
+
+  async function exportBoard(format) {
+    setMessage('')
+    try {
+      await EXPORTS[format]({ cases: cases ?? [], notes, progress, email: user?.email, locale })
+    } catch {
+      setMessage(t(`board.export.failed.${format}`))
+    }
+  }
+
+  const closeDrawer = useCallback(() => setOpenId(null), [])
+  const openCase = cases?.find((item) => item.id === openId)
+  const hasCases = (cases?.length ?? 0) > 0
+  // With an empty board the form is the whole point; once there are cards it folds away.
+  const showForm = formOpen || investigating || cases?.length === 0
+
+  return (
+    <AppShell>
+      <PageHeader
+        kicker={t('board.page.prompt')}
+        title={t('board.page.title')}
+        lead={t('board.page.lead')}
+        actions={
+          hasCases &&
+          !investigating && (
+            <>
+              <ExportMenu onExport={exportBoard} buttonClassName="px-4 py-3" />
+              <PixelButton onClick={() => setFormOpen(!formOpen)} aria-expanded={formOpen} className="px-5 py-3">
+                {formOpen ? t('board.page.hideForm') : t('board.page.newInvestigation')}
+              </PixelButton>
+            </>
+          )
+        }
+      />
+
+      {showForm && (
+        <PixelCard className="mt-8 p-5 sm:p-6">
+          <h2 className="mb-5 font-label text-sm text-primary">{t('board.page.formTitle')}</h2>
+          <ErrorForm
+            key={formKey}
+            onSubmit={investigate}
+            loading={investigating}
+            initialError={formKey === 0 ? draft?.error : ''}
+            initialCode={formKey === 0 ? draft?.code : ''}
+          />
+        </PixelCard>
+      )}
+
+      {investigating && (
+        <div className="mt-6">
+          <Working label={t('board.page.investigating')} />
+        </div>
+      )}
+      {message && (
+        <div className="mt-6">
+          <ErrorNotice message={message} />
+        </div>
+      )}
+
+      <div className="mt-8">
+        {cases === null && (
+          <p role="status" className="font-label text-xs text-muted">
+            {t('board.page.loading')}
+          </p>
+        )}
+        {cases?.length === 0 && !investigating && (
+          <p className="mb-5 font-pixel text-lg text-ink">{t('board.page.empty')}</p>
+        )}
+        {hasCases && (
+          <div className="mb-8">
+            <BoardStats cases={cases} />
+          </div>
+        )}
+        <Board cases={cases ?? []} onOpen={(item) => setOpenId(item.id)} />
+      </div>
+
+      {openCase && (
+        <CaseDrawer
+          item={openCase}
+          onClose={closeDrawer}
+          onTrain={train}
+          training={training}
+          notes={notes.filter((note) => mentionsCase(note, openCase.id))}
+          onWriteNote={writeNote}
+          writing={writing}
+        >
+          <CaseInterrogation key={openCase.id} item={openCase} />
+        </CaseDrawer>
+      )}
+    </AppShell>
+  )
+}
