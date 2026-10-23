@@ -1,14 +1,14 @@
-# Glitch Detective
+# Glitch Lab
 
 > Paste the error. Understand why. Practice so it never happens again.
 
-A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Detective).
+A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Lab).
 
 ## Why not just paste the error into ChatGPT?
 
 Chatbots hand you the fix. You paste it, it works, and next week you write the same bug again. That's fine at 2 a.m. before a deadline, but it never builds the skill you need in an exam, an interview or a live-coding session.
 
-Glitch Detective uses AI the other way around: **it hides the answer and trains you.**
+Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 
 ## What it does
 

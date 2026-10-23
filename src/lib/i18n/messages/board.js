@@ -15,7 +15,7 @@ export default {
     'board.export.failed.md': "Couldn't make the Markdown file. Try again.",
     'board.export.failed.png': "Couldn't make the image. Try again.",
     'board.export.failed.pdf': "Couldn't make the PDF. Try again.",
-    'board.export.pdfTitle': 'Glitch Detective case board',
+    'board.export.pdfTitle': 'Glitch Lab case board',
 
     // Columns
     'board.column.new.hint': 'Just investigated',
@@ -90,11 +90,11 @@ export default {
     'board.sheet.prompt': '> case board_',
     'board.sheet.title': 'Case board',
     'board.sheet.lead': 'Every error investigated, where it stands, and why it broke.',
-    'board.sheet.madeWith': 'Made with Glitch Detective',
+    'board.sheet.madeWith': 'Made with Glitch Lab',
     'board.sheet.tagline': 'Paste an error. Learn why. Stop writing it.',
 
     // Markdown export
-    'board.md.title': 'Glitch Detective board',
+    'board.md.title': 'Glitch Lab board',
     'board.md.exported': 'Exported {date}',
     'board.md.nothingHere': 'Nothing here.',
     'board.md.notes': 'Notes',
@@ -199,7 +199,7 @@ export default {
     'board.export.failed.md': 'Não deu para gerar o arquivo Markdown. Tente de novo.',
     'board.export.failed.png': 'Não deu para gerar a imagem. Tente de novo.',
     'board.export.failed.pdf': 'Não deu para gerar o PDF. Tente de novo.',
-    'board.export.pdfTitle': 'Board de casos do Glitch Detective',
+    'board.export.pdfTitle': 'Board de casos do Glitch Lab',
 
     // Columns
     'board.column.new.hint': 'Acabou de ser investigado',
@@ -274,11 +274,11 @@ export default {
     'board.sheet.prompt': '> board de casos_',
     'board.sheet.title': 'Board de casos',
     'board.sheet.lead': 'Cada erro investigado, em que pé está e por que quebrou.',
-    'board.sheet.madeWith': 'Feito com Glitch Detective',
+    'board.sheet.madeWith': 'Feito com Glitch Lab',
     'board.sheet.tagline': 'Cole um erro. Entenda o porquê. Pare de repetir.',
 
     // Markdown export
-    'board.md.title': 'Board do Glitch Detective',
+    'board.md.title': 'Board do Glitch Lab',
     'board.md.exported': 'Exportado em {date}',
     'board.md.nothingHere': 'Nada aqui.',
     'board.md.notes': 'Notas',

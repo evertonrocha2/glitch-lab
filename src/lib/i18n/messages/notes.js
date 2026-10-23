@@ -90,7 +90,7 @@ const ROWS = [
   ['notes.sheet.exported', 'Exported {date}', 'Exportada em {date}'],
   ['notes.sheet.prompt', 'case notes', 'notas de casos'],
   ['notes.sheet.todos', { one: '{done} of {count} to-do done', other: '{done} of {count} to-dos done' }, { one: '{done} de {count} tarefa feita', other: '{done} de {count} tarefas feitas' }],
-  ['notes.sheet.madeWith', 'Made with Glitch Detective', 'Feito com Glitch Detective'],
+  ['notes.sheet.madeWith', 'Made with Glitch Lab', 'Feito com Glitch Lab'],
   ['notes.sheet.tagline', 'Paste an error. Learn why. Stop writing it.', 'Cole um erro. Entenda o porquê. Pare de repetir.'],
 
   // Study trail

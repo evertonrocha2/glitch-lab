@@ -10,7 +10,7 @@ const TAGLINE = 'Paste the error. Understand why. Practice so it never happens a
 
 it('shows the brand and the tagline as the main heading', () => {
   renderAt('/')
-  expect(within(screen.getByRole('banner')).getByText('Glitch Detective')).toBeInTheDocument()
+  expect(within(screen.getByRole('banner')).getByText('Glitch Lab')).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: TAGLINE })).toBeInTheDocument()
 })
 
@@ -49,7 +49,7 @@ it('presents the features, the comparison, bug types, ranks and answers', async 
   const features = within(screen.getByRole('list', { name: 'Features' })).getAllByRole('heading', { level: 3 })
   expect(features).toHaveLength(8)
   expect(features.at(-1)).toHaveTextContent('A study trail made from your cases')
-  expect(within(screen.getByRole('list', { name: 'A chatbot compared with Glitch Detective' })).getAllByRole('listitem').length).toBeGreaterThan(3)
+  expect(within(screen.getByRole('list', { name: 'A chatbot compared with Glitch Lab' })).getAllByRole('listitem').length).toBeGreaterThan(3)
   expect(within(screen.getByRole('list', { name: 'Bug types' })).getAllByRole('listitem')).toHaveLength(12)
   const ranks = within(screen.getByRole('list', { name: 'Detective ranks' })).getAllByRole('listitem')
   expect(ranks[0]).toHaveTextContent('Rookie')

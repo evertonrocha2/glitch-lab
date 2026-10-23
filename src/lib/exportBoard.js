@@ -7,7 +7,7 @@ import { DEFAULT_LOCALE, I18nProvider, translate } from './i18n/I18nProvider.jsx
 import { dateIn } from './i18n/format.js'
 
 // One name for all three files, dated on the student's own clock.
-export const boardFileName = (format, date = new Date()) => `glitch-detective-board-${localDay(date)}.${format}`
+export const boardFileName = (format, date = new Date()) => `glitch-lab-board-${localDay(date)}.${format}`
 
 // Every export is written in `locale`, the reader's language (English when none is given).
 export function exportBoardMarkdown({ cases, notes, progress, email, locale = DEFAULT_LOCALE }) {

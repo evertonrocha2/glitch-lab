@@ -45,7 +45,7 @@ it('writes the board by column, with progress and notes', () => {
     badges: BADGES.map((badge) => ({ id: badge.id, earned: badge.id === 'first-clue' })),
   }
   const md = boardToMarkdown({ cases: CASES, notes: [NOTE], progress, email: 'ada@example.com', date: '2026-10-22' })
-  expect(md).toContain('# Glitch Detective board\n\nExported 2026-10-22 · ada@example.com')
+  expect(md).toContain('# Glitch Lab board\n\nExported 2026-10-22 · ada@example.com')
   expect(md).toContain('**Level 2 · Junior Detective** · 145 XP · 3-day streak · 1h 05m studied')
   expect(md).toContain('Badges: First clue')
   expect(md).toContain('## New (0)\n\n_Nothing here._')
@@ -67,7 +67,7 @@ it('writes the board in Portuguese when given a Portuguese t', () => {
   const t = (key, vars) => translate('pt-BR', key, vars)
   const progress = { level: 2, title: 'Junior Detective', xp: 145, streak: 3, totalSeconds: 3900, badges: [{ id: 'first-clue', earned: true }] }
   const md = boardToMarkdown({ cases: CASES, notes: [NOTE], progress, date: '2026-10-22', t })
-  expect(md).toContain('# Board do Glitch Detective\n\nExportado em 2026-10-22')
+  expect(md).toContain('# Board do Glitch Lab\n\nExportado em 2026-10-22')
   expect(md).toContain('**Nível 2 · Detetive júnior** · 145 XP · 3 dias de sequência · 1h 05m de estudo')
   expect(md).toContain('Medalhas: Primeira pista')
   expect(md).toContain('## Novo (0)\n\n_Nada aqui._')

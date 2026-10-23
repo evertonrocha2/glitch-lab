@@ -15,7 +15,7 @@ export default function SiteHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
         <a href="#top" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
           <PixelLogo className="size-6 sm:size-7" />
-          <span>Glitch Detective</span>
+          <span>Glitch Lab</span>
         </a>
         <nav aria-label={t('landing.nav.label')} className="flex items-center gap-4 sm:gap-6">
           <a href="#how" className={`hidden md:inline ${navLinkClass}`}>

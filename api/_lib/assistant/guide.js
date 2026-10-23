@@ -1,7 +1,7 @@
 import { BADGES } from '../../../shared/badges.js'
 
 // What the App guide specialist knows. Static on purpose: no student data, nothing to leak.
-export const APP_GUIDE = `Glitch Detective is a debugging gym for programming students. It hides the answer and trains you instead of handing over fixes.
+export const APP_GUIDE = `Glitch Lab is a debugging gym for programming students. It hides the answer and trains you instead of handing over fixes.
 
 Pages (top bar: Board, Notes, Trail, Progress):
 - Board (/board): paste an error (and the code, files, and what you were trying to do) under "New investigation". The AI explains what happened and why; the fix stays hidden until you ask. Every investigation becomes a case tagged with a bug type, on a board with three columns: New, Training, Solved. The summary at the top names your weak spot: the bug type you hit most among cases not solved yet. Click a case to open it: read the explanation, "Train this" to go to the gym, or "Write a note" about it. The board can be exported as Markdown.

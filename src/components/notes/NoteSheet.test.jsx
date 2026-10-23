@@ -23,7 +23,7 @@ const NOTE = {
 
 it('lays out the whole note as a printable sheet', () => {
   const { container } = render(<NoteSheet note={NOTE} cases={CASES} date="Oct 22, 2026" />)
-  expect(screen.getByText('Glitch Detective')).toBeInTheDocument()
+  expect(screen.getByText('Glitch Lab')).toBeInTheDocument()
   expect(screen.getByText('Exported Oct 22, 2026')).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1, name: 'Undefined again' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 2, name: 'Pattern' })).toBeInTheDocument()
@@ -63,5 +63,5 @@ it('prints the sheet in Brazilian Portuguese', () => {
   expect(screen.getByText('Lendo undefined')).toBeInTheDocument()
   expect(screen.getByText('Treinando · 1/2')).toBeInTheDocument()
   expect(screen.getByText('Esse caso não está mais no seu board.')).toBeInTheDocument()
-  expect(screen.getByText('Feito com Glitch Detective')).toBeInTheDocument()
+  expect(screen.getByText('Feito com Glitch Lab')).toBeInTheDocument()
 })

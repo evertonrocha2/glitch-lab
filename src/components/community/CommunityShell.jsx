@@ -19,7 +19,7 @@ export default function CommunityShell({ children }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
           <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
             <PixelLogo className="size-6 sm:size-7" />
-            <span>Glitch Detective</span>
+            <span>Glitch Lab</span>
           </Link>
           <nav aria-label={t('notes.articles.nav')} className="flex items-center gap-2 sm:gap-4">
             <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">

@@ -94,4 +94,4 @@ createServer(async (req, res) => {
     if (!res.headersSent) send(res, 500, { message: 'Server error.' })
     else res.end()
   }
-}).listen(Number(process.env.PORT ?? 3000), () => console.log(`Glitch Detective on :${process.env.PORT ?? 3000}`))
+}).listen(Number(process.env.PORT ?? 3000), () => console.log(`Glitch Lab on :${process.env.PORT ?? 3000}`))

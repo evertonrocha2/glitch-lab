@@ -1,4 +1,4 @@
--- Glitch Detective database. Run once in the Supabase SQL editor.
+-- Glitch Lab database. Run once in the Supabase SQL editor.
 -- Only the server (service role key) reads and writes. RLS is on with no policies, so the public
 -- anon key in the browser can't see any row: not cases, not hints, not solutions, not usage.
 

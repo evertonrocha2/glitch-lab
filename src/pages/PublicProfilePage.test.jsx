@@ -116,7 +116,7 @@ it('shows a public profile to a signed-out visitor', async () => {
   expect(within(screen.getByRole('list', { name: 'Earned badges' })).getAllByRole('listitem')).toHaveLength(4)
   expect(screen.getByText(/Member since October 2026/)).toBeInTheDocument()
 
-  expect(screen.getByRole('link', { name: 'Try Glitch Detective' })).toHaveAttribute('href', '/')
+  expect(screen.getByRole('link', { name: 'Try Glitch Lab' })).toHaveAttribute('href', '/')
   expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
 })
 
@@ -125,7 +125,7 @@ it('says so kindly when there is no public profile', async () => {
   renderAt('/u/ghost')
   expect(await screen.findByRole('heading', { name: 'No detective here' })).toBeInTheDocument()
   expect(screen.getByText(/@ghost/)).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Try Glitch Detective' })).toHaveAttribute('href', '/')
+  expect(screen.getByRole('link', { name: 'Try Glitch Lab' })).toHaveAttribute('href', '/')
 })
 
 it('shows the error when the profile cannot load', async () => {
@@ -157,7 +157,7 @@ it('tells owners when they are looking at their own private profile', async () =
 it('offers the way back to the board instead of a sign-up pitch when signed in', async () => {
   renderAt('/u/ada_dev', { user: 'alice' })
   expect(await screen.findByRole('link', { name: 'Back to your board' })).toHaveAttribute('href', '/board')
-  expect(screen.queryByRole('link', { name: 'Try Glitch Detective' })).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Try Glitch Lab' })).toBeNull()
 })
 
 it('speaks Brazilian Portuguese: stats, badges, notes and dates', async () => {

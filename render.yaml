@@ -4,7 +4,7 @@
 # created by Render once.
 services:
   - type: web
-    name: glitch-detective-api
+    name: glitch-lab-api
     runtime: node
     plan: free
     region: ohio

@@ -121,5 +121,5 @@ it('prints in Portuguese inside a Portuguese provider', () => {
   expect(screen.getAllByText('Por que quebrou')).toHaveLength(CASES.length)
   expect(screen.getByText('Sem título')).toBeInTheDocument()
   expect(screen.getByText('1 caso vinculado')).toBeInTheDocument()
-  expect(screen.getByText('Feito com Glitch Detective')).toBeInTheDocument()
+  expect(screen.getByText('Feito com Glitch Lab')).toBeInTheDocument()
 })

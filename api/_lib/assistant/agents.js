@@ -18,7 +18,7 @@ export const AGENTS = {
     needs: ['progress', 'study_plan'],
   },
   guide: {
-    about: 'how to use Glitch Detective: features, pages, buttons, shortcuts, export',
+    about: 'how to use Glitch Lab: features, pages, buttons, shortcuts, export',
     needs: ['app_guide'],
   },
 }

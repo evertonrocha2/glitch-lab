@@ -1,6 +1,6 @@
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
-// Each row is landing.why.<n>.bot (the chatbot) and landing.why.<n>.us (Glitch Detective).
+// Each row is landing.why.<n>.bot (the chatbot) and landing.why.<n>.us (Glitch Lab).
 const ROWS = [1, 2, 3, 4, 5, 6]
 
 function Mark({ good }) {
@@ -30,7 +30,7 @@ export default function Compare() {
         <div className="mt-12 border-2 border-ink shadow-pixel-ink">
           <div aria-hidden="true" className="hidden grid-cols-2 border-b-2 border-ink sm:grid">
             <p className="border-r-2 border-ink bg-mist px-5 py-3 font-label text-xs text-muted">{t('landing.why.chatbot')}</p>
-            <p className="bg-primary px-5 py-3 font-label text-xs text-white">Glitch Detective</p>
+            <p className="bg-primary px-5 py-3 font-label text-xs text-white">Glitch Lab</p>
           </div>
           <ul aria-label={t('landing.why.list')}>
             {ROWS.map((row) => (
@@ -45,7 +45,7 @@ export default function Compare() {
                 <p className="flex gap-3 bg-primary-soft/60 px-5 py-4 text-ink">
                   <Mark good />
                   <span>
-                    <span className="sr-only">Glitch Detective: </span>
+                    <span className="sr-only">Glitch Lab: </span>
                     {t(`landing.why.${row}.us`)}
                   </span>
                 </p>

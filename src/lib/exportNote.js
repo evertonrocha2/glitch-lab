@@ -129,7 +129,7 @@ export async function exportSheetPdf(sheetElement, fileName, title) {
   const page = pdfGeometry({ widthPx: width })
   const slices = pageSlices(height, page.pageHeightPx, breaks)
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true })
-  pdf.setProperties({ title, creator: 'Glitch Detective' })
+  pdf.setProperties({ title, creator: 'Glitch Lab' })
 
   slices.forEach((slice, index) => {
     if (index > 0) pdf.addPage()

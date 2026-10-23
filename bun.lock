@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "glitch-detective",
+      "name": "glitch-lab",
       "dependencies": {
         "@supabase/supabase-js": "^2.118.0",
         "jspdf": "^4.2.1",
