@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { AiError, generateJson } from '../../server/infra/ai/index.js'
-import { DEFAULT_OPENROUTER_MODEL, toJsonSchema } from '../../server/infra/ai/openrouter.js'
+import { DEFAULT_MAX_TOKENS, DEFAULT_OPENROUTER_MODEL, toJsonSchema } from '../../server/infra/ai/openrouter.js'
 
 const SCHEMA = {
   type: 'OBJECT',
@@ -61,6 +61,15 @@ it('asks OpenRouter for schema-shaped JSON with the key in a header', async () =
     { role: 'user', content: 'explain' },
   ])
   expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: toJsonSchema(SCHEMA) } })
+})
+
+it('caps how long an answer can be, so a runaway one cannot run up the bill', async () => {
+  fetch.mockImplementation(async () => openrouter('{}'))
+  await generateJson(ARGS)
+  expect(JSON.parse(fetch.mock.calls[0][1].body).max_tokens).toBe(DEFAULT_MAX_TOKENS)
+  vi.stubEnv('AI_MAX_OUTPUT_TOKENS', '800')
+  await generateJson(ARGS)
+  expect(JSON.parse(fetch.mock.calls[1][1].body).max_tokens).toBe(800)
 })
 
 it('uses OPENROUTER_MODEL when set', async () => {

@@ -3,6 +3,11 @@ import { AiError } from './errors.js'
 const URL = 'https://openrouter.ai/api/v1/chat/completions'
 // Fast, cheap and good at following a JSON schema. OPENROUTER_MODEL picks any other model.
 export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-haiku-5.5'
+export const DEFAULT_MAX_TOKENS = 3000
+const maxTokens = () => {
+  const value = Number(process.env.AI_MAX_OUTPUT_TOKENS)
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_MAX_TOKENS
+}
 
 // The prompts write schemas in Gemini's dialect ('OBJECT', 'STRING'...). OpenRouter takes plain
 // JSON Schema, so types go lowercase and objects are closed, which strict mode requires.
@@ -42,6 +47,9 @@ export async function openrouterGenerate({ system, prompt, schema, apiKey, model
         ],
         response_format: { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: toJsonSchema(schema) } },
         temperature: 0.4,
+        // Output is what costs most, so a runaway answer stops here (the biggest real one, a
+        // bilingual daily puzzle, is well under it). A cut answer fails JSON parsing and falls back.
+        max_tokens: maxTokens(),
       }),
       signal,
     })
