@@ -86,8 +86,10 @@ export async function PUT(request) {
   if (!event) return fail(404, NOT_FOUND)
   if (event.organizerId !== auth.user.id) return fail(403, 'Only the organizer can do that.')
 
-  const action = ACTIONS[body.action ?? 'edit']
-  if (!action) return fail(400, 'Invalid request.')
+  // Own keys only, so "constructor" or "__proto__" never reach Object's own functions.
+  const name = body.action ?? 'edit'
+  if (typeof name !== 'string' || !Object.hasOwn(ACTIONS, name)) return fail(400, 'Invalid request.')
+  const action = ACTIONS[name]
   const now = Date.now()
   const result = await action({ store, event, body, now, userId: auth.user.id })
   if (result.status) return fail(result.status, result.message)

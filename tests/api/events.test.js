@@ -138,6 +138,14 @@ describe('organizer tools', () => {
     expect(started.body.message).toBe('You can only change an event before it starts.')
   })
 
+  it('refuses actions it does not know, including names inherited from Object', async () => {
+    const event = (await create(fields())).body.event
+    for (const action of ['party', 'constructor', '__proto__', 'toString', 'hasOwnProperty', 42]) {
+      const res = await edit(event.id, { action })
+      expect([res.status, res.body.message]).toEqual([400, 'Invalid request.'])
+    }
+  })
+
   it('closes a live event early, by the organizer only', async () => {
     const event = (await create(fields())).body.event
     expect((await edit(event.id, { action: 'close' }, bob.token)).status).toBe(403)
