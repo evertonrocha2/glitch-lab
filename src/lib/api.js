@@ -70,6 +70,16 @@ export function checkFix(challengeId, code, token) {
   return request('/api/check', { method: 'POST', body: { challengeId, code }, token })
 }
 
+// Interrogation (guided debugging on a case): { case, interrogation }.
+export function getInterrogation(caseId, token) {
+  return request(`/api/hint?mode=interrogate&caseId=${encodeURIComponent(caseId)}`, { token })
+}
+
+// One answer for the current step: { interrogation, turn, finished, xp }.
+export function answerInterrogation({ caseId, answer }, token) {
+  return request('/api/hint?mode=interrogate', { method: 'POST', body: { caseId, answer }, token })
+}
+
 // Daily challenges: { day, nextResetAt, streak, puzzles: [card with status, challengeId, attempts] }.
 export function getDaily(token) {
   return request('/api/challenge?daily=1', { token })

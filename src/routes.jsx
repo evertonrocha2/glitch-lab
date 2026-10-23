@@ -9,6 +9,7 @@ import DuelLobbyPage from './pages/DuelLobbyPage.jsx'
 import DuelPage from './pages/DuelPage.jsx'
 import GlitchdlePage from './pages/GlitchdlePage.jsx'
 import GymPage from './pages/GymPage.jsx'
+import InterrogationPage from './pages/InterrogationPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotesPage from './pages/NotesPage.jsx'
@@ -53,6 +54,14 @@ export function AppRoutes() {
         element={
           <RequireAuth>
             <GymPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/interrogate/:caseId"
+        element={
+          <RequireAuth>
+            <InterrogationPage />
           </RequireAuth>
         }
       />
