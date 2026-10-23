@@ -4,6 +4,7 @@ import { BADGES } from '../../shared/badges.js'
 import { AVATAR_COLORS, handleProblem, LANGUAGES, LINKS, linkProblem, OPEN_TO, PROFILE_LIMITS, ROLES } from '../../shared/profile.js'
 import AppShell from '../components/AppShell.jsx'
 import ErrorNotice from '../components/ErrorNotice.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import BadgeIcon from '../components/pixel/BadgeIcon.jsx'
 import { AVATAR_STYLES } from '../components/pixel/PixelAvatar.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
@@ -395,14 +396,16 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <p className="font-label text-xs text-secondary">
-        &gt; {t('app.profile.kicker')}<span className="motion-safe:animate-caret">_</span>
-      </p>
-      <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('app.profile.title')}</h1>
-      <p className="mt-2 text-muted">{t('app.profile.lead')}</p>
-      <Link to="/people" className="mt-3 inline-block font-label text-xs text-secondary underline underline-offset-4 hover:text-primary">
-        {t('app.progress.findPeople')}
-      </Link>
+      <PageHeader
+        kicker={t('app.profile.kicker')}
+        title={t('app.profile.title')}
+        lead={t('app.profile.lead')}
+        actions={
+          <PixelButton as={Link} to="/people" variant="ghost" className="px-4 py-3">
+            {t('app.progress.findPeople')}
+          </PixelButton>
+        }
+      />
 
       {message && (
         <div className="mt-8">
@@ -412,12 +415,12 @@ export default function ProfilePage() {
 
       {!draft ? (
         !message && (
-          <p role="status" className="mt-10 font-label text-xs text-muted">
+          <p role="status" className="mt-8 font-label text-xs text-muted">
             {t('app.profile.loading')}
           </p>
         )
       ) : (
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
           <section aria-labelledby="preview-title" className="lg:sticky lg:top-6 lg:order-last">
             <h2 id="preview-title" className="mb-3 font-label text-xs text-primary">
               {t('app.profile.previewTitle')}
