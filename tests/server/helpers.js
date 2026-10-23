@@ -43,6 +43,24 @@ export function geminiAnswer(value) {
   return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }))
 }
 
+// A streamed response (Server-Sent Events) whose body arrives in the given chunks, one per read.
+// An Error in the list breaks the stream there, like a dropped connection.
+export function streamed(chunks) {
+  const queue = [...chunks]
+  const encoder = new TextEncoder()
+  return new Response(
+    new ReadableStream({
+      pull(controller) {
+        const next = queue.shift()
+        if (next === undefined) controller.close()
+        else if (next instanceof Error) controller.error(next)
+        else controller.enqueue(encoder.encode(next))
+      },
+    }),
+    { headers: { 'Content-Type': 'text/event-stream' } },
+  )
+}
+
 // A fetch that only settles when the AI layer's time limit aborts it.
 export function neverAnswers() {
   return (_url, init) =>

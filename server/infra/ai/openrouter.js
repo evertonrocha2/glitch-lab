@@ -1,4 +1,5 @@
 import { AiError } from './errors.js'
+import { readEventStream } from './event-stream.js'
 
 const URL = 'https://openrouter.ai/api/v1/chat/completions'
 // Fast, cheap and good at following a JSON schema. OPENROUTER_MODEL picks any other model.
@@ -25,7 +26,10 @@ export function toJsonSchema(schema) {
   return out
 }
 
-export async function openrouterGenerate({ system, prompt, schema, apiKey, model, signal }) {
+const fetchFailure = (err) => new AiError(err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 504 : 502)
+
+// One chat/completions call; extra goes into the body (response_format, stream).
+async function post({ system, prompt, apiKey, model, signal }, extra) {
   if (!apiKey) throw new AiError(500, 'OPENROUTER_API_KEY is not set')
 
   let res
@@ -45,24 +49,61 @@ export async function openrouterGenerate({ system, prompt, schema, apiKey, model
           { role: 'system', content: system },
           { role: 'user', content: prompt },
         ],
-        response_format: { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: toJsonSchema(schema) } },
         temperature: 0.4,
         // Output is what costs most, so a runaway answer stops here (the biggest real one, a
         // bilingual daily puzzle, is well under it). A cut answer fails JSON parsing and falls back.
         max_tokens: maxTokens(),
+        ...extra,
       }),
       signal,
     })
   } catch (err) {
-    throw new AiError(err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 504 : 502)
+    throw fetchFailure(err)
   }
   // 401/402 (bad key, no credits) are a setup problem, not a busy model.
   if (res.status === 401 || res.status === 402) throw new AiError(500, `OpenRouter refused the key (${res.status})`)
   if (!res.ok) throw new AiError(res.status)
+  return res
+}
 
+export async function openrouterGenerate({ schema, ...args }) {
+  const res = await post(args, {
+    response_format: { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: toJsonSchema(schema) } },
+  })
   const data = await res.json().catch(() => null)
   const text = data?.choices?.[0]?.message?.content
   if (typeof text !== 'string' || !text) throw new AiError(502, 'OpenRouter answered without text')
   // Some models wrap JSON in a code fence even in JSON mode.
   return text.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, '')
+}
+
+// Plain text as the model writes it: onDelta(piece) for each piece, then the whole text.
+// OpenRouter sends `data: {...}` lines, ": OPENROUTER PROCESSING" comments while it waits (the
+// parser skips those) and `data: [DONE]` at the end. An error after the first byte comes as a
+// chunk with an `error` field, since the status is already 200 by then.
+export async function openrouterStream({ onDelta, ...args }) {
+  const res = await post(args, { stream: true })
+  let text = ''
+  try {
+    await readEventStream(res, (data) => {
+      if (data === '[DONE]') return true
+      let chunk
+      try {
+        chunk = JSON.parse(data)
+      } catch {
+        return false
+      }
+      if (chunk?.error) throw new AiError(502, `OpenRouter stream failed: ${chunk.error.message ?? 'unknown error'}`)
+      const piece = chunk?.choices?.[0]?.delta?.content
+      if (typeof piece === 'string' && piece) {
+        text += piece
+        onDelta(piece)
+      }
+      return false
+    })
+  } catch (err) {
+    throw err instanceof AiError ? err : fetchFailure(err)
+  }
+  if (!text) throw new AiError(502, 'OpenRouter streamed no text')
+  return text
 }
