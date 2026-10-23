@@ -7,6 +7,7 @@ import {
   INTERROGATION_XP,
   isFinished,
 } from '../../../shared/interrogation.js'
+import { isQuestion } from '../../../shared/question.js'
 import { AppError, badRequest, conflict, notFound } from '../../core/errors.js'
 import { buildInterrogatePrompt, INTERROGATE_SCHEMA, interrogateSystem } from './interrogate.prompt.js'
 import { withAi } from '../../infra/ai/failure.js'
@@ -63,14 +64,16 @@ export async function answerInterrogation({ store, ai }, user, caseId, body, loc
   await spendAiCall(store, user)
 
   const step = currentStep(state)
+  // A question case (a doubt, no error) walks the same steps from the doubt instead.
+  const question = isQuestion(kase)
   const verdict = await withAi(async () => {
     const reply = await ai.generateJson({
-      system: interrogateSystem(locale),
+      system: interrogateSystem(locale, { question }),
       prompt: buildInterrogatePrompt({ kase, state, answer }, locale),
       schema: INTERROGATE_SCHEMA,
     })
     // The prompt says never to give the fix early; this makes sure of it.
-    return guardReply(parseVerdict(reply), { step, fix: kase.analysis?.correcao, code: kase.code, locale }).verdict
+    return guardReply(parseVerdict(reply), { step, fix: kase.analysis?.correcao, code: kase.code, locale, question }).verdict
   })
 
   const next = advance(state, answer, verdict)
