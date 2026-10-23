@@ -183,13 +183,17 @@ export function createLocalCommunity({ load, save }) {
     },
 
     // A like or rating is announced once per person and article; null when it already was.
-    async addNotification({ userId, type, actorId, articleId }) {
+    // Event notifications (event_*) point at an event instead, and are announced once the same way.
+    async addNotification({ userId, type, actorId, articleId = null, eventId = null }) {
       const data = lists(await load())
       const repeat =
         type !== 'comment' &&
-        data.notifications.some((item) => item.userId === userId && item.type === type && item.actorId === actorId && item.articleId === articleId)
+        data.notifications.some(
+          (item) =>
+            item.userId === userId && item.type === type && item.actorId === actorId && (item.articleId ?? null) === articleId && (item.eventId ?? null) === eventId,
+        )
       if (repeat) return null
-      const created = { id: randomUUID(), userId, type, actorId, articleId, read: false, createdAt: now() }
+      const created = { id: randomUUID(), userId, type, actorId, articleId, eventId, read: false, createdAt: now() }
       data.notifications.push(created)
       await save()
       return copy(created)
@@ -202,7 +206,13 @@ export function createLocalCommunity({ load, save }) {
         .filter((item) => item.userId === userId)
         .reverse()
         .slice(0, limit)
-        .map((item) => ({ ...copy(item), articleTitle: articleById(data, item.articleId)?.title ?? null }))
+        .map((item) => ({
+          ...copy(item),
+          articleId: item.articleId ?? null,
+          articleTitle: articleById(data, item.articleId)?.title ?? null,
+          eventId: item.eventId ?? null,
+          eventTitle: (data.events ?? []).find((event) => event.id === item.eventId)?.title ?? null,
+        }))
     },
 
     async countUnreadNotifications(userId) {
