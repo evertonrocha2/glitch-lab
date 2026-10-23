@@ -103,6 +103,13 @@ function Dialog() {
 
   const empty = messages.length === 0 && !pending
 
+  // The New chat button goes away with the chat, so focus moves on to the question box.
+  function startOver() {
+    setActionError('')
+    assistant.newChat()
+    input.current?.focus()
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Clicking the dimmed page closes the panel; keyboard users have Escape and the Close button. */}
@@ -117,17 +124,39 @@ function Dialog() {
         onKeyDown={onKeyDown}
         className="relative flex h-full w-full flex-col border-ink bg-mist sm:w-105 sm:border-r-2 sm:shadow-[6px_0_0_var(--color-primary)] motion-safe:animate-panel-in"
       >
-        {/* Just the title and a close button: "New chat" lives by the composer, so the title never gets squeezed. */}
+        {/* The title shrinks and truncates; the two square buttons never do, so they can't cover it. */}
         <header className="flex items-center gap-3 border-b-2 border-ink bg-primary px-4 py-3 text-white">
           <span className="grid size-10 shrink-0 place-items-center border-2 border-ink bg-white">
             <LabAvatar className="size-7 border-0" />
           </span>
           <span className="min-w-0 flex-1">
-            <h2 id="assistant-title" className="font-pixel text-xl leading-tight font-bold">
+            <h2 id="assistant-title" className="truncate font-pixel text-xl leading-tight font-bold">
               {t('app.assistant.title')}
             </h2>
-            <span className="block text-xs text-white/85">{t('app.assistant.subtitle')}</span>
+            <span className="block truncate text-xs text-white/85">{t('app.assistant.subtitle')}</span>
           </span>
+          {/* Only when there is a chat to clear. */}
+          {!empty && (
+            <PixelButton
+              variant="ghost"
+              onClick={startOver}
+              aria-label={t('app.assistant.newChat')}
+              title={t('app.assistant.newChat')}
+              className="size-10 shrink-0 p-0"
+            >
+              {/* A pixel speech bubble with a plus. */}
+              <svg aria-hidden="true" viewBox="0 0 11 11" shapeRendering="crispEdges" className="size-4 fill-current">
+                <rect x="1" y="0" width="9" height="1" />
+                <rect x="0" y="1" width="1" height="7" />
+                <rect x="10" y="1" width="1" height="7" />
+                <rect x="1" y="8" width="9" height="1" />
+                <rect x="2" y="9" width="2" height="1" />
+                <rect x="2" y="10" width="1" height="1" />
+                <rect x="5" y="2" width="1" height="5" />
+                <rect x="3" y="4" width="5" height="1" />
+              </svg>
+            </PixelButton>
+          )}
           <PixelButton variant="ghost" onClick={close} aria-label={t('app.assistant.close')} title={t('app.assistant.closeTitle')} className="size-10 shrink-0 p-0 text-lg">
             {/* A pixel X: the pixel font draws "×" too small to see. */}
             <svg aria-hidden="true" viewBox="0 0 7 7" shapeRendering="crispEdges" className="size-3.5 fill-current">
@@ -245,12 +274,7 @@ function Dialog() {
               </PixelButton>
             )}
           </div>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted">{t('app.assistant.keys')}</p>
-            <PixelButton variant="ghost" onClick={assistant.newChat} disabled={empty} className="shrink-0 px-2.5 py-1.5 text-[10px]">
-              {t('app.assistant.newChat')}
-            </PixelButton>
-          </div>
+          <p className="mt-2 text-xs text-muted">{t('app.assistant.keys')}</p>
         </form>
       </aside>
     </div>
@@ -263,7 +287,8 @@ export default function AssistantPanel() {
 
   useEffect(() => {
     const onKey = (event) => {
-      if (!isAssistantShortcut(event)) return
+      // A key something already used (Ctrl+/ comments a line in the code editor) is not for us.
+      if (event.defaultPrevented || !isAssistantShortcut(event)) return
       event.preventDefault()
       toggle()
     }
