@@ -1,11 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { isProduction } from '../env.js'
 
 export const SESSION_DAYS = 7
 const DEV_SECRET = 'glitch-detective-local-dev-secret'
 
 function secret() {
   if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET
-  if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     throw new Error('AUTH_SECRET is not set')
   }
   return DEV_SECRET

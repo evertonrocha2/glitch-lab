@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { challengeDay, dailySummary, nextResetAt, weekEndsAt, weekStart } from '../../../shared/daily.js'
 import { toPublicChallenge } from '../challenges.js'
+import { isProduction } from '../env.js'
 import { fail, ok } from '../http.js'
 import { ensureSet, isCurrent, runCron, toPuzzleCard, withStatus } from '../puzzles/daily.js'
 import { leaderboard } from '../puzzles/leaderboard.js'
@@ -59,7 +60,7 @@ const digest = (text) => createHash('sha256').update(text).digest()
 // first makes the lengths equal). With no secret set, only local development may run it.
 export function cronAllowed(request) {
   const secret = process.env.CRON_SECRET
-  if (!secret) return process.env.VERCEL !== '1'
+  if (!secret) return !isProduction()
   return timingSafeEqual(digest(request.headers.get('authorization') ?? ''), digest(`Bearer ${secret}`))
 }
 

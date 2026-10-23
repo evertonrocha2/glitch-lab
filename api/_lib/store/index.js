@@ -1,3 +1,4 @@
+import { isProduction } from '../env.js'
 import { createLocalStore } from './local.js'
 import { createSupabaseStore } from './supabase.js'
 
@@ -10,7 +11,7 @@ export function getStore() {
     store = createSupabaseStore({ url: process.env.SUPABASE_URL, serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY })
     return store
   }
-  if (process.env.VERCEL === '1') throw new Error('No database configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
+  if (isProduction()) throw new Error('No database configured: set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
   store = createLocalStore({ file: process.env.LOCAL_STORE_FILE || '.data/db.json' })
   return store
 }
