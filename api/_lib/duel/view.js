@@ -73,11 +73,15 @@ export function publicDuel(duel, viewerId, now, people) {
   const where = phaseAt(rounds, now)
   const at = (index) => rounds[index]
   const nextUp = where.next === null ? null : { index: where.next, openAt: iso(at(where.next).openAt) }
+  // My last tab report was "hidden" (a reload sends one as the old page unloads): the page says
+  // it's back as soon as it loads, so one reload doesn't cost every round after it.
+  const away = duel.focus.filter((event) => event.userId === viewerId).at(-1)?.state === 'hidden'
   if (where.phase === 'round') {
     const open = at(where.index)
     const mine = open.answers[viewerId]
     return {
       ...view,
+      away,
       phase: 'round',
       current: {
         ...question(duel, where.index, viewerId),
@@ -92,5 +96,5 @@ export function publicDuel(duel, viewerId, now, people) {
   }
   // Between rounds: the last one again, now with its answer, for the reveal.
   const last = where.index === null ? null : { ...question(duel, where.index, viewerId), ...closed[where.index] }
-  return { ...view, phase: where.phase === 'over' ? 'reveal' : where.phase, last, next: nextUp }
+  return { ...view, away, phase: where.phase === 'over' ? 'reveal' : where.phase, last, next: nextUp }
 }

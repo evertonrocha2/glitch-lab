@@ -152,9 +152,12 @@ export default function DuelPage() {
   // Tab leave detection: hidden tab or lost window focus, and coming back. The server stamps each
   // report and voids a round I left while it was open. A deterrent, not proof (see clock.js).
   const watchId = duel?.status === 'active' && duel.you !== null ? duel.id : null
+  const serverAway = useRef(false)
+  serverAway.current = Boolean(duel?.away)
   useEffect(() => {
     if (!watchId) return
-    let hidden = false
+    // The server's last word may be the "hidden" a reload sent while unloading.
+    let hidden = serverAway.current
     const report = (state) => {
       if ((state === 'hidden') === hidden) return
       hidden = state === 'hidden'
@@ -169,6 +172,7 @@ export default function DuelPage() {
     document.addEventListener('visibilitychange', onVisibility)
     window.addEventListener('blur', onBlur)
     window.addEventListener('focus', onFocus)
+    if (hidden && document.visibilityState === 'visible') report('visible')
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('blur', onBlur)

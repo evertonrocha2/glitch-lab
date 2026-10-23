@@ -150,6 +150,14 @@ it('reports leaving the tab and warns that the round is lost', async () => {
   expect(vi.mocked(sendDuel).mock.calls.filter(([action]) => action === 'focus')).toHaveLength(2)
 })
 
+it('says it is back after a reload, when the server still has me away', async () => {
+  vi.mocked(getDuel).mockResolvedValue(round({}, { away: true }))
+  vi.mocked(sendDuel).mockResolvedValue({ recorded: true })
+  renderAt('/duel/d1', { user: 'alice' })
+  await waitFor(() => expect(sendDuel).toHaveBeenCalledWith('focus', { id: 'd1', state: 'visible' }, 'token-alice', { keepalive: true }))
+  expect(sendDuel).toHaveBeenCalledTimes(1)
+})
+
 it("shows the server's tab flag for me and for the other player", async () => {
   vi.mocked(getDuel).mockResolvedValue(round({ left: [true, true], answered: [false, true] }))
   renderAt('/duel/d1', { user: 'alice' })

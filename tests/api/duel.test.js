@@ -145,8 +145,12 @@ it('voids the round of a player who leaves the tab, and both players see it', as
   const { right } = await choices(id, 0)
   at(open + 1000)
   expect(await act('focus', { id, state: 'hidden' }, 'dev:bob')).toEqual({ status: 200, body: { recorded: true } })
+  // Bob's page learns it still counts as away (a reload's unload says "hidden"), Alice's doesn't.
+  expect((await state(id, 'dev:bob')).body.duel.away).toBe(true)
+  expect((await state(id)).body.duel.away).toBe(false)
   at(open + 1500)
   await act('focus', { id, state: 'visible' }, 'dev:bob')
+  expect((await state(id, 'dev:bob')).body.duel.away).toBe(false)
   expect((await state(id)).body.duel.current.left).toEqual([false, true])
 
   at(open + 2000)
