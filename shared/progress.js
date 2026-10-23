@@ -25,10 +25,10 @@ const communityXp = ({ articles, likesReceived, validReceived, comments }) =>
 
 export const LEVELS = [
   { min: 0, title: 'Rookie' },
-  { min: 100, title: 'Junior Detective' },
-  { min: 300, title: 'Detective' },
-  { min: 600, title: 'Inspector' },
-  { min: 1000, title: 'Chief Inspector' },
+  { min: 100, title: 'Apprentice' },
+  { min: 300, title: 'Debugger' },
+  { min: 600, title: 'Engineer' },
+  { min: 1000, title: 'Senior Engineer' },
   { min: 1500, title: 'Bug Whisperer' },
 ]
 

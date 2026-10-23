@@ -26,7 +26,7 @@ it('adds up xp from cases, passes, solved cases, notes and study minutes', () =>
   })
   // cases 2*10 + passes 2*30 + clean pass 15 + solved 50 + note 5 + 10 minutes
   expect(progress.xp).toBe(20 + 60 + 15 + 50 + 5 + 10)
-  expect(progress).toMatchObject({ level: 2, title: 'Junior Detective', levelXp: 100, nextLevelXp: 300 })
+  expect(progress).toMatchObject({ level: 2, title: 'Apprentice', levelXp: 100, nextLevelXp: 300 })
 })
 
 it('counts at most 20 notes toward xp', () => {

@@ -86,8 +86,8 @@ const BADGES_PT = {
   'elephant-memory': ['Memória de elefante', 'Conclua uma revisão espaçada em 7 dias diferentes.'],
 }
 
-const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']
-const LEVELS_PT = ['Novato', 'Detetive júnior', 'Detetive', 'Inspetor', 'Inspetor-chefe', 'Encantador de bugs']
+const LEVELS_EN = ['Rookie', 'Apprentice', 'Debugger', 'Engineer', 'Senior Engineer', 'Bug Whisperer']
+const LEVELS_PT = ['Novato', 'Aprendiz', 'Debugger', 'Engenheiro', 'Engenheiro sênior', 'Encantador de bugs']
 
 const TRAIL_EN = {
   train: ['Train', 'Pass a gym challenge on this case.'],
@@ -157,6 +157,7 @@ export default {
     'language.label': 'Language',
     'language.en': 'English',
     'language.pt-BR': 'Português (BR)',
+    'player.anonymous': 'Anonymous player',
     ...keyed('concept', CONCEPTS_EN),
     ...keyed('badge.name', BADGES_EN, ([name]) => name),
     ...keyed('badge.how', BADGES_EN, ([, how]) => how),
@@ -177,6 +178,7 @@ export default {
     'language.label': 'Idioma',
     'language.en': 'English',
     'language.pt-BR': 'Português (BR)',
+    'player.anonymous': 'Jogador anônimo',
     ...keyed('concept', CONCEPTS_PT),
     ...keyed('badge.name', BADGES_PT, ([name]) => name),
     ...keyed('badge.how', BADGES_PT, ([, how]) => how),

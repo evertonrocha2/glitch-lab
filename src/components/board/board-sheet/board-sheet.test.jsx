@@ -32,7 +32,7 @@ const NOTES = [
 const PROGRESS = {
   xp: 140,
   level: 2,
-  title: 'Junior Detective',
+  title: 'Apprentice',
   streak: 3,
   badges: [
     { id: 'first-case', earned: true },
@@ -49,7 +49,7 @@ it('heads the sheet with the board title, the date and my progress', () => {
   expect(screen.getByText('Exported Oct 22, 2026')).toBeInTheDocument()
   const level = screen.getByRole('list', { name: 'Progress' })
   expect(level).toHaveTextContent('Level 2')
-  expect(level).toHaveTextContent('Junior Detective')
+  expect(level).toHaveTextContent('Apprentice')
   expect(level).toHaveTextContent('140 XP')
   expect(level).toHaveTextContent('3 days')
   expect(level).toHaveTextContent('2/3')
@@ -115,7 +115,7 @@ it('prints in Portuguese inside a Portuguese provider', () => {
   expect(screen.getByText('Exportado em 22 de out. de 2026')).toBeInTheDocument()
   const level = screen.getByRole('list', { name: 'Progresso' })
   expect(level).toHaveTextContent('Nível 2')
-  expect(level).toHaveTextContent('Detetive júnior')
+  expect(level).toHaveTextContent('Aprendiz')
   expect(level).toHaveTextContent('3 dias')
   expect(screen.getByRole('region', { name: 'Treinando' })).toHaveTextContent('Praticando no gym')
   expect(screen.getAllByText('Por que quebrou')).toHaveLength(CASES.length)
