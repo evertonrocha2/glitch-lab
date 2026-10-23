@@ -27,13 +27,15 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-mist">
       <header className="border-b-2 border-ink bg-white">
-        {/* Top row: the brand on the left, everything about you on the right. */}
+        {/* Top row: the brand on the left; the language, the assistant, notifications and your account on the right. */}
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-3 sm:gap-3 sm:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
             <PixelLogo className="size-5 shrink-0 sm:size-7" />
-            <span className="truncate">Glitch Lab</span>
+            {/* On narrow phones the right side fills the row, so only the logo shows; the name stays for screen readers. */}
+            <span className="sr-only min-[440px]:not-sr-only min-[440px]:truncate">Glitch Lab</span>
           </Link>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <LanguageSelect compact className="shrink-0" />
             <AssistantButton />
             <NotificationBell />
             <Link to="/profile" aria-label={t('app.shell.profile')} className="flex shrink-0 transition-transform hover:-translate-y-0.5">
@@ -50,8 +52,7 @@ export default function AppShell({ children }) {
             </PixelButton>
           </div>
         </div>
-        {/* Second row: the pages, then the language. The pages stay on one line; on narrow phones they
-            scroll sideways while the language picker stays put at the end. */}
+        {/* Second row: the pages, on one line; on narrow phones they scroll sideways. */}
         <div className="border-t-2 border-dashed border-line">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 sm:px-8">
             <div className="relative min-w-0 flex-1">
@@ -100,7 +101,6 @@ export default function AppShell({ children }) {
               {/* A fade at the edge says "there's more" when the row scrolls on a phone. */}
               <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-white to-transparent sm:hidden" />
             </div>
-            <LanguageSelect compact className="shrink-0" />
           </div>
         </div>
       </header>

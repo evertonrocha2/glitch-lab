@@ -11,3 +11,6 @@ docs/superpowers/
 
 # Temporary local screenshot helpers (they log into the demo); never ship them.
 public/__*
+
+# Playwright MCP screenshots and snapshots
+.playwright-mcp/
