@@ -331,6 +331,7 @@ export default function EventPage() {
                 <OrganizerTools
                   event={event}
                   status={status}
+                  now={now}
                   entries={entries}
                   onClose={() => run((token) => closeEvent(event.id, token))}
                   onPick={(winners) => run((token) => pickWinners(event.id, winners, token))}

@@ -54,6 +54,10 @@ export const canSubmit = (status) => status === 'live'
 export const canVote = (status) => status === 'live' || status === 'voting'
 export const canPickWinners = (status) => status === 'voting' || status === 'ended'
 
+// The organizer can change the winners for this long after first announcing them, then the podium is final.
+export const WINNERS_EDIT_MS = 2 * DAY
+export const winnersLocked = ({ announcedAt }, now = Date.now()) => Boolean(announcedAt) && now >= Date.parse(announcedAt) + WINNERS_EDIT_MS
+
 // { days, hours, minutes, seconds } left, never below zero.
 export function timeLeft(ms) {
   const left = Math.max(0, Math.floor(ms / 1000))

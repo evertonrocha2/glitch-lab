@@ -136,10 +136,15 @@ const ROWS = [
   ['events.tools.closeAsk', 'Close entries now? Voting stays open for 2 more days.', 'Encerrar agora? A votação fica aberta por mais 2 dias.'],
   ['events.tools.closeYes', 'Yes, close', 'Sim, encerrar'],
   ['events.tools.winners', 'Pick the winners', 'Escolha os vencedores'],
-  ['events.tools.winnersHint', 'Announcing ends the voting and tells everyone who took part.', 'Anunciar encerra a votação e avisa todo mundo que participou.'],
+  [
+    'events.tools.winnersHint',
+    'Announcing ends the voting and tells everyone who took part. You can change the pick for 2 days after.',
+    'Anunciar encerra a votação e avisa todo mundo que participou. Dá para mudar a escolha por 2 dias depois.',
+  ],
   ['events.tools.nobody', 'Nobody', 'Ninguém'],
   ['events.tools.announce', 'Announce winners', 'Anunciar vencedores'],
-  ['events.tools.announced', 'Winners announced. You can still change the pick.', 'Vencedores anunciados. Você ainda pode mudar a escolha.'],
+  ['events.tools.announced', 'Winners announced. You can change the pick until {date}.', 'Vencedores anunciados. Você pode mudar a escolha até {date}.'],
+  ['events.tools.final', 'The winners are final.', 'Os vencedores estão definidos.'],
   ['events.tools.noEntries', 'No entries to pick from.', 'Nenhuma participação para escolher.'],
   ['events.tools.waitEnd', 'You pick the winners once the event ends.', 'Você escolhe os vencedores quando o evento terminar.'],
 

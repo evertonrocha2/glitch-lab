@@ -17,6 +17,8 @@ import {
   summarizeEventStats,
   timeLeft,
   VOTING_MS,
+  WINNERS_EDIT_MS,
+  winnersLocked,
   youtubeId,
 } from '../../shared/events.js'
 
@@ -44,6 +46,12 @@ describe('status from dates', () => {
     expect(['upcoming', 'live', 'voting', 'ended'].map(canSubmit)).toEqual([false, true, false, false])
     expect(['upcoming', 'live', 'voting', 'ended'].map(canVote)).toEqual([false, true, true, false])
     expect(['upcoming', 'live', 'voting', 'ended'].map(canPickWinners)).toEqual([false, false, true, true])
+  })
+
+  it('locks the winners a while after they are first announced', () => {
+    expect(winnersLocked({ announcedAt: null }, NOW)).toBe(false)
+    expect(winnersLocked({ announcedAt: at(0) }, NOW + WINNERS_EDIT_MS - 1)).toBe(false)
+    expect(winnersLocked({ announcedAt: at(0) }, NOW + WINNERS_EDIT_MS)).toBe(true)
   })
 
   it('splits the time left for a countdown', () => {

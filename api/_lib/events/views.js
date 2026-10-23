@@ -17,6 +17,7 @@ export function eventSummary(event, people, now = Date.now()) {
     organizer: people[event.organizerId],
     entryCount: event.entryCount,
     announced: Boolean(event.announcedAt),
+    announcedAt: event.announcedAt ?? null,
   }
 }
 

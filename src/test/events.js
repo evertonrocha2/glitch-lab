@@ -20,6 +20,7 @@ export function makeEventSummary(overrides = {}) {
     organizer: ADA,
     entryCount: 2,
     announced: false,
+    announcedAt: null,
     ...overrides,
   }
 }

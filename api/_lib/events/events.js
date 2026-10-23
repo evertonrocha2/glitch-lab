@@ -1,5 +1,5 @@
 import { cleanQuery } from '../../../shared/community.js'
-import { canPickWinners, EVENT_LIMITS, EVENT_TABS, eventStatus, rankEntries, VOTING_MS } from '../../../shared/events.js'
+import { canPickWinners, EVENT_LIMITS, EVENT_TABS, eventStatus, rankEntries, VOTING_MS, winnersLocked } from '../../../shared/events.js'
 import { getUser } from '../auth.js'
 import { loadPeople } from '../community/people.js'
 import { serverDay } from '../days.js'
@@ -112,8 +112,10 @@ const ACTIONS = {
   },
 
   // winners: 1 to 3 different entry ids of this event, first place first. Voting closes with it.
+  // The pick can change for WINNERS_EDIT_MS after it is first announced, then it is final.
   async winners({ store, event, body, now, userId }) {
     if (!canPickWinners(eventStatus(event, now))) return { status: 409, message: 'Pick the winners once the event ends.' }
+    if (winnersLocked(event, now)) return { status: 409, message: 'The winners are final and can no longer change.' }
     const picked = body.winners
     const entries = await store.listEntries(event.id)
     const valid =
@@ -127,7 +129,8 @@ const ACTIONS = {
     await store.setPlaces(event.id, Object.fromEntries(picked.map((id, index) => [id, index + 1])))
     const stamp = new Date(now).toISOString()
     const closesAt = Date.parse(event.closesAt) > now ? stamp : event.closesAt
-    const updated = await store.updateEvent(userId, event.id, { announcedAt: stamp, closesAt })
+    // announcedAt stays the first announcement, so changing the pick never moves the lock.
+    const updated = await store.updateEvent(userId, event.id, { announcedAt: event.announcedAt ?? stamp, closesAt })
     // Everyone who took part hears about it (once, even if the organizer changes the pick).
     for (const item of entries) {
       await store.addNotification({ userId: item.userId, type: 'event_winner', actorId: userId, eventId: event.id })

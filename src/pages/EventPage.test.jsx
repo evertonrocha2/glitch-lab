@@ -162,6 +162,26 @@ it('gives the organizer the tools for each stage', async () => {
   expect(screen.getByText('Ended', { selector: 'span' })).toBeInTheDocument()
 })
 
+it('tells the organizer when the winners can still change, and when they are final', async () => {
+  const ended = { mine: true, endsAt: new Date(Date.now() - 3 * DAY).toISOString(), closesAt: new Date(Date.now() - 2 * DAY).toISOString(), announced: true }
+  vi.mocked(getEvent).mockResolvedValue(
+    loadedEvent({ event: makeEvent({ ...ended, announcedAt: new Date(Date.now() - DAY).toISOString() }), entries: [makeEntry({ place: 1 })] }),
+  )
+  const first = renderAt('/events/e1', { user: 'ada' })
+  const tools = await screen.findByRole('region', { name: 'Organizer tools' })
+  expect(within(tools).getByText(/Winners announced. You can change the pick until/)).toBeInTheDocument()
+  expect(within(tools).getByRole('button', { name: 'Announce winners' })).toBeInTheDocument()
+  first.unmount()
+
+  vi.mocked(getEvent).mockResolvedValue(
+    loadedEvent({ event: makeEvent({ ...ended, announcedAt: new Date(Date.now() - 3 * DAY).toISOString() }), entries: [makeEntry({ place: 1 })] }),
+  )
+  renderAt('/events/e1', { user: 'ada' })
+  const final = await screen.findByRole('region', { name: 'Organizer tools' })
+  expect(within(final).getByText('The winners are final.')).toBeInTheDocument()
+  expect(within(final).queryByRole('button', { name: 'Announce winners' })).not.toBeInTheDocument()
+})
+
 it('only offers editing to the organizer before the start', async () => {
   const later = Date.now() + DAY
   vi.mocked(getEvent).mockResolvedValue(

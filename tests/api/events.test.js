@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EVENT_LIMITS, VOTING_MS } from '../../shared/events.js'
+import { EVENT_LIMITS, VOTING_MS, WINNERS_EDIT_MS } from '../../shared/events.js'
 import { call, makeUser } from './community-helpers.js'
 import { GET as getProgress } from '../../api/progress.js'
 import { apiRequest, useTempStore } from './helpers.js'
@@ -179,6 +179,28 @@ describe('organizer tools', () => {
       const [note] = (await call('GET', 'notifications', { token: person.token })).body.notifications
       expect(note).toMatchObject({ type: 'event_winner', eventId: event.id, eventTitle: 'Rinha de Backend', actor: { name: 'Ada' } })
     }
+  })
+
+  it('lets the organizer change the winners for a while, then makes them final', async () => {
+    const event = (await create(fields())).body.event
+    const one = (await submit(event.id, entry(), bob.token)).body.entry
+    const two = (await submit(event.id, entry({ title: 'Cache it' }), cy.token)).body.entry
+    const pick = (winners) => edit(event.id, { action: 'winners', winners })
+    later(3 * DAY)
+    const first = (await pick([one.id])).body.event
+    expect(first.announcedAt).toBe(new Date(Date.now()).toISOString())
+
+    // Changing the pick keeps the first announcement time, so the lock never moves.
+    later(WINNERS_EDIT_MS - HOUR)
+    const changed = await pick([two.id, one.id])
+    expect(changed.status).toBe(200)
+    expect(changed.body.event.announcedAt).toBe(first.announcedAt)
+
+    later(HOUR)
+    const late = await pick([one.id])
+    expect([late.status, late.body.message]).toEqual([409, 'The winners are final and can no longer change.'])
+    const places = (await getEvent(event.id)).body.entries.map((item) => [item.title, item.place])
+    expect(places).toEqual(expect.arrayContaining([['Cache it', 1], ['Queue first', 2]]))
   })
 })
 

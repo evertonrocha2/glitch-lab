@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { canPickWinners } from '../../../shared/events.js'
+import { canPickWinners, WINNERS_EDIT_MS, winnersLocked } from '../../../shared/events.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import { useFormat } from '../../lib/i18n/format.js'
 import PixelButton from '../pixel/PixelButton.jsx'
 import PixelCard from '../pixel/PixelCard.jsx'
+import { WHEN } from './EventBits.jsx'
 import Medal from './Medal.jsx'
 
 const PLACES = [1, 2, 3]
@@ -34,8 +36,10 @@ function CloseEarly({ onClose }) {
 }
 
 // Pick 1st, 2nd and 3rd from the entries (by votes first, as a suggestion), then announce.
-function WinnerPicker({ entries, announced, onPick }) {
+// announcedAt: when the winners were first announced; the pick can change for a while after.
+function WinnerPicker({ entries, announcedAt, onPick }) {
   const t = useT()
+  const { date } = useFormat()
   const [picked, setPicked] = useState(() => {
     const placed = PLACES.map((place) => entries.find((item) => item.place === place)?.id ?? '')
     return placed.some(Boolean) ? placed : PLACES.map((_, index) => entries[index]?.id ?? '')
@@ -81,13 +85,16 @@ function WinnerPicker({ entries, announced, onPick }) {
       <PixelButton onClick={announce} disabled={!valid || busy} className="mt-4 w-full">
         {t('events.tools.announce')}
       </PixelButton>
-      {announced && <p className="mt-2 text-xs text-secondary">{t('events.tools.announced')}</p>}
+      {announcedAt && (
+        <p className="mt-2 text-xs text-secondary">{t('events.tools.announced', { date: date(new Date(Date.parse(announcedAt) + WINNERS_EDIT_MS).toISOString(), WHEN) })}</p>
+      )}
     </div>
   )
 }
 
-// Only the organizer sees this: edit before the start, close early while live, winners after the end.
-export default function OrganizerTools({ event, status, entries, onClose, onPick }) {
+// Only the organizer sees this: edit before the start, close early while live, winners after the end
+// (until the pick is final).
+export default function OrganizerTools({ event, status, now = Date.now(), entries, onClose, onPick }) {
   const t = useT()
   return (
     <PixelCard tone="secondary" as="section" aria-label={t('events.tools.title')} className="p-5">
@@ -107,7 +114,12 @@ export default function OrganizerTools({ event, status, entries, onClose, onPick
             <p className="text-xs text-muted">{t('events.tools.waitEnd')}</p>
           </>
         )}
-        {canPickWinners(status) && <WinnerPicker key={entries.map((item) => `${item.id}:${item.place}`).join()} entries={entries} announced={event.announced} onPick={onPick} />}
+        {canPickWinners(status) &&
+          (winnersLocked(event, now) ? (
+            <p className="text-sm text-muted">{t('events.tools.final')}</p>
+          ) : (
+            <WinnerPicker key={entries.map((item) => `${item.id}:${item.place}`).join()} entries={entries} announcedAt={event.announcedAt} onPick={onPick} />
+          ))}
       </div>
     </PixelCard>
   )
