@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { blockPerson, getConversationMessages, markConversationRead, sendConversationMessage, unblockPerson } from '../../../lib/api.js'
 import { useAuth } from '../../../lib/auth/auth-provider.jsx'
+import { useWatchConversation } from '../../../lib/chat/message-alerts.jsx'
 import { useChat } from '../../../lib/chat/use-chat.js'
 import { setUnreadMessages } from '../../../lib/chat/unread.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
@@ -42,6 +43,8 @@ export default function Conversation({ id, onChange }) {
   const [notice, setNotice] = useState(null)
   const changed = useRef(onChange)
   changed.current = onChange
+  // On screen: new messages here show in the log, not as a toast.
+  useWatchConversation(id)
 
   const markRead = useCallback(async () => {
     if (document.hidden) return

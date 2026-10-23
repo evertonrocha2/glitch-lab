@@ -7,6 +7,7 @@ import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { listConversations } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
+import { useInboxChange } from '../../lib/chat/message-alerts.jsx'
 import { setUnreadMessages } from '../../lib/chat/unread.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
@@ -40,6 +41,8 @@ export default function MessagesPage() {
     const timer = setInterval(() => !document.hidden && loadInbox(), INBOX_POLL_MS)
     return () => clearInterval(timer)
   }, [loadInbox])
+  // A new message nudged the message alerts: the list follows at once.
+  useInboxChange(loadInbox)
 
   return (
     <AppShell>
