@@ -14,7 +14,12 @@ function localApi() {
     name: 'local-api',
     apply: 'serve',
     configureServer(server) {
-      for (const [key, value] of Object.entries(loadEnv(server.config.mode, process.cwd(), ''))) {
+      // Vitest runs this hook too: tests never read .env, so they can't touch the real database.
+      if (process.env.VITEST) return
+      const env = loadEnv(server.config.mode, process.cwd(), '')
+      // Dev keeps the local JSON store unless DEV_SUPABASE=1, so trying things out never writes to production.
+      if (env.DEV_SUPABASE !== '1' && process.env.DEV_SUPABASE !== '1') delete env.SUPABASE_SERVICE_ROLE_KEY
+      for (const [key, value] of Object.entries(env)) {
         process.env[key] ??= value
       }
       server.middlewares.use('/api', async (req, res) => {

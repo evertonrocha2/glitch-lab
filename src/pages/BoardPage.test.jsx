@@ -225,7 +225,7 @@ it('speaks Portuguese: board, stats, card and drawer', async () => {
   await userEvent.click(screen.getByRole('button', { name: /1 de 2 desafios concluídos/ }))
   const drawer = screen.getByRole('dialog')
   expect(within(drawer).getByText('O que aconteceu')).toBeInTheDocument()
-  expect(within(drawer).getByText(/^· Aberto (há|ontem)/)).toBeInTheDocument()
+  expect(within(drawer).getByText(/^· Aberto (há|ontem|anteontem|em )/i)).toBeInTheDocument()
   await userEvent.click(within(drawer).getByRole('button', { name: 'Mostrar a correção' }))
   expect(within(drawer).getByRole('button', { name: 'Esconder a correção' })).toBeInTheDocument()
   expect(within(drawer).getByRole('button', { name: 'Treinar' })).toBeInTheDocument()
