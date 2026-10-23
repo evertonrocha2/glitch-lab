@@ -169,6 +169,7 @@ it('speaks Brazilian Portuguese: stats, badges, notes and dates', async () => {
   expect(within(stats).getByText('desafios concluídos')).toBeInTheDocument()
   expect(screen.getByText(/Membro desde outubro de 2026/)).toBeInTheDocument()
   expect(within(screen.getByRole('list', { name: 'Medalhas conquistadas' })).getByText('Caso encerrado')).toBeInTheDocument()
+  // Counted against every badge there is, so new badges don't break it.
   expect(screen.getByText(`4/${BADGES.length} conquistadas`)).toBeInTheDocument()
   const notes = await screen.findByRole('region', { name: 'Notas' })
   expect(await within(notes).findByText('Sem título')).toBeInTheDocument()

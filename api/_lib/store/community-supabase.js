@@ -31,6 +31,7 @@ const toNotification = (row) =>
     type: row.type,
     actorId: row.actor_id,
     articleId: row.article_id,
+    eventId: row.event_id ?? null,
     read: row.read,
     createdAt: row.created_at,
   }
@@ -169,21 +170,18 @@ export function createSupabaseCommunity(db) {
     },
 
     // A like or rating is announced once per person and article; null when it already was.
-    async addNotification({ userId, type, actorId, articleId }) {
+    // Event notifications (event_*) point at an event instead, and are announced once the same way.
+    async addNotification({ userId, type, actorId, articleId = null, eventId = null }) {
       if (type !== 'comment') {
+        const target = (query) => (eventId ? query.eq('event_id', eventId) : query.eq('article_id', articleId))
         const seen = unwrap(
-          await db
-            .from('notifications')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('type', type)
-            .eq('actor_id', actorId)
-            .eq('article_id', articleId)
-            .limit(1),
+          await target(db.from('notifications').select('id').eq('user_id', userId).eq('type', type).eq('actor_id', actorId)).limit(1),
         )
         if (seen?.length) return null
       }
-      const row = unwrap(await db.from('notifications').insert({ user_id: userId, type, actor_id: actorId, article_id: articleId }).select().single())
+      const row = unwrap(
+        await db.from('notifications').insert({ user_id: userId, type, actor_id: actorId, article_id: articleId, event_id: eventId }).select().single(),
+      )
       return toNotification(row)
     },
 
@@ -191,12 +189,12 @@ export function createSupabaseCommunity(db) {
       const rows = unwrap(
         await db
           .from('notifications')
-          .select('*, articles(title)')
+          .select('*, articles(title), events(title)')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(limit),
       )
-      return (rows ?? []).map((row) => ({ ...toNotification(row), articleTitle: row.articles?.title ?? null }))
+      return (rows ?? []).map((row) => ({ ...toNotification(row), articleTitle: row.articles?.title ?? null, eventTitle: row.events?.title ?? null }))
     },
 
     async countUnreadNotifications(userId) {

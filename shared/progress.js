@@ -3,6 +3,7 @@ import { trailViews as viewTrails } from './trails.js'
 import { dailySummary } from './daily.js'
 import { riddleSummary } from './riddle/game.js'
 import { duelSummary } from './duel.js'
+import { eventsXp, NO_EVENTS } from './events.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -54,7 +55,8 @@ function streaks(study, today) {
 // community (optional): articles written, likes and valid ratings received, comments written.
 // riddle (optional): { results: [{ day, mode, guessCount, solved }] }, the Glitchdle games played.
 // duel (optional): { results: [{ day, outcome, vsBot, fastestMs }] }, the duels finished (shared/duel.js).
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel }) {
+// events (optional): community events taken part in, won, voted on and hosted (see shared/events.js).
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, duel, events = NO_EVENTS }) {
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
@@ -77,7 +79,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     puzzles.xp +
     glitchdle.xp +
     duels.xp +
-    communityXp(community)
+    communityXp(community) +
+    eventsXp(events)
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -98,6 +101,9 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     riddlePerfectDays: glitchdle.perfectDays,
     duelHumanWins: duels.humanWins,
     duelFastestMs: duels.fastestMs,
+    eventEntries: events.entries,
+    eventWins: events.first,
+    eventsHosted: events.hosted,
   }
 
   return {

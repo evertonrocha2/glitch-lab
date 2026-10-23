@@ -75,3 +75,9 @@ it('counts each finished duel on its day, at most three a day', () => {
   expect(at(calendar, '2026-10-20')).toBe(1)
   expect(calendar.total).toBe(4)
 })
+
+it('counts each community event entry on its day', () => {
+  const calendar = activityCalendar({ events: { days: ['2026-10-20', '2026-10-20', '2026-10-21'] } }, '2026-10-22')
+  expect(calendar.total).toBe(3)
+  expect(calendar.activeDays).toBe(2)
+})

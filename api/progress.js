@@ -32,6 +32,8 @@ export async function GET(request) {
   const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
   // Duels finished, for their XP, the duel badges and the activity graph.
   const duel = await loadDuel(store, userId)
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel })
-  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, duel }, today) } })
+  // Community events: entries sent, places won, votes received, events hosted.
+  const events = await store.eventStats(userId)
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events })
+  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, duel, events }, today) } })
 }

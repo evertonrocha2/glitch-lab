@@ -147,7 +147,9 @@ async function studyContext({ store, userId, needs }) {
     // The same inputs as /api/progress, so the assistant never quotes a different XP.
     const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
     const duel = await loadDuel(store, userId)
-    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, duel })
+    // Community events too, so the XP matches /api/progress.
+    const events = await store.eventStats(userId)
+    const progress = computeProgress({ cases, challenges, notes, study, today: serverDay(), trails, daily, community, riddle, duel, events })
     const earned = new Set(progress.badges.filter((badge) => badge.earned).map((badge) => badge.id))
     const open = openByConcept(cases)
     parts.push(

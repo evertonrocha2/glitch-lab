@@ -20,6 +20,10 @@ export const BADGES = [
   { id: 'trusted', name: 'Trusted', how: 'Get 5 valid ratings on your articles.', earned: (s) => s.validReceived >= 5 },
   { id: 'duelist', name: 'Duelist', how: 'Win a duel against a person.', earned: (s) => s.duelHumanWins >= 1 },
   { id: 'speed-demon', name: 'Speed demon', how: 'Answer a duel round right in under 2 seconds.', earned: (s) => s.duelFastestMs != null && s.duelFastestMs < 2000 },
+  // Community events.
+  { id: 'competitor', name: 'Competitor', how: 'Send an entry to a community event.', earned: (s) => s.eventEntries >= 1 },
+  { id: 'champion', name: 'Champion', how: 'Win first place in a community event.', earned: (s) => s.eventWins >= 1 },
+  { id: 'host', name: 'Host', how: 'Organize an event that gets 3 or more entries.', earned: (s) => s.eventsHosted >= 1 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)

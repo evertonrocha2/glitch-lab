@@ -193,3 +193,11 @@ it('adds duel xp, and the duelist and speed-demon badges', () => {
   expect(earned(fast)).toEqual(['speed-demon'])
   expect(earned(computeProgress({ ...empty, duel: { results: [result({})] } }))).toEqual(['duelist'])
 })
+
+it('adds community event xp and earns the event badges', () => {
+  const events = { entries: 2, first: 1, second: 0, third: 0, votesReceived: 3, hosted: 1, days: ['2026-10-20', '2026-10-21'] }
+  const progress = computeProgress({ ...empty, events })
+  expect(progress.xp).toBe(2 * 30 + 120 + 3 * 2 + 40)
+  expect(earned(progress)).toEqual(['competitor', 'champion', 'host'])
+  expect(earned(computeProgress({ ...empty, events: { ...events, first: 0, hosted: 0 } }))).toEqual(['competitor'])
+})

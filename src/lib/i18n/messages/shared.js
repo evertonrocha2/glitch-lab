@@ -50,6 +50,9 @@ const BADGES_EN = {
   trusted: ['Trusted', 'Get 5 valid ratings on your articles.'],
   duelist: ['Duelist', 'Win a duel against a person.'],
   'speed-demon': ['Speed demon', 'Answer a duel round right in under 2 seconds.'],
+  competitor: ['Competitor', 'Send an entry to a community event.'],
+  champion: ['Champion', 'Win first place in a community event.'],
+  host: ['Host', 'Organize an event that gets 3 or more entries.'],
 }
 const BADGES_PT = {
   'first-clue': ['Primeira pista', 'Investigue seu primeiro erro.'],
@@ -72,6 +75,9 @@ const BADGES_PT = {
   trusted: ['Confiável', 'Receba 5 avaliações válidas nos seus artigos.'],
   duelist: ['Duelista', 'Vença um duelo contra uma pessoa.'],
   'speed-demon': ['Relâmpago', 'Acerte uma rodada de duelo em menos de 2 segundos.'],
+  competitor: ['Competidor', 'Envie uma participação para um evento da comunidade.'],
+  champion: ['Campeão', 'Fique em primeiro lugar num evento da comunidade.'],
+  host: ['Anfitrião', 'Organize um evento que receba 3 ou mais participações.'],
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']

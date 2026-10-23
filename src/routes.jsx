@@ -18,6 +18,9 @@ import PublicProfilePage from './pages/PublicProfilePage.jsx'
 import PeoplePage from './pages/PeoplePage.jsx'
 import PublicNotePage from './pages/PublicNotePage.jsx'
 import TrailPage from './pages/TrailPage.jsx'
+import EventEditorPage from './pages/EventEditorPage.jsx'
+import EventPage from './pages/EventPage.jsx'
+import EventsPage from './pages/EventsPage.jsx'
 
 export function RequireAuth({ children }) {
   const { user } = useAuth()
@@ -143,6 +146,25 @@ export function AppRoutes() {
         }
       />
       <Route path="/articles/:id" element={<ArticlePage />} />
+      {/* Community events: browsing is public, creating, joining and voting need an account. */}
+      <Route path="/events" element={<EventsPage />} />
+      <Route
+        path="/events/new"
+        element={
+          <RequireAuth>
+            <EventEditorPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/events/:id/edit"
+        element={
+          <RequireAuth>
+            <EventEditorPage />
+          </RequireAuth>
+        }
+      />
+      <Route path="/events/:id" element={<EventPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

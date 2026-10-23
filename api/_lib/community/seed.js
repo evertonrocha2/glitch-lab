@@ -1,3 +1,5 @@
+import { seedEvents } from '../events/seed.js'
+
 // Sample community content, so the articles area is never empty for a judge trying the demo.
 // The sample people have no password, so nobody can sign in as them.
 const TEAM = {
@@ -58,7 +60,7 @@ const ARTICLES = [
 ]
 
 // The account for a sample person, made (with its profile) the first time it is needed.
-async function samplePerson(store, { email, profile }) {
+export async function samplePerson(store, { email, profile }) {
   const existing = await store.findUserByEmail(email)
   // Only ever reuse the app's own passwordless sample account, never someone's real one.
   if (existing) return existing.passwordHash === null && !existing.isDemo ? existing : null
@@ -83,6 +85,9 @@ export async function seedCommunity(store, demoUserId) {
       if (reaction) await store.setReaction(article.id, reader.id, reaction)
     }
   }
+
+  // A sample live event with a couple of entries and votes (see events/seed.js).
+  await seedEvents(store, { team, reader }, samplePerson)
 
   // "Bo commented on Undefined everywhere", pointing at the team's first sample.
   const { articles } = await store.searchArticles({ q: 'Undefined everywhere', sort: 'new', offset: 0, limit: 10 })

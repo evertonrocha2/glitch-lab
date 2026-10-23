@@ -350,3 +350,98 @@ create index if not exists duel_ratings_rating on public.duel_ratings (rating de
 
 alter table public.duels enable row level security;
 alter table public.duel_ratings enable row level security;
+
+-- Community events: hackathons, backend battles ("rinhas"), challenges and study groups. Anyone can
+-- read them through /api/community; only the server writes. Status comes from the dates: upcoming
+-- before starts_at, live until ends_at, voting until closes_at (moved sooner when winners are announced).
+create table if not exists public.events (
+  id uuid primary key default gen_random_uuid(),
+  organizer_id uuid not null references public.users (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 100),
+  summary text not null check (char_length(summary) between 1 and 200),
+  description text not null check (char_length(description) between 1 and 6000),
+  rules text not null default '' check (char_length(rules) <= 6000),
+  prizes text not null default '' check (char_length(prizes) <= 1000),
+  kind text not null check (kind in ('hackathon', 'battle', 'challenge', 'study-group')),
+  tags text[] not null default '{}' check (cardinality(tags) <= 5),
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  closes_at timestamptz not null,
+  -- What an entry must link to: { repo, video, demo }, each 'required', 'optional' or 'off'.
+  requirements jsonb not null default '{"repo": "required", "video": "optional", "demo": "optional"}',
+  announced_at timestamptz,
+  -- Kept up to date by refresh_event_entry_count.
+  entry_count int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (ends_at > starts_at)
+);
+create index if not exists events_starts on public.events (starts_at);
+create index if not exists events_closes on public.events (closes_at desc);
+create index if not exists events_organizer on public.events (organizer_id);
+create index if not exists events_tags on public.events using gin (tags);
+
+-- One entry per person and event. place is 1 to 3 once the organizer picks the winners.
+create table if not exists public.event_entries (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 100),
+  description text not null default '' check (char_length(description) <= 2000),
+  repo_url text check (char_length(repo_url) <= 300),
+  video_url text check (char_length(video_url) <= 300),
+  demo_url text check (char_length(demo_url) <= 300),
+  vote_count int not null default 0,
+  place int check (place between 1 and 3),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (event_id, user_id)
+);
+create index if not exists event_entries_user on public.event_entries (user_id, created_at);
+
+-- One vote per person and entry. event_id and author_id (the entry's author) are copied here so
+-- "my votes in this event" and "votes I received" are single lookups.
+create table if not exists public.event_votes (
+  entry_id uuid not null references public.event_entries (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  event_id uuid not null references public.events (id) on delete cascade,
+  author_id uuid not null references public.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (entry_id, user_id)
+);
+create index if not exists event_votes_event_user on public.event_votes (event_id, user_id);
+create index if not exists event_votes_author on public.event_votes (author_id);
+
+alter table public.events enable row level security;
+alter table public.event_entries enable row level security;
+alter table public.event_votes enable row level security;
+
+create or replace function public.refresh_event_entry_count(p_event uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.events e set entry_count = (select count(*) from public.event_entries x where x.event_id = e.id)
+  where e.id = p_event;
+$$;
+revoke execute on function public.refresh_event_entry_count(uuid) from public, anon, authenticated;
+
+create or replace function public.refresh_entry_vote_count(p_entry uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.event_entries x set vote_count = (select count(*) from public.event_votes v where v.entry_id = x.id)
+  where x.id = p_entry;
+$$;
+revoke execute on function public.refresh_entry_vote_count(uuid) from public, anon, authenticated;
+
+-- Event notifications reuse the bell: they point at an event instead of an article.
+alter table public.notifications alter column article_id drop not null;
+alter table public.notifications add column if not exists event_id uuid references public.events (id) on delete cascade;
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications add constraint notifications_type_check
+  check (type in ('comment', 'like', 'rating_valid', 'rating_bad', 'event_join', 'event_vote', 'event_winner'));
+create index if not exists notifications_event on public.notifications (event_id) where event_id is not null;

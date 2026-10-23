@@ -3,9 +3,12 @@ import * as comments from './_lib/community/comments.js'
 import * as notifications from './_lib/community/notifications.js'
 import * as reactions from './_lib/community/reactions.js'
 import { fail } from './_lib/http.js'
+import { EVENT_RESOURCES } from './_lib/events/index.js'
 
 // Community articles in one function (Vercel's free plan allows 12): ?resource= picks the handler.
 const RESOURCES = { articles, comments, reactions, notifications }
+// Community events: events, event-entries and event-votes (see _lib/events).
+Object.assign(RESOURCES, EVENT_RESOURCES)
 
 function route(method) {
   return (request) => {
