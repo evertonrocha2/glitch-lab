@@ -2,10 +2,9 @@ import { cleanQuery, COMMUNITY_LIMITS, excerpt, parseTags, SORT_IDS, tagProblem 
 import { conceptLabel } from '../../../shared/concepts.js'
 import { scanError } from '../../../shared/errorScan.js'
 import { handleProblem, normalizeHandle } from '../../../shared/profile.js'
-import { getUser } from '../../core/middlewares/auth.js'
 import { serverDay } from '../../core/days.js'
-import { fail, ok, readJson, requireUser } from '../../core/http.js'
-import { getStore } from '../../infra/database/index.js'
+import { badRequest, forbidden, notFound, tooMany, valueOrThrow } from '../../core/errors.js'
+import { pageOf } from '../../core/validation.js'
 import { loadPeople } from './people.js'
 import { commentView } from './comments.service.js'
 
@@ -91,33 +90,30 @@ async function articleView(store, article, viewerId) {
   }
 }
 
-// GET ?id=: one article with its comments. GET otherwise: a page of search results. No sign in needed.
-export async function GET(request) {
-  const params = new URL(request.url).searchParams
-  const store = getStore()
-  const viewer = await getUser(request)
-
-  if (params.has('id')) {
-    const article = await store.getArticle(params.get('id'))
-    if (!article) return fail(404, NOT_FOUND)
-    const comments = await store.listComments(article.id)
-    const people = await loadPeople(store, comments.map((item) => item.authorId))
-    return ok({
-      article: await articleView(store, article, viewer?.id),
-      comments: comments.map((item) => commentView(item, people, viewer?.id, article)),
-      reaction: viewer ? await store.getReaction(article.id, viewer.id) : null,
-    })
+// One article with its comments, and my reaction when I'm signed in. No sign in needed.
+export async function getArticle(store, id, viewer) {
+  const article = await store.getArticle(id)
+  if (!article) throw notFound(NOT_FOUND)
+  const comments = await store.listComments(article.id)
+  const people = await loadPeople(store, comments.map((item) => item.authorId))
+  return {
+    article: await articleView(store, article, viewer?.id),
+    comments: comments.map((item) => commentView(item, people, viewer?.id, article)),
+    reaction: viewer ? await store.getReaction(article.id, viewer.id) : null,
   }
+}
 
-  const page = Math.min(Math.max(Number.parseInt(params.get('page') ?? '1', 10) || 1, 1), MAX_PAGE)
-  const tag = parseTags(params.get('tag') ?? '')[0] ?? null
-  const author = params.has('author') ? normalizeHandle(params.get('author')) : null
+// A page of search results ({ q, tag, author, sort, page }, all optional strings). No sign in needed.
+export async function searchArticles(store, query) {
+  const page = pageOf(query.page, MAX_PAGE)
+  const tag = parseTags(query.tag ?? '')[0] ?? null
+  const author = query.author !== null && query.author !== undefined ? normalizeHandle(query.author) : null
   // A tag or handle that can't exist matches nothing (and never reaches the database).
-  if ((tag && tagProblem(tag)) || (author !== null && handleProblem(author))) return ok({ articles: [], page, hasMore: false })
-  const sort = SORT_IDS.includes(params.get('sort')) ? params.get('sort') : 'new'
+  if ((tag && tagProblem(tag)) || (author !== null && handleProblem(author))) return { articles: [], page, hasMore: false }
+  const sort = SORT_IDS.includes(query.sort) ? query.sort : 'new'
   const limit = COMMUNITY_LIMITS.pageSize
   const { articles, hasMore } = await store.searchArticles({
-    q: cleanQuery(params.get('q') ?? ''),
+    q: cleanQuery(query.q ?? ''),
     tag,
     authorHandle: author,
     sort,
@@ -125,58 +121,42 @@ export async function GET(request) {
     limit,
   })
   const people = await loadPeople(store, articles.map((item) => item.authorId))
-  return ok({ articles: articles.map((item) => articleSummary(item, people)), page, hasMore })
+  return { articles: articles.map((item) => articleSummary(item, people)), page, hasMore }
 }
 
 // The case must be on the author's own board.
-async function caseProblem(store, userId, caseId) {
-  if (!caseId) return null
-  return (await store.getCase(userId, caseId)) ? null : fail(400, 'That case is not on your board.')
+async function checkCase(store, userId, caseId) {
+  if (caseId && !(await store.getCase(userId, caseId))) throw badRequest('That case is not on your board.')
 }
 
-export async function POST(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
+export async function createArticle(store, user, body) {
   // Demo accounts are free and throwaway: they can read and react, not publish.
-  if (auth.user.isDemo) return fail(403, 'Sign up to publish articles.')
+  if (user.isDemo) throw forbidden('Sign up to publish articles.')
 
-  const parsed = parseArticle((await readJson(request)) ?? {})
-  if (!parsed.value) return fail(parsed.status, parsed.message)
-  const store = getStore()
-  const badCase = await caseProblem(store, auth.user.id, parsed.value.caseId)
-  if (badCase) return badCase
+  const value = valueOrThrow(parseArticle(body ?? {}))
+  await checkCase(store, user.id, value.caseId)
 
-  const key = articlesKey(auth.user.id)
+  const key = articlesKey(user.id)
   const day = serverDay()
   if ((await store.countUsage(key, day)) >= COMMUNITY_LIMITS.articlesPerDay) {
-    return fail(429, `You can publish ${COMMUNITY_LIMITS.articlesPerDay} articles a day. Come back tomorrow.`)
+    throw tooMany(`You can publish ${COMMUNITY_LIMITS.articlesPerDay} articles a day. Come back tomorrow.`)
   }
   await store.addUsage(key, day)
-  const article = await store.createArticle(auth.user.id, parsed.value)
-  return ok({ article: await articleView(store, article, auth.user.id) }, 201)
+  const article = await store.createArticle(user.id, value)
+  return articleView(store, article, user.id)
 }
 
-export async function PUT(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
+// Only the fields sent change; only the author can change it.
+export async function updateArticle(store, user, id, body) {
+  if (!body) throw badRequest()
+  const value = valueOrThrow(parseArticle(body, { partial: true }))
+  await checkCase(store, user.id, value.caseId)
 
-  const body = await readJson(request)
-  if (!isText(body?.id)) return fail(400, 'Invalid request.')
-  const parsed = parseArticle(body, { partial: true })
-  if (!parsed.value) return fail(parsed.status, parsed.message)
-  const store = getStore()
-  const badCase = await caseProblem(store, auth.user.id, parsed.value.caseId)
-  if (badCase) return badCase
-
-  const article = await store.updateArticle(auth.user.id, body.id, parsed.value)
-  return article ? ok({ article: await articleView(store, article, auth.user.id) }) : fail(404, NOT_FOUND)
+  const article = await store.updateArticle(user.id, id, value)
+  if (!article) throw notFound(NOT_FOUND)
+  return articleView(store, article, user.id)
 }
 
-export async function DELETE(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
-
-  const id = new URL(request.url).searchParams.get('id')
-  if (!id) return fail(400, 'Invalid request.')
-  return (await getStore().deleteArticle(auth.user.id, id)) ? ok({ deleted: true }) : fail(404, NOT_FOUND)
+export async function deleteArticle(store, user, id) {
+  if (!(await store.deleteArticle(user.id, id))) throw notFound(NOT_FOUND)
 }

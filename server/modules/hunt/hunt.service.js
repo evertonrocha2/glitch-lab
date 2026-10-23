@@ -1,16 +1,15 @@
 import { challengeDay, nextResetAt } from '../../../shared/daily.js'
 import { ANSWER_GRACE_MS, compareRuns, HUNT_ROUNDS, huntXp, ROUND_MS, roundPoints } from '../../../shared/hunt/game.js'
 import { HUNT_POOL, poolSnippetById } from '../../../shared/hunt/snippets.js'
-import { fail, ok } from '../../core/http.js'
+import { badRequest, conflict, notFound } from '../../core/errors.js'
 import { LEADERBOARD_SIZE, who } from '../daily/leaderboard.js'
-import { getStore } from '../../infra/database/index.js'
 import { ensureHuntDay, symptomOf } from './hunt-daily.js'
 
-// Line hunt, served from /api/challenge to stay under Vercel's free-plan function limit.
+// Line hunt: find the buggy line before the clock runs out.
 // The server times every round: a round starts when its snippet is served and ends when the answer
 // arrives, both stamped here. A snippet's bug line only leaves the server once it's answered.
 
-const ACTIONS = ['start', 'answer', 'next', 'practice']
+const ACTIONS = ['start', 'answer', 'next']
 const iso = (ms) => new Date(ms).toISOString()
 const pick = (text, locale) => (locale === 'pt-BR' ? text?.pt : text?.en) ?? text?.en ?? ''
 
@@ -134,70 +133,68 @@ export function practicePick(exclude, random = Math.random) {
   return list[Math.floor(random() * list.length)]
 }
 
-// GET ?hunt=1: today's run, where I am in it, and the leaderboard.
-// GET ?hunt=practice&after=<id>: one practice snippet, without its line.
-export async function getHunt(user, params, locale, now = Date.now()) {
-  const store = getStore()
+// Today's run, where I am in it, and the leaderboard.
+export async function getHunt(store, user, locale, now = Date.now()) {
   const day = challengeDay(new Date(now))
-  if (params.get('hunt') === 'practice') {
-    const set = await ensureHuntDay(store, day)
-    const exclude = new Set([...set.snippets.map((item) => item.id), params.get('after')])
-    const snippet = practicePick(exclude)
-    return ok({ roundMs: ROUND_MS, snippet: { id: snippet.id, ...question(snippet, locale) } })
-  }
   const run = await currentRun(store, user.id, day, now)
-  return ok(await state(store, user, day, run, now, locale))
+  return state(store, user, day, run, now, locale)
+}
+
+// One practice snippet, without its line, never the one just played (`after`).
+export async function practiceSnippet(store, after, locale, now = Date.now()) {
+  const set = await ensureHuntDay(store, challengeDay(new Date(now)))
+  const exclude = new Set([...set.snippets.map((item) => item.id), after])
+  const snippet = practicePick(exclude)
+  return { roundMs: ROUND_MS, snippet: { id: snippet.id, ...question(snippet, locale) } }
 }
 
 const validLine = (line, code) => line === null || (Number.isInteger(line) && line >= 1 && line <= code.length)
 
-// POST { hunt: 'practice', id, line }: grades one practice answer. No XP, nothing saved. Today's
-// snippets are never practice, so their lines can't be fished out from here.
-async function practiceAnswer(body, locale, now) {
-  const snippet = poolSnippetById(body.id)
-  const today = await ensureHuntDay(getStore(), challengeDay(new Date(now)))
-  if (!snippet || today.snippets.some((item) => item.id === snippet.id)) return fail(404, 'Snippet not found.')
-  if (!validLine(body.line, snippet.code)) return fail(400, 'Pick a line of the snippet.')
-  const correct = body.line === snippet.line
-  return ok({ result: reveal(snippet, { picked: body.line, correct, timedOut: body.line === null, ms: null, points: 0 }, locale) })
+// { id, line }: grades one practice answer. No XP, nothing saved. Today's snippets are never
+// practice, so their lines can't be fished out from here.
+export async function practiceAnswer(store, body, locale, now = Date.now()) {
+  const { id, line } = body ?? {}
+  const snippet = poolSnippetById(id)
+  const today = await ensureHuntDay(store, challengeDay(new Date(now)))
+  if (!snippet || today.snippets.some((item) => item.id === snippet.id)) throw notFound('Snippet not found.')
+  if (!validLine(line, snippet.code)) throw badRequest('Pick a line of the snippet.')
+  const correct = line === snippet.line
+  return { result: reveal(snippet, { picked: line, correct, timedOut: line === null, ms: null, points: 0 }, locale) }
 }
 
-// POST { hunt: 'start' | 'answer' | 'next' | 'practice', day?, index?, line? }.
+// action 'start' | 'answer' | 'next', with { day?, index?, line? }.
 // start: begins today's run (one a day) and serves its first snippet; a second start just answers
 // with the run. answer: grades the live round with the server's clock (line null means time ran out).
 // next: serves the next snippet. `day` (optional) catches a request sent from yesterday's page.
-export async function huntAction(user, body, locale, now = Date.now()) {
-  const action = body.hunt
-  if (!ACTIONS.includes(action)) return fail(400, 'Invalid request.')
-  if (action === 'practice') return practiceAnswer(body, locale, now)
-
-  const store = getStore()
+export async function huntAction(store, user, action, input, locale, now = Date.now()) {
+  if (!ACTIONS.includes(action)) throw badRequest()
+  const body = input ?? {}
   const day = challengeDay(new Date(now))
-  if (body.day !== undefined && body.day !== day) return fail(409, 'A new line hunt just started. Reload to play it.')
+  if (body.day !== undefined && body.day !== day) throw conflict('A new line hunt just started. Reload to play it.')
   const set = await ensureHuntDay(store, day)
   let run = await currentRun(store, user.id, day, now)
 
   if (action === 'start') {
     if (!run) run = (await store.createHuntRun(user.id, { day, rounds: [{ servedAt: iso(now) }] })) ?? (await store.getHuntRun(user.id, day))
-    return ok(await state(store, user, day, run, now, locale))
+    return state(store, user, day, run, now, locale)
   }
-  if (!run) return fail(409, "Start today's line hunt first.")
+  if (!run) throw conflict("Start today's line hunt first.")
 
   if (action === 'next') {
-    if (run.finishedAt) return fail(409, 'Your line hunt for today is over. Come back tomorrow.')
+    if (run.finishedAt) throw conflict('Your line hunt for today is over. Come back tomorrow.')
     if (!live(run)) {
       run = await store.saveHuntRun(user.id, day, { ...totalsOf(run), rounds: [...run.rounds, { servedAt: iso(now) }] }, run.version)
-      if (!run) return fail(409, 'Another hunt answer landed at the same time. Try again.')
+      if (!run) throw conflict('Another hunt answer landed at the same time. Try again.')
     }
-    return ok(await state(store, user, day, run, now, locale))
+    return state(store, user, day, run, now, locale)
   }
 
   // answer
   const round = live(run)
   const index = run.rounds.length - 1
-  if (!round || body.index !== index) return fail(409, 'That snippet is over. Load the next one.')
+  if (!round || body.index !== index) throw conflict('That snippet is over. Load the next one.')
   const snippet = set.snippets[index]
-  if (!validLine(body.line, snippet.code)) return fail(400, 'Pick a line of the snippet.')
+  if (!validLine(body.line, snippet.code)) throw badRequest('Pick a line of the snippet.')
   const elapsed = Math.max(0, now - Date.parse(round.servedAt))
   const late = elapsed > ROUND_MS + ANSWER_GRACE_MS
   const timedOut = body.line === null || late
@@ -205,8 +202,8 @@ export async function huntAction(user, body, locale, now = Date.now()) {
   const ms = Math.min(elapsed, ROUND_MS)
   const answered = { ...round, answeredAt: iso(now), picked: body.line, correct, timedOut, ms, points: roundPoints(correct, ms) }
   const saved = await saveRounds(store, user.id, run, [...run.rounds.slice(0, -1), answered], now)
-  if (!saved) return fail(409, 'Another hunt answer landed at the same time. Try again.')
-  return ok({ result: { index, ...reveal(snippet, answered, locale) }, ...(await state(store, user, day, saved, now, locale)) })
+  if (!saved) throw conflict('Another hunt answer landed at the same time. Try again.')
+  return { result: { index, ...reveal(snippet, answered, locale) }, ...(await state(store, user, day, saved, now, locale)) }
 }
 
 // The stored totals of a run, carried over unchanged when only a new round is served.

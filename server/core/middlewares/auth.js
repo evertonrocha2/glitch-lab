@@ -1,12 +1,25 @@
 import { verifyToken } from '../../infra/security/session.js'
+import { unauthorized } from '../errors.js'
 
-function bearerToken(request) {
-  const header = request.headers.get('authorization') ?? ''
-  return header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : ''
+function bearerToken(header) {
+  const value = typeof header === 'string' ? header : ''
+  return value.startsWith('Bearer ') ? value.slice('Bearer '.length).trim() : ''
 }
 
-// Returns { id, email, isDemo } for a valid signed session, or null.
-export async function getUser(request) {
-  const token = bearerToken(request)
+// { id, email, isDemo } for a valid signed session in an Authorization header, or null.
+export function userFromHeader(header) {
+  const token = bearerToken(header)
   return token ? verifyToken(token) : null
+}
+
+// The route needs a signed-in user: req.user, or a 401.
+export function requireAuth(req, _res, next) {
+  req.user = userFromHeader(req.get('authorization'))
+  next(req.user ? undefined : unauthorized())
+}
+
+// Public routes that show a bit more to a signed-in reader: req.user, or null.
+export function optionalAuth(req, _res, next) {
+  req.user = userFromHeader(req.get('authorization'))
+  next()
 }

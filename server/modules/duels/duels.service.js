@@ -1,16 +1,15 @@
 import { randomInt } from 'node:crypto'
 import { STALE_MS } from '../../../shared/duel.js'
-import { fail, ok } from '../../core/http.js'
+import { AppError, badRequest } from '../../core/errors.js'
 import { who } from '../daily/leaderboard.js'
-import { getStore } from '../../infra/database/index.js'
 import { BOT_ID, outcomeAt, phaseAt, timeline } from './clock.js'
 import { botPlan, buildRounds } from './questions.js'
 import { duelLeaderboard, ratingChanges, ratingOf, saveRatings } from './rating.js'
 import { publicDuel } from './view.js'
 
-// Duel, served from /api/challenge to stay under Vercel's free-plan function limit.
-// GET ?duel=lobby: my rating, recent duels and the leaderboard. GET ?duel=<id>: one duel's state.
-// POST { duel: 'create' | 'join' | 'queue' | 'bot' | 'answer' | 'focus' | 'leave' | 'rematch', ... }.
+// Duels: two players (or one and the Glitch Bot) race through the same rounds.
+// Moves: 'create' | 'join' | 'queue' | 'bot' | 'answer' | 'focus' | 'leave' | 'rematch'.
+// Each move answers { duel, created } (created: a new duel, 201) or, for focus, { recorded }.
 // The server owns the clock: every time is stamped here when a request arrives.
 
 // A quick-match duel only pairs with a waiting player whose page checked in this recently.
@@ -52,8 +51,8 @@ async function peopleOf(store, duel) {
   return Promise.all(duel.players.map(async (player) => (player.bot ? BOT_PERSON : who(await store.getProfile(player.userId), player.userId))))
 }
 
-async function respond(store, duel, userId, now, status = 200) {
-  return ok({ duel: publicDuel(duel, userId, now, await peopleOf(store, duel)) }, status)
+async function respond(store, duel, userId, now, created = false) {
+  return { duel: publicDuel(duel, userId, now, await peopleOf(store, duel)), created }
 }
 
 // The fields that finish an active duel now, or null while it goes on. `leavingId` forfeits on purpose.
@@ -68,7 +67,7 @@ async function finishFields(store, duel, now, leavingId = null) {
 async function mutate(store, id, change, tries = 6) {
   for (let attempt = 0; attempt < tries; attempt++) {
     const duel = await store.getDuel(id)
-    if (!duel) return { error: fail(404, 'Duel not found.') }
+    if (!duel) return { error: new AppError(404, 'Duel not found.') }
     const outcome = await change(duel)
     if (outcome.error) return outcome
     if (!outcome.fields) return { duel, extra: outcome.extra }
@@ -78,7 +77,7 @@ async function mutate(store, id, change, tries = 6) {
       return { duel: saved, written: true, extra: outcome.extra }
     }
   }
-  return { error: fail(409, 'Another move landed at the same time. Try again.') }
+  return { error: new AppError(409, 'Another move landed at the same time. Try again.') }
 }
 
 // Every read by a player: marks them as still here (every few seconds), and finishes the duel
@@ -129,20 +128,17 @@ async function joinOlderQueue(store, duel, user, now) {
   return null
 }
 
-// GET ?duel=<id>
-export async function getDuel(user, id, now = Date.now()) {
-  if (id === 'lobby') return getLobby(user)
-  if (!isId(id)) return fail(400, 'Invalid request.')
-  const store = getStore()
+// One duel's live state, as I see it.
+export async function getDuel(store, user, id, now = Date.now()) {
+  if (!isId(id)) throw badRequest()
   let duel = await store.getDuel(id)
-  if (!duel) return fail(404, 'Duel not found.')
+  if (!duel) throw new AppError(404, 'Duel not found.')
   duel = (await joinOlderQueue(store, duel, user, now)) ?? (await settle(store, duel, user.id, now))
   return respond(store, duel, user.id, now)
 }
 
-// GET ?duel=lobby: my rating, my recent duels, a duel I can go back to, and the leaderboard.
-async function getLobby(user) {
-  const store = getStore()
+// The lobby: my rating, my recent duels, a duel I can go back to, and the leaderboard.
+export async function getLobby(store, user) {
   const [rating, finished, ongoing, leaderboard] = await Promise.all([
     ratingOf(store, user.id),
     store.listDuels(user.id, { status: 'finished', limit: RECENT_DUELS }),
@@ -169,22 +165,21 @@ async function getLobby(user) {
   )
   // Only a duel I'm still in, and that hasn't gone quiet, is worth going back to.
   const active = ongoing.find((duel) => Date.now() - Date.parse(duel.players.find((p) => p.userId === user.id)?.seenAt ?? 0) < STALE_MS)
-  return ok({ rating, recent, leaderboard, active: active ? { id: active.id, kind: active.kind } : null, isDemo: Boolean(user.isDemo) })
+  return { rating, recent, leaderboard, active: active ? { id: active.id, kind: active.kind } : null, isDemo: Boolean(user.isDemo) }
 }
 
-// POST { duel: action, ... }
-export async function duelAction(user, body, now = Date.now()) {
-  const action = body.duel
-  if (!ACTIONS.includes(action)) return fail(400, 'Invalid request.')
-  const store = getStore()
+// One move: action with its fields ({ id, code, round, choice, state }).
+export async function duelAction(store, user, action, input, now = Date.now()) {
+  if (!ACTIONS.includes(action)) throw badRequest()
+  const body = input ?? {}
   if (action === 'create') {
     const duel = await createWithCode(store, { kind: 'private', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
-    return respond(store, duel, user.id, now, 201)
+    return respond(store, duel, user.id, now, true)
   }
   if (action === 'queue') return queue(store, user, now)
   if (action === 'bot') return playBot(store, user, now)
   if (action === 'join') return join(store, user, body, now)
-  if (!isId(body.id)) return fail(400, 'Invalid request.')
+  if (!isId(body.id)) throw badRequest()
   if (action === 'answer') return answer(store, user, body, now)
   if (action === 'focus') return focus(store, user, body, now)
   if (action === 'leave') return leave(store, user, body, now)
@@ -193,10 +188,10 @@ export async function duelAction(user, body, now = Date.now()) {
 
 function joinFields(duel, user, now) {
   if (isPlayer(duel, user.id)) return {}
-  if (duel.status === 'finished' || duel.status === 'cancelled') return { error: fail(410, 'This duel is over.') }
-  if (duel.status !== 'waiting' || duel.players.length >= 2) return { error: fail(409, 'This duel is already full.') }
+  if (duel.status === 'finished' || duel.status === 'cancelled') return { error: new AppError(410, 'This duel is over.') }
+  if (duel.status !== 'waiting' || duel.players.length >= 2) return { error: new AppError(409, 'This duel is already full.') }
   // The host closed the page a while ago: starting now would only make them forfeit.
-  if (now - Date.parse(duel.players[0].seenAt) > STALE_MS) return { error: fail(410, 'This duel expired. Ask for a new link.') }
+  if (now - Date.parse(duel.players[0].seenAt) > STALE_MS) return { error: new AppError(410, 'This duel expired. Ask for a new link.') }
   return { fields: { players: [...duel.players, seatFor(user, now)], status: 'active', startAt: iso(now) } }
 }
 
@@ -204,13 +199,13 @@ async function join(store, user, body, now) {
   let id = body.id
   if (!isId(id)) {
     const code = normalizeCode(body.code)
-    if (code.length !== CODE_LENGTH) return fail(400, 'Type the 6-character duel code.')
+    if (code.length !== CODE_LENGTH) throw new AppError(400, 'Type the 6-character duel code.')
     const found = await store.findDuelByCode(code)
-    if (!found) return fail(404, 'No duel has that code.')
+    if (!found) throw new AppError(404, 'No duel has that code.')
     id = found.id
   }
   const { duel, error } = await mutate(store, id, (current) => joinFields(current, user, now))
-  if (error) return error
+  if (error) throw error
   return respond(store, duel, user.id, now)
 }
 
@@ -228,7 +223,7 @@ async function queue(store, user, now) {
     if (joined) return respond(store, joined, user.id, now)
   }
   const duel = await createWithCode(store, { kind: 'queue', status: 'waiting', players: [seatFor(user, now)], rounds: buildRounds() })
-  return respond(store, duel, user.id, now, 201)
+  return respond(store, duel, user.id, now, true)
 }
 
 // The Glitch Bot, for when nobody else is around. Every waiting room of mine is given up first
@@ -246,24 +241,24 @@ async function playBot(store, user, now) {
     botPlan: botPlan(rounds),
     startAt: iso(now),
   })
-  return respond(store, duel, user.id, now, 201)
+  return respond(store, duel, user.id, now, true)
 }
 
 // One answer per round, only while that round is open, timed by the server when it arrives.
 async function answer(store, user, body, now) {
   const { round, choice } = body
-  if (!Number.isInteger(round) || typeof choice !== 'string') return fail(400, 'Invalid request.')
+  if (!Number.isInteger(round) || typeof choice !== 'string') throw badRequest()
   const { duel, error } = await mutate(store, body.id, (current) => {
-    if (!isPlayer(current, user.id)) return { error: fail(403, 'You are not in this duel.') }
-    if (current.status !== 'active') return { error: fail(409, 'This duel is over.') }
+    if (!isPlayer(current, user.id)) return { error: new AppError(403, 'You are not in this duel.') }
+    if (current.status !== 'active') return { error: new AppError(409, 'This duel is over.') }
     const rounds = timeline(current, now)
     const where = phaseAt(rounds, now)
-    if (where.phase !== 'round' || where.index !== round) return { error: fail(409, 'This round is not open.') }
-    if (rounds[round].answers[user.id]) return { error: fail(409, 'You already answered this round.') }
-    if (!current.rounds[round].options.some((option) => option.id === choice)) return { error: fail(400, 'Pick one of the options.') }
+    if (where.phase !== 'round' || where.index !== round) return { error: new AppError(409, 'This round is not open.') }
+    if (rounds[round].answers[user.id]) return { error: new AppError(409, 'You already answered this round.') }
+    if (!current.rounds[round].options.some((option) => option.id === choice)) return { error: new AppError(400, 'Pick one of the options.') }
     return { fields: { answers: [...current.answers, { userId: user.id, round, choice, at: iso(now) }], players: touch(current.players, user.id, now) } }
   })
-  if (error) return error
+  if (error) throw error
   // The last answer of the last round ends the duel right away.
   return respond(store, await settle(store, duel, user.id, now), user.id, now)
 }
@@ -271,9 +266,9 @@ async function answer(store, user, body, now) {
 // The page went away (hidden tab, lost focus) or came back. Recorded with the server's time while
 // the duel is on; leaving during an open round voids that round (see leftDuring in clock.js).
 async function focus(store, user, body, now) {
-  if (body.state !== 'hidden' && body.state !== 'visible') return fail(400, 'Invalid request.')
+  if (body.state !== 'hidden' && body.state !== 'visible') throw badRequest()
   const { error, written } = await mutate(store, body.id, (current) => {
-    if (!isPlayer(current, user.id)) return { error: fail(403, 'You are not in this duel.') }
+    if (!isPlayer(current, user.id)) return { error: new AppError(403, 'You are not in this duel.') }
     if (current.status !== 'active') return {}
     const count = current.focus.filter((event) => event.userId === user.id).length
     if (count >= MAX_FOCUS_EVENTS) return {}
@@ -281,28 +276,28 @@ async function focus(store, user, body, now) {
     const state = count === MAX_FOCUS_EVENTS - 1 ? 'hidden' : body.state
     return { fields: { focus: [...current.focus, { userId: user.id, state, at: iso(now) }] } }
   })
-  if (error) return error
-  return ok({ recorded: Boolean(written) })
+  if (error) throw error
+  return { recorded: Boolean(written) }
 }
 
 // Leaving a waiting room cancels it; leaving a duel in progress forfeits it.
 async function leave(store, user, body, now) {
   const { duel, error } = await mutate(store, body.id, async (current) => {
-    if (!isPlayer(current, user.id)) return { error: fail(403, 'You are not in this duel.') }
+    if (!isPlayer(current, user.id)) return { error: new AppError(403, 'You are not in this duel.') }
     if (current.status === 'waiting') return { fields: { status: 'cancelled' } }
     if (current.status === 'active') return { fields: await finishFields(store, current, now, user.id) }
     return {}
   })
-  if (error) return error
+  if (error) throw error
   return respond(store, duel, user.id, now)
 }
 
 // Another round with the same person: the first to ask opens a private duel, the second joins it.
 async function rematch(store, user, body, now) {
   const old = await store.getDuel(body.id)
-  if (!old) return fail(404, 'Duel not found.')
-  if (!isPlayer(old, user.id)) return fail(403, 'You are not in this duel.')
-  if (old.status !== 'finished' || old.kind === 'bot') return fail(409, 'Invalid request.')
+  if (!old) throw new AppError(404, 'Duel not found.')
+  if (!isPlayer(old, user.id)) throw new AppError(403, 'You are not in this duel.')
+  if (old.status !== 'finished' || old.kind === 'bot') throw new AppError(409, 'Invalid request.')
   if (old.rematchId) {
     const next = await store.getDuel(old.rematchId)
     if (next && next.status !== 'cancelled') return join(store, user, { id: old.rematchId }, now)
@@ -317,5 +312,5 @@ async function rematch(store, user, body, now) {
     await mutate(store, fresh.id, () => ({ fields: { status: 'cancelled' } }))
     return join(store, user, { id: linked.rematchId }, now)
   }
-  return respond(store, fresh, user.id, now, 201)
+  return respond(store, fresh, user.id, now, true)
 }

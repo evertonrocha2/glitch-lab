@@ -2,7 +2,7 @@ import { CONCEPTS } from '../../../shared/concepts.js'
 import { scanError } from '../../../shared/errorScan.js'
 import { languageRule } from '../../core/locale.js'
 
-// The system prompt in the reader's language (locale from localeOf(request)).
+// The system prompt in the reader's language (the locale middleware sets req.locale).
 export function analyzeSystem(locale = 'en') {
   return `You are a patient programming teacher helping a beginner student.
 Explain bugs in plain, simple words. Avoid jargon; if you must use a technical term, explain it in the same sentence.

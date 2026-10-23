@@ -1,5 +1,4 @@
 import { createToken } from '../../infra/security/session.js'
-import { ok } from '../../core/http.js'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const MIN_PASSWORD = 8
@@ -21,6 +20,6 @@ export function credentialsProblem({ email, password }) {
 const publicUser = (user) => ({ id: user.id, email: user.email, isDemo: user.isDemo })
 
 // What sign up, sign in and demo all answer with: a fresh session plus who it belongs to.
-export function sessionResponse(user, status = 200) {
-  return ok({ token: createToken(publicUser(user)), user: publicUser(user) }, status)
+export function sessionFor(user) {
+  return { token: createToken(publicUser(user)), user: publicUser(user) }
 }

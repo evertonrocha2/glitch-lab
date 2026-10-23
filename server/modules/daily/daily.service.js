@@ -1,49 +1,39 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
 import { challengeDay, dailySummary, nextResetAt, weekEndsAt, weekStart } from '../../../shared/daily.js'
+import { conflict, notFound } from '../../core/errors.js'
 import { toPublicChallenge } from '../challenges/challenges.model.js'
-import { isProduction } from '../../config/env.js'
-import { fail, ok } from '../../core/http.js'
-import { ensureSet, isCurrent, runCron, toPuzzleCard, withStatus } from './daily-set.js'
+import { ensureSet, isCurrent, toPuzzleCard, withStatus } from './daily-set.js'
 import { leaderboard } from './leaderboard.js'
 import { loadDaily } from './solved.js'
-import { runRiddleCron } from '../glitchdle/riddle-daily.js'
-import { runHuntCron } from '../hunt/hunt-daily.js'
-import { getStore } from '../../infra/database/index.js'
 
-// Daily and global challenges, served from /api/challenge to stay under Vercel's free-plan limit.
-
-// GET ?daily=1: today's three puzzles, where I am on each, and my daily streak.
-export async function getDaily(user, now = new Date()) {
-  const store = getStore()
+// Today's three puzzles, where I am on each, and my daily streak.
+export async function getDaily(store, user, now = new Date()) {
   const day = challengeDay(now)
   const { dailies } = await ensureSet(store, day)
   const [mine, daily] = await Promise.all([Promise.all(dailies.map((item) => store.findPuzzleChallenge(user.id, item.id))), loadDaily(store, user.id)])
-  return ok({
+  return {
     day,
     nextResetAt: nextResetAt(now),
     streak: dailySummary(daily.solved, day).streak,
     puzzles: dailies.map((item, index) => withStatus(toPuzzleCard(item), mine[index])),
-  })
+  }
 }
 
-// GET ?global=1: this week's global challenge and its leaderboard.
-export async function getGlobal(user, now = new Date()) {
-  const store = getStore()
+// This week's global challenge and its leaderboard.
+export async function getWeekly(store, user, now = new Date()) {
   const week = weekStart(challengeDay(now))
   const { global } = await ensureSet(store, challengeDay(now))
   const [mine, board] = await Promise.all([store.findPuzzleChallenge(user.id, global.id), leaderboard(store, global.id, user.id)])
-  return ok({ week, endsAt: weekEndsAt(week), puzzle: withStatus(toPuzzleCard(global), mine), ...board })
+  return { week, endsAt: weekEndsAt(week), puzzle: withStatus(toPuzzleCard(global), mine), ...board }
 }
 
-// POST { daily: true, puzzleId }: my own gym challenge for a puzzle, or the one I already started.
+// My own gym challenge for a puzzle, or the one I already started ({ challenge, created }).
 // No AI call and no quota: the puzzle and its secret are already written.
-export async function startPuzzle(user, puzzleId, now = new Date()) {
-  const store = getStore()
+export async function startPuzzle(store, user, puzzleId, now = new Date()) {
   const puzzle = await store.getPuzzle(puzzleId)
-  if (!puzzle) return fail(404, 'Challenge not found.')
+  if (!puzzle) throw notFound('Challenge not found.')
   const existing = await store.findPuzzleChallenge(user.id, puzzle.id)
-  if (existing) return ok({ challenge: toPublicChallenge(existing, puzzle.concept, puzzle) })
-  if (!isCurrent(puzzle, now)) return fail(409, "This challenge is over. Try today's set.")
+  if (existing) return { challenge: toPublicChallenge(existing, puzzle.concept, puzzle), created: false }
+  if (!isCurrent(puzzle, now)) throw conflict("This challenge is over. Try today's set.")
 
   const secret = await store.getPuzzleSecret(puzzle.id)
   const { brokenCode, symptom, language, hints } = puzzle
@@ -51,35 +41,5 @@ export async function startPuzzle(user, puzzleId, now = new Date()) {
     (await store.createChallenge(user.id, { caseId: null, puzzleId: puzzle.id, brokenCode, symptom, language, hints }, secret)) ??
     // A double click raced us to it: use that one.
     (await store.findPuzzleChallenge(user.id, puzzle.id))
-  return ok({ challenge: toPublicChallenge(created, puzzle.concept, puzzle) }, 201)
-}
-
-const digest = (text) => createHash('sha256').update(text).digest()
-
-// Vercel's cron sends "Authorization: Bearer <CRON_SECRET>". Compared in constant time (hashing
-// first makes the lengths equal). With no secret set, only local development may run it.
-export function cronAllowed(request) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return !isProduction()
-  return timingSafeEqual(digest(request.headers.get('authorization') ?? ''), digest(`Bearer ${secret}`))
-}
-
-// GET ?cron=1: writes today's and tomorrow's puzzles and Glitchdle riddles. Reports titles and
-// modes only, never solutions or answers. A Glitchdle failure never costs the puzzles their run.
-export async function cron(request, now = new Date()) {
-  if (!cronAllowed(request)) return fail(401, 'Not allowed.')
-  const store = getStore()
-  const [puzzles, riddle, hunt] = await Promise.all([
-    runCron(store, now),
-    runRiddleCron(store, now).catch((err) => {
-      console.error('Glitchdle cron failed:', err)
-      return { failed: true }
-    }),
-    // Line hunt: a few fresh AI snippets a day, the rest from the pool.
-    runHuntCron(store, now).catch((err) => {
-      console.error('Line hunt cron failed:', err)
-      return { failed: true }
-    }),
-  ])
-  return ok({ ...puzzles, riddle, hunt })
+  return { challenge: toPublicChallenge(created, puzzle.concept, puzzle), created: true }
 }

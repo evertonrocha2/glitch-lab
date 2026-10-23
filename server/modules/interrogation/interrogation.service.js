@@ -7,19 +7,13 @@ import {
   INTERROGATION_XP,
   isFinished,
 } from '../../../shared/interrogation.js'
-import { generateJson } from '../../infra/ai/index.js'
-import { fail, ok, readJson, requireUser } from '../../core/http.js'
-import { localeOf } from '../../core/locale.js'
+import { AppError, badRequest, conflict, notFound } from '../../core/errors.js'
 import { buildInterrogatePrompt, INTERROGATE_SCHEMA, interrogateSystem } from './interrogate.prompt.js'
-import { aiFailure, dailyLimitReached } from '../../infra/ai/failure.js'
-import { getStore } from '../../infra/database/index.js'
-import { takeAiCall } from '../../infra/ai/quota.js'
+import { withAi } from '../../infra/ai/failure.js'
+import { spendAiCall } from '../../infra/ai/quota.js'
 import { guardReply } from './guard.js'
 
-// Interrogation: guided debugging on one case. Lives on /api/hint?mode=interrogate to stay under
-// Vercel's free-plan function limit.
-//   GET  ?mode=interrogate&caseId=...        -> { case, interrogation }
-//   POST ?mode=interrogate { caseId, answer } -> { interrogation, turn, finished, xp }
+// Interrogation: guided debugging on one case, one step at a time, coached by the AI.
 
 const validId = (id) => typeof id === 'string' && id !== '' && id.length <= 64
 
@@ -44,62 +38,50 @@ function parseVerdict(data) {
   return { passed: data.passed, feedback: data.feedback.trim(), question: typeof data.question === 'string' ? data.question.trim() : '' }
 }
 
-export async function getInterrogation(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
-  const caseId = new URL(request.url).searchParams.get('caseId')
-  if (!validId(caseId)) return fail(400, 'Invalid request.')
-
-  const store = getStore()
-  const kase = await store.getCase(auth.user.id, caseId)
-  if (!kase) return fail(404, 'Case not found.')
-  return ok({ case: kase, interrogation: view(await store.getInterrogation(auth.user.id, caseId), caseId) })
+// { case, interrogation }: the case and where I am in its interrogation.
+export async function getInterrogation(store, user, caseId) {
+  if (!validId(caseId)) throw badRequest()
+  const kase = await store.getCase(user.id, caseId)
+  if (!kase) throw notFound('Case not found.')
+  return { case: kase, interrogation: view(await store.getInterrogation(user.id, caseId), caseId) }
 }
 
-export async function answerInterrogation(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
-
-  const body = await readJson(request)
-  if (!validId(body?.caseId) || typeof body.answer !== 'string') return fail(400, 'Invalid request.')
+// One answer for the current step ({ answer }): { interrogation, turn, finished, xp }.
+export async function answerInterrogation({ store, ai }, user, caseId, body, locale) {
+  if (!validId(caseId) || typeof body?.answer !== 'string') throw badRequest()
   const answer = body.answer.trim()
-  if (answer === '') return fail(400, 'Write your answer first.')
-  if (answer.length > INTERROGATION_LIMITS.answer) return fail(413, `Too long. Keep your answer under ${INTERROGATION_LIMITS.answer} characters.`)
+  if (answer === '') throw badRequest('Write your answer first.')
+  if (answer.length > INTERROGATION_LIMITS.answer) throw new AppError(413, `Too long. Keep your answer under ${INTERROGATION_LIMITS.answer} characters.`)
 
-  const store = getStore()
-  const userId = auth.user.id
-  const kase = await store.getCase(userId, body.caseId)
-  if (!kase) return fail(404, 'Case not found.')
+  const userId = user.id
+  const kase = await store.getCase(userId, caseId)
+  if (!kase) throw notFound('Case not found.')
   const state = (await store.getInterrogation(userId, kase.id)) ?? emptyInterrogation(kase.id)
-  if (isFinished(state)) return fail(409, 'This interrogation is finished.')
-  if (state.turns.length >= INTERROGATION_LIMITS.turns) return fail(409, 'This interrogation has too many answers.')
+  if (isFinished(state)) throw conflict('This interrogation is finished.')
+  if (state.turns.length >= INTERROGATION_LIMITS.turns) throw conflict('This interrogation has too many answers.')
 
-  if (!(await takeAiCall(store, auth.user))) return dailyLimitReached()
+  await spendAiCall(store, user)
 
-  const locale = localeOf(request)
   const step = currentStep(state)
-  let verdict
-  try {
-    const reply = await generateJson({
+  const verdict = await withAi(async () => {
+    const reply = await ai.generateJson({
       system: interrogateSystem(locale),
       prompt: buildInterrogatePrompt({ kase, state, answer }, locale),
       schema: INTERROGATE_SCHEMA,
     })
     // The prompt says never to give the fix early; this makes sure of it.
-    verdict = guardReply(parseVerdict(reply), { step, fix: kase.analysis?.correcao, code: kase.code, locale }).verdict
-  } catch (err) {
-    return aiFailure(err)
-  }
+    return guardReply(parseVerdict(reply), { step, fix: kase.analysis?.correcao, code: kase.code, locale }).verdict
+  })
 
   const next = advance(state, answer, verdict)
   const saved = await store.saveInterrogation(userId, kase.id, next, state.turns.length)
-  if (!saved) return fail(409, 'Another answer landed at the same time. Try again.')
+  if (!saved) throw conflict('Another answer landed at the same time. Try again.')
   const finished = isFinished(saved)
-  return ok({
+  return {
     interrogation: view(saved, kase.id),
     turn: saved.turns.at(-1),
     finished,
     // XP only on the answer that finishes it: one interrogation per case, so once per case.
     xp: finished && !isFinished(state) ? INTERROGATION_XP : 0,
-  })
+  }
 }

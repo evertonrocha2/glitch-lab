@@ -1,16 +1,14 @@
 import { cleanQuery } from '../../../shared/community.js'
 import { canPickWinners, EVENT_LIMITS, EVENT_TABS, eventStatus, rankEntries, VOTING_MS, winnersLocked } from '../../../shared/events.js'
-import { getUser } from '../../core/middlewares/auth.js'
 import { loadPeople } from '../articles/people.js'
 import { serverDay } from '../../core/days.js'
-import { fail, ok, readJson, requireUser } from '../../core/http.js'
-import { getStore } from '../../infra/database/index.js'
+import { AppError, badRequest, forbidden, notFound, tooMany, valueOrThrow } from '../../core/errors.js'
+import { pageOf } from '../../core/validation.js'
 import { parseEvent } from './parse.js'
 import { entryView, eventSummary, eventView } from './views.js'
 
 const NOT_FOUND = 'Event not found.'
 const MAX_PAGE = 500
-const isText = (value) => typeof value === 'string'
 
 // The daily limit on new events sits in the usage table, under its own key.
 export const eventsKey = (userId) => `events:${userId}`
@@ -29,71 +27,60 @@ async function eventDetail(store, event, viewerId) {
   }
 }
 
-// GET ?id=: one event. GET otherwise: a page of events for a tab (live, upcoming, ended). No sign in needed.
-export async function GET(request) {
-  const params = new URL(request.url).searchParams
-  const store = getStore()
-  const viewer = await getUser(request)
+// One event with its entries ranked by votes. No sign in needed.
+export async function getEvent(store, id, viewer) {
+  const event = await store.getEvent(id)
+  if (!event) throw notFound(NOT_FOUND)
+  return eventDetail(store, event, viewer?.id)
+}
 
-  if (params.has('id')) {
-    const event = await store.getEvent(params.get('id'))
-    return event ? ok(await eventDetail(store, event, viewer?.id)) : fail(404, NOT_FOUND)
-  }
-
-  const page = Math.min(Math.max(Number.parseInt(params.get('page') ?? '1', 10) || 1, 1), MAX_PAGE)
-  const tab = EVENT_TABS.includes(params.get('tab')) ? params.get('tab') : null
+// A page of events for a tab (live, upcoming, ended), from { q, tab, page }. No sign in needed.
+export async function listEvents(store, query) {
+  const page = pageOf(query.page, MAX_PAGE)
+  const tab = EVENT_TABS.includes(query.tab) ? query.tab : null
   const limit = EVENT_LIMITS.pageSize
   const now = Date.now()
   const { events, hasMore } = await store.listEvents({
-    q: cleanQuery(params.get('q') ?? ''),
+    q: cleanQuery(query.q ?? ''),
     tab,
     now: new Date(now).toISOString(),
     offset: (page - 1) * limit,
     limit,
   })
   const people = await loadPeople(store, events.map((item) => item.organizerId))
-  return ok({ events: events.map((item) => eventSummary(item, people, now)), page, hasMore })
+  return { events: events.map((item) => eventSummary(item, people, now)), page, hasMore }
 }
 
-export async function POST(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
+export async function createEvent(store, user, body) {
   // Demo accounts are free and throwaway: they can look around, not publish.
-  if (auth.user.isDemo) return fail(403, 'Sign up to create events.')
+  if (user.isDemo) throw forbidden('Sign up to create events.')
 
-  const parsed = parseEvent((await readJson(request)) ?? {})
-  if (!parsed.value) return fail(parsed.status, parsed.message)
-  const store = getStore()
-  const key = eventsKey(auth.user.id)
+  const value = valueOrThrow(parseEvent(body ?? {}))
+  const key = eventsKey(user.id)
   const day = serverDay()
   if ((await store.countUsage(key, day)) >= EVENT_LIMITS.eventsPerDay) {
-    return fail(429, `You can create ${EVENT_LIMITS.eventsPerDay} events a day. Come back tomorrow.`)
+    throw tooMany(`You can create ${EVENT_LIMITS.eventsPerDay} events a day. Come back tomorrow.`)
   }
   await store.addUsage(key, day)
-  const event = await store.createEvent(auth.user.id, parsed.value)
-  return ok(await eventDetail(store, event, auth.user.id), 201)
+  const event = await store.createEvent(user.id, value)
+  return eventDetail(store, event, user.id)
 }
 
 // Edit (before the start), close early (while live) or announce the winners (after the end).
-// Every change everyone sees, so only the organizer may make it.
-export async function PUT(request) {
-  const auth = await requireUser(request)
-  if (auth.response) return auth.response
-  const body = await readJson(request)
-  if (!isText(body?.id)) return fail(400, 'Invalid request.')
-  const store = getStore()
-  const event = await store.getEvent(body.id)
-  if (!event) return fail(404, NOT_FOUND)
-  if (event.organizerId !== auth.user.id) return fail(403, 'Only the organizer can do that.')
+// Every change everyone sees, so only the organizer may make it. action: 'edit' | 'close' | 'winners'.
+export async function organizerAction(store, user, id, name, input) {
+  // Closing takes no fields; editing and picking winners do.
+  if (name !== 'close' && !input) throw badRequest()
+  const body = input ?? {}
+  const event = await store.getEvent(id)
+  if (!event) throw notFound(NOT_FOUND)
+  if (event.organizerId !== user.id) throw forbidden('Only the organizer can do that.')
 
   // Own keys only, so "constructor" or "__proto__" never reach Object's own functions.
-  const name = body.action ?? 'edit'
-  if (typeof name !== 'string' || !Object.hasOwn(ACTIONS, name)) return fail(400, 'Invalid request.')
-  const action = ACTIONS[name]
-  const now = Date.now()
-  const result = await action({ store, event, body, now, userId: auth.user.id })
-  if (result.status) return fail(result.status, result.message)
-  return ok(await eventDetail(store, result.event, auth.user.id))
+  if (!Object.hasOwn(ACTIONS, name)) throw badRequest()
+  const result = await ACTIONS[name]({ store, event, body, now: Date.now(), userId: user.id })
+  if (result.status) throw new AppError(result.status, result.message)
+  return eventDetail(store, result.event, user.id)
 }
 
 const ACTIONS = {

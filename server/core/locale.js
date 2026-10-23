@@ -2,8 +2,8 @@
 // Only English and Brazilian Portuguese exist; anything else is English.
 export const LOCALES = ['en', 'pt-BR']
 
-export function localeOf(request) {
-  const header = request.headers.get('accept-language') ?? ''
+export function localeOf(acceptLanguage) {
+  const header = typeof acceptLanguage === 'string' ? acceptLanguage : ''
   return /^pt(?![a-z])/i.test(header.trim()) ? 'pt-BR' : 'en'
 }
 
