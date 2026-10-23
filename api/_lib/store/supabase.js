@@ -3,6 +3,7 @@ import { PROFILE_COLUMNS as SHARED_PROFILE_COLUMNS, profileFromRow } from './pro
 import { createSupabaseCommunity } from './community-supabase.js'
 import { createSupabaseDuels } from './duel-supabase.js'
 import { createSupabaseEvents } from './events-supabase.js'
+import { createSupabaseHunt } from './hunt-supabase.js'
 import { createSupabaseReview } from './review-supabase.js'
 import { createSupabaseInterrogations } from './interrogation-supabase.js'
 
@@ -451,6 +452,8 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabaseDuels(db),
     // Community events, entries and votes: see events-supabase.js.
     ...createSupabaseEvents(db),
+    // Line hunt days and runs: see hunt-supabase.js.
+    ...createSupabaseHunt(db),
     // Spaced review boxes and sessions: see review-supabase.js.
     ...createSupabaseReview(db),
     // Interrogations (guided debugging per case): see interrogation-supabase.js.

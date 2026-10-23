@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { eventsStoreContract } from './store-contract-events.js'
+import { huntStoreContract } from './store-contract-hunt.js'
 import { reviewStoreContract } from './store-contract-review.js'
 import { interrogationStoreContract } from './store-contract-interrogation.js'
 
@@ -727,6 +728,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
 
     // Community events: see store-contract-events.js.
     eventsStoreContract(() => store, newUser)
+    // Line hunt: see store-contract-hunt.js.
+    huntStoreContract(() => store, ids)
 
     // Spaced review: see store-contract-review.js.
     reviewStoreContract(() => store, ids)

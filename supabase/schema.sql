@@ -496,3 +496,36 @@ create table if not exists public.review_days (
 
 alter table public.review_items enable row level security;
 alter table public.review_days enable row level security;
+
+-- Line hunt: 8 short snippets a day, the same for everyone; tap the line that holds the bug.
+-- The cron (or the first player of a day it missed) writes one row per day. `snippets` holds each
+-- snippet with its bug line, bug type and explanations, and never leaves the server whole: a line
+-- is only shown once that round is answered. `source` is 'ai' when the cron added fresh snippets.
+create table if not exists public.hunt_days (
+  day date primary key,
+  snippets jsonb not null default '[]',
+  source text not null default 'pool' check (source in ('pool', 'ai')),
+  created_at timestamptz not null default now()
+);
+
+-- One run per player and day. `rounds` is [{ servedAt, answeredAt, picked, correct, timedOut, ms,
+-- points }], with times stamped by the server. score, correct and ms are the totals the
+-- leaderboard sorts by; finished_at is set once all 8 rounds are answered. Every write checks
+-- `version`, so two answers landing together never overwrite each other.
+create table if not exists public.hunt_runs (
+  user_id uuid not null references public.users (id) on delete cascade,
+  day date not null,
+  rounds jsonb not null default '[]',
+  score int not null default 0,
+  correct int not null default 0 check (correct between 0 and 8),
+  ms int not null default 0,
+  finished_at timestamptz,
+  version int not null default 0,
+  started_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, day)
+);
+create index if not exists hunt_runs_day on public.hunt_runs (day) where finished_at is not null;
+
+alter table public.hunt_days enable row level security;
+alter table public.hunt_runs enable row level security;

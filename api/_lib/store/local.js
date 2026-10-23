@@ -5,6 +5,7 @@ import { dirname } from 'node:path'
 import { createLocalCommunity } from './community-local.js'
 import { createLocalDuels } from './duel-local.js'
 import { createLocalEvents } from './events-local.js'
+import { createLocalHunt } from './hunt-local.js'
 import { createLocalReview } from './review-local.js'
 import { createLocalInterrogations } from './interrogation-local.js'
 
@@ -402,6 +403,8 @@ export function createLocalStore({ file }) {
     ...createLocalDuels({ load, save }),
     // Community events, entries and votes: see events-local.js.
     ...createLocalEvents({ load, save }),
+    // Line hunt days and runs: see hunt-local.js.
+    ...createLocalHunt({ load, save }),
     // Spaced review boxes and sessions: see review-local.js.
     ...createLocalReview({ load, save }),
     // Interrogations (guided debugging per case): see interrogation-local.js.
