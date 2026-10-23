@@ -8,7 +8,7 @@ import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import { AuthError, createArticle, getArticle, listCases, updateArticle } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
-import { splitError } from '../../lib/case-info.js'
+import { caseHeading } from '../../lib/case-info.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
 import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
@@ -217,7 +217,7 @@ export default function ArticleEditorPage() {
                 <option value="">{t('notes.editorPage.noCase')}</option>
                 {cases.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {splitError(item.error).type} · {labels.concept(item.concept)} ({item.language})
+                    {caseHeading(item).type} · {labels.concept(item.concept)} ({item.language})
                   </option>
                 ))}
               </select>

@@ -1,3 +1,4 @@
+import { caseText, isQuestion } from '../../shared/question.js'
 import { formatDuration } from './day.js'
 import { translate } from './i18n/I18nProvider.jsx'
 import { badgeName, conceptName, levelTitle, statusName } from './i18n/labels.js'
@@ -14,8 +15,11 @@ function fence(code, language = '') {
 }
 
 const firstLine = (text) => text.split('\n')[0]
+// The heading of a case: its error's first line, or a question card's title.
+const caseTitle = (item) => (isQuestion(item) ? item.title || item.topic : firstLine(item.error))
+// A question card's line names its badge and topic first.
 const caseSummary = (item, t) =>
-  `${conceptName(t, item.concept)} · ${item.language} · ${statusName(t, item.status)} (${Math.min(item.passedCount, 2)}/2)`
+  `${isQuestion(item) ? `${t('question.badge')} · ${item.topic} · ` : ''}${conceptName(t, item.concept)} · ${item.language} · ${statusName(t, item.status)} (${Math.min(item.passedCount, 2)}/2)`
 
 function blockToMarkdown(block, casesById, depth, t) {
   switch (block.type) {
@@ -25,7 +29,7 @@ function blockToMarkdown(block, casesById, depth, t) {
       return `- [${block.done ? 'x' : ' '}] ${block.text}`
     case 'case': {
       const item = casesById.get(block.caseId)
-      return item ? `> **${t('board.md.case')}** ${firstLine(item.error)}\n> ${caseSummary(item, t)}` : `> **${t('board.md.case')}** ${t('board.md.caseGone')}`
+      return item ? `> **${t('board.md.case')}** ${caseTitle(item)}\n> ${caseSummary(item, t)}` : `> **${t('board.md.case')}** ${t('board.md.caseGone')}`
     }
     default:
       return block.text
@@ -43,7 +47,19 @@ export function noteToMarkdown(note, cases, depth = 1, t = ENGLISH) {
   return `${parts.join('\n\n')}\n`
 }
 
+// A question card: the question, a recap of the chat, the summary, how it works and the exercise.
+function questionToMarkdown(item, t) {
+  const { explicacao, causa, exercicio } = item.analysis
+  const parts = [`### ${caseTitle(item)}`, `*${caseSummary(item, t)}*`, `**${t('question.md.question')}** ${caseText(item)}`]
+  if (item.recap) parts.push(`**${t('question.md.recap')}** ${item.recap}`)
+  if (item.code) parts.push(`**${t('board.md.yourCode')}**`, fence(item.code, item.language === 'unknown' ? '' : item.language))
+  parts.push(`**${t('question.md.inShort')}** ${explicacao}`, `**${t('question.md.howItWorks')}** ${causa}`)
+  parts.push(`**${t('board.md.practice')}**`, fence(exercicio.enunciado), `**${t('board.md.answer')}**`, fence(exercicio.resposta))
+  return parts.join('\n\n')
+}
+
 function caseToMarkdown(item, t) {
+  if (isQuestion(item)) return questionToMarkdown(item, t)
   const { explicacao, causa, correcao, exercicio, pistas, local } = item.analysis
   const parts = [`### ${firstLine(item.error)}`, `*${caseSummary(item, t)}*`]
   if (item.error.includes('\n')) parts.push(fence(item.error))

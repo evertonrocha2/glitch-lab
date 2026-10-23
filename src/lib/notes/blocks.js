@@ -49,11 +49,14 @@ export function placeCase(blocks, blockId, caseId, mention) {
   return { blocks: insertAfter(next, caseBlock.id, writing), focusId: writing.id }
 }
 
-// Cases whose error, bug type or language contains the query, newest first as given.
+// Cases whose error, bug type or language (or a question card's question, topic or title) contains
+// the query, newest first as given.
 export function matchCases(cases, query, labelOf) {
   const needle = query.trim().toLowerCase()
   if (!needle) return cases
-  return cases.filter((item) => [item.error, labelOf(item.concept), item.language].some((value) => value.toLowerCase().includes(needle)))
+  return cases.filter((item) =>
+    [item.error, labelOf(item.concept), item.language, item.question, item.topic, item.title].some((value) => (value ?? '').toLowerCase().includes(needle)),
+  )
 }
 
 export const mentionsCase = (note, caseId) => note.blocks.some((block) => block.type === 'case' && block.caseId === caseId)

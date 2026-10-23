@@ -39,12 +39,14 @@ function CaseSummary({ summary }) {
       <span aria-hidden="true" className={`w-2 shrink-0 ${STRIPE[summary.status] ?? STRIPE.new}`} />
       <div className="min-w-0 flex-1 px-4 py-3">
         <p className="flex flex-wrap items-center gap-2 text-xs">
+          {/* A question card names its topic where an error names its type. */}
+          {summary.kind === 'question' && <span className="border border-ink bg-secondary px-1.5 py-0.5 font-label text-[10px] leading-4 text-white">{t('question.badge')}</span>}
           <span className="bg-primary-soft px-1.5 py-0.5 font-semibold text-primary">{bugTypeName(t, summary.bugType)}</span>
           <span className="border border-line px-1.5 py-0.5 font-mono text-muted">{summary.language}</span>
           <span className="text-muted">{statusName(t, summary.status)}</span>
         </p>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{summary.errorType}</p>
-        {summary.message && <p className="mt-1 font-mono text-sm leading-snug wrap-break-word text-ink/75">{summary.message}</p>}
+        {summary.message && <p className={`mt-1 text-sm leading-snug wrap-break-word text-ink/75 ${summary.kind === 'question' ? '' : 'font-mono'}`}>{summary.message}</p>}
       </div>
     </figure>
   )

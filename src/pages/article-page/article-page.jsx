@@ -34,6 +34,7 @@ function LinkedCase({ summary }) {
   return (
     <section aria-label={t('notes.article.linkedCase')} className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-2 border-ink bg-secondary-soft px-4 py-3">
       <span className="font-label text-[10px] text-secondary">{t('notes.article.linkedCase')}</span>
+      {summary.kind === 'question' && <span className="border border-ink bg-secondary px-1.5 py-0.5 font-label text-[10px] leading-4 text-white">{t('question.badge')}</span>}
       <span className="font-pixel text-lg font-bold leading-none text-ink">{summary.errorType}</span>
       <span className="bg-primary-soft px-1.5 py-0.5 text-xs font-semibold text-primary">{concept ? labels.concept(concept.id) : summary.concept}</span>
       <span className="border border-ink/20 bg-white px-1.5 py-0.5 font-mono text-xs text-muted">{summary.language}</span>

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conceptLabel } from '../../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../../shared/limits.js'
-import { splitError } from '../../../lib/case-info.js'
+import { isQuestion } from '../../../../shared/question.js'
+import { caseHeading } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, updateBlock } from '../../../lib/notes/blocks.js'
@@ -22,13 +23,15 @@ const SAVE_TEXT = { saved: 'notes.editor.saved', unsaved: 'notes.editor.unsaved'
 
 const lineClass = 'w-full bg-transparent text-ink placeholder:text-muted/60 focus-visible:outline-none'
 
-function caseOption(item, labels) {
-  const { type, message } = splitError(item.error)
+function caseOption(item, labels, t) {
+  const { type, message } = caseHeading(item)
+  // A question card shows its badge and topic in front of its bug type.
+  const kind = isQuestion(item) ? `${t('question.badge')} · ${item.topic} · ` : ''
   return {
     key: item.id,
     caseId: item.id,
     label: message ? `${type}: ${message}` : type,
-    sub: `${labels.concept(item.concept)} · ${item.language} · ${labels.status(item.status)}`,
+    sub: `${kind}${labels.concept(item.concept)} · ${item.language} · ${labels.status(item.status)}`,
   }
 }
 
@@ -124,7 +127,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const blockTypes = BLOCK_TYPES.map((key) => ({ key, label: t(`notes.block.${key}`), sub: t(`notes.block.${key}Sub`) }))
   // Search finds a bug type by its English name and by its name in the reader's language.
   const conceptWords = (id) => `${conceptLabel(id)} ${labels.concept(id)}`
-  const items = !menu ? [] : menu.kind === 'slash' ? blockTypes : matchCases(cases, menu.query, conceptWords).map((item) => caseOption(item, labels))
+  const items = !menu ? [] : menu.kind === 'slash' ? blockTypes : matchCases(cases, menu.query, conceptWords).map((item) => caseOption(item, labels, t))
   const active = Math.min(menu?.active ?? 0, Math.max(items.length - 1, 0))
 
   function pick(item) {

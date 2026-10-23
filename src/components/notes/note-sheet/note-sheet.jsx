@@ -1,4 +1,6 @@
-import { splitError } from '../../../lib/case-info.js'
+import { isQuestion } from '../../../../shared/question.js'
+import { caseHeading } from '../../../lib/case-info.js'
+import QuestionBadge from '../../board/question-badge/question-badge.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
@@ -51,13 +53,15 @@ function SheetCase({ item }) {
   if (!item) {
     return <p className="border-2 border-dashed border-line px-4 py-3 text-sm text-muted">{t('notes.case.gone')}</p>
   }
-  const { type, message } = splitError(item.error)
+  const { type, message } = caseHeading(item)
+  const question = isQuestion(item)
   const passed = Math.min(item.passedCount, 2)
   return (
     <div className="flex border-2 border-ink bg-white shadow-pixel-muted">
       <span aria-hidden="true" className={`w-2 shrink-0 ${STRIPE[item.status]}`} />
       <div className="min-w-0 flex-1 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2 text-xs">
+          {question && <QuestionBadge topic={item.topic} />}
           <span className="bg-primary-soft px-1.5 py-0.5 font-semibold text-primary">{labels.concept(item.concept)}</span>
           <span className="border border-line px-1.5 py-0.5 font-mono text-muted">{item.language}</span>
           <span className="text-muted">
@@ -70,7 +74,7 @@ function SheetCase({ item }) {
           </span>
         </div>
         <p className="mt-2 font-pixel text-xl leading-tight font-bold wrap-break-word text-ink">{type}</p>
-        {message && <p className="mt-1 font-mono text-sm leading-snug wrap-break-word text-ink/75">{message}</p>}
+        {message && <p className={`mt-1 text-sm leading-snug wrap-break-word text-ink/75 ${question ? '' : 'font-mono'}`}>{message}</p>}
       </div>
     </div>
   )
