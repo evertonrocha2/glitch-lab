@@ -27,7 +27,7 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 9. **Show who you are.** A profile with a pixel avatar, bio, what you do, university, job, languages and links, featured badges, and public notes. Make it public at `/u/<handle>` and find other people at `/people`.
 10. **Lab assistant.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
 11. **Daily and global challenges.** Three puzzles a day for everyone and a weekly global one with a leaderboard, fed by a daily cron.
-12. **Glitchdle.** A Loldle-style riddle a day: name the programming language from its traits, an error it printed, or a hidden snippet.
+12. **Glitchdle.** A Loldle-style riddle a day: name the programming language from its traits, an error it printed or a hidden snippet, then the framework and the database of the day.
 13. **Line hunt.** A timed daily game (`/hunt`): 8 snippets, 20 seconds each, tap the line that holds the bug. The server times every answer, the same set goes to everyone, and there's a leaderboard and a free practice mode.
 14. **Interrogate the bug.** From any case, a Socratic coach walks you through the 6 steps of debugging (reproduce, read the error, hypothesis, isolate, fix, prevent). It answers each step with feedback and one guiding question, and a server-side guard stops it from handing over the fix before step 5. Export the finished interrogation as a note.
 15. **Spaced review.** Every bug type you've met comes back after 1, 3, 7, 14 and 30 days as quick cards built from your own cases: what causes this error, which line is wrong, pick the fix. No AI call, so it's instant. A skill map on the Progress page shows your mastery per bug type and points at the weakest one.
@@ -75,15 +75,29 @@ The **Daily** page has 3 new puzzles every day (easy, medium, hard), the same fo
 
 ## Glitchdle
 
-**Glitchdle** (`/glitchdle`) is a Loldle-style game about programming languages: a new riddle every day at midnight in Brasilia, the same for everyone, in three modes.
+**Glitchdle** (`/glitchdle`) is a Loldle-style game about the tools you code with: new riddles every day at midnight in Brasilia, the same for everyone, in three categories.
 
-- **Classic.** Guess the language of the day. Each guess shows a row of cells against the answer: paradigms, typing, type strength, execution, memory, main domains, syntax family and year. Purple is the same, pale blue is some in common, white is different, and an arrow says if the answer is newer or older.
-- **Error.** Which language printed this error? The file extension unlocks after 3 wrong guesses, the syntax family after 6.
-- **Snippet.** A short snippet with most lines hidden; each wrong guess shows one more.
-- **38 languages** in `shared/riddle/languages.js`, from JavaScript to COBOL and Prolog. Debatable classifications follow the mainstream answer, with a comment. Error samples and snippets live in `shared/riddle/samples.js` and never ship to the browser.
-- **Secrets stay on the server.** The answers are picked from the date (no language repeats in a mode for 20 days) on the server only. Each guess is graded and saved there, so a reload keeps the board, and a mode only shows its answer once it's solved or out of guesses (30 per mode).
-- **The same cron.** `POST /api/cron/daily` also writes today's and tomorrow's riddles, asking Gemini for one fresh error message (rejected if it names the language, its extension or its tools, then the dataset's is used). A day the cron missed is built from the dataset the first time someone plays.
-- **Stats, sharing, XP.** Your games, perfect days (all three modes) and streak, a guess distribution, today's community numbers (demo accounts left out), and a Share button that copies a spoiler-free result. Each solved mode is worth 25 XP (1-2 guesses) down to 10, and *Lingo master* is all three modes in one day.
+- **Languages, in three modes.** *Classic*: each guess shows a row of cells against the answer (paradigms, typing, type strength, execution, memory, main domains, syntax family, year). *Error*: which language printed this error? The file extension unlocks after 3 wrong guesses, the syntax family after 6. *Snippet*: most lines hidden; each wrong guess shows one more.
+- **Frameworks** (89): main language, area, framework or library, maker, license, Stack Overflow questions and first release.
+- **Databases** (76): data model, query style, written in, license, how it runs (server, embedded, cloud only), Stack Overflow questions and first release.
+- **Grading.** Purple is the same, amber with a hatch and a "~" is some in common (lists that overlap, or values in one family: MIT and BSD are both permissive, C and C++, JavaScript and TypeScript), white is different. Arrows say if the answer is newer, or in a higher Stack Overflow bucket.
+- **Secrets stay on the server.** Each board's answer is picked from the date and a server secret (no language repeats in a mode within 30 days, no framework or database within 60). Each guess is graded and saved there, so a reload keeps the board, and a board only shows its answer once it's solved or out of guesses (30 each).
+- **The same cron.** `POST /api/cron/daily` also writes today's and tomorrow's boards. Error and Snippet ask the AI for a fresh clue, refused if it names the language or repeats a known one; every good AI clue joins that language's pool, so a day the AI fails still picks from the dataset plus everything the AI wrote before. A day the cron missed is built from the dataset the first time someone plays.
+- **Stats, sharing, XP.** Your games, perfect days (the three language modes) and streak, a guess distribution per board, today's community numbers (demo accounts left out), and *Copy result* (the share sheet on phones): one line per board, the last 4 rows of the grid, the streak and a link, in your language. Each solved board is worth 25 XP (1-2 guesses) down to 10, at most 100 a day. *Lingo master* is the three language modes in one day, *Full stack* is every board.
+
+### Where the frameworks and databases come from
+
+`node scripts/sync-glitchdle.mjs` builds `shared/riddle/catalogs/*.js` from free public data, no keys:
+
+1. **Seeds** (`scripts/glitchdle/seeds.js`): which items may play, by Stack Overflow tag, with their English name and, when the name is ambiguous, a pinned Wikidata id.
+2. **Wikidata** (SPARQL, CC0): one query finds each item (by its Stack Overflow tag, P1482, or by name), one more reads its type, use, language, license, developer and first release.
+3. **Stack Exchange API** (CC BY-SA 4.0): one request counts the Stack Overflow questions of every tag, bucketed per category.
+4. **Normalize and validate** (`scripts/glitchdle/normalize.js`): labels become our trait vocabulary; an item missing any trait is dropped and the sync says why.
+5. **Overrides** (`scripts/glitchdle/overrides.js`): hand fixes with a reason each, for data Wikidata lacks or judgment calls (Express is backend; CouchDB is written in Erlang).
+
+Six requests in all, sent with a descriptive User-Agent and cached for the day in `node_modules/.cache/glitchdle-sync`. To refresh: run the sync, read the diff of `shared/riddle/catalogs/`, fix anything odd in the overrides, run it again, run the tests and commit. The snapshot is what the game uses, so it works offline and tests stay deterministic (they read recorded answers in `tests/fixtures/glitchdle`). Days already saved keep their answer; a refresh can only change days not written yet.
+
+Data: [Wikidata](https://www.wikidata.org) (CC0) and [Stack Overflow](https://stackoverflow.com/tags) tag counts via the Stack Exchange API (CC BY-SA 4.0). The Glitchdle page shows the same credit.
 
 ## Try it
 
