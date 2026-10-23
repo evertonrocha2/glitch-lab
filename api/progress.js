@@ -29,6 +29,8 @@ export async function GET(request) {
   const today = clientDay(new URL(request.url).searchParams.get('today')) ?? serverDay()
   // Daily and global puzzles passed, and Glitchdle games, for their XP, streaks and badges.
   const [daily, riddle] = await Promise.all([loadDaily(store, userId, challenges), loadRiddle(store, userId)])
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle })
-  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle }, today) } })
+  // Community events: entries sent, places won, votes received, events hosted.
+  const events = await store.eventStats(userId)
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, events })
+  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, events }, today) } })
 }

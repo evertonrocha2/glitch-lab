@@ -2,13 +2,15 @@ import { fail, ok, readJson, requireUser } from '../http.js'
 import { getStore } from '../store/index.js'
 import { loadPeople } from './people.js'
 
-// Only what the bell needs: who did what to which article. No user ids.
+// Only what the bell needs: who did what to which article or event. No user ids.
 const notificationView = (item, people) => ({
   id: item.id,
   type: item.type,
   read: item.read,
   articleId: item.articleId,
   articleTitle: item.articleTitle,
+  eventId: item.eventId ?? null,
+  eventTitle: item.eventTitle ?? null,
   actor: people[item.actorId],
   createdAt: item.createdAt,
 })

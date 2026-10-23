@@ -19,6 +19,10 @@ const GLYPHS = {
   // A speech bubble with "< >" inside: three languages read in one day.
   'lingo-master': ['.#######.', '#ooooooo#', '#oo#o#oo#', '#o#ooo#o#', '#oo#o#oo#', '#ooooooo#', '.##o####.', '..#o#....', '..##.....'],
   trusted: ['.#######.', '#ooooooo#', '#ooooo#o#', '#oooo#oo#', '#o#o#ooo#', '#oo#oooo#', '.#ooooo#.', '..#ooo#..', '...###...'],
+  // Community events: a checkered flag, a trophy and a megaphone.
+  competitor: ['#........', '#######..', '#o#o#o#..', '##o#o##..', '#o#o#o#..', '#######..', '#........', '#........', '##.......'],
+  champion: ['.#######.', '##ooooo##', '#.#ooo#.#', '.##ooo##.', '...#o#...', '....#....', '...###...', '..#ooo#..', '..#####..'],
+  host: ['.......#.', '.....##o#', '..###ooo#', '.#oooooo#', '.#oooooo#', '..###ooo#', '...#.##o#', '...#...#.', '...##....'],
 }
 
 function cells(rows, char) {

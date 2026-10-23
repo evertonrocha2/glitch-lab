@@ -67,3 +67,9 @@ it('counts a Glitchdle day once when any mode was solved', () => {
 it('turns counts into five levels', () => {
   expect([0, 1, 2, 3, 4, 6, 7, 40].map(activityLevel)).toEqual([0, 1, 2, 2, 3, 3, 4, 4])
 })
+
+it('counts each community event entry on its day', () => {
+  const calendar = activityCalendar({ events: { days: ['2026-10-20', '2026-10-20', '2026-10-21'] } }, '2026-10-22')
+  expect(calendar.total).toBe(3)
+  expect(calendar.activeDays).toBe(2)
+})

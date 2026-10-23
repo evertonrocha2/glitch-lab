@@ -25,7 +25,8 @@ export function activityLevel(count) {
 // { start, days, total, activeDays, best }. `days` holds WEEKS*7 counts starting on a Sunday, the
 // last week ending on the Saturday of `today`'s week (days after today stay 0).
 // riddle (optional): { results } from Glitchdle; a day with any mode solved counts once.
-export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle }, today) {
+// events (optional): { days } from community events; each entry sent counts on its day.
+export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, events }, today) {
   const counts = new Map()
   const add = (day, amount = 1) => {
     if (day) counts.set(day, (counts.get(day) ?? 0) + amount)
@@ -34,6 +35,7 @@ export function activityCalendar({ cases = [], challenges = [], notes = [], stud
   for (const item of challenges) if (item.status === 'passed') add(dayOf(item.passedAt ?? item.createdAt))
   for (const note of notes) add(dayOf(note.createdAt))
   for (const day of new Set((riddle?.results ?? []).filter((item) => item.solved).map((item) => item.day))) add(day)
+  for (const day of events?.days ?? []) add(day)
   for (const entry of study) {
     if (entry.seconds >= STUDY_DAY_SECONDS) add(entry.day, Math.min(MAX_STUDY_PER_DAY, 1 + Math.floor(entry.seconds / STUDY_BLOCK_SECONDS)))
   }

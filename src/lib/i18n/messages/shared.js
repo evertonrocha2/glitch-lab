@@ -48,6 +48,9 @@ const BADGES_EN = {
   'lingo-master': ['Lingo master', 'Solve all three Glitchdle modes in one day.'],
   author: ['Author', 'Publish a community article.'],
   trusted: ['Trusted', 'Get 5 valid ratings on your articles.'],
+  competitor: ['Competitor', 'Send an entry to a community event.'],
+  champion: ['Champion', 'Win first place in a community event.'],
+  host: ['Host', 'Organize an event that gets 3 or more entries.'],
 }
 const BADGES_PT = {
   'first-clue': ['Primeira pista', 'Investigue seu primeiro erro.'],
@@ -68,6 +71,9 @@ const BADGES_PT = {
   'lingo-master': ['Mestre das linguagens', 'Resolva os três modos do Glitchdle no mesmo dia.'],
   author: ['Autor', 'Publique um artigo na comunidade.'],
   trusted: ['Confiável', 'Receba 5 avaliações válidas nos seus artigos.'],
+  competitor: ['Competidor', 'Envie uma participação para um evento da comunidade.'],
+  champion: ['Campeão', 'Fique em primeiro lugar num evento da comunidade.'],
+  host: ['Anfitrião', 'Organize um evento que receba 3 ou mais participações.'],
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']

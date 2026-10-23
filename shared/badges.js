@@ -18,6 +18,10 @@ export const BADGES = [
   { id: 'lingo-master', name: 'Lingo master', how: 'Solve all three Glitchdle modes in one day.', earned: (s) => s.riddlePerfectDays >= 1 },
   { id: 'author', name: 'Author', how: 'Publish a community article.', earned: (s) => s.articles >= 1 },
   { id: 'trusted', name: 'Trusted', how: 'Get 5 valid ratings on your articles.', earned: (s) => s.validReceived >= 5 },
+  // Community events.
+  { id: 'competitor', name: 'Competitor', how: 'Send an entry to a community event.', earned: (s) => s.eventEntries >= 1 },
+  { id: 'champion', name: 'Champion', how: 'Win first place in a community event.', earned: (s) => s.eventWins >= 1 },
+  { id: 'host', name: 'Host', how: 'Organize an event that gets 3 or more entries.', earned: (s) => s.eventsHosted >= 1 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)

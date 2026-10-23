@@ -181,3 +181,11 @@ it('earns lingo master for solving all three Glitchdle modes in one day', () => 
   expect(earned(computeProgress({ ...empty, riddle: split }))).not.toContain('lingo-master')
   expect(earned(computeProgress({ ...empty, riddle: { results: day('2026-10-21', ['classic', 'error', 'snippet']) } }))).toEqual(['lingo-master'])
 })
+
+it('adds community event xp and earns the event badges', () => {
+  const events = { entries: 2, first: 1, second: 0, third: 0, votesReceived: 3, hosted: 1, days: ['2026-10-20', '2026-10-21'] }
+  const progress = computeProgress({ ...empty, events })
+  expect(progress.xp).toBe(2 * 30 + 120 + 3 * 2 + 40)
+  expect(earned(progress)).toEqual(['competitor', 'champion', 'host'])
+  expect(earned(computeProgress({ ...empty, events: { ...events, first: 0, hosted: 0 } }))).toEqual(['competitor'])
+})

@@ -2,6 +2,7 @@ import { BADGES } from './badges.js'
 import { trailViews as viewTrails } from './trails.js'
 import { dailySummary } from './daily.js'
 import { riddleSummary } from './riddle/game.js'
+import { eventsXp, NO_EVENTS } from './events.js'
 
 export const XP = { case: 10, pass: 30, cleanPass: 15, solved: 50, note: 5, studyMinute: 1 }
 export const MAX_NOTES_FOR_XP = 20
@@ -52,7 +53,8 @@ function streaks(study, today) {
 // daily (optional): { solved: [{ kind, day, difficulty }] }, the daily and global puzzles passed.
 // community (optional): articles written, likes and valid ratings received, comments written.
 // riddle (optional): { results: [{ day, mode, guessCount, solved }] }, the Glitchdle games played.
-export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle }) {
+// events (optional): community events taken part in, won, voted on and hosted (see shared/events.js).
+export function computeProgress({ cases, challenges, notes, study, today, trails = [], daily, community = NO_COMMUNITY, riddle, events = NO_EVENTS }) {
   // A daily or global puzzle pays its own XP (see shared/daily.js), not gym XP on top.
   const passes = challenges.filter((item) => item.status === 'passed' && !item.puzzleId)
   const puzzles = dailySummary(daily?.solved, today)
@@ -73,7 +75,8 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     trailViews.reduce((sum, view) => sum + view.xp, 0) +
     puzzles.xp +
     glitchdle.xp +
-    communityXp(community)
+    communityXp(community) +
+    eventsXp(events)
 
   const index = LEVELS.findLastIndex((level) => xp >= level.min)
   const stats = {
@@ -92,6 +95,9 @@ export function computeProgress({ cases, challenges, notes, study, today, trails
     articles: community.articles,
     validReceived: community.validReceived,
     riddlePerfectDays: glitchdle.perfectDays,
+    eventEntries: events.entries,
+    eventWins: events.first,
+    eventsHosted: events.hosted,
   }
 
   return {
