@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { eventsStoreContract } from './store-contract-events.js'
+import { interrogationStoreContract } from './store-contract-interrogation.js'
 
 // Every store (local file, Supabase) must pass these. Not a test file itself: suites import it.
 export const CASE = {
@@ -725,6 +726,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
 
     // Community events: see store-contract-events.js.
     eventsStoreContract(() => store, newUser)
+    // Interrogations: see store-contract-interrogation.js.
+    interrogationStoreContract(() => store, ids)
   })
 }
 

@@ -445,3 +445,22 @@ alter table public.notifications drop constraint if exists notifications_type_ch
 alter table public.notifications add constraint notifications_type_check
   check (type in ('comment', 'like', 'rating_valid', 'rating_bad', 'event_join', 'event_vote', 'event_winner'));
 create index if not exists notifications_event on public.notifications (event_id) where event_id is not null;
+
+-- Interrogation: a guided debugging session on one case (reproduce, read the error, hypothesis,
+-- isolate, fix, prevent). One row per student and case. `turns` is every graded answer
+-- [{ step, answer, feedback, question, passed, at }] and `step` the step the student is on (6 when
+-- done). Every write checks `turn_count`, so two answers landing together never overwrite each other.
+create table if not exists public.interrogations (
+  user_id uuid not null references public.users (id) on delete cascade,
+  case_id uuid not null references public.cases (id) on delete cascade,
+  step int not null default 0 check (step between 0 and 6),
+  turns jsonb not null default '[]',
+  turn_count int not null default 0 check (turn_count between 0 and 60),
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, case_id)
+);
+create index if not exists interrogations_user_updated on public.interrogations (user_id, updated_at desc);
+
+alter table public.interrogations enable row level security;
