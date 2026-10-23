@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from 'vitest'
 import { CONCEPTS } from '../../shared/concepts.js'
-import { pickFromPool, POOL } from '../../api/_lib/puzzles/pool.js'
+import { pickFromPool, POOL, poolEntryFor, poolText } from '../../api/_lib/puzzles/pool.js'
 
 const filled = (value) => typeof value === 'string' && value.trim() !== ''
 
@@ -28,6 +28,27 @@ it('has at least two puzzles for every daily difficulty and for the global slot'
   const globals = POOL.filter((entry) => entry.kind === 'global')
   expect(globals.length).toBeGreaterThanOrEqual(2)
   expect(globals.every((entry) => entry.difficulty === 'hard')).toBe(true)
+})
+
+it('has every explanation in English and Portuguese, and a Portuguese symptom when it is prose', () => {
+  for (const entry of POOL) {
+    expect(filled(entry.bugExplanation)).toBe(true)
+    expect(filled(entry.pt?.bugExplanation)).toBe(true)
+    expect(entry.pt.bugExplanation).not.toBe(entry.bugExplanation)
+    // Real error messages ("TypeError: ...") stay as printed; prose like "It prints ..." is translated.
+    const isError = /^\w*(Error|Exception)\b/.test(entry.symptom)
+    expect(filled(entry.pt.symptom)).toBe(!isError)
+  }
+})
+
+it('picks the pool prose by locale, English by default', () => {
+  const entry = POOL.find((item) => item.title === 'Not quite an adult')
+  expect(poolText(entry, 'pt-BR')).toEqual({ symptom: entry.pt.symptom, bugExplanation: entry.pt.bugExplanation })
+  expect(poolText(entry, 'en')).toEqual({ symptom: entry.symptom, bugExplanation: entry.bugExplanation })
+  const error = POOL.find((item) => item.symptom.startsWith('KeyError'))
+  expect(poolText(error, 'pt-BR')).toEqual({ symptom: error.symptom, bugExplanation: error.pt.bugExplanation })
+  expect(poolEntryFor(`\n${entry.brokenCode}\n`)).toBe(entry)
+  expect(poolEntryFor('print("not from the pool")')).toBeNull()
 })
 
 it('uses no em dashes', () => {
