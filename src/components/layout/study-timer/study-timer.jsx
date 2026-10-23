@@ -1,13 +1,14 @@
 import { formatClock, formatDuration } from '../../../lib/day.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
-import { useProgress } from '../../../lib/progress/progress-provider.jsx'
-import { useStudyTimer } from '../../../lib/timer/study-timer-provider.jsx'
+import { useProgressData } from '../../../lib/progress/progress-provider.jsx'
+import { useStudyClock, useStudyTimer } from '../../../lib/timer/study-timer-provider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 
 // A small pixel stopwatch pinned to the corner of every signed-in page.
 export default function StudyTimer() {
-  const { running, seconds, unsentSeconds, start, pause, reset } = useStudyTimer()
-  const { progress } = useProgress()
+  const { running, start, pause, reset } = useStudyTimer()
+  const { seconds, unsentSeconds } = useStudyClock()
+  const progress = useProgressData()
   const t = useT()
   const today = (progress?.todaySeconds ?? 0) + unsentSeconds
 

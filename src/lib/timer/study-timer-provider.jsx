@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { AuthError, addStudyTime } from '../api.js'
 import { useAuth } from '../auth/auth-provider.jsx'
 import { localDay } from '../day.js'
-import { useProgress } from '../progress/progress-provider.jsx'
+import { useProgressRefresh } from '../progress/progress-provider.jsx'
 import {
   elapsed,
   giveBack,
@@ -16,7 +16,11 @@ import {
   takeUnsent,
 } from './clock.js'
 
+// Two contexts so the ticking stays at the leaves: TimerContext changes only when the timer starts
+// or stops (a page with a Start button doesn't re-render every second), StateContext carries the
+// saved state, and the few components that show the clock tick on their own (useStudyClock).
 const TimerContext = createContext(null)
+const StateContext = createContext(null)
 export const REPORT_EVERY_MS = 60_000
 // Well under STALE_MS, so a live tab is never mistaken for a closed one.
 const HEARTBEAT_EVERY_MS = 15_000
@@ -47,10 +51,9 @@ function load(userId) {
 
 export function StudyTimerProvider({ children }) {
   const { user, getToken } = useAuth()
-  const { refresh } = useProgress()
+  const refresh = useProgressRefresh()
   const userId = user?.id
   const [state, setState] = useState(() => (userId ? load(userId) : idle()))
-  const [now, setNow] = useState(() => Date.now())
 
   const save = useCallback(
     (next) => {
@@ -93,16 +96,12 @@ export function StudyTimerProvider({ children }) {
 
   useEffect(() => {
     if (!state.running) return
-    const tick = setInterval(() => setNow(Date.now()), 1000)
     const beat = setInterval(() => {
       const current = load(userId)
       // load() already paused it if this tab slept past STALE_MS.
       save(current.running ? heartbeat(current, Date.now()) : current)
     }, HEARTBEAT_EVERY_MS)
-    return () => {
-      clearInterval(tick)
-      clearInterval(beat)
-    }
+    return () => clearInterval(beat)
   }, [state.running, userId, save])
 
   useEffect(() => {
@@ -121,14 +120,11 @@ export function StudyTimerProvider({ children }) {
   }, [userId, report])
 
   const start = useCallback(() => {
-    const moment = Date.now()
-    setNow(moment)
-    save(startClock(load(userId), moment))
+    save(startClock(load(userId), Date.now()))
   }, [userId, save])
 
   const pause = useCallback(async () => {
     const moment = Date.now()
-    setNow(moment)
     // Pause first: the counted seconds move into `unsent`, so a failed report can't lose them.
     save(pauseClock(load(userId), moment))
     await report()
@@ -139,24 +135,53 @@ export function StudyTimerProvider({ children }) {
     await report()
   }, [userId, report, save])
 
-  const value = useMemo(
-    () => ({
-      running: state.running,
-      seconds: elapsed(state, now),
-      // Counted but not reported yet, so "today" can tick live.
-      unsentSeconds: pendingSeconds(state, now),
-      start,
-      pause,
-      reset,
-    }),
-    [state, now, start, pause, reset],
+  const running = state.running
+  const value = useMemo(() => ({ running, start, pause, reset }), [running, start, pause, reset])
+  return (
+    <TimerContext.Provider value={value}>
+      <StateContext.Provider value={state}>{children}</StateContext.Provider>
+    </TimerContext.Provider>
   )
-  return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>
 }
 
-// { running, seconds, unsentSeconds, start, pause, reset }
+// { running, start, pause, reset }. Doesn't tick: the seconds come from useStudyClock().
 export function useStudyTimer() {
   const value = useContext(TimerContext)
   if (!value) throw new Error('useStudyTimer must be used inside <StudyTimerProvider>')
   return value
+}
+
+// Re-renders its component once a second while `active` and the tab is visible; a hidden tab
+// catches up the moment it shows again.
+function useSecondTick(active) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (!active) return
+    let timer = null
+    const bump = () => setTick((tick) => tick + 1)
+    const sync = () => {
+      clearInterval(timer)
+      timer = null
+      if (document.hidden) return
+      bump()
+      timer = setInterval(bump, 1000)
+    }
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', sync)
+    }
+  }, [active])
+}
+
+// { seconds, unsentSeconds }: the clock face, and what's counted but not reported yet (so "today"
+// can tick live). Only the component that calls this ticks, once a second while the timer runs.
+export function useStudyClock() {
+  const state = useContext(StateContext)
+  if (!state) throw new Error('useStudyClock must be used inside <StudyTimerProvider>')
+  useSecondTick(state.running)
+  // Read at render, so a fresh start or pause never shows a clock older than the state.
+  const now = Date.now()
+  return { seconds: elapsed(state, now), unsentSeconds: pendingSeconds(state, now) }
 }
