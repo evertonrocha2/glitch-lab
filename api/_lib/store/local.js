@@ -3,6 +3,7 @@ import { profileFromUser } from './profileShape.js'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { createLocalCommunity } from './community-local.js'
+import { createLocalDuels } from './duel-local.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
 const now = () => new Date().toISOString()
@@ -393,5 +394,8 @@ export function createLocalStore({ file }) {
 
     // Articles, comments, reactions and notifications: see community-local.js.
     ...createLocalCommunity({ load, save }),
+
+    // Duels and duel ratings: see duel-local.js.
+    ...createLocalDuels({ load, save }),
   }
 }

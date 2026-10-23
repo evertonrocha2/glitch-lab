@@ -617,6 +617,110 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.getReaction(created.id, ids.bob)).toEqual({ liked: false, rating: null })
       expect(await store.listNotifications(ids.alice)).toEqual([])
     })
+
+    // Duels: 1v1 quiz races. The rows are shared, so each test makes its own duels and codes.
+    const duelCode = () => `T${crypto.randomUUID().replace(/-/g, '').slice(0, 7).toUpperCase()}`
+    const seat = (userId) => ({ userId, isDemo: false, bot: false, joinedAt: '2026-10-22T15:00:00.000Z', seenAt: '2026-10-22T15:00:00.000Z' })
+    const duelFor = (fields = {}) => ({
+      code: duelCode(),
+      kind: 'private',
+      status: 'waiting',
+      players: [seat(ids.alice)],
+      rounds: [{ type: 'error', prompt: { text: 'KeyError' }, options: [{ id: 'python', name: 'Python' }], answer: 'python' }],
+      ...fields,
+    })
+    const duelIds = (list) => list.map((item) => item.id)
+
+    it('creates a duel with its secret rounds and finds it by id or code', async () => {
+      const fields = duelFor({ botPlan: [{ choice: 'python', delayMs: 4000 }] })
+      const created = await store.createDuel(fields)
+      expect(created).toMatchObject({ ...fields, startAt: null, finishedAt: null, answers: [], focus: [], result: null, rematchOf: null, rematchId: null, version: 0 })
+      expect(created.id).toEqual(expect.any(String))
+      expect(created.createdAt).toEqual(expect.any(String))
+      expect(created.updatedAt).toEqual(expect.any(String))
+      expect(await store.getDuel(created.id)).toEqual(created)
+      expect(await store.getDuel(crypto.randomUUID())).toBeNull()
+      expect(await store.getDuel('not-a-uuid')).toBeNull()
+      expect(await store.findDuelByCode(fields.code)).toEqual(created)
+      expect(await store.findDuelByCode('NOPE00')).toBeNull()
+      // Codes are unique.
+      expect(await store.createDuel(duelFor({ code: fields.code }))).toBeNull()
+      expect((await store.createDuel(duelFor())).botPlan).toBeNull()
+    })
+
+    it('updates a duel only from the version it read', async () => {
+      const created = await store.createDuel(duelFor())
+      const answers = [{ userId: ids.alice, round: 0, choice: 'python', at: '2026-10-22T15:00:05.000Z' }]
+      const players = [...created.players, seat(ids.bob)]
+      const first = await store.updateDuel(created.id, { status: 'active', startAt: '2026-10-22T15:00:00.000Z', players, answers }, 0)
+      expect(first).toMatchObject({ status: 'active', startAt: '2026-10-22T15:00:00.000Z', players, answers, version: 1, rounds: created.rounds })
+      // A second write that also read version 0 lost the race.
+      expect(await store.updateDuel(created.id, { answers: [] }, 0)).toBeNull()
+      const result = { winner: ids.alice }
+      const focus = [{ userId: ids.bob, state: 'hidden', at: '2026-10-22T15:00:06.000Z' }]
+      const done = await store.updateDuel(created.id, { status: 'finished', finishedAt: '2026-10-22T15:02:00.000Z', result, focus, rematchId: null }, 1)
+      expect(done).toMatchObject({ status: 'finished', finishedAt: '2026-10-22T15:02:00.000Z', result, focus, answers, version: 2 })
+      expect(await store.getDuel(created.id)).toEqual(done)
+      expect(await store.updateDuel(crypto.randomUUID(), { status: 'finished' }, 0)).toBeNull()
+    })
+
+    it("lists a player's duels newest first, without the rounds", async () => {
+      const older = await store.createDuel(duelFor())
+      const bobs = await store.createDuel(duelFor({ players: [seat(ids.bob)] }))
+      const newer = await store.createDuel(duelFor({ kind: 'queue' }))
+      // Bob joins Alice's first duel.
+      await store.updateDuel(older.id, { players: [...older.players, seat(ids.bob)], status: 'active' }, 0)
+
+      const mine = await store.listDuels(ids.alice)
+      expect(duelIds(mine)).toEqual([newer.id, older.id])
+      expect(mine[1]).toMatchObject({ id: older.id, code: older.code, kind: 'private', status: 'active', startAt: null, finishedAt: null, result: null })
+      expect(mine[1].players.map((item) => item.userId)).toEqual([ids.alice, ids.bob])
+      expect(mine[1].createdAt).toEqual(expect.any(String))
+      for (const field of ['rounds', 'botPlan', 'answers', 'focus']) expect(mine[0]).not.toHaveProperty(field)
+      expect(duelIds(await store.listDuels(ids.bob))).toEqual([bobs.id, older.id])
+      expect(duelIds(await store.listDuels(ids.alice, { status: 'waiting' }))).toEqual([newer.id])
+      expect(duelIds(await store.listDuels(ids.alice, { limit: 1 }))).toEqual([newer.id])
+    })
+
+    it('finds fresh quick-match duels that wait for someone else, oldest first', async () => {
+      const since = new Date(Date.now() - 60_000).toISOString()
+      const mine = await store.createDuel(duelFor({ kind: 'queue' }))
+      const first = await store.createDuel(duelFor({ kind: 'queue', players: [seat(ids.bob)] }))
+      const second = await store.createDuel(duelFor({ kind: 'queue', players: [seat(ids.bob)] }))
+      const friendly = await store.createDuel(duelFor({ players: [seat(ids.bob)] }))
+      const started = await store.createDuel(duelFor({ kind: 'queue', players: [seat(ids.bob)] }))
+      await store.updateDuel(started.id, { status: 'active' }, 0)
+
+      const found = await store.findQueueDuels(ids.alice, since)
+      const foundIds = duelIds(found)
+      expect(foundIds).toEqual(expect.arrayContaining([first.id, second.id]))
+      expect(foundIds.indexOf(first.id)).toBeLessThan(foundIds.indexOf(second.id))
+      for (const id of [mine.id, friendly.id, started.id]) expect(foundIds).not.toContain(id)
+      // Full rows: the matcher joins one with a version check.
+      expect(found.find((item) => item.id === first.id)).toEqual(first)
+      const later = duelIds(await store.findQueueDuels(ids.alice, new Date(Date.now() + 60_000).toISOString()))
+      expect(later).not.toContain(first.id)
+    })
+
+    it('keeps one duel rating per player, refusing a stale write, and ranks people without demos', async () => {
+      expect(await store.getRating(ids.alice)).toBeNull()
+      const saved = await store.saveRating(ids.alice, { rating: 1016, games: 1, wins: 1, losses: 0, draws: 0 }, 0)
+      expect(saved).toMatchObject({ userId: ids.alice, rating: 1016, games: 1, wins: 1, losses: 0, draws: 0 })
+      expect(await store.saveRating(ids.alice, { rating: 1100, games: 1, wins: 1, losses: 0, draws: 0 }, 0)).toBeNull()
+      expect(await store.saveRating(ids.alice, { rating: 1100, games: 3, wins: 1, losses: 2, draws: 0 }, 2)).toBeNull()
+      const next = await store.saveRating(ids.alice, { rating: 1001, games: 2, wins: 1, losses: 1, draws: 0 }, 1)
+      expect(next).toMatchObject({ rating: 1001, games: 2, losses: 1 })
+      expect(await store.getRating(ids.alice)).toEqual(next)
+
+      await store.saveRating(ids.bob, { rating: 1300, games: 4, wins: 3, losses: 0, draws: 1 }, 0)
+      const demo = await store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })
+      await store.saveRating(demo.id, { rating: 2900, games: 9, wins: 9, losses: 0, draws: 0 }, 0)
+      const top = (await store.topRatings(500)).map((item) => item.userId)
+      expect(top).toEqual(expect.arrayContaining([ids.alice, ids.bob]))
+      expect(top.indexOf(ids.bob)).toBeLessThan(top.indexOf(ids.alice))
+      expect(top).not.toContain(demo.id)
+      expect(await store.topRatings(1)).toHaveLength(1)
+    })
   })
 }
 

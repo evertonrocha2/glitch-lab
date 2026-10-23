@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { PROFILE_COLUMNS as SHARED_PROFILE_COLUMNS, profileFromRow } from './profileShape.js'
 import { createSupabaseCommunity } from './community-supabase.js'
+import { createSupabaseDuels } from './duel-supabase.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
@@ -442,5 +443,8 @@ export function createSupabaseStore({ url, serviceKey }) {
 
     // Articles, comments, reactions and notifications: see community-supabase.js.
     ...createSupabaseCommunity(db),
+
+    // Duels and duel ratings: see duel-supabase.js.
+    ...createSupabaseDuels(db),
   }
 }

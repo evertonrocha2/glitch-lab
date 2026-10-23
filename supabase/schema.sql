@@ -305,3 +305,48 @@ create index if not exists riddle_results_day on public.riddle_results (day, mod
 
 alter table public.riddles enable row level security;
 alter table public.riddle_results enable row level security;
+
+-- Duel: a 1v1 quiz race (5 rounds, the fastest right answer scores more). One row per duel.
+-- `rounds` holds each question with its answer and `bot_plan` the Glitch Bot's answers: both stay on
+-- the server, and the API only shows a round's answer once that round is over. `players` is
+-- [{ userId, isDemo, bot, joinedAt, seenAt }] and `player_ids` the same ids as a searchable list
+-- ('bot' for the Glitch Bot). `answers` and `focus` (tab leave events) carry server times. Every write
+-- checks `version`, so two answers landing together never overwrite each other.
+create table if not exists public.duels (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  kind text not null check (kind in ('private', 'queue', 'bot')),
+  status text not null check (status in ('waiting', 'active', 'finished', 'cancelled')),
+  players jsonb not null default '[]',
+  player_ids text[] not null default '{}',
+  start_at timestamptz,
+  finished_at timestamptz,
+  rounds jsonb not null default '[]',
+  bot_plan jsonb,
+  answers jsonb not null default '[]',
+  focus jsonb not null default '[]',
+  result jsonb,
+  rematch_of uuid,
+  rematch_id uuid,
+  version int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists duels_player_ids on public.duels using gin (player_ids);
+create index if not exists duels_queue on public.duels (kind, status, updated_at);
+
+-- One Elo rating per player (starts at 1000), changed only by finished duels between two people
+-- (never the bot, never a demo account). `games` is the version check for each write.
+create table if not exists public.duel_ratings (
+  user_id uuid primary key references public.users (id) on delete cascade,
+  rating int not null default 1000,
+  games int not null default 0,
+  wins int not null default 0,
+  losses int not null default 0,
+  draws int not null default 0,
+  updated_at timestamptz not null default now()
+);
+create index if not exists duel_ratings_rating on public.duel_ratings (rating desc);
+
+alter table public.duels enable row level security;
+alter table public.duel_ratings enable row level security;
