@@ -269,92 +269,95 @@ export default function ArticlePage() {
 
   return (
     <CommunityShell>
-      <Link to="/articles" className="font-label text-xs text-ink hover:text-primary">
-        &lt; {t('notes.article.all')}
-      </Link>
+      {/* One column for everything, the way back included, so it all lines up on the same edge. */}
+      <div className="mx-auto max-w-3xl">
+        <Link to="/articles" className="-my-3 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary">
+          &lt; {t('notes.article.all')}
+        </Link>
 
-      {state.status === 'loading' && (
-        <p role="status" className="mt-8 font-label text-xs text-muted">
-          {t('notes.article.opening')}
-        </p>
-      )}
-      {state.status === 'error' && (
-        <div className="mt-8">
-          <ErrorNotice message={state.message} />
-        </div>
-      )}
+        {state.status === 'loading' && (
+          <p role="status" className="mt-8 font-label text-xs text-muted">
+            {t('notes.article.opening')}
+          </p>
+        )}
+        {state.status === 'error' && (
+          <div className="mt-8">
+            <ErrorNotice message={state.message} />
+          </div>
+        )}
 
-      {article && (
-        <div className="mx-auto mt-6 max-w-3xl">
-          <PixelCard as="article" className="relative overflow-hidden p-5 sm:p-10">
-            <div aria-hidden="true" className="dither-primary absolute top-0 right-0 h-24 w-1/2 opacity-15" />
-            <div className="relative">
-              {article.tags.length > 0 && (
-                <ul aria-label={t('notes.articles.tags')} className="flex flex-wrap gap-1.5">
-                  {article.tags.map((tag) => (
-                    <li key={tag}>
-                      <Link to={`/articles?tag=${encodeURIComponent(tag)}`} className="bg-primary-soft px-1.5 py-0.5 font-mono text-xs text-primary hover:bg-primary hover:text-white">
-                        #{tag}
-                      </Link>
+        {article && (
+          <div className="mt-6">
+            <PixelCard as="article" className="relative overflow-hidden p-5 sm:p-10">
+              <div aria-hidden="true" className="dither-primary absolute top-0 right-0 h-24 w-1/2 opacity-15" />
+              <div className="relative">
+                {article.tags.length > 0 && (
+                  <ul aria-label={t('notes.articles.tags')} className="flex flex-wrap gap-1.5">
+                    {article.tags.map((tag) => (
+                      <li key={tag}>
+                        <Link to={`/articles?tag=${encodeURIComponent(tag)}`} className="bg-primary-soft px-1.5 py-0.5 font-mono text-xs text-primary hover:bg-primary hover:text-white">
+                          #{tag}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <h1 className="mt-4 break-words font-pixel text-3xl font-bold leading-tight text-ink sm:text-4xl">{article.title}</h1>
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+                  <AuthorChip author={article.author} meta={dateLine(article, date, t)} size="size-10" />
+                  {article.mine && (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <PixelButton as={Link} to={`/articles/${article.id}/edit`} variant="secondary" className="px-3 py-2">
+                        {t('notes.article.edit')}
+                      </PixelButton>
+                      <DeleteArticle onDelete={removeArticle} />
+                    </span>
+                  )}
+                </div>
+                {article.linkedCase && <LinkedCase summary={article.linkedCase} />}
+                <div className="mt-8">
+                  <ArticleBody body={article.body} />
+                </div>
+                <Reactions article={article} reaction={reaction} busy={busy} onReact={react} />
+              </div>
+            </PixelCard>
+
+            {message && (
+              <div className="mt-6">
+                <ErrorNotice message={message} />
+              </div>
+            )}
+
+            <section aria-labelledby="comments-title" className="mt-12">
+              <h2 id="comments-title" className="font-pixel text-2xl font-bold text-ink">
+                {t('notes.article.comments', { count: comments.length })}
+              </h2>
+              {comments.length === 0 ? (
+                <p className="mt-3 text-sm text-muted">{t('notes.article.noComments')}</p>
+              ) : (
+                <ul className="mt-5 space-y-3">
+                  {comments.map((comment) => (
+                    <li key={comment.id} className="border-2 border-ink bg-white p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <AuthorChip author={comment.author} meta={since(comment.createdAt)} size="size-7" />
+                        {comment.canDelete && (
+                          <button type="button" onClick={() => removeComment(comment.id)} aria-label={t('notes.article.deleteComment')} className="font-label text-[10px] text-muted hover:text-primary">
+                            {t('notes.article.delete')}
+                          </button>
+                        )}
+                      </div>
+                      <p className="mt-3 whitespace-pre-line break-words text-ink">{comment.body}</p>
                     </li>
                   ))}
                 </ul>
               )}
-              <h1 className="mt-4 break-words font-pixel text-3xl font-bold leading-tight text-ink sm:text-4xl">{article.title}</h1>
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-                <AuthorChip author={article.author} meta={dateLine(article, date, t)} size="size-10" />
-                {article.mine && (
-                  <span className="flex flex-wrap items-center gap-2">
-                    <PixelButton as={Link} to={`/articles/${article.id}/edit`} variant="secondary" className="px-3 py-2">
-                      {t('notes.article.edit')}
-                    </PixelButton>
-                    <DeleteArticle onDelete={removeArticle} />
-                  </span>
-                )}
+              <div className="mt-6">
+                <Composer user={user} loginLink={loginLink} onPost={post} />
               </div>
-              {article.linkedCase && <LinkedCase summary={article.linkedCase} />}
-              <div className="mt-8">
-                <ArticleBody body={article.body} />
-              </div>
-              <Reactions article={article} reaction={reaction} busy={busy} onReact={react} />
-            </div>
-          </PixelCard>
-
-          {message && (
-            <div className="mt-6">
-              <ErrorNotice message={message} />
-            </div>
-          )}
-
-          <section aria-labelledby="comments-title" className="mt-12">
-            <h2 id="comments-title" className="font-pixel text-2xl font-bold text-ink">
-              {t('notes.article.comments', { count: comments.length })}
-            </h2>
-            {comments.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">{t('notes.article.noComments')}</p>
-            ) : (
-              <ul className="mt-5 space-y-3">
-                {comments.map((comment) => (
-                  <li key={comment.id} className="border-2 border-ink bg-white p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <AuthorChip author={comment.author} meta={since(comment.createdAt)} size="size-7" />
-                      {comment.canDelete && (
-                        <button type="button" onClick={() => removeComment(comment.id)} aria-label={t('notes.article.deleteComment')} className="font-label text-[10px] text-muted hover:text-primary">
-                          {t('notes.article.delete')}
-                        </button>
-                      )}
-                    </div>
-                    <p className="mt-3 whitespace-pre-line break-words text-ink">{comment.body}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-6">
-              <Composer user={user} loginLink={loginLink} onPost={post} />
-            </div>
-          </section>
-        </div>
-      )}
+            </section>
+          </div>
+        )}
+      </div>
     </CommunityShell>
   )
 }

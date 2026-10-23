@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { cleanQuery, SORT_IDS } from '../../shared/community.js'
 import ArticleList from '../components/community/ArticleList.jsx'
 import CommunityShell from '../components/community/CommunityShell.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import PixelButton from '../components/pixel/PixelButton.jsx'
 import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { useT } from '../lib/i18n/I18nProvider.jsx'
@@ -43,25 +44,22 @@ export default function ArticlesPage() {
 
   return (
     <CommunityShell>
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div className="min-w-0">
-          <p className="font-label text-xs text-secondary">
-            &gt; {t('notes.articles.prompt')}
-            <span className="motion-safe:animate-caret">_</span>
-          </p>
-          <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('notes.articles.title')}</h1>
-          <p className="mt-2 max-w-xl text-muted">{t('notes.articles.lede')}</p>
-        </div>
-        {user ? (
-          <PixelButton as={Link} to="/articles/new" className="px-5 py-3">
-            {t('notes.articles.write')}
-          </PixelButton>
-        ) : (
-          <PixelButton as={Link} to={`/login?next=${encodeURIComponent('/articles/new')}`} className="px-5 py-3">
-            {t('notes.articles.signInToWrite')}
-          </PixelButton>
-        )}
-      </div>
+      <PageHeader
+        kicker={t('notes.articles.prompt')}
+        title={t('notes.articles.title')}
+        lead={t('notes.articles.lede')}
+        actions={
+          user ? (
+            <PixelButton as={Link} to="/articles/new" className="px-5 py-3">
+              {t('notes.articles.write')}
+            </PixelButton>
+          ) : (
+            <PixelButton as={Link} to={`/login?next=${encodeURIComponent('/articles/new')}`} className="px-5 py-3">
+              {t('notes.articles.signInToWrite')}
+            </PixelButton>
+          )
+        }
+      />
 
       <form
         role="search"
@@ -96,7 +94,7 @@ export default function ArticlesPage() {
               type="button"
               aria-pressed={sort === id}
               onClick={() => setFilter({ sort: id })}
-              className={`px-3 py-2 font-label text-xs transition-colors sm:text-xs ${sort === id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
+              className={`min-h-10 px-3 py-2 font-label text-xs transition-colors sm:text-xs ${sort === id ? 'bg-primary text-white' : 'text-ink hover:bg-mist'}`}
             >
               {t(`notes.articles.sort.${id}`)}
             </button>
