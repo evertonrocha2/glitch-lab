@@ -4,6 +4,9 @@ import { useAuth } from '../auth/auth-provider.jsx'
 import { appendDelta, loadConversation, saveConversation, stoppedMessage, toApiMessages } from './conversation.js'
 
 const AssistantContext = createContext(null)
+// Its own context: a page that reports its open case (the board) must not re-render at every
+// streamed word or when the panel opens.
+const FocusContext = createContext(null)
 const newId = () => crypto.randomUUID()
 
 // Lives above the routes, so the chat and a question in flight survive moving between pages.
@@ -175,7 +178,11 @@ export function AssistantProvider({ children }) {
     }),
     [isOpen, open, close, toggle, messages, pending, error, announcement, send, retry, stop, newChat, focus],
   )
-  return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>
+  return (
+    <FocusContext.Provider value={setFocus}>
+      <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>
+    </FocusContext.Provider>
+  )
 }
 
 // { isOpen, open, close, toggle, messages, pending, error, announcement, send, retry, stop, newChat, focus }
@@ -188,7 +195,7 @@ export function useAssistant() {
 // A page tells the assistant what it has open, e.g. useAssistantFocus({ caseId }) on the board.
 // Does nothing outside the provider, so pages still render on their own.
 export function useAssistantFocus(focus) {
-  const setFocus = useContext(AssistantContext)?.setFocus
+  const setFocus = useContext(FocusContext)
   const caseId = focus?.caseId ?? null
   useEffect(() => {
     if (!setFocus) return
