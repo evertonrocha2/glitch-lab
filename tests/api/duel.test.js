@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { MAX_FOCUS_EVENTS } from '../../api/_lib/duel/play.js'
 import { GET, POST } from '../../api/challenge.js'
+import { GET as PROGRESS } from '../../api/progress.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'
 import { apiRequest, useTempStore } from './helpers.js'
 
@@ -322,14 +323,40 @@ it('offers the Glitch Bot: it gives up the waiting room and plays from its plan'
 
 it('forfeits a player whose page stops checking in during the duel', async () => {
   const { id } = await privateDuel()
-  // Alice keeps polling; Bob's page went quiet when he joined.
-  for (let time = START; time <= START + STALE_MS; time += 5000) {
+  // Both pages check in through the first three rounds; then Bob's goes quiet.
+  const threeRounds = OPEN0 + 3 * ROUND_MS + 2 * REVEAL_MS
+  let time = START
+  for (; time <= threeRounds; time += 5000) {
+    at(time)
+    await state(id, 'dev:bob')
+    expect((await state(id)).body.duel.status).toBe('active')
+  }
+  const bobLastSeen = time - 5000
+  for (; time <= bobLastSeen + STALE_MS; time += 5000) {
     at(time)
     expect((await state(id)).body.duel.status).toBe('active')
   }
+  at(bobLastSeen + STALE_MS + 1)
+  const end = await state(id)
+  expect(end.body.duel).toMatchObject({ status: 'finished', result: { reason: 'forfeit', winner: 0, forfeit: 1, rated: true, early: false, rating: { after: 1016 } } })
+})
+
+it('makes a forfeit before round 3 unrated, with no XP for either player', async () => {
+  const { id } = await privateDuel()
+  // Bob's page goes quiet right after joining: he forfeits during round 1.
+  for (let time = START; time <= START + STALE_MS; time += 5000) {
+    at(time)
+    await state(id)
+  }
   at(START + STALE_MS + 1)
   const end = await state(id)
-  expect(end.body.duel).toMatchObject({ status: 'finished', result: { reason: 'forfeit', winner: 0, forfeit: 1, rated: true, rating: { after: 1016 } } })
+  expect(end.body.duel).toMatchObject({ status: 'finished', result: { reason: 'forfeit', winner: 0, forfeit: 1, rated: false, early: true, rating: null } })
+  expect(await store.getRating('alice')).toBeNull()
+  expect(await store.getRating('bob')).toBeNull()
+  const progress = async (token) => (await (await PROGRESS(apiRequest('/api/progress?today=2026-10-22', { method: 'GET', token }))).json()).progress
+  expect((await progress('dev:alice')).xp).toBe(0)
+  expect((await progress('dev:bob')).xp).toBe(0)
+  expect((await progress('dev:alice')).badges.find((badge) => badge.id === 'duelist').earned).toBe(false)
 })
 
 it('fails closed when a player runs out of tab reports: they count as away from then on', async () => {

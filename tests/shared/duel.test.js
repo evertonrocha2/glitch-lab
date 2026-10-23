@@ -42,3 +42,15 @@ it('pays XP per duel, half against the bot, capped per day', () => {
   const many = Array.from({ length: HUMAN_XP_PER_DAY + 1 }, () => ({ day, outcome: 'win', vsBot: false }))
   expect(duelSummary(many).xp).toBe(HUMAN_XP_PER_DAY * 40)
 })
+
+it('pays nothing and counts no win for a duel that ended early', () => {
+  const day = '2026-10-22'
+  const early = [
+    { day, outcome: 'win', vsBot: false, early: true, fastestMs: null },
+    { day, outcome: 'forfeit', vsBot: false, early: true, fastestMs: null },
+  ]
+  expect(duelSummary(early)).toEqual({ xp: 0, played: 2, wins: 0, humanWins: 0, fastestMs: null })
+  // Early ones don't use up the day's capped games either.
+  const full = Array.from({ length: HUMAN_XP_PER_DAY }, () => ({ day, outcome: 'win', vsBot: false }))
+  expect(duelSummary([...early, ...full]).xp).toBe(HUMAN_XP_PER_DAY * 40)
+})

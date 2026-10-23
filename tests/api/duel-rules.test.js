@@ -199,6 +199,19 @@ describe('clock and scoring', () => {
     expect(outcomeAt(quiet, START + STALE_MS + 1, 'alice')).toMatchObject({ reason: 'forfeit', forfeitBy: 'bob', winner: 'alice', players: [{ outcome: 'win' }, { outcome: 'forfeit' }] })
   })
 
+  it('makes a forfeit before round 3 closed unrated and early, and a later one rated', () => {
+    const rounds = timeline(duel(), Number.MAX_SAFE_INTEGER)
+    const atRound = (index) => rounds[index].openAt + 1000
+    expect(buildResult(duel(), timeline(duel(), atRound(0)), atRound(0), 'bob')).toMatchObject({ reason: 'forfeit', rated: false, early: true, winner: 'alice' })
+    // Two rounds closed, the third still open: still early.
+    expect(buildResult(duel(), timeline(duel(), atRound(2)), atRound(2), 'bob')).toMatchObject({ rated: false, early: true })
+    // Three rounds closed: a real game.
+    expect(buildResult(duel(), timeline(duel(), atRound(3)), atRound(3), 'bob')).toMatchObject({ rated: true, early: false })
+    // A game played to the end is never early.
+    const end = rounds.at(-1).closeAt
+    expect(buildResult(duel(), timeline(duel(), end), end)).toMatchObject({ rated: true, early: false })
+  })
+
   it('never rates bot games or demo accounts', () => {
     const at = START + 200_000
     expect(buildResult(duel({ kind: 'bot', players: [{ userId: 'alice' }, { userId: 'bot', bot: true }] }), timeline(duel(), at), at).rated).toBe(false)

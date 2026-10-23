@@ -141,3 +141,30 @@ it('adds duel xp, the duel badges and the duels to the activity graph', async ()
   expect(earned(progress)).toEqual(['duelist', 'speed-demon'])
   expect(progress.activity.best).toEqual({ day: '2026-10-21', count: 2 })
 })
+
+it('pays a win against a demo account like a bot win, without the duelist badge', async () => {
+  const seat = (userId, isDemo = false) => ({ userId, isDemo, bot: false, joinedAt: '2026-10-21T10:00:00.000Z', seenAt: '2026-10-21T10:00:00.000Z' })
+  // The same person in a second tab, signed in as a passwordless demo, losing on purpose.
+  const duel = await store.createDuel({ code: 'DDDDDD', kind: 'private', status: 'active', players: [seat('alice'), seat('demo', true)], rounds: [], startAt: '2026-10-21T10:00:00.000Z' })
+  await store.updateDuel(
+    duel.id,
+    {
+      status: 'finished',
+      finishedAt: '2026-10-21T10:02:00.000Z',
+      result: {
+        reason: 'score',
+        winner: 'alice',
+        rated: false,
+        early: false,
+        players: [
+          { userId: 'alice', score: 900, fastestMs: 2500, outcome: 'win' },
+          { userId: 'demo', score: 0, fastestMs: null, outcome: 'loss' },
+        ],
+      },
+    },
+    0,
+  )
+  const { progress } = await (await GET(apiRequest('/api/progress?today=2026-10-22', { method: 'GET' }))).json()
+  expect(progress.xp).toBe(20)
+  expect(earned(progress)).toEqual([])
+})

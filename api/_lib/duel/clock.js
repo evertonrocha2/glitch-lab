@@ -1,4 +1,4 @@
-import { COUNTDOWN_MS, REVEAL_MS, ROUND_MS, roundPoints, STALE_MS } from '../../../shared/duel.js'
+import { COUNTDOWN_MS, MIN_RATED_ROUNDS, REVEAL_MS, ROUND_MS, roundPoints, STALE_MS } from '../../../shared/duel.js'
 
 // The duel clock, worked out from what's stored: startAt, the answers (with the server time each
 // one arrived) and the bot's plan. Nothing here trusts a time sent by the browser.
@@ -97,10 +97,12 @@ export function outcomeAt(duel, now, presentId = null, leavingId = null) {
   return buildResult(duel, rounds, now, forfeitBy)
 }
 
-// { reason, forfeitBy, winner (null for a draw), rated, players: [{ userId, score, fastestMs, outcome }] }.
-// Rated: two people, neither of them a demo account, never the bot.
+// { reason, forfeitBy, winner (null for a draw), rated, early, players: [{ userId, score, fastestMs, outcome }] }.
+// Rated: two people, neither of them a demo account, never the bot, and not ended early.
+// Early: a forfeit before MIN_RATED_ROUNDS rounds closed; it pays no XP to either side.
 export function buildResult(duel, rounds, now, forfeitBy = null) {
   const closed = closedRounds(rounds, now)
+  const early = Boolean(forfeitBy) && closed.length < MIN_RATED_ROUNDS
   const players = duel.players.map((player) => {
     const scored = closed.map((round) => scoreRound(duel, round, player.userId))
     const fastest = scored.filter((item) => item.correct && !item.left).map((item) => item.ms)
@@ -114,7 +116,8 @@ export function buildResult(duel, rounds, now, forfeitBy = null) {
     reason: forfeitBy ? 'forfeit' : 'score',
     forfeitBy,
     winner,
-    rated: duel.kind !== 'bot' && duel.players.every((player) => !player.bot && !player.isDemo),
+    rated: !early && duel.kind !== 'bot' && duel.players.every((player) => !player.bot && !player.isDemo),
+    early,
     players: players.map((item) => ({ ...item, outcome: outcome(item.userId) })),
   }
 }

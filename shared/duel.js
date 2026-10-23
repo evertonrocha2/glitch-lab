@@ -13,6 +13,9 @@ export const BOT_OFFER_MS = 20_000
 // Forfeit rule: during an active duel, a player whose page hasn't checked in for this long loses.
 // Players who stay but don't answer simply score 0 on those rounds.
 export const STALE_MS = 30_000
+// A duel that ends in a forfeit before this many rounds closed is unrated and pays no XP to
+// either player (no rating change, no win), so quitting early can't be farmed.
+export const MIN_RATED_ROUNDS = 3
 
 // A round: 0 when wrong, voided (left the tab) or not answered; otherwise 100 plus up to 100 for
 // speed, falling in a straight line from an instant answer to the last moment.
@@ -43,12 +46,16 @@ export const SPEED_DEMON_MS = 2_000
 // A day with duels counts at most this many times on the activity graph.
 export const MAX_DUEL_ACTIVITY = 3
 
-// results: [{ day, outcome: 'win' | 'draw' | 'loss' | 'forfeit', vsBot, fastestMs }], one per
-// finished duel. Returns { xp, played, wins, humanWins, fastestMs }.
+// results: [{ day, outcome: 'win' | 'draw' | 'loss' | 'forfeit', vsBot, early, fastestMs }], one
+// per finished duel. vsBot is true against the Glitch Bot and against demo accounts too (anyone
+// can open one in another tab). early: a forfeit before MIN_RATED_ROUNDS, which pays nothing and
+// isn't a win. Returns { xp, played, wins, humanWins, fastestMs }.
 export function duelSummary(results = []) {
   const perDay = new Map()
   let xp = 0
+  const won = (item) => item.outcome === 'win' && !item.early
   for (const item of results) {
+    if (item.early) continue
     const slot = `${item.day}:${item.vsBot ? 'bot' : 'human'}`
     const count = perDay.get(slot) ?? 0
     perDay.set(slot, count + 1)
@@ -60,8 +67,8 @@ export function duelSummary(results = []) {
   return {
     xp,
     played: results.length,
-    wins: results.filter((item) => item.outcome === 'win').length,
-    humanWins: results.filter((item) => item.outcome === 'win' && !item.vsBot).length,
+    wins: results.filter(won).length,
+    humanWins: results.filter((item) => won(item) && !item.vsBot).length,
     fastestMs: fastest.length ? Math.min(...fastest) : null,
   }
 }

@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { MIN_RATED_ROUNDS } from '../../../shared/duel.js'
 import { playerName } from '../../lib/duel.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../lib/i18n/labels.js'
@@ -53,6 +54,8 @@ export const ResultPanel = forwardRef(function ResultPanel({ duel, onRematch, on
                     {result.rating.after - result.rating.before})
                   </span>
                 </>
+              ) : result.early ? (
+                t('duel.result.early', { rounds: MIN_RATED_ROUNDS })
               ) : (
                 t('duel.result.practice')
               )}

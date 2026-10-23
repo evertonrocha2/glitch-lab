@@ -65,6 +65,7 @@ export function publicDuel(duel, viewerId, now, people) {
         forfeit: seatOfUser(result.forfeitBy),
         scores: result.players.map((item) => item.score),
         rated: result.rated,
+        early: Boolean(result.early),
         rating: seat === -1 ? null : (result.rating?.[viewerId] ?? null),
       },
     }
