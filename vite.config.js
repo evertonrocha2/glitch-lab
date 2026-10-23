@@ -1,14 +1,11 @@
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
-const ROUTE_NAME = /^[a-z-]+$/
-
-// Dev only: serve every api/<name>.js the way Vercel does, so `bun run dev` works without `vercel dev`.
-// The env (with the API key) stays in this Node process; the browser never sees it.
+// Dev only: the Express API (server/app.js) runs inside Vite's dev server under /api, so
+// `bun run dev` is the whole app. The env (with the API key) stays in this Node process; the
+// browser never sees it.
 function localApi() {
   return {
     name: 'local-api',
@@ -22,41 +19,16 @@ function localApi() {
       for (const [key, value] of Object.entries(env)) {
         process.env[key] ??= value
       }
-      server.middlewares.use('/api', async (req, res) => {
+
+      // Loaded through Vite, so an edit under server/ applies on the next request without a restart.
+      // One app per loaded version of the module.
+      const apps = new WeakMap()
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url !== '/api' && !req.url.startsWith('/api/') && !req.url.startsWith('/api?')) return next()
         try {
-          // Mounted at /api, so req.url is "/<name>?query".
-          const url = new URL(req.url, 'http://localhost')
-          const name = url.pathname.replace(/^\/+|\/+$/g, '')
-          if (!ROUTE_NAME.test(name) || !existsSync(resolve(server.config.root, 'api', `${name}.js`))) {
-            res.statusCode = 404
-            res.end()
-            return
-          }
-          const handler = (await server.ssrLoadModule(`/api/${name}.js`))[req.method]
-          if (typeof handler !== 'function') {
-            res.statusCode = 405
-            res.end()
-            return
-          }
-
-          const chunks = []
-          for await (const chunk of req) chunks.push(chunk)
-          const headers = {}
-          if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type']
-          if (req.headers.authorization) headers.Authorization = req.headers.authorization
-          if (req.headers['accept-language']) headers['Accept-Language'] = req.headers['accept-language']
-          const hasBody = !['GET', 'HEAD'].includes(req.method)
-
-          const response = await handler(
-            new Request(`http://localhost/api/${name}${url.search}`, {
-              method: req.method,
-              headers,
-              body: hasBody ? Buffer.concat(chunks) : undefined,
-            }),
-          )
-          res.statusCode = response.status
-          res.setHeader('Content-Type', response.headers.get('Content-Type') ?? 'application/json')
-          res.end(await response.text())
+          const module = await server.ssrLoadModule('/server/app.js')
+          if (!apps.has(module)) apps.set(module, module.createApp())
+          apps.get(module)(req, res, next)
         } catch (err) {
           console.error(err)
           res.statusCode = 500

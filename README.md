@@ -24,7 +24,7 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 10. **Ask the detective.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
 11. **Daily and global challenges.** Three puzzles a day for everyone and a weekly global one with a leaderboard, fed by a daily cron.
 12. **Glitchdle.** A Loldle-style riddle a day: name the programming language from its traits, an error it printed, or a hidden snippet.
-13. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. Everything runs through one function, `api/community.js` (`?resource=articles|comments|reactions|notifications`). Demo accounts can read, but not publish, comment, like or rate.
+13. **Share what you learned.** Publish short articles in the community (`/articles`, readable signed out). Others like them, rate them *valid* or *bad*, and comment; a bell tells you when they do. Search by words, tag or author and sort by newest, likes or valid ratings. Articles, likes, valid ratings and comments earn XP (capped, so it can't be farmed) and two more badges: *Author* and *Trusted*. A linked case shows only its error type, bug type and language, never your code. The API lives in `server/modules/articles` (`/api/articles`, `/api/comments`, `/api/notifications`). Demo accounts can read, but not publish, comment, like or rate.
 
 ## How AI is used
 
@@ -43,7 +43,7 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 
 ## Ask the detective (an orchestration of agents)
 
-A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) where you can ask about anything in the app. One question runs through a small team of agents in `api/assistant.js` and `api/_lib/assistant/`:
+A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) where you can ask about anything in the app. One question runs through a small team of agents in `server/modules/assistant/` (`POST /api/assistant`):
 
 1. **Router agent** picks 1 or 2 specialists and the data each needs, knowing which page (and which case, note or challenge) you're on. If it fails, a keyword and page based choice takes over.
 2. **Context loaders** read only what each specialist needs, only for you, trimmed to a budget. The gym loader never reads challenge secrets and only sees the hints you've revealed.
@@ -56,8 +56,8 @@ One question counts as one AI call on the daily limit. The chat lives in the bro
 
 The **Daily** page has 3 new puzzles every day (easy, medium, hard), the same for everyone, plus one harder **global challenge** a week with a leaderboard.
 
-- **A cron feeds them.** Vercel runs `GET /api/challenge?cron=1` daily at 03:00 UTC (midnight in Brasilia), signed with `CRON_SECRET`. It asks Gemini for today's and tomorrow's puzzles, so the next set is ready the moment the day turns, plus the week's global challenge. Bug types and languages rotate, recent titles are avoided, and every answer is validated strictly. Running it twice adds nothing.
-- **Always something to solve.** If the cron didn't run or the AI is down, the day is filled from a curated pool of 15 hand-written puzzles (`api/_lib/puzzles/pool.js`), picked by date so everyone still gets the same set.
+- **A cron feeds them.** A GitHub Actions workflow calls `POST /api/cron/daily` daily at 03:00 UTC (midnight in Brasilia), signed with `CRON_SECRET`. It asks Gemini for today's and tomorrow's puzzles, so the next set is ready the moment the day turns, plus the week's global challenge. Bug types and languages rotate, recent titles are avoided, and every answer is validated strictly. Running it twice adds nothing.
+- **Always something to solve.** If the cron didn't run or the AI is down, the day is filled from a curated pool of 15 hand-written puzzles (`server/modules/daily/puzzle-pool.js`), picked by date so everyone still gets the same set.
 - **Same gym, same secrets.** Solving a puzzle opens the regular gym: hints one at a time, and the AI judges your fix against a solution that never reaches the browser. Starting a puzzle costs no AI call.
 - **XP and badges.** Easy 20, medium 35, hard 50, global 100 XP. *Daily grinder*: a daily solved 7 days in a row. *Global ace*: solve a global challenge.
 - **Leaderboard.** Top 10 by time from start to pass, then fewer attempts, with the first solver marked. Only public profiles show a name and avatar; everyone else is an "Anonymous detective". No emails, no account ids.
@@ -71,7 +71,7 @@ The **Daily** page has 3 new puzzles every day (easy, medium, hard), the same fo
 - **Snippet.** A short snippet with most lines hidden; each wrong guess shows one more.
 - **38 languages** in `shared/riddle/languages.js`, from JavaScript to COBOL and Prolog. Debatable classifications follow the mainstream answer, with a comment. Error samples and snippets live in `shared/riddle/samples.js` and never ship to the browser.
 - **Secrets stay on the server.** The answers are picked from the date (no language repeats in a mode for 20 days) on the server only. Each guess is graded and saved there, so a reload keeps the board, and a mode only shows its answer once it's solved or out of guesses (30 per mode).
-- **The same cron.** `GET /api/challenge?cron=1` also writes today's and tomorrow's riddles, asking Gemini for one fresh error message (rejected if it names the language, its extension or its tools, then the dataset's is used). A day the cron missed is built from the dataset the first time someone plays.
+- **The same cron.** `POST /api/cron/daily` also writes today's and tomorrow's riddles, asking Gemini for one fresh error message (rejected if it names the language, its extension or its tools, then the dataset's is used). A day the cron missed is built from the dataset the first time someone plays.
 - **Stats, sharing, XP.** Your games, perfect days (all three modes) and streak, a guess distribution, today's community numbers (demo accounts left out), and a Share button that copies a spoiler-free result. Each solved mode is worth 25 XP (1-2 guesses) down to 10, and *Lingo master* is all three modes in one day.
 
 ## Try it
@@ -81,17 +81,21 @@ Open the app and press **Use demo account**. Each visitor gets their own board, 
 ## Architecture
 
 ```
-React + Tailwind (Vite)  ──>  /api/* (Vercel Functions)  ──>  Gemini
-                                   │
-                         auth: email + password, signed sessions
-                         store: Supabase Postgres (dev: a local JSON file)
+React + Tailwind (Vite, on Vercel)  ──>  /api/* (Express on Render)  ──>  Gemini
+                                              │
+                                    auth: email + password, signed sessions
+                                    store: Supabase Postgres (dev: a local JSON file)
 ```
 
 - Accounts: passwords hashed with scrypt, sessions signed with HMAC and valid for 7 days. Emails are unique and case-insensitive. After 10 wrong passwords an email is locked for the day.
 
-- `api/analyze.js`, `api/cases.js`, `api/challenge.js`, `api/hint.js`, `api/check.js`, `api/notes.js`, `api/progress.js`, `api/trail.js`, `api/auth.js`: one function per route, each checking the signed-in user first (sign in, sign up and the demo share `api/auth.js`, so the app stays under the 12 functions of the Vercel free plan).
+- `server/`: an Express 5 app in layers. `server/app.js` builds it (JSON body, locale, routes, 404 and error handler) and `server/index.js` runs it.
+  - `core/`: what every route shares: `AppError`, the auth middleware (`requireAuth`, `optionalAuth`), the locale, validation helpers.
+  - `infra/`: the outside world: `database/` (the store, local JSON or Supabase), `ai/` (Gemini, the daily AI quota), `security/` (passwords, sessions).
+  - `modules/<feature>/`: one folder per feature (auth, profile, cases, challenges, daily, glitchdle, hunt, duels, notes, progress, review, trails, interrogation, articles, events, assistant, cron). `*.routes.js` names the paths and middlewares, `*.controller.js` reads the request and writes the response, `*.service.js` holds the rules and never sees `req` or `res`.
+- In dev, Vite mounts the same Express app under `/api`, so `bun run dev` is the whole app. In production Vercel serves the site and forwards `/api/*` to Render (`render.yaml`, `bun run start`).
 - `shared/progress.js`: XP, levels, streaks and badges are worked out from what you've done, never stored, so they can't drift out of sync.
-- `api/_lib/ai`, `api/_lib/store`, `api/_lib/auth`: swappable layers. The same contract tests run against the local store and Supabase.
+- `server/infra/ai`, `server/infra/database`, `server/infra/security`: swappable layers. The same contract tests run against the local store and Supabase.
 - `supabase/schema.sql`: tables with Row Level Security on and no client policies. The browser can't read any row directly.
 
 ## Run it locally
@@ -104,7 +108,7 @@ bun run dev               # http://localhost:5173
 
 Without Supabase variables, accounts and data live in `.data/db.json`. Create an account on the login screen, or press **Use demo account**.
 
-For production, create a Supabase project, run `supabase/schema.sql`, then set the variables listed in `.env.example` on Vercel (`AUTH_SECRET` included).
+For production, create a Supabase project, run `supabase/schema.sql`, then set the variables listed in `.env.example` on the API host, Render (`AUTH_SECRET` included).
 
 ## Tests
 
@@ -116,4 +120,4 @@ bun run test
 
 ## Built with
 
-React · Tailwind CSS · Vite · react-router · Bun · Vitest · Vercel Functions · Supabase · Gemini API
+React · Tailwind CSS · Vite · react-router · Bun · Vitest · Express · Supabase · Gemini API

@@ -122,7 +122,7 @@ export const EVENT_XP_CAPS = { entries: 20, votes: 50, hosted: 10, podiumsPerWee
 export const HOST_MIN_ENTRIES = 3
 export const NO_EVENTS = { entries: 0, first: 0, second: 0, third: 0, votesReceived: 0, hosted: 0, days: [] }
 
-// Accounts the app makes itself (demo visitors, sample authors): same domains as api/_lib/accounts.js.
+// Accounts the app makes itself (demo visitors, sample authors): same domains as server/modules/auth/credentials.js.
 const MADE_UP = /@(demo|sample)\.glitch$/i
 export const isSampleAccount = ({ email, isDemo }) => Boolean(isDemo) || MADE_UP.test(email ?? '')
 

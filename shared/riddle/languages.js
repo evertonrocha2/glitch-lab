@@ -1,6 +1,6 @@
 // Glitchdle's languages and the attributes players compare in Classic mode.
 // Public on purpose: the browser uses this list for the guess box and the attribute labels.
-// Which language is today's answer lives only on the server (api/_lib/riddle).
+// Which language is today's answer lives only on the server (server/modules/glitchdle).
 // Error samples and snippets sit apart in samples.js, so they never ship to the browser.
 //
 // When a classification is debatable we pick the mainstream answer and say why in a comment.

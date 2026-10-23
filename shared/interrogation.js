@@ -3,7 +3,7 @@
 // Shared by the API (grading, saving) and the app (the stepper, the timeline, the note export).
 
 export const INTERROGATION_STEPS = ['reproduce', 'read', 'hypothesis', 'isolate', 'fix', 'prevent']
-// Before this step the coach must never hand out the fix (see api/_lib/interrogation/guard.js).
+// Before this step the coach must never hand out the fix (see server/modules/interrogation/guard.js).
 export const FIX_STEP = INTERROGATION_STEPS.indexOf('fix')
 // Paid once per case: there is one interrogation per case, and only a finished one counts.
 export const INTERROGATION_XP = 60

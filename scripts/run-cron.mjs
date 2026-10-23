@@ -18,7 +18,11 @@ for (let attempt = 1; ; attempt++) {
   await new Promise((done) => setTimeout(done, 15_000))
 }
 
-const res = await fetch(`${base}/api/challenge?cron=1`, { headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(600_000) })
+const res = await fetch(`${base}/api/cron/daily`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${secret}` },
+  signal: AbortSignal.timeout(600_000),
+})
 const body = await res.text()
 console.log(res.status, body.slice(0, 2000))
 if (!res.ok) process.exit(1)
