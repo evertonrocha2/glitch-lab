@@ -451,6 +451,32 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       ])
     })
 
+    // The framework and database boards share the tables, one slot each (supabase/schema.sql
+    // allows their names in the mode checks).
+    it('keeps framework and database boards and results next to the language modes', async () => {
+      const day = randomDay()
+      for (const [mode, answer] of [
+        ['classic', 'rust'],
+        ['frameworks', 'react'],
+        ['databases', 'postgresql'],
+      ]) {
+        expect(await store.createRiddle({ day, mode, answer })).toMatchObject({ day, mode, answer, payload: {}, source: 'dataset' })
+      }
+      expect(await store.createRiddle({ day, mode: 'databases', answer: 'redis' })).toBeNull()
+      expect((await store.listRiddles({ day })).map((item) => item.mode).sort()).toEqual(['classic', 'databases', 'frameworks'])
+
+      await store.saveRiddleResult(ids.alice, { day, mode: 'frameworks', guesses: ['vue-js'], solved: false }, 0)
+      const solved = await store.saveRiddleResult(ids.alice, { day, mode: 'frameworks', guesses: ['vue-js', 'react'], solved: true }, 1)
+      expect(solved).toMatchObject({ mode: 'frameworks', guesses: ['vue-js', 'react'], solved: true })
+      await store.saveRiddleResult(ids.alice, { day, mode: 'databases', guesses: ['mysql'], solved: false }, 0)
+      expect(await store.getRiddleResult(ids.alice, day, 'databases')).toMatchObject({ guesses: ['mysql'], solved: false })
+      expect((await store.listRiddleResults(ids.alice)).filter((item) => item.day === day).map((item) => item.mode).sort()).toEqual(['databases', 'frameworks'])
+      expect((await store.riddleDayResults(day)).sort((a, b) => a.mode.localeCompare(b.mode))).toEqual([
+        { userId: ids.alice, mode: 'databases', guessCount: 1, solved: false },
+        { userId: ids.alice, mode: 'frameworks', guessCount: 2, solved: true },
+      ])
+    })
+
     it("lists a day's results for the community numbers, without demo accounts", async () => {
       const day = randomDay()
       const demo = await store.createUser({ email: `demo-${crypto.randomUUID()}@demo.glitch`, passwordHash: null, isDemo: true })
