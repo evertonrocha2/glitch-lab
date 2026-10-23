@@ -12,11 +12,17 @@ import { useAuth } from '../lib/auth/AuthProvider.jsx'
 import { playerName, secondsUntil } from '../lib/duel.js'
 import { useT } from '../lib/i18n/I18nProvider.jsx'
 import { useProgress } from '../lib/progress/ProgressProvider.jsx'
+import { joinDuel, nudgeDuel } from '../lib/realtime/index.js'
 
 // While a duel is on, the page asks for its state about once a second, and right when the next
 // round opens. A finished duel between people is checked every few seconds for a while, so a
 // rematch invitation shows up; everything else stops polling.
+// With the realtime channel up, the other page says when it changed something (an answer, a join,
+// a tab report), so polling is only the fallback. A waiting room still asks every 2s: a lost nudge
+// must not eat the 3-2-1.
 export const POLL_MS = 1000
+export const REALTIME_POLL_MS = 4000
+export const REALTIME_WAITING_POLL_MS = 2000
 const FINISHED_POLL_MS = 5000
 const FINISHED_POLLS = 24
 const TICK_MS = 200
@@ -65,7 +71,11 @@ export default function DuelPage() {
   const [away, setAway] = useState(false)
   const [pollKey, setPollKey] = useState(0)
   const [giveUp, setGiveUp] = useState(false)
+  const [realtime, setRealtime] = useState('off')
+  const [online, setOnline] = useState(null)
   const offset = useRef(0)
+  const latest = useRef(null)
+  const channelRef = useRef(null)
   const finishedPolls = useRef(0)
   const pendingRef = useRef(null)
   const phaseRef = useRef(null)
@@ -85,9 +95,17 @@ export default function DuelPage() {
 
   const apply = useCallback(
     (next) => {
+      // An older answer that lands after a newer one (a nudge and a poll crossing) is dropped.
+      const current = latest.current
+      if (current?.id === next.id && (next.version < current.version || (next.version === current.version && next.now < current.now))) return
+      latest.current = next
       offset.current = Date.parse(next.now) - Date.now()
       setDuel(next)
-      if (next.id !== id) navigate(`/duel/${next.id}`, { replace: true })
+      if (next.id !== id) {
+        navigate(`/duel/${next.id}`, { replace: true })
+        // Moved into another duel (a quick match that paired up, a rematch): tell whoever waits there.
+        nudgeDuel(next.id, next.version)
+      }
     },
     [id, navigate],
   )
@@ -120,7 +138,7 @@ export default function DuelPage() {
     const live = isLive(duel)
     const rematchWatch = duel.status === 'finished' && duel.you !== null && duel.kind !== 'bot' && !duel.rematchId && finishedPolls.current < FINISHED_POLLS
     if (!live && !rematchWatch) return
-    let delay = live ? POLL_MS : FINISHED_POLL_MS
+    let delay = !live ? FINISHED_POLL_MS : realtime !== 'live' ? POLL_MS : duel.status === 'waiting' ? REALTIME_WAITING_POLL_MS : REALTIME_POLL_MS
     const target = live ? (duel.next?.openAt ?? duel.current?.deadline) : null
     if (target) {
       const wait = Date.parse(target) - (Date.now() + offset.current) + 80
@@ -129,7 +147,36 @@ export default function DuelPage() {
     if (!live) finishedPolls.current += 1
     const timer = setTimeout(() => loadRef.current(), delay)
     return () => clearTimeout(timer)
-  }, [duel, id, pollKey])
+  }, [duel, id, pollKey, realtime])
+
+  // The realtime channel: a nudge from the other page refetches at once (unless this page already
+  // has that version), and presence says if their page is open. Without it, polling does it all.
+  useEffect(() => {
+    setRealtime('off')
+    setOnline(null)
+    const channel = joinDuel(id, {
+      onChange: (v) => {
+        const current = latest.current
+        if (v !== null && current?.id === id && current.version >= v) return
+        loadRef.current()
+      },
+      onStatus: setRealtime,
+      onPresence: setOnline,
+    })
+    channelRef.current = channel
+    return () => {
+      channel.leave()
+      channelRef.current = null
+    }
+  }, [id])
+  const seat = duel?.id === id ? duel.you : null
+  useEffect(() => {
+    channelRef.current?.setSeat(seat)
+  }, [seat, id])
+  // After a move of mine landed: the other page hears it now instead of on its next poll.
+  const tell = useCallback((next) => {
+    if (next?.id) channelRef.current?.nudge(next.version)
+  }, [])
 
   const roundIndex = duel?.status === 'active' && duel.phase === 'round' ? duel.current.index : null
   phaseRef.current = duel?.status === 'active' ? duel.phase : null
@@ -164,6 +211,9 @@ export default function DuelPage() {
       if (hidden && phaseRef.current === 'round') setAway(true)
       getToken()
         .then((token) => sendDuel('focus', { id: watchId, state }, token, { keepalive: true }))
+        .then((result) => {
+          if (result?.recorded) channelRef.current?.nudge(null)
+        })
         .catch(() => {})
     }
     const onVisibility = () => report(document.visibilityState === 'hidden' ? 'hidden' : 'visible')
@@ -189,7 +239,9 @@ export default function DuelPage() {
       setPending(choice)
       setMessage('')
       try {
-        apply((await sendDuel('answer', { id: duel.id, round: duel.current.index, choice }, await getToken())).duel)
+        const { duel: next } = await sendDuel('answer', { id: duel.id, round: duel.current.index, choice }, await getToken())
+        apply(next)
+        tell(next)
       } catch (err) {
         await handleError(err)
         loadRef.current()
@@ -198,7 +250,7 @@ export default function DuelPage() {
         setPending(null)
       }
     },
-    [duel, getToken, apply, handleError],
+    [duel, getToken, apply, handleError, tell],
   )
 
   // Keys 1 to 4 answer, unless I'm typing somewhere.
@@ -222,6 +274,7 @@ export default function DuelPage() {
     setMessage('')
     try {
       const result = await sendDuel(action, fields, await getToken())
+      if (result.duel?.id === id) tell(result.duel)
       if (leaveTo) navigate(leaveTo)
       else apply(result.duel)
     } catch (err) {
@@ -242,6 +295,8 @@ export default function DuelPage() {
   }
 
   const me = duel?.you ?? null
+  // Their page open or not, from realtime presence: only shown for a person I'm playing.
+  const presence = online && realtime === 'live' && me !== null && duel ? duel.players.map((player, index) => (player.bot || index === me ? null : online.has(index))) : null
   const leftNow = Boolean(duel?.status === 'active' && duel.phase === 'round' && (away || (me !== null && duel.current.left[me])))
 
   return (
@@ -301,7 +356,7 @@ export default function DuelPage() {
           {duel.status === 'active' && !duel.spectator && (
             <div className="space-y-5">
               <TabBanner left={leftNow} />
-              <Scoreboard duel={duel} />
+              <Scoreboard duel={duel} presence={presence} />
               {duel.phase === 'countdown' && <Countdown seconds={secondsUntil(duel.next.openAt, now)} />}
               {duel.phase === 'round' && <QuestionCard ref={questionRef} duel={duel} now={now} pending={pending} onAnswer={answer} />}
               {duel.phase === 'reveal' && duel.last && <RevealCard duel={duel} now={now} />}

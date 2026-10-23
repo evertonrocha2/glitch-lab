@@ -36,7 +36,8 @@ export const seatsInOrder = (duel) => {
 }
 
 // Both players, their scores, and during a round whether each has answered or left the tab.
-export function Scoreboard({ duel }) {
+// presence: per seat, true / false when the realtime channel knows if that page is open, else null.
+export function Scoreboard({ duel, presence = null }) {
   const t = useT()
   const current = duel.phase === 'round' ? duel.current : null
   return (
@@ -47,6 +48,15 @@ export function Scoreboard({ duel }) {
             <div className="flex min-w-0 items-center gap-2">
               <PlayerFace player={player} className="size-7 sm:size-8" />
               <span className="truncate font-label text-xs text-ink sm:text-sm">{playerName(t, player)}</span>
+              {typeof presence?.[index] === 'boolean' && (
+                <span
+                  data-testid="duel-presence"
+                  title={presence[index] ? t('duel.presence.online') : t('duel.presence.offline')}
+                  className={`size-2 shrink-0 border border-ink ${presence[index] ? 'bg-secondary' : 'bg-white'}`}
+                >
+                  <span className="sr-only">{presence[index] ? t('duel.presence.online') : t('duel.presence.offline')}</span>
+                </span>
+              )}
             </div>
             <strong className="mt-2 block font-pixel text-3xl font-bold leading-none text-ink tabular-nums sm:text-4xl">{duel.scores?.[index] ?? 0}</strong>
             {current && (

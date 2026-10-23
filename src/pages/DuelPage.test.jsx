@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getDuel, getProgress, sendDuel } from '../lib/api.js'
+import { joinDuel, nudgeDuel } from '../lib/realtime/index.js'
 import { currentLocation, renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({
@@ -11,6 +12,18 @@ vi.mock('../lib/api.js', () => ({
   getProgress: vi.fn().mockResolvedValue(null),
   addStudyTime: vi.fn(),
 }))
+// The realtime channel, faked: `status` is what it reports on join, `channels` every one opened.
+const realtime = vi.hoisted(() => ({ status: 'off', channels: [] }))
+vi.mock('../lib/realtime/index.js', () => ({
+  nudgeDuel: vi.fn(),
+  joinDuel: vi.fn((id, handlers) => {
+    const channel = { id, handlers, nudge: vi.fn(), setSeat: vi.fn(), leave: vi.fn() }
+    realtime.channels.push(channel)
+    handlers.onStatus(realtime.status)
+    return channel
+  }),
+}))
+const lastChannel = () => realtime.channels.at(-1)
 
 // Times relative to the moment the fixture is made; the page reads the server clock from `now`.
 const iso = (offset) => new Date(Date.now() + offset).toISOString()
@@ -84,6 +97,10 @@ beforeEach(() => {
   vi.mocked(getDuel).mockReset()
   vi.mocked(sendDuel).mockReset()
   vi.mocked(getProgress).mockClear()
+  vi.mocked(joinDuel).mockClear()
+  vi.mocked(nudgeDuel).mockClear()
+  realtime.status = 'off'
+  realtime.channels = []
 })
 
 it('counts down, opens the round, focuses the question and answers by click', async () => {
@@ -273,4 +290,64 @@ it('speaks Brazilian Portuguese', async () => {
   expect(screen.getByRole('link', { name: 'Duelo' })).toHaveAttribute('href', '/duel')
   fireEvent.keyDown(window, { key: 'x' })
   expect(sendDuel).not.toHaveBeenCalled()
+})
+
+it('polls every second when realtime is not configured', async () => {
+  vi.mocked(getDuel).mockResolvedValue(round())
+  renderAt('/duel/d1', { user: 'alice' })
+  await screen.findByRole('heading', { name: 'Which language printed this error?' })
+  expect(joinDuel).toHaveBeenCalledWith('d1', expect.any(Object))
+  await waitFor(() => expect(getDuel).toHaveBeenCalledTimes(2), { timeout: 1500 })
+  // No realtime, no presence dot.
+  expect(screen.queryByTestId('duel-presence')).not.toBeInTheDocument()
+})
+
+it('slows polling down with realtime on, and refetches at once when the other page says it changed', async () => {
+  realtime.status = 'live'
+  vi.mocked(getDuel).mockResolvedValue(round({}, { version: 4 }))
+  renderAt('/duel/d1', { user: 'alice' })
+  await screen.findByRole('heading', { name: 'Which language printed this error?' })
+  await new Promise((resolve) => setTimeout(resolve, 1300))
+  expect(getDuel).toHaveBeenCalledTimes(1)
+
+  // A version this page already has: nothing to fetch.
+  act(() => lastChannel().handlers.onChange(4))
+  expect(getDuel).toHaveBeenCalledTimes(1)
+
+  vi.mocked(getDuel).mockResolvedValue(round({ answered: [false, true] }, { version: 5 }))
+  act(() => lastChannel().handlers.onChange(5))
+  await waitFor(() => expect(getDuel).toHaveBeenCalledTimes(2))
+  const [, theirs] = within(screen.getByRole('list', { name: 'Score' })).getAllByRole('listitem')
+  expect(await within(theirs).findByText('Answered')).toBeInTheDocument()
+})
+
+it('goes back to polling every second when the channel drops', async () => {
+  realtime.status = 'live'
+  vi.mocked(getDuel).mockResolvedValue(round({}, { version: 4 }))
+  renderAt('/duel/d1', { user: 'alice' })
+  await screen.findByRole('heading', { name: 'Which language printed this error?' })
+  act(() => lastChannel().handlers.onStatus('off'))
+  await waitFor(() => expect(getDuel).toHaveBeenCalledTimes(2), { timeout: 1500 })
+})
+
+it('nudges the other page after my answer with the version only, and shows if their page is open', async () => {
+  realtime.status = 'live'
+  vi.mocked(getDuel).mockResolvedValue(round({}, { kind: 'private', players: [ME, FRIEND], version: 6 }))
+  vi.mocked(sendDuel).mockResolvedValue({ duel: round({ myChoice: 'python', answered: [true, false] }, { kind: 'private', players: [ME, FRIEND], version: 7 }) })
+  renderAt('/duel/d1', { user: 'alice' })
+  await screen.findByRole('heading', { name: 'Which language printed this error?' })
+  await waitFor(() => expect(lastChannel().setSeat).toHaveBeenCalledWith(0))
+
+  act(() => lastChannel().handlers.onPresence(new Set([0, 1])))
+  expect(screen.getByTestId('duel-presence')).toHaveTextContent('Connected')
+  act(() => lastChannel().handlers.onPresence(new Set([0])))
+  expect(screen.getByTestId('duel-presence')).toHaveTextContent('Not connected')
+
+  await userEvent.click(screen.getByRole('button', { name: /Python/ }))
+  await waitFor(() => expect(lastChannel().nudge).toHaveBeenCalledWith(7))
+  // Only a version number goes out: never the choice, the options or anything else of the duel.
+  for (const call of [...lastChannel().nudge.mock.calls, ...vi.mocked(nudgeDuel).mock.calls]) {
+    for (const arg of call) expect(arg === null || typeof arg === 'number' || typeof arg === 'string').toBe(true)
+    expect(JSON.stringify(call)).not.toContain('python')
+  }
 })
