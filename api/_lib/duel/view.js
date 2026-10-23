@@ -38,6 +38,8 @@ export function publicDuel(duel, viewerId, now, people) {
     you: seat === -1 ? null : seat,
     players,
     rematchId: duel.rematchId ?? null,
+    // Goes up with every write: the realtime nudge carries it, so a page can skip a stale refetch.
+    version: duel.version ?? 0,
   }
   if (duel.status === 'waiting' || duel.status === 'cancelled') {
     return { ...base, joinable: duel.status === 'waiting' && seat === -1 && duel.players.length < 2, createdAt: duel.createdAt }

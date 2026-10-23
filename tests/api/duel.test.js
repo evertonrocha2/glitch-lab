@@ -456,3 +456,14 @@ it('keeps both answers when they land at the same moment', async () => {
   expect(saved.answers.map((item) => item.userId).sort()).toEqual(['alice', 'bob'])
   expect((await state(id)).body.duel.rounds[0].players.map((item) => item.points)).toEqual([183, 0])
 })
+
+it('shows the version, which goes up with every write (the realtime nudge carries it)', async () => {
+  const { id, created, joined } = await privateDuel()
+  expect(created.body.duel.version).toBe(0)
+  expect(joined.body.duel.version).toBe(1)
+  at(OPEN0 + 1000)
+  const { right } = await choices(id, 0)
+  const answered = await act('answer', { id, round: 0, choice: right })
+  expect(answered.body.duel.version).toBeGreaterThan(joined.body.duel.version)
+  expectNoLeak(answered.body.duel)
+})
