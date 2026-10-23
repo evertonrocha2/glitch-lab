@@ -41,12 +41,28 @@ it('has every explanation in English and Portuguese, and a Portuguese symptom wh
   }
 })
 
+it('has every title and hint in Portuguese too, three hints like the English ones', () => {
+  for (const entry of POOL) {
+    expect(filled(entry.pt.title)).toBe(true)
+    expect(entry.pt.hints).toHaveLength(3)
+    expect(entry.pt.hints.every(filled)).toBe(true)
+    expect(entry.pt.hints).not.toEqual(entry.hints)
+  }
+})
+
+it('saves a pool pick with its Portuguese copy', () => {
+  const { puzzle, secret } = pickFromPool({ kind: 'daily', day: '2026-10-22', difficulty: 'medium' })
+  const entry = poolEntryFor(puzzle.brokenCode)
+  expect(puzzle.pt).toEqual({ title: entry.pt.title, symptom: entry.pt.symptom ?? entry.symptom, hints: entry.pt.hints })
+  expect(secret.pt).toEqual({ bugExplanation: entry.pt.bugExplanation })
+})
+
 it('picks the pool prose by locale, English by default', () => {
   const entry = POOL.find((item) => item.title === 'Not quite an adult')
-  expect(poolText(entry, 'pt-BR')).toEqual({ symptom: entry.pt.symptom, bugExplanation: entry.pt.bugExplanation })
-  expect(poolText(entry, 'en')).toEqual({ symptom: entry.symptom, bugExplanation: entry.bugExplanation })
+  expect(poolText(entry, 'pt-BR')).toEqual({ title: 'Quase adulto', symptom: entry.pt.symptom, hints: entry.pt.hints, bugExplanation: entry.pt.bugExplanation })
+  expect(poolText(entry, 'en')).toEqual({ title: entry.title, symptom: entry.symptom, hints: entry.hints, bugExplanation: entry.bugExplanation })
   const error = POOL.find((item) => item.symptom.startsWith('KeyError'))
-  expect(poolText(error, 'pt-BR')).toEqual({ symptom: error.symptom, bugExplanation: error.pt.bugExplanation })
+  expect(poolText(error, 'pt-BR')).toMatchObject({ symptom: error.symptom, bugExplanation: error.pt.bugExplanation })
   expect(poolEntryFor(`\n${entry.brokenCode}\n`)).toBe(entry)
   expect(poolEntryFor('print("not from the pool")')).toBeNull()
 })
