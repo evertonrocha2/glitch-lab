@@ -1,5 +1,6 @@
 import { DUEL_ROUNDS } from '../../../shared/duel.js'
 import { closedRounds, leftDuring, phaseAt, scoreRound, timeline } from './clock.js'
+import { bugSymptom } from './bugs.js'
 import { optionsFor } from './questions.js'
 
 // What the browser sees of a duel. Built field by field: no user ids, and a round's answer, the
@@ -21,6 +22,19 @@ function closedView(duel, round) {
     type: duel.rounds[round.index].type,
     answer,
     players: duel.players.map((player) => scoreRound(duel, round, player.userId)),
+  }
+}
+
+// The duel view in the reader's language: a bug round's symptom is the only prose in a question
+// (errors and code read the same everywhere). Never edits `view`.
+export function localizeDuel(view, locale) {
+  if (!view || locale !== 'pt-BR') return view
+  const localize = (question) =>
+    question?.type === 'bug' && question.prompt ? { ...question, prompt: { ...question.prompt, symptom: bugSymptom(question.prompt, locale) } } : question
+  return {
+    ...view,
+    ...(view.current ? { current: localize(view.current) } : {}),
+    ...(view.last ? { last: localize(view.last) } : {}),
   }
 }
 

@@ -1,6 +1,7 @@
 // The "what kind of bug is this?" rounds. A set of their own, kept apart from the puzzle pool: the
 // pool is the daily challenge's fallback, and a duel showing one of those would spoil a daily.
-// Each has one clear bug, its symptom and the concept it's graded on. Server only.
+// Each has one clear bug, its symptom and the concept it's graded on. Server only. A symptom that is
+// prose has a Brazilian Portuguese line too (symptomPt); a real error message reads the same for both.
 const lines = (...rows) => rows.join('\n')
 
 export const DUEL_BUGS = [
@@ -9,6 +10,7 @@ export const DUEL_BUGS = [
     concept: 'off-by-one',
     code: lines('nums = [3, 5, 8]', 'total = 0', 'for i in range(1, len(nums)):', '    total += nums[i]', 'print(total)'),
     symptom: 'It prints 13, but 3 + 5 + 8 is 16.',
+    symptomPt: 'Imprime 13, mas 3 + 5 + 8 dá 16.',
   },
   {
     language: 'javascript',
@@ -39,6 +41,7 @@ export const DUEL_BUGS = [
     concept: 'type-mismatch',
     code: lines("let total = '10'", 'total += 5', 'console.log(total)'),
     symptom: 'It prints 105 instead of 15.',
+    symptomPt: 'Imprime 105 em vez de 15.',
   },
   {
     language: 'python',
@@ -51,24 +54,28 @@ export const DUEL_BUGS = [
     concept: 'missing-return',
     code: lines('function area(w, h) {', '  w * h', '}', 'console.log(area(3, 4))'),
     symptom: 'It prints undefined instead of 12.',
+    symptomPt: 'Imprime undefined em vez de 12.',
   },
   {
     language: 'javascript',
     concept: 'wrong-comparison',
     code: lines('let stock = 0', 'if (stock = 0) {', "  console.log('Sold out')", '} else {', "  console.log('In stock')", '}'),
     symptom: 'It prints "In stock" even though stock is 0.',
+    symptomPt: 'Imprime "In stock" mesmo com stock valendo 0.',
   },
   {
     language: 'python',
     concept: 'mutation-reference',
     code: lines('base = ["salt"]', 'soup = base', 'soup.append("pepper")', 'print(base)'),
     symptom: "base should still be ['salt'], but it prints ['salt', 'pepper'].",
+    symptomPt: "base deveria continuar ['salt'], mas imprime ['salt', 'pepper'].",
   },
   {
     language: 'javascript',
     concept: 'async-await',
     code: lines('async function loadName() {', "  return 'Lia'", '}', 'const name = loadName()', "console.log('Hello, ' + name)"),
     symptom: 'It prints "Hello, [object Promise]" instead of "Hello, Lia".',
+    symptomPt: 'Imprime "Hello, [object Promise]" em vez de "Hello, Lia".',
   },
   {
     language: 'python',
@@ -77,3 +84,10 @@ export const DUEL_BUGS = [
     symptom: "KeyError: 'email'",
   },
 ]
+
+// A bug round's symptom in the reader's language. Rounds are saved with the English line and both
+// players can read different languages, so the Portuguese one is looked up by the round's code.
+export function bugSymptom({ code, symptom }, locale) {
+  if (locale !== 'pt-BR') return symptom
+  return DUEL_BUGS.find((bug) => bug.code === code)?.symptomPt ?? symptom
+}

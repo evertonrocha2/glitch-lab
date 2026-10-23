@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { buildResult, leftDuring, outcomeAt, phaseAt, scoreRound, timeline } from '../../server/modules/duels/clock.js'
-import { DUEL_BUGS } from '../../server/modules/duels/bugs.js'
+import { bugSymptom, DUEL_BUGS } from '../../server/modules/duels/bugs.js'
 import { botPlan, buildRounds, OPTION_COUNT, optionsFor } from '../../server/modules/duels/questions.js'
+import { localizeDuel } from '../../server/modules/duels/view.js'
 import { POOL } from '../../server/modules/daily/puzzle-pool.js'
 import { CONCEPTS } from '../../shared/concepts.js'
 import { COUNTDOWN_MS, DUEL_ROUNDS, REVEAL_MS, ROUND_MS, STALE_MS } from '../../shared/duel.js'
@@ -229,5 +230,32 @@ describe('clock and scoring', () => {
     expect(buildResult(duel({ kind: 'bot', players: [{ userId: 'alice' }, { userId: 'bot', bot: true }] }), timeline(duel(), at), at).rated).toBe(false)
     expect(buildResult(duel({ players: [{ userId: 'alice' }, { userId: 'demo', isDemo: true }] }), timeline(duel(), at), at).rated).toBe(false)
     expect(buildResult(duel(), timeline(duel(), at), at).rated).toBe(true)
+  })
+})
+
+describe('duel bug rounds in the reader language', () => {
+  it('has a Portuguese line for every prose symptom, and leaves real error messages alone', () => {
+    for (const bug of DUEL_BUGS) {
+      const isError = /^\w*(Error|Exception)\b/.test(bug.symptom)
+      expect(typeof bug.symptomPt === 'string' && bug.symptomPt.trim() !== '').toBe(!isError)
+      expect(bugSymptom(bug, 'en')).toBe(bug.symptom)
+      expect(bugSymptom(bug, 'pt-BR')).toBe(bug.symptomPt ?? bug.symptom)
+    }
+    expect(JSON.stringify(DUEL_BUGS)).not.toContain('—')
+  })
+
+  it("swaps a bug round's symptom for a Portuguese reader, on the open round and the reveal", () => {
+    const bug = DUEL_BUGS.find((item) => item.symptomPt)
+    const question = { index: 0, type: 'bug', prompt: { code: bug.code, symptom: bug.symptom, language: 'Python' }, options: [] }
+    const view = { id: 'd1', current: question, last: { ...question, answer: { id: bug.concept } } }
+    const pt = localizeDuel(view, 'pt-BR')
+    expect(pt.current.prompt).toEqual({ ...question.prompt, symptom: bug.symptomPt })
+    expect(pt.last.prompt.symptom).toBe(bug.symptomPt)
+    expect(pt.last.answer).toEqual({ id: bug.concept })
+    expect(view.current.prompt.symptom).toBe(bug.symptom)
+    expect(localizeDuel(view, 'en')).toBe(view)
+    // Language rounds have no prose to translate.
+    const error = { id: 'd2', current: { index: 1, type: 'error', prompt: { text: 'SyntaxError: x' }, options: [] } }
+    expect(localizeDuel(error, 'pt-BR').current).toEqual(error.current)
   })
 })
