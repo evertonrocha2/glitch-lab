@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { loadEnv } from 'vite'
@@ -50,5 +51,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.js'],
     // Agent worktrees live under .claude/; their copies of the tests aren't ours to run.
     exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
+    // The app loads most pages lazily; tests import them up front, so a page shows on its first render.
+    alias: [{ find: /^\.\/lazy-pages\.js$/, replacement: fileURLToPath(new URL('./src/app/eager-pages.js', import.meta.url)) }],
   },
 })
