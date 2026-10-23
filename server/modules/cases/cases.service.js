@@ -2,8 +2,11 @@ import { AppError, badRequest } from '../../core/errors.js'
 import { withAi } from '../../infra/ai/failure.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { seedDemo } from '../demo/demo.seed.js'
+import { parseCard } from '../questions/card.js'
+import { parseConversation } from '../questions/request.js'
 import { parseAnalysis, validateInput } from './analysis.js'
 import { analyzeSystem, buildPrompt, RESPONSE_SCHEMA } from './analyze.prompt.js'
+import { questionCase, sameQuestion } from './from-question.js'
 
 export async function listCases(store, user, locale) {
   // A demo visitor lands on a ready-made board (their own copy), so every column has something to click.
@@ -14,14 +17,30 @@ export async function listCases(store, user, locale) {
 export const REPEAT_WINDOW_MS = 10 * 60 * 1000
 
 const sameInput = (item, input) =>
+  item.kind !== 'question' &&
   item.error === input.error &&
   (item.code ?? '') === input.code &&
   (item.context ?? '') === input.context &&
   JSON.stringify(item.files ?? []) === JSON.stringify(input.files)
 
-async function recentSameCase(store, userId, input, now = Date.now()) {
+async function recentSameCase(store, userId, input, same = sameInput, now = Date.now()) {
   const cases = await store.listCases(userId)
-  return cases.find((item) => now - Date.parse(item.createdAt) < REPEAT_WINDOW_MS && sameInput(item, input)) ?? null
+  return cases.find((item) => now - Date.parse(item.createdAt) < REPEAT_WINDOW_MS && same(item, input)) ?? null
+}
+
+// A board card from a doubt chat ({ messages, card }): the card the tutor proposed, checked again
+// here, and the chat it came from. No AI call: everything is already written. The same card sent
+// again within the window gets the case it already made.
+export async function createFromQuestion({ store }, user, body) {
+  if (!body) throw badRequest()
+  const conversation = parseConversation(body, { endsWithUser: false })
+  if (!conversation.value) throw new AppError(conversation.status, conversation.message)
+  const card = parseCard(body.card)
+  if (!card) throw badRequest('This card is incomplete. Keep chatting so the tutor can propose a new one.')
+  const input = questionCase(conversation.value.messages, card)
+  const repeat = await recentSameCase(store, user.id, input, sameQuestion)
+  if (repeat) return { case: repeat, created: false }
+  return { case: await store.createCase(user.id, input), created: true }
 }
 
 // The AI reads an error (and the code around it) and the result becomes a new case on the board.

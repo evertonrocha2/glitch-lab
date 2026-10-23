@@ -5,3 +5,4 @@ import * as controller from './cases.controller.js'
 export const casesRoutes = Router()
   .get('/cases', requireAuth, controller.list)
   .post('/cases/analyze', requireAuth, controller.analyze)
+  .post('/cases/from-question', requireAuth, controller.fromQuestion)
