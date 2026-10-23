@@ -24,8 +24,8 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 6. **Follow a study trail.** Press *Build my study trail* and the AI reads your cases and notes, finds your weak spot and lays out 5 to 7 missions on a pixel path: train a case in the gym, write a note about a case, study with the timer, investigate a new error, or reflect. Missions tick themselves when you do them (only *reflect* is ticked by hand). Each one earns XP, and finishing the trail adds a 100 XP bonus and the *Trailblazer* badge.
 7. **Level up.** Cases, passed challenges, notes, study minutes, trail missions, daily puzzles, Glitchdle, line hunt, reviews, interrogations, duels, events and community activity earn XP. Climb from *Rookie* to *Bug Whisperer*, keep a daily study streak, and collect 26 badges (*Sharp eye*: pass without hints, *On a roll*: 3 days in a row, ...).
 8. **Take it with you.** Export the whole board or one note as Markdown, a PNG image or an A4 PDF in the same pixel look (pages never cut a card in half).
-9. **Show who you are.** A profile with a pixel avatar, bio, what you do, university, job, languages and links, featured badges, and public notes. Make it public at `/u/<handle>` and find other detectives at `/people`.
-10. **Ask the detective.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
+9. **Show who you are.** A profile with a pixel avatar, bio, what you do, university, job, languages and links, featured badges, and public notes. Make it public at `/u/<handle>` and find other people at `/people`.
+10. **Lab assistant.** A side panel where a router agent hands your question to specialist agents (board, gym, notes, study, app guide) that answer together.
 11. **Daily and global challenges.** Three puzzles a day for everyone and a weekly global one with a leaderboard, fed by a daily cron.
 12. **Glitchdle.** A Loldle-style riddle a day: name the programming language from its traits, an error it printed, or a hidden snippet.
 13. **Line hunt.** A timed daily game (`/hunt`): 8 snippets, 20 seconds each, tap the line that holds the bug. The server times every answer, the same set goes to everyone, and there's a leaderboard and a free practice mode.
@@ -50,7 +50,7 @@ Glitch Lab uses AI the other way around: **it hides the answer and trains you.**
 - Every AI call has a time limit and one retry when the model is busy. Each account has a daily AI limit, so the free quota survives a demo.
 - The AI layer is provider-agnostic (`generateJson`), so other models can be added without touching the endpoints.
 
-## Ask the detective (an orchestration of agents)
+## Lab assistant (an orchestration of agents)
 
 A side panel on every signed-in page (header button, **Alt+A** or **Ctrl+/**) where you can ask about anything in the app. One question runs through a small team of agents in `server/modules/assistant/` (`POST /api/assistant`):
 
@@ -69,7 +69,7 @@ The **Daily** page has 3 new puzzles every day (easy, medium, hard), the same fo
 - **Always something to solve.** If the cron didn't run or the AI is down, the day is filled from a curated pool of 15 hand-written puzzles (`server/modules/daily/puzzle-pool.js`), picked by date so everyone still gets the same set.
 - **Same gym, same secrets.** Solving a puzzle opens the regular gym: hints one at a time, and the AI judges your fix against a solution that never reaches the browser. Starting a puzzle costs no AI call.
 - **XP and badges.** Easy 20, medium 35, hard 50, global 100 XP. *Daily grinder*: a daily solved 7 days in a row. *Global ace*: solve a global challenge.
-- **Leaderboard.** Top 10 by time from start to pass, then fewer attempts, with the first solver marked. Only public profiles show a name and avatar; everyone else is an "Anonymous detective". No emails, no account ids.
+- **Leaderboard.** Top 10 by time from start to pass, then fewer attempts, with the first solver marked. Only public profiles show a name and avatar; everyone else is an "Anonymous player". No emails, no account ids.
 
 ## Glitchdle
 
