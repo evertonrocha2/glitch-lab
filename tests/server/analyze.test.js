@@ -48,6 +48,25 @@ it('saves the investigation as a new case', async () => {
   expect(await store.listCases('alice')).toHaveLength(1)
 })
 
+it('answers the same error sent again with the case it already made, with no AI call', async () => {
+  fetch.mockResolvedValue(geminiAnswer(AI_ANSWER))
+  const first = await (await analyze({ error: 'TypeError: x', code: 'x.y' })).json()
+  const again = await analyze({ error: 'TypeError: x', code: 'x.y' })
+  expect(again.status).toBe(201)
+  expect((await again.json()).case.id).toBe(first.case.id)
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(await store.listCases('alice')).toHaveLength(1)
+  expect(await store.countUsage('alice', new Date().toISOString().slice(0, 10))).toBe(1)
+})
+
+it('still asks the AI when the code changed', async () => {
+  fetch.mockImplementation(async () => geminiAnswer(AI_ANSWER))
+  await analyze({ error: 'TypeError: x', code: 'x.y' })
+  await analyze({ error: 'TypeError: x', code: 'x.z' })
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect(await store.listCases('alice')).toHaveLength(2)
+})
+
 it('stops at the daily limit', async () => {
   for (let i = 0; i < 30; i++) await store.addUsage('alice', new Date().toISOString().slice(0, 10))
   const res = await analyze({ error: 'TypeError: x' })
