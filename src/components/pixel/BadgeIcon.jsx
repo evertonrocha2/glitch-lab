@@ -29,6 +29,8 @@ const GLYPHS = {
   host: ['.......#.', '.....##o#', '..###ooo#', '.#oooooo#', '.#oooooo#', '..###ooo#', '...#.##o#', '...#...#.', '...##....'],
   // A lab flask with a bubble: the debugging method followed step by step.
   'scientific-method': ['..#####..', '...#.#...', '...#.#...', '..#...#..', '.#.....#.', '.#ooooo#.', '#oo.oooo#', '#ooooooo#', '.#######.'],
+  // An elephant's face, big ears and trunk: seven days of spaced review.
+  'elephant-memory': ['.##...##.', '#oo###oo#', '#o#ooo#o#', '#o#o#o#o#', '.##ooo##.', '...#o#...', '...#o#...', '...#o##..', '....##...'],
 }
 
 function cells(rows, char) {

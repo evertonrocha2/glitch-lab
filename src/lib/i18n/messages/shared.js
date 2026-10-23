@@ -54,6 +54,7 @@ const BADGES_EN = {
   champion: ['Champion', 'Win first place in a community event.'],
   host: ['Host', 'Organize an event that gets 3 or more entries.'],
   'scientific-method': ['Scientific method', 'Finish every step of an interrogation.'],
+  'elephant-memory': ['Elephant memory', 'Finish a spaced review on 7 different days.'],
 }
 const BADGES_PT = {
   'first-clue': ['Primeira pista', 'Investigue seu primeiro erro.'],
@@ -80,6 +81,7 @@ const BADGES_PT = {
   champion: ['Campeão', 'Fique em primeiro lugar num evento da comunidade.'],
   host: ['Anfitrião', 'Organize um evento que receba 3 ou mais participações.'],
   'scientific-method': ['Método científico', 'Conclua todas as etapas de um interrogatório.'],
+  'elephant-memory': ['Memória de elefante', 'Conclua uma revisão espaçada em 7 dias diferentes.'],
 }
 
 const LEVELS_EN = ['Rookie', 'Junior Detective', 'Detective', 'Inspector', 'Chief Inspector', 'Bug Whisperer']

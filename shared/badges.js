@@ -26,6 +26,8 @@ export const BADGES = [
   { id: 'host', name: 'Host', how: 'Organize an event that gets 3 or more entries.', earned: (s) => s.eventsHosted >= 1 },
   // Interrogation: the debugging method walked from start to end.
   { id: 'scientific-method', name: 'Scientific method', how: 'Finish every step of an interrogation.', earned: (s) => s.interrogations >= 1 },
+  // Spaced review: 7 days with a finished review (any 7, not in a row).
+  { id: 'elephant-memory', name: 'Elephant memory', how: 'Finish a spaced review on 7 different days.', earned: (s) => s.reviewDays >= 7 },
 ]
 
 export const badgeById = (id) => BADGES.find((badge) => badge.id === id)

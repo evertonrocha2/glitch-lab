@@ -28,7 +28,8 @@ export function activityLevel(count) {
 // riddle (optional): { results } from Glitchdle; a day with any mode solved counts once.
 // duel (optional): { results } from duels; each finished duel counts, up to MAX_DUEL_ACTIVITY a day.
 // events (optional): { days } from community events; each entry sent counts on its day.
-export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, duel, events }, today) {
+// review (optional): { days: [{ day, completed }] } from spaced review; a day with a finished review counts once.
+export function activityCalendar({ cases = [], challenges = [], notes = [], study = [], riddle, duel, events, review }, today) {
   const counts = new Map()
   const add = (day, amount = 1) => {
     if (day) counts.set(day, (counts.get(day) ?? 0) + amount)
@@ -41,6 +42,7 @@ export function activityCalendar({ cases = [], challenges = [], notes = [], stud
   for (const item of duel?.results ?? []) duelDays.set(item.day, (duelDays.get(item.day) ?? 0) + 1)
   for (const [day, count] of duelDays) add(day, Math.min(count, MAX_DUEL_ACTIVITY))
   for (const day of events?.days ?? []) add(day)
+  for (const item of review?.days ?? []) if (item.completed) add(item.day)
   for (const entry of study) {
     if (entry.seconds >= STUDY_DAY_SECONDS) add(entry.day, Math.min(MAX_STUDY_PER_DAY, 1 + Math.floor(entry.seconds / STUDY_BLOCK_SECONDS)))
   }

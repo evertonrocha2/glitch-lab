@@ -7,13 +7,21 @@ import { loadDuel } from './_lib/duel/solved.js'
 import { loadInterrogation } from './_lib/interrogation/solved.js'
 import { loadDaily } from './_lib/puzzles/solved.js'
 import { loadRiddle } from './_lib/riddle/solved.js'
+import { getReview, loadReview, reviewAction } from './_lib/review/play.js'
+import { skillMap } from '../shared/skills.js'
 import { getStore } from './_lib/store/index.js'
 
 // POST: the study timer reports time (shares this function to stay under Vercel's free-plan limit).
-export const POST = addStudyTime
+// POST ?review=start | answer: spaced review sessions (see _lib/review/play.js).
+export function POST(request) {
+  if (new URL(request.url).searchParams.has('review')) return reviewAction(request)
+  return addStudyTime(request)
+}
 
 // XP, level, streak and badges, worked out fresh from what the student has done.
+// GET ?review=1: today's spaced review (what's due, the open session).
 export async function GET(request) {
+  if (new URL(request.url).searchParams.has('review')) return getReview(request)
   const auth = await requireUser(request)
   if (auth.response) return auth.response
 
@@ -37,6 +45,14 @@ export async function GET(request) {
   const events = await store.eventStats(userId)
   // Interrogations finished, for their XP and the scientific-method badge.
   const interrogation = await loadInterrogation(store, userId)
-  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events, interrogation })
-  return ok({ progress: { ...progress, activity: activityCalendar({ cases, challenges, notes, study, riddle, duel, events }, today) } })
+  // Spaced review boxes and days, for their XP, the elephant-memory badge, the graph and the skill map.
+  const review = await loadReview(store, userId, challenges)
+  const progress = computeProgress({ cases, challenges, notes, study, today, trails, daily, community, riddle, duel, events, interrogation, review })
+  return ok({
+    progress: {
+      ...progress,
+      activity: activityCalendar({ cases, challenges, notes, study, riddle, duel, events, review }, today),
+      skills: skillMap({ cases, challenges, items: review.items, puzzleConcepts: review.puzzleConcepts }),
+    },
+  })
 }
