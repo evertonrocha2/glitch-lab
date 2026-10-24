@@ -1,4 +1,5 @@
 import { lazy } from 'react'
+import { loadPage } from '../lib/stale-build.js'
 
 // Every page but the landing and login (the first screens people see) is its own chunk, so the
 // first load parses only what it shows. Tests get the same pages eagerly (see eager-pages.js).
@@ -12,7 +13,7 @@ const nameOf = (path) =>
     .replace('.jsx', '')
     .replace(/(^|-)(\w)/g, (_, __, letter) => letter.toUpperCase())
 
-export const pages = Object.fromEntries(Object.entries(loaders).map(([path, load]) => [nameOf(path), lazy(load)]))
+export const pages = Object.fromEntries(Object.entries(loaders).map(([path, load]) => [nameOf(path), lazy(loadPage(load))]))
 
 const whenIdle = (callback) => (globalThis.requestIdleCallback ? requestIdleCallback(callback, { timeout: 4000 }) : setTimeout(callback, 200))
 
