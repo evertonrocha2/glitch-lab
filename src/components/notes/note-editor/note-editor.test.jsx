@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,6 +34,7 @@ beforeEach(() => {
   localStorage.clear()
 })
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
 })
 
@@ -210,6 +211,132 @@ describe('the "+" beside a block', () => {
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('listbox')).toBeNull()
     expect(boxes('Text')[1]).toHaveFocus()
+  })
+})
+
+describe('moving a block anywhere', () => {
+  // jsdom lays nothing out: give each row a 40px box, one under the other.
+  function layOut() {
+    for (const [index, row] of [...document.querySelectorAll('[data-block]')].entries()) {
+      row.getBoundingClientRect = () => ({ top: index * 40, bottom: index * 40 + 40, height: 40, left: 0, right: 600, width: 600, x: 0, y: index * 40 })
+    }
+  }
+  function transfer() {
+    const data = {}
+    return { types: [], setData: (type, value) => (data[type] = value), getData: (type) => data[type], setDragImage: vi.fn(), effectAllowed: '', dropEffect: '' }
+  }
+  const handles = () => screen.getAllByRole('button', { name: 'Block options' })
+  const list = () => document.querySelector('[data-block]').parentElement
+  // jsdom has no DragEvent, so the pointer's height is set on the event by hand.
+  function dragAt(type, clientY, dataTransfer) {
+    const event = createEvent[type](list(), { dataTransfer })
+    Object.defineProperty(event, 'clientY', { value: clientY })
+    fireEvent(list(), event)
+  }
+
+  it('drags a block by its handle into a gap, with a line where it lands, as one undo step', async () => {
+    setup([text('a', 'one'), text('b', 'two'), { id: 'c', type: 'code', text: 'x = 1', language: 'python' }, text('d', 'four')])
+    layOut()
+    const dataTransfer = transfer()
+    fireEvent.dragStart(handles()[2], { dataTransfer })
+    expect(dataTransfer.setDragImage).toHaveBeenCalled()
+    // Its own gaps draw no line.
+    dragAt('dragOver', 100, dataTransfer)
+    expect(document.querySelector('[data-drop-line]')).toBeNull()
+    // The upper half of the second row: the gap above it.
+    dragAt('dragOver', 45, dataTransfer)
+    expect(document.querySelector('[data-drop-line]')).not.toBeNull()
+    dragAt('drop', 45, dataTransfer)
+    fireEvent.dragEnd(handles()[2], { dataTransfer })
+    expect(types()).toEqual(['text', 'code', 'text', 'text'])
+    expect(values('Text')).toEqual(['one', 'two', 'four'])
+    expect(document.querySelector('[data-drop-line]')).toBeNull()
+    expect(screen.getByText('Block moved to position 2 of 4.')).toBeInTheDocument()
+    await userEvent.click(boxes('Text')[0])
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(types()).toEqual(['text', 'text', 'code', 'text'])
+  })
+
+  it('drags a case block to the end; a drag that ends outside the list changes nothing', async () => {
+    setup([{ id: 'k', type: 'case', caseId: 'gone' }, text('a', 'one'), text('b', 'two')])
+    layOut()
+    let dataTransfer = transfer()
+    fireEvent.dragStart(handles()[0], { dataTransfer })
+    dragAt('dragOver', 500, dataTransfer)
+    dragAt('drop', 500, dataTransfer)
+    fireEvent.dragEnd(handles()[0], { dataTransfer })
+    expect(types()).toEqual(['text', 'text', 'case'])
+    dataTransfer = transfer()
+    fireEvent.dragStart(handles()[0], { dataTransfer })
+    dragAt('dragOver', 10, dataTransfer)
+    fireEvent.dragEnd(handles()[0], { dataTransfer })
+    expect(types()).toEqual(['text', 'text', 'case'])
+    expect(document.querySelector('[data-drop-line]')).toBeNull()
+  })
+
+  it('on a phone, holding the handle picks the block up and the finger moves it', () => {
+    vi.useFakeTimers()
+    setup([text('a', 'one'), text('b', 'two'), text('c', 'three')])
+    layOut()
+    const pointer = (type, target, clientY) => {
+      const event = createEvent[type](target, { pointerId: 1 })
+      Object.defineProperties(event, { pointerType: { value: 'touch' }, pointerId: { value: 1 }, clientX: { value: 590 }, clientY: { value: clientY } })
+      fireEvent(target, event)
+    }
+    // A quick swipe is a scroll: nothing gets picked up.
+    pointer('pointerDown', handles()[2], 100)
+    pointer('pointerMove', document, 60)
+    act(() => vi.advanceTimersByTime(400))
+    pointer('pointerUp', document, 60)
+    expect(values('Text')).toEqual(['one', 'two', 'three'])
+    // Held still, then moved up and let go.
+    pointer('pointerDown', handles()[2], 100)
+    act(() => vi.advanceTimersByTime(400))
+    pointer('pointerMove', document, 10)
+    pointer('pointerUp', document, 10)
+    expect(values('Text')).toEqual(['three', 'one', 'two'])
+    vi.useRealTimers()
+  })
+
+  it('"Move to..." in the handle menu lists every spot and moves the block there', async () => {
+    setup([text('a', 'one'), text('b', 'two'), text('c', '**three** words')])
+    await userEvent.click(handles()[2])
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Move to...' }))
+    const menu = screen.getByRole('menu', { name: 'Move to...' })
+    const names = within(menu)
+      .getAllByRole('menuitem')
+      .map((item) => item.textContent.replace(/[<>]/g, ''))
+    // Not after "two": it already is.
+    expect(names).toEqual(['Back', 'To the top', 'After: one', 'To the end'])
+    expect(within(menu).getByRole('menuitem', { name: 'To the top' })).toHaveFocus()
+    expect(within(menu).getByRole('menuitem', { name: 'To the end' })).toBeDisabled()
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'After: one' }))
+    expect(values('Text')).toEqual(['one', '**three** words', 'two'])
+    expect(boxes('Text')[1]).toHaveFocus()
+    expect(screen.getByText('Block moved to position 2 of 3.')).toBeInTheDocument()
+  })
+
+  it('"Move to..." works from the keyboard, with a way back', async () => {
+    setup([text('a', 'one'), text('b', 'two')])
+    handles()[0].focus()
+    await userEvent.keyboard('{Enter}')
+    // "Move up" is off for the first block, so "Move down" has the focus.
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: 'Move to...' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByRole('menuitem', { name: 'To the end' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}{Enter}')
+    expect(screen.getByRole('menuitem', { name: 'Move to...' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}{Enter}')
+    expect(values('Text')).toEqual(['two', 'one'])
+    expect(boxes('Text')[1]).toHaveFocus()
+  })
+
+  it('says where Alt+arrows moved the block', async () => {
+    setup([text('a', 'one'), text('b', 'two')])
+    await userEvent.click(boxes('Text')[1])
+    await userEvent.keyboard('{Alt>}{ArrowUp}{/Alt}')
+    expect(screen.getByText('Block moved to position 1 of 2.')).toBeInTheDocument()
   })
 })
 

@@ -8,6 +8,7 @@ import { caseHeading } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import {
+  blockWords,
   duplicateBlock,
   emojiQueryAt,
   indentText,
@@ -18,6 +19,7 @@ import {
   matchSlash,
   mentionAt,
   moveBlock,
+  moveBlockTo,
   newBlock,
   outdentText,
   placeCase,
@@ -46,6 +48,7 @@ import MenuButton from '../menu-button/menu-button.jsx'
 import { CALLOUT_TONE } from '../rich-blocks/rich-blocks.jsx'
 import ShareToggle from '../share-toggle/share-toggle.jsx'
 import TagInput from '../tag-input/tag-input.jsx'
+import useBlockDrag from './use-block-drag.js'
 
 export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
@@ -134,6 +137,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const [wantEmojis, setWantEmojis] = useState(false)
   // What the line next to the save status says, with an Undo: 'deleted' (a block) or 'ai' (applied).
   const [notice, setNotice] = useState(null)
+  // "Moved to position 3 of 5", read out after a block moves.
+  const [moved, setMoved] = useState('')
   const [status, setStatus] = useState('saved')
   const [confirming, setConfirming] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -351,11 +356,30 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     setFocus({ id: copyId })
   }
 
+  // Says where a moved block landed, for screen readers.
+  function announceMove(id, list) {
+    setMoved(t('notes.editor.moved', { position: list.findIndex((item) => item.id === id) + 1, total: list.length }))
+  }
+
   function move(block, direction) {
     const field = fields.current.get(block.id)
-    apply(moveBlock(blocksRef.current, block.id, direction))
+    const list = blocksRef.current
+    const next = moveBlock(list, block.id, direction)
+    apply(next)
+    if (next !== list) announceMove(block.id, next)
     setFocus({ id: block.id, start: field?.selectionStart, end: field?.selectionEnd })
   }
+
+  // To a gap in the list (0 the top, the block count the end), by a drag or "Move to...", in one step.
+  function moveTo(id, spot, { focus = false } = {}) {
+    const list = blocksRef.current
+    const next = moveBlockTo(list, id, spot)
+    if (next === list) return
+    apply(next)
+    announceMove(id, next)
+    if (focus) setFocus({ id })
+  }
+  const { drag, listProps, handleProps } = useBlockDrag(moveTo)
 
   // Undoable, and said out loud with an Undo button: nothing written goes away for good by accident.
   function remove(block, { notify = true } = {}) {
@@ -950,11 +974,36 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const picked = blocks.filter((block) => selected.includes(block.id)).map((block) => block.id)
   const toggleSelected = (id) => setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
 
+  // How "Move to..." names a block: its first words, else its kind.
+  function blockName(block) {
+    if (block.type === 'case') {
+      const item = casesById.get(block.caseId)
+      return item ? caseHeading(item).type : t('notes.block.case')
+    }
+    if (block.type === 'divider') return t('notes.block.divider')
+    return blockWords(block.text) || (block.type === 'text' ? t('notes.editor.emptyLine') : fieldLabel(block, t))
+  }
+
+  // Every gap the block can go to, for keyboards and screen readers: the top, after each other block
+  // (but the one it already follows), the end.
+  function moveTargets(block, index) {
+    const last = blocks.length - 1
+    const after = blocks.flatMap((other, at) =>
+      at === index || at === index - 1 || at === last ? [] : [{ key: `after-${other.id}`, label: t('notes.editor.moveAfter', { text: blockName(other) }), onSelect: () => moveTo(block.id, at + 1, { focus: true }) }],
+    )
+    return [
+      { key: 'top', label: t('notes.editor.moveTop'), disabled: index === 0, onSelect: () => moveTo(block.id, 0, { focus: true }) },
+      ...after,
+      { key: 'end', label: t('notes.editor.moveEnd'), disabled: index === last, onSelect: () => moveTo(block.id, blocks.length, { focus: true }) },
+    ]
+  }
+
   function handleActions(block, index) {
     const on = selected.includes(block.id)
     return [
       { key: 'up', label: t('notes.editor.moveUp'), disabled: index === 0, onSelect: () => move(block, -1) },
       { key: 'down', label: t('notes.editor.moveDown'), disabled: index === blocks.length - 1, onSelect: () => move(block, 1) },
+      { key: 'moveTo', label: t('notes.editor.moveTo'), disabled: blocks.length < 2, items: () => moveTargets(block, index) },
       { key: 'duplicate', label: t('notes.editor.duplicate'), disabled: full, onSelect: () => duplicate(block) },
       ...(onAi ? [{ key: 'select', label: on ? t('notes.editor.unselect') : t('notes.editor.select'), onSelect: () => toggleSelected(block.id) }] : []),
       { key: 'delete', label: t('notes.editor.deleteBlock'), danger: true, onSelect: () => remove(block) },
@@ -1054,7 +1103,11 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     },
   ]
 
-  const folderName = (note.folderId && folders?.find((folder) => folder.id === note.folderId)?.name) || t('notes.folders.none')
+  // The line where a dragged block would land, unless that is where it already is.
+  const dragFrom = drag ? blocks.findIndex((block) => block.id === drag.id) : -1
+  const dropLine = drag && drag.spot !== null && drag.spot !== dragFrom && drag.spot !== dragFrom + 1 ? drag.top : null
+
+  const folderName =(note.folderId && folders?.find((folder) => folder.id === note.folderId)?.name) || t('notes.folders.none')
 
   return (
     <article aria-label={t('notes.editor.label')}>
@@ -1182,13 +1235,21 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       </p>
       <CodeEditorShortcuts shortcuts={NOTE_SHORTCUTS} listLabel="notes.keys.list" footer="notes.keys.markdown" className="mt-1" />
 
-      <div className="mt-6 space-y-2">
+      <p aria-live="polite" className="sr-only">
+        {moved}
+      </p>
+      <div {...listProps} className="relative mt-6 space-y-2">
+        {dropLine !== null && (
+          <div aria-hidden="true" data-drop-line style={{ top: dropLine }} className="pointer-events-none absolute right-0 left-0 z-10 h-1 bg-secondary">
+            <span className="absolute -top-1 -left-1 size-3 border-2 border-ink bg-secondary" />
+          </div>
+        )}
         {blocks.map((block, index) => (
           <div
             key={block.id}
             data-block={block.type}
             data-selected={selected.includes(block.id) || undefined}
-            className={`group relative flex flex-wrap items-start gap-1 ${selected.includes(block.id) ? 'bg-secondary-soft outline-2 outline-offset-2 outline-secondary outline-dashed' : ''}`}
+            className={`group relative flex flex-wrap items-start gap-1 ${selected.includes(block.id) ? 'bg-secondary-soft outline-2 outline-offset-2 outline-secondary outline-dashed' : ''} ${drag?.id === block.id ? 'opacity-40' : ''}`}
           >
             {selected.includes(block.id) && <span className="sr-only">{t('notes.editor.selected')}</span>}
             <div className="min-w-0 flex-1">{control(block)}</div>
@@ -1209,7 +1270,14 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
                   <rect x="0" y="2" width="5" height="1" />
                 </svg>
               </button>
-              <BlockHandle actions={handleActions(block, index)} />
+              <BlockHandle
+                actions={handleActions(block, index)}
+                buttonProps={{
+                  ...handleProps(block.id),
+                  title: t('notes.editor.dragHint'),
+                  className: 'cursor-grab select-none active:cursor-grabbing [-webkit-touch-callout:none]',
+                }}
+              />
             </div>
             {menuFor(block.id)}
             {pickerFor(block.id)}
