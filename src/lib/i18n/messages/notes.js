@@ -23,6 +23,28 @@ const ROWS = [
   ['notes.exportFailed.png', "Couldn't make the image. Try again.", 'Não deu para gerar a imagem. Tente de novo.'],
   ['notes.exportFailed.pdf', "Couldn't make the PDF. Try again.", 'Não deu para gerar o PDF. Tente de novo.'],
 
+  // Tags in the list: the filter row and the search
+  ['notes.filter.label', 'Filter by tag', 'Filtrar por tag'],
+  ['notes.filter.tag', { one: '{tag}, {count} note', other: '{tag}, {count} notes' }, { one: '{tag}, {count} nota', other: '{tag}, {count} notas' }],
+  ['notes.filter.clear', 'Clear', 'Limpar'],
+  ['notes.filter.empty', 'No notes with these tags.', 'Nenhuma nota com essas tags.'],
+  ['notes.filter.emptySearch', 'No notes match that search.', 'Nenhuma nota bate com essa busca.'],
+  ['notes.search.label', 'Search your notes', 'Buscar nas suas notas'],
+  ['notes.search.placeholder', 'Title, text or tag', 'Título, texto ou tag'],
+
+  // Tags on a note
+  ['notes.tags.label', 'Tags', 'Tags'],
+  ['notes.tags.list', 'Note tags', 'Tags da nota'],
+  ['notes.tags.placeholder', 'e.g. javascript, loops', 'Ex.: javascript, loops'],
+  ['notes.tags.hint', 'Enter or comma adds a tag. Up to {max}.', 'Enter ou vírgula adiciona a tag. Até {max}.'],
+  ['notes.tags.remove', 'Remove tag {tag}', 'Remover tag {tag}'],
+  ['notes.tags.suggestions', 'Your tags', 'Suas tags'],
+  ['notes.tags.more', { one: '{count} more tag', other: '{count} more tags' }, { one: 'mais {count} tag', other: 'mais {count} tags' }],
+  ['notes.tags.tooMany', 'Use up to {max} tags.', 'Use até {max} tags.'],
+  ['notes.tags.tooLong', 'Keep each tag up to {max} characters.', 'Deixe cada tag com até {max} caracteres.'],
+  ['notes.tags.chars', 'Use letters, numbers, spaces and - . # +', 'Use letras, números, espaços e - . # +'],
+  ['notes.tags.md', 'Tags: {list}', 'Tags: {list}'],
+
   // Export menu
   ['notes.export.button', 'Export', 'Exportar'],
   ['notes.export.busy', 'Exporting...', 'Exportando...'],

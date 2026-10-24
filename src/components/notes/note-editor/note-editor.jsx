@@ -11,6 +11,7 @@ import BlockMenu from '../block-menu/block-menu.jsx'
 import CaseBlock from '../case-block/case-block.jsx'
 import ExportMenu from '../export-menu/export-menu.jsx'
 import ShareToggle from '../share-toggle/share-toggle.jsx'
+import TagInput from '../tag-input/tag-input.jsx'
 
 export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
@@ -37,12 +38,14 @@ function caseOption(item, labels, t) {
 
 // A Notion-style page: a title and a list of blocks. Saves on its own a moment after you stop typing.
 // With onShare, a switch puts the note on your public profile (sharing says whether that's allowed).
-export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare }) {
+// tagSuggestions: the writer's tags across every note, offered as they type a tag.
+export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare, tagSuggestions = [] }) {
   const t = useT()
   const labels = useLabels()
   const [initialBlocks] = useState(() => (note.blocks.length ? note.blocks : [newBlock('text')]))
   const [title, setTitle] = useState(note.title)
   const [blocks, setBlocks] = useState(initialBlocks)
+  const [tags, setTags] = useState(note.tags ?? [])
   // { blockId, kind: 'slash' | 'case', start, query, active }
   const [menu, setMenu] = useState(null)
   const [focusId, setFocusId] = useState(null)
@@ -50,9 +53,9 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const [confirming, setConfirming] = useState(false)
   const [saveError, setSaveError] = useState('')
   const fields = useRef(new Map())
-  const saved = useRef(JSON.stringify({ title: note.title, blocks: initialBlocks }))
-  const latest = useRef({ title, blocks })
-  latest.current = { title, blocks }
+  const saved = useRef(JSON.stringify({ title: note.title, blocks: initialBlocks, tags: note.tags ?? [] }))
+  const latest = useRef({ title, blocks, tags })
+  latest.current = { title, blocks, tags }
   const onSaveRef = useRef(onSave)
   onSaveRef.current = onSave
   // Saves run one after another, so an older save can never land after a newer one.
@@ -77,11 +80,11 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   }, [])
 
   useEffect(() => {
-    if (JSON.stringify({ title, blocks }) === saved.current) return
+    if (JSON.stringify({ title, blocks, tags }) === saved.current) return
     setStatus('unsaved')
     const timer = setTimeout(flush, SAVE_AFTER_MS)
     return () => clearTimeout(timer)
-  }, [title, blocks, flush])
+  }, [title, blocks, tags, flush])
 
   // Leaving the note saves whatever the timer hadn't sent yet, in line after any save still running.
   useEffect(() => () => flush(), [flush])
@@ -310,7 +313,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           )}
         </p>
         <div className="flex flex-wrap gap-2">
-          <ExportMenu onExport={(format) => onExport({ ...note, title, blocks }, format)} />
+          <ExportMenu onExport={(format) => onExport({ ...note, title, blocks, tags }, format)} />
           {confirming ? (
             <>
               <PixelButton variant="secondary" onClick={onDelete} className="px-3 py-2">
@@ -345,6 +348,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
         placeholder={t('notes.untitled')}
         className={`${lineClass} mt-5 block resize-none font-pixel text-3xl font-bold field-sizing-content sm:text-4xl`}
       />
+      <TagInput tags={tags} onChange={setTags} suggestions={tagSuggestions} />
       <p className="mt-2 text-sm text-muted">
         {t('notes.editor.hintBefore')} <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> {t('notes.editor.hintMiddle')}{' '}
         <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> {t('notes.editor.hintAfter')}
