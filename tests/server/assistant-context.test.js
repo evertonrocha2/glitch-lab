@@ -105,6 +105,29 @@ it('notes: lists excerpts and reads the open note in full', async () => {
   expect(text).not.toContain('Bob private note')
 })
 
+it('notes: carries the tags of each note, so a topic finds it by tag', async () => {
+  const note = await store.createNote('alice', { title: 'Week 3', tags: ['loops', 'laço'], blocks: [{ id: 'b1', type: 'text', text: 'for and while' }] })
+  await store.createNote('alice', { title: 'Untagged', blocks: [] })
+  const text = await load('notes', { path: `/notes/${note.id}`, noteId: note.id })
+  expect(text).toContain(`- id ${note.id} | "Week 3" | tags: loops, laço | for and while`)
+  expect(text).toContain(`Open note ${note.id}: "Week 3" | tags: loops, laço`)
+  expect(text).toMatch(/"Untagged" \| /)
+  expect(text).not.toContain('"Untagged" | tags')
+})
+
+it('notes: reads rich blocks as plain text, code fences intact', async () => {
+  const note = await store.createNote('alice', {
+    title: 'Loops',
+    blocks: [
+      { id: 'b1', type: 'bullet', text: '**for** loops' },
+      { id: 'b2', type: 'code', text: 'for (let i = 0; i < 3; i++) {}', language: 'javascript' },
+      { id: 'b3', type: 'divider' },
+    ],
+  })
+  const text = await load('notes', { path: `/notes/${note.id}`, noteId: note.id })
+  expect(text).toContain('- for loops\n```javascript\nfor (let i = 0; i < 3; i++) {}\n```\n---')
+})
+
 it('study: sums up progress, badges and how XP is earned', async () => {
   await store.createCase('alice', CASE)
   await store.addStudyTime('alice', new Date().toISOString().slice(0, 10), 1500, 86_400)

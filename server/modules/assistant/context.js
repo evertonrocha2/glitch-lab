@@ -1,5 +1,6 @@
 import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
+import { noteAsText } from '../../../shared/note-blocks.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
 import { isQuestion } from '../../../shared/question.js'
 import { addDays, STUDY_LOG, weekSummary } from '../../../shared/study-log.js'
@@ -110,20 +111,16 @@ async function gymContext({ store, userId, page, needs }) {
   return parts.join('\n')
 }
 
+// Headings, lists, quotes and ``` fences stay readable; the whole thing still goes inside the data fence.
 function noteText(note, cases) {
-  return note.blocks
-    .map((block) => {
-      if (block.type === 'heading') return `# ${block.text}`
-      if (block.type === 'todo') return `[${block.done ? 'x' : ' '}] ${block.text}`
-      if (block.type === 'case') {
-        const item = cases.find((kase) => kase.id === block.caseId)
-        return `[case ${block.caseId}: ${item ? caseType(item) : 'no longer on the board'}]`
-      }
-      return block.text
-    })
-    .filter(Boolean)
-    .join('\n')
+  return noteAsText(note.blocks, (block) => {
+    const item = cases.find((kase) => kase.id === block.caseId)
+    return `[case ${block.caseId}: ${item ? caseType(item) : 'no longer on the board'}]`
+  })
 }
+
+// The student's own words for what a note is about, so "notes about loops" finds it by tag too.
+const tagList = (note) => (note.tags?.length ? ` | tags: ${note.tags.join(', ')}` : '')
 
 async function notesContext({ store, userId, page, needs }) {
   const [notes, cases] = await Promise.all([store.listNotes(userId), store.listCases(userId)])
@@ -133,12 +130,12 @@ async function notesContext({ store, userId, page, needs }) {
       `Notes (last edited first, ${Math.min(notes.length, MAX_NOTES)} of ${notes.length}):`,
       ...notes
         .slice(0, MAX_NOTES)
-        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}" | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
+        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}"${tagList(note)} | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
     )
   }
   if (needs.includes('current_note') && page.noteId) {
     const note = notes.find((item) => item.id === page.noteId)
-    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"`, clip(noteText(note, cases), 2500))
+    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"${tagList(note)}`, clip(noteText(note, cases), 2500))
   }
   return parts.join('\n')
 }

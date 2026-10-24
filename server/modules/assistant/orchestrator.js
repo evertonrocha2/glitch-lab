@@ -66,12 +66,14 @@ const specialistPrompt = (pick, route, { messages, page, data, boundary }) =>
 // Router -> context loaders -> specialists in parallel -> merge -> action check.
 // `generate` is generateJson (injected so the pieces stay testable). locale: the reader's language,
 // for the replies, the default action labels and the steps (routing itself stays the same in every language).
-// One boundary token fences every prompt of the question.
-export async function runAssistant({ store, userId, messages, page, generate, locale = 'en' }) {
+// One boundary token fences every prompt of the question. allowExtra(): as in runAssistantStream.
+export async function runAssistant({ store, userId, messages, page, generate, locale = 'en', allowExtra = async () => true }) {
   const boundary = createBoundary()
   const routed = await routeQuestion(generate, { messages, page, boundary })
   if (routed.offTopic) return guardAnswer('off_topic', locale, [stepText(locale).routing])
-  const { route, fellBack } = routed
+  const { fellBack } = routed
+  const route = [routed.route[0]]
+  for (const pick of routed.route.slice(1)) if (await allowExtra()) route.push(pick)
   const guard = { boundary, ...(await pageSecrets(store, userId, page)) }
   const results = await Promise.allSettled(
     route.map(async (pick) => {

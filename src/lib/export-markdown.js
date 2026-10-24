@@ -1,3 +1,4 @@
+import { headingLevel, isList, listNumbers } from '../../shared/note-blocks.js'
 import { caseText, isQuestion } from '../../shared/question.js'
 import { formatDuration } from './day.js'
 import { translate } from './i18n/I18nProvider.jsx'
@@ -21,12 +22,32 @@ const caseTitle = (item) => (isQuestion(item) ? item.title || item.topic : first
 const caseSummary = (item, t) =>
   `${isQuestion(item) ? `${t('question.badge')} · ${item.topic} · ` : ''}${conceptName(t, item.concept)} · ${item.language} · ${statusName(t, item.status)} (${Math.min(item.passedCount, 2)}/2)`
 
-function blockToMarkdown(block, casesById, depth, t) {
+const quoted = (text) =>
+  text
+    .split('\n')
+    .map((line) => (line ? `> ${line}` : '>'))
+    .join('\n')
+
+// The text keeps its **marks** as typed: they are Markdown already.
+function blockToMarkdown(block, casesById, depth, t, numbers) {
+  const pad = block.indent === 1 ? '   ' : ''
   switch (block.type) {
     case 'heading':
-      return `${'#'.repeat(depth + 1)} ${block.text}`
+      return `${'#'.repeat(Math.min(depth + headingLevel(block), 6))} ${block.text}`
     case 'todo':
       return `- [${block.done ? 'x' : ' '}] ${block.text}`
+    case 'bullet':
+      return `${pad}- ${block.text}`
+    case 'numbered':
+      return `${pad}${numbers.get(block.id)}. ${block.text}`
+    case 'quote':
+      return quoted(block.text)
+    case 'callout':
+      return quoted(`${block.emoji} ${block.text}`)
+    case 'code':
+      return fence(block.text, block.language)
+    case 'divider':
+      return '---'
     case 'case': {
       const item = casesById.get(block.caseId)
       return item ? `> **${t('board.md.case')}** ${caseTitle(item)}\n> ${caseSummary(item, t)}` : `> **${t('board.md.case')}** ${t('board.md.caseGone')}`
@@ -36,13 +57,22 @@ function blockToMarkdown(block, casesById, depth, t) {
   }
 }
 
-// depth is the heading level of the note title: 1 alone, 2 inside the board export.
+// List items and to-dos in a row form one tight list; everything else is its own paragraph.
+const listy = (block) => block.type === 'todo' || isList(block)
+
+// depth is the heading level of the note title: 1 alone, 3 inside the board export.
 export function noteToMarkdown(note, cases, depth = 1, t = ENGLISH) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
+  const numbers = listNumbers(note.blocks)
   const parts = [`${'#'.repeat(depth)} ${note.title || t('board.md.untitled')}`]
+  if (note.tags?.length) parts.push(t('notes.tags.md', { list: note.tags.join(', ') }))
+  let previous = null
   for (const block of note.blocks) {
     if (block.type === 'text' && block.text.trim() === '') continue
-    parts.push(blockToMarkdown(block, casesById, depth, t))
+    const text = blockToMarkdown(block, casesById, depth, t, numbers)
+    if (previous && listy(previous) && listy(block) && (previous.type === 'todo') === (block.type === 'todo')) parts[parts.length - 1] += `\n${text}`
+    else parts.push(text)
+    previous = block
   }
   return `${parts.join('\n\n')}\n`
 }

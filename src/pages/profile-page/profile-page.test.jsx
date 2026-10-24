@@ -49,6 +49,11 @@ const preview = () => screen.getByRole('region', { name: 'How others see you' })
 const field = (name) => screen.getByRole('textbox', { name })
 const savedPatch = () => vi.mocked(saveProfile).mock.lastCall[0]
 
+async function fill(name, text) {
+  await userEvent.click(field(name))
+  await userEvent.paste(text)
+}
+
 async function openEditor() {
   renderAt('/profile', { user: 'alice' })
   await waitFor(() => expect(field('Display name')).toHaveValue('alice'))
@@ -177,11 +182,11 @@ it('describes you in "About you" and the preview follows along', async () => {
   await openEditor()
   const about = screen.getByRole('group', { name: 'About you' })
   await userEvent.click(within(about).getByRole('radio', { name: 'Student' }))
-  await userEvent.type(field('Headline'), 'Learning React at night')
-  await userEvent.type(field('University'), 'Infnet')
-  await userEvent.type(field('Course'), 'Software Engineering')
-  await userEvent.type(field('Job or company'), 'Support at Acme')
-  await userEvent.type(field('Location'), 'Rio de Janeiro')
+  await fill('Headline', 'Learning React at night')
+  await fill('University', 'Infnet')
+  await fill('Course', 'Software Engineering')
+  await fill('Job or company', 'Support at Acme')
+  await fill('Location', 'Rio de Janeiro')
   const languages = within(about).getByRole('group', { name: 'Languages you write' })
   await userEvent.click(within(languages).getByRole('button', { name: 'Python' }))
   await userEvent.click(within(languages).getByRole('button', { name: 'C#' }))
@@ -212,14 +217,14 @@ it('describes you in "About you" and the preview follows along', async () => {
 
 it('checks links while you type and only saves good ones', async () => {
   await openEditor()
-  await userEvent.type(field('GitHub'), 'https://gitlab.com/ada')
+  await fill('GitHub', 'https://gitlab.com/ada')
   expect(screen.getByText('Use a github.com link.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Save profile' })).toBeDisabled()
   expect(within(preview()).queryByRole('link', { name: /GitHub/ })).toBeNull()
 
   await userEvent.clear(field('GitHub'))
-  await userEvent.type(field('GitHub'), 'https://github.com/ada')
-  await userEvent.type(field('Website'), 'https://ada.dev')
+  await fill('GitHub', 'https://github.com/ada')
+  await fill('Website', 'https://ada.dev')
   const link = within(preview()).getByRole('link', { name: /GitHub/ })
   expect(link).toHaveAttribute('href', 'https://github.com/ada')
   expect(link).toHaveAttribute('target', '_blank')

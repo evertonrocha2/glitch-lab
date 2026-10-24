@@ -4,7 +4,7 @@ import * as notes from './notes.service.js'
 const PUBLIC_CACHE = 'public, s-maxage=15'
 
 export async function list(req, res) {
-  res.json({ notes: await notes.listNotes(req.deps.store, req.user) })
+  res.json({ notes: await notes.listNotes(req.deps.store, req.user, req.query.tag) })
 }
 
 export async function create(req, res) {

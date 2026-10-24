@@ -94,6 +94,7 @@ const toNote = (row) =>
     userId: row.user_id,
     title: row.title,
     blocks: row.blocks,
+    tags: row.tags ?? [],
     isPublic: row.is_public ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -346,12 +347,15 @@ export function createSupabaseStore({ url, serviceKey }) {
       return (rows ?? []).map((row) => ({ userId: row.user_id, mode: row.mode, guessCount: row.guess_count, solved: row.solved }))
     },
 
-    async createNote(userId, { title, blocks, isPublic = false }) {
-      return toNote(unwrap(await db.from('notes').insert({ user_id: userId, title, blocks, is_public: isPublic }).select().single()))
+    async createNote(userId, { title, blocks, tags = [], isPublic = false }) {
+      return toNote(unwrap(await db.from('notes').insert({ user_id: userId, title, blocks, tags, is_public: isPublic }).select().single()))
     },
 
-    async listNotes(userId) {
-      const rows = unwrap(await db.from('notes').select('*').eq('user_id', userId).order('updated_at', { ascending: false }))
+    // tags: only the notes carrying all of them (array containment, served by the notes_tags GIN index).
+    async listNotes(userId, { tags = [] } = {}) {
+      let query = db.from('notes').select('*').eq('user_id', userId)
+      if (tags.length) query = query.contains('tags', tags)
+      const rows = unwrap(await query.order('updated_at', { ascending: false }))
       return (rows ?? []).map(toNote)
     },
 
@@ -359,8 +363,8 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toNote(unwrap(await db.from('notes').select('*').eq('id', id).eq('user_id', userId).maybeSingle()))
     },
 
-    async updateNote(userId, id, { title, blocks, isPublic }) {
-      const patch = defined({ title, blocks, is_public: isPublic, updated_at: new Date().toISOString() })
+    async updateNote(userId, id, { title, blocks, tags, isPublic }) {
+      const patch = defined({ title, blocks, tags, is_public: isPublic, updated_at: new Date().toISOString() })
       return toNote(unwrap(await db.from('notes').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle()))
     },
 

@@ -3,6 +3,7 @@ import { canPickWinners, EVENT_LIMITS, EVENT_TABS, eventStatus, rankEntries, VOT
 import { loadPeople } from '../articles/people.js'
 import { serverDay } from '../../core/days.js'
 import { AppError, badRequest, forbidden, notFound, tooMany, valueOrThrow } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { pageOf } from '../../core/validation.js'
 import { parseEvent } from './parse.js'
 import { entryView, eventSummary, eventView } from './views.js'
@@ -56,12 +57,9 @@ export async function createEvent(store, user, body) {
   if (user.isDemo) throw forbidden('Sign up to create events.')
 
   const value = valueOrThrow(parseEvent(body ?? {}))
-  const key = eventsKey(user.id)
-  const day = serverDay()
-  if ((await store.countUsage(key, day)) >= EVENT_LIMITS.eventsPerDay) {
+  if (!(await spendUsage(store, eventsKey(user.id), serverDay(), EVENT_LIMITS.eventsPerDay))) {
     throw tooMany(`You can create ${EVENT_LIMITS.eventsPerDay} events a day. Come back tomorrow.`)
   }
-  await store.addUsage(key, day)
   const event = await store.createEvent(user.id, value)
   return eventDetail(store, event, user.id)
 }

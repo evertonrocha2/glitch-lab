@@ -4,6 +4,9 @@ import QuestionBadge from '../../board/question-badge/question-badge.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import InlineText from '../inline-text/inline-text.jsx'
+import NoteTags from '../note-tags/note-tags.jsx'
+import RichBlocks from '../rich-blocks/rich-blocks.jsx'
 
 const STRIPE = { new: 'bg-muted', training: 'bg-secondary', solved: 'bg-primary' }
 
@@ -14,18 +17,6 @@ function summary(blocks, t) {
   if (cases) parts.push(t('notes.cases', { count: cases }))
   if (todos.length) parts.push(t('notes.sheet.todos', { done: todos.filter((todo) => todo.done).length, count: todos.length }))
   return parts.join(' · ')
-}
-
-// Consecutive to-dos share one list; everything else stands alone.
-function group(blocks) {
-  const groups = []
-  for (const block of blocks) {
-    if (block.type === 'text' && block.text.trim() === '') continue
-    const last = groups.at(-1)
-    if (block.type === 'todo' && last?.type === 'todos') last.items.push(block)
-    else groups.push(block.type === 'todo' ? { type: 'todos', id: block.id, items: [block] } : block)
-  }
-  return groups
 }
 
 function PixelCheck({ done }) {
@@ -80,39 +71,19 @@ function SheetCase({ item }) {
   )
 }
 
-function SheetBlock({ block, casesById }) {
-  switch (block.type) {
-    // No page break marker: a heading stays on the page with what follows it.
-    case 'heading':
-      return (
-        <h2 className="pt-5 font-pixel text-[26px] leading-tight font-bold wrap-break-word text-ink">
-          {block.text}
-        </h2>
-      )
-    case 'todos':
-      return (
-        <ul className="space-y-2 py-1">
-          {block.items.map((todo) => (
-            <li key={todo.id} data-sheet-block data-done={String(todo.done)} className="flex items-start gap-3">
-              <PixelCheck done={todo.done} />
-              <span className={`leading-relaxed wrap-break-word ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>{todo.text}</span>
-            </li>
-          ))}
-        </ul>
-      )
-    case 'case':
-      return (
-        <div data-sheet-block className="py-1.5 pr-1">
-          <SheetCase item={casesById.get(block.caseId)} />
-        </div>
-      )
-    default:
-      return (
-        <p data-sheet-block className="leading-relaxed wrap-break-word whitespace-pre-wrap text-ink">
-          {block.text}
-        </p>
-      )
-  }
+function SheetTodos({ items }) {
+  return (
+    <ul className="space-y-2 py-1">
+      {items.map((todo) => (
+        <li key={todo.id} data-sheet-block data-done={String(todo.done)} className="flex items-start gap-3">
+          <PixelCheck done={todo.done} />
+          <span className={`leading-relaxed wrap-break-word ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>
+            <InlineText text={todo.text} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 // A print-ready picture of a note, for the PNG and PDF exports: fixed width, white, Pixel Lab look.
@@ -136,12 +107,16 @@ export default function NoteSheet({ note, cases, date }) {
       <main className="px-14 pt-11 pb-12">
         <p className="font-label text-xs text-secondary">&gt; {t('notes.sheet.prompt')}_</p>
         <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold wrap-break-word text-ink">{note.title || t('notes.untitled')}</h1>
+        <NoteTags tags={note.tags} large className="mt-4" />
         {line && <p className="mt-3 font-label text-[10px] text-muted">{line}</p>}
         <div aria-hidden="true" className="mt-7 mb-6 h-0.5 bg-ink" />
         <div className="space-y-3">
-          {group(note.blocks).map((block) => (
-            <SheetBlock key={block.id} block={block} casesById={casesById} />
-          ))}
+          <RichBlocks
+            blocks={note.blocks}
+            variant="sheet"
+            renderTodos={(items) => <SheetTodos items={items} />}
+            renderCase={(block) => <SheetCase item={casesById.get(block.caseId)} />}
+          />
         </div>
       </main>
 

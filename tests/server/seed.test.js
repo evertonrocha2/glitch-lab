@@ -138,6 +138,7 @@ it('seeds the sample texts in Portuguese for a pt-BR visitor, with errors and co
 
   const [note] = await store.listNotes(user.id)
   expect(note.title).toBe('Meu caderno de debugging')
+  expect(note.tags).toEqual(['javascript', 'listas'])
   const [trail] = await store.listTrails(user.id)
   expect(trail.title).toBe('Bootcamp de índice e undefined')
   expect(trail.missions.map((mission) => mission.kind)).toEqual((await english.listTrails('demo'))[0].missions.map((mission) => mission.kind))
@@ -154,5 +155,6 @@ it('keeps the English sample texts for anyone else', async () => {
   await seedDemo(store, 'demo', '2026-10-22', 'en')
   const [note] = await store.listNotes('demo')
   expect(note.title).toBe('My debugging notebook')
+  expect(note.tags).toEqual(['javascript', 'lists'])
   expect((await store.listTrails('demo'))[0].title).toBe('Index and undefined bootcamp')
 })

@@ -44,7 +44,7 @@ const ABOUT = {
 }
 
 const NOTES = [
-  { id: 'n1', title: 'Reading undefined', updatedAt: '2026-10-21T12:00:00Z', excerpt: 'Check the object first.', blockCount: 4 },
+  { id: 'n1', title: 'Reading undefined', tags: ['javascript', 'undefined', 'objects', 'laço'], updatedAt: '2026-10-21T12:00:00Z', excerpt: 'Check the object first.', blockCount: 4 },
   { id: 'n2', title: '', updatedAt: '2026-10-20T12:00:00Z', excerpt: '', blockCount: 1 },
 ]
 
@@ -83,6 +83,11 @@ it('lists their public notes, each linking to its own page', async () => {
   expect(links[0]).toHaveTextContent('Reading undefined')
   expect(links[0]).toHaveTextContent('Check the object first.')
   expect(links[1]).toHaveTextContent('Untitled')
+  // Tags show as plain chips (first 3, then how many more), nothing to click for a visitor.
+  const tags = within(links[0]).getByRole('list', { name: 'Note tags' })
+  expect(within(tags).getAllByRole('listitem').map((item) => item.firstChild.textContent)).toEqual(['#javascript', '#undefined', '#objects', '+1'])
+  expect(within(tags).queryByRole('button')).toBeNull()
+  expect(within(links[1]).queryByRole('list')).toBeNull()
 })
 
 it('says when there are no public notes yet', async () => {

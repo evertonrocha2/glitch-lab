@@ -1,6 +1,7 @@
 import { COMMUNITY_LIMITS } from '../../../shared/community.js'
 import { serverDay } from '../../core/days.js'
 import { badRequest, forbidden, notFound, tooLarge, tooMany } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { loadPeople } from './people.js'
 
 const isText = (value) => typeof value === 'string'
@@ -40,12 +41,9 @@ export async function addComment(store, user, articleId, input) {
 
   const article = await store.getArticle(articleId)
   if (!article) throw notFound('Article not found.')
-  const key = commentsKey(user.id)
-  const day = serverDay()
-  if ((await store.countUsage(key, day)) >= COMMUNITY_LIMITS.commentsPerDay) {
+  if (!(await spendUsage(store, commentsKey(user.id), serverDay(), COMMUNITY_LIMITS.commentsPerDay))) {
     throw tooMany(`You can post ${COMMUNITY_LIMITS.commentsPerDay} comments a day. Come back tomorrow.`)
   }
-  await store.addUsage(key, day)
 
   const comment = await store.createComment(user.id, article.id, text)
   if (article.authorId !== user.id) {

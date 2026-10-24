@@ -1,6 +1,8 @@
 import { CONCEPTS } from '../../../../shared/concepts.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { conceptName, statusName } from '../../../lib/i18n/labels.js'
+import InlineText from '../inline-text/inline-text.jsx'
+import RichBlocks, { groupBlocks } from '../rich-blocks/rich-blocks.jsx'
 
 const STRIPE = { new: 'bg-muted', training: 'bg-secondary', solved: 'bg-primary' }
 
@@ -8,18 +10,6 @@ const STRIPE = { new: 'bg-muted', training: 'bg-secondary', solved: 'bg-primary'
 function bugTypeName(t, label) {
   const concept = CONCEPTS.find((item) => item.label === label)
   return concept ? conceptName(t, concept.id) : label
-}
-
-// Consecutive to-dos share one list and empty text lines are skipped, like the printed sheet.
-function group(blocks) {
-  const groups = []
-  for (const block of blocks) {
-    if (block.type === 'text' && block.text.trim() === '') continue
-    const last = groups.at(-1)
-    if (block.type === 'todo' && last?.type === 'todos') last.items.push(block)
-    else groups.push(block.type === 'todo' ? { type: 'todos', id: block.id, items: [block] } : block)
-  }
-  return groups
 }
 
 function Check({ done }) {
@@ -52,44 +42,30 @@ function CaseSummary({ summary }) {
   )
 }
 
-function Block({ block }) {
+function Todos({ items }) {
   const t = useT()
-  switch (block.type) {
-    case 'heading':
-      return <h2 className="pt-4 font-pixel text-2xl leading-tight font-bold wrap-break-word text-ink sm:text-[26px]">{block.text}</h2>
-    case 'todos':
-      return (
-        <ul aria-label={t('landing.note.todos')} className="space-y-2 py-1">
-          {block.items.map((todo) => (
-            <li key={todo.id} className="flex items-start gap-3">
-              <Check done={todo.done} />
-              <span className={`leading-relaxed wrap-break-word ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>{todo.text}</span>
-              {todo.done && <span className="sr-only">{t('landing.note.done')}</span>}
-            </li>
-          ))}
-        </ul>
-      )
-    case 'case':
-      return (
-        <div className="py-1.5 pr-1">
-          <CaseSummary summary={block.case} />
-        </div>
-      )
-    default:
-      return <p className="leading-relaxed wrap-break-word whitespace-pre-wrap text-ink">{block.text}</p>
-  }
+  return (
+    <ul aria-label={t('landing.note.todos')} className="space-y-2 py-1">
+      {items.map((todo) => (
+        <li key={todo.id} className="flex items-start gap-3">
+          <Check done={todo.done} />
+          <span className={`leading-relaxed wrap-break-word ${todo.done ? 'text-muted line-through' : 'text-ink'}`}>
+            <InlineText text={todo.text} />
+          </span>
+          {todo.done && <span className="sr-only">{t('landing.note.done')}</span>}
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 // A shared note, read-only: the blocks the API sends for a public note, with no edit controls.
 export default function PublicNoteBody({ blocks }) {
   const t = useT()
-  const groups = group(blocks)
-  if (!groups.length) return <p className="text-muted">{t('landing.note.empty')}</p>
+  if (!groupBlocks(blocks).length) return <p className="text-muted">{t('landing.note.empty')}</p>
   return (
     <div className="space-y-3">
-      {groups.map((block) => (
-        <Block key={block.id} block={block} />
-      ))}
+      <RichBlocks blocks={blocks} renderTodos={(items) => <Todos items={items} />} renderCase={(block) => <CaseSummary summary={block.case} />} />
     </div>
   )
 }

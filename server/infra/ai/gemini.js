@@ -5,6 +5,14 @@ const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
 // gemini-2.5-flash is closed to new API keys; Google points to this one instead.
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
 
+// Output is what costs most, so a runaway answer stops here. Higher than OpenRouter's cap because
+// the model's thinking counts against it too. GEMINI_MAX_OUTPUT_TOKENS changes it.
+export const DEFAULT_GEMINI_MAX_TOKENS = 8192
+const maxOutputTokens = () => {
+  const value = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS)
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_GEMINI_MAX_TOKENS
+}
+
 const fetchFailure = (err) => new AiError(err?.name === 'TimeoutError' || err?.name === 'AbortError' ? 504 : 502)
 
 // The answer's text, without the model's thinking parts.
@@ -27,7 +35,7 @@ async function post(method, { system, prompt, apiKey, model, signal }, generatio
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, ...generationConfig },
+        generationConfig: { temperature: 0.4, maxOutputTokens: maxOutputTokens(), ...generationConfig },
       }),
       signal,
     })

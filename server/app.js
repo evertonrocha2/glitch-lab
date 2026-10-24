@@ -13,7 +13,10 @@ import { apiRouter } from './routes.js'
 export function createApp({ store, ai = defaultAi } = {}) {
   const app = express()
   app.disable('x-powered-by')
-  // Render and Vercel sit in front: their address, not the visitor's, is the socket's.
+  // Render and Vercel sit in front: their address, not the visitor's, is the socket's. req.ip is the
+  // leftmost X-Forwarded-For, which Vercel overwrites with the visitor's address. A fixed hop count
+  // would land on Vercel's own address, shared by everyone, and the per-network limits would lock
+  // everyone out together. Only a request sent straight to the Render host can pick its own req.ip.
   app.set('trust proxy', true)
 
   app.get('/healthz', (_req, res) => res.json({ ok: true }))

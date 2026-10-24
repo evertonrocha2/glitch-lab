@@ -159,12 +159,12 @@ export async function listNotes(token) {
   return (await request('/api/notes', { token })).notes
 }
 
-export async function createNote({ title, blocks }, token) {
-  return (await request('/api/notes', { method: 'POST', body: { title, blocks }, token })).note
+export async function createNote({ title, blocks, tags }, token) {
+  return (await request('/api/notes', { method: 'POST', body: { title, blocks, tags }, token })).note
 }
 
-export async function updateNote(id, { title, blocks }, token, { keepalive = false } = {}) {
-  return (await request(`/api/notes/${encodeURIComponent(id)}`, { method: 'PATCH', body: { title, blocks }, token, keepalive })).note
+export async function updateNote(id, { title, blocks, tags }, token, { keepalive = false } = {}) {
+  return (await request(`/api/notes/${encodeURIComponent(id)}`, { method: 'PATCH', body: { title, blocks, tags }, token, keepalive })).note
 }
 
 export async function deleteNote(id, token) {

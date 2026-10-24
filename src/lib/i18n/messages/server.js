@@ -38,6 +38,7 @@ const en = {
   // Accounts.
   'server.wrongPassword': 'Wrong email or password.',
   'server.tooManyWrong': 'Too many wrong passwords for this email. Try again tomorrow.',
+  'server.tooManyHere': 'Too many tries from your network today. Try again tomorrow.',
   'server.emailInvalid': 'Enter a valid email.',
   'server.passwordShort': 'Use a password with at least {min} characters.',
   'server.emailTaken': 'An account with this email already exists. Sign in instead.',
@@ -117,7 +118,10 @@ const en = {
   'server.tooManyNotes': 'You have {max} notes. Delete one to write another.',
   'server.tooLongTitle': 'Too long. Keep the title under {max} characters.',
   'server.tooManyBlocks': 'Too long. A note holds up to {max} blocks.',
+  // Note tags (shared/note-tags.js). "Use up to {max} tags." and the length one are the article texts.
+  'server.noteTagChars': 'Note tags use letters, numbers, spaces and - . # +.',
   'server.tooLongBlock': 'Too long. Keep each block under {max} characters.',
+  'server.tooLongCodeBlock': 'Too long. Keep each code block under {max} characters.',
   'server.invalidBlock': 'Invalid block.',
 
   // Profiles.
@@ -231,6 +235,7 @@ const en = {
   'server.eventEndBeforeStart': 'The end must come after the start.',
   'server.eventLength': 'An event can last from 1 hour to {max} days.',
   'server.eventsPerDay': 'You can create {max} events a day. Come back tomorrow.',
+  'server.duelsPerDay': 'You can start {max} duels a day. Come back tomorrow.',
   'server.organizerOnly': 'Only the organizer can do that.',
   'server.eventStarted': 'You can only change an event before it starts.',
   'server.eventNotLive': 'This event is not live.',
@@ -298,6 +303,7 @@ const ptBR = {
 
   'server.wrongPassword': 'E-mail ou senha incorretos.',
   'server.tooManyWrong': 'Muitas senhas erradas para este e-mail. Tente de novo amanhã.',
+  'server.tooManyHere': 'Muitas tentativas a partir da sua rede hoje. Tente de novo amanhã.',
   'server.emailInvalid': 'Digite um e-mail válido.',
   'server.passwordShort': 'Use uma senha com pelo menos {min} caracteres.',
   'server.emailTaken': 'Já existe uma conta com este e-mail. Entre nela.',
@@ -368,7 +374,9 @@ const ptBR = {
   'server.tooManyNotes': 'Você tem {max} notas. Apague uma para escrever outra.',
   'server.tooLongTitle': 'Muito longo. Deixe o título com menos de {max} caracteres.',
   'server.tooManyBlocks': 'Muito longo. Uma nota cabe até {max} blocos.',
+  'server.noteTagChars': 'Tags de nota usam letras, números, espaços e - . # +.',
   'server.tooLongBlock': 'Muito longo. Deixe cada bloco com menos de {max} caracteres.',
+  'server.tooLongCodeBlock': 'Muito longo. Deixe cada bloco de código com menos de {max} caracteres.',
   'server.invalidBlock': 'Bloco inválido.',
 
   'server.noPublicProfile': 'Não tem perfil público aqui.',
@@ -476,6 +484,7 @@ const ptBR = {
   'server.eventEndBeforeStart': 'O fim precisa vir depois do início.',
   'server.eventLength': 'Um evento pode durar de 1 hora a {max} dias.',
   'server.eventsPerDay': 'Você pode criar {max} eventos por dia. Volte amanhã.',
+  'server.duelsPerDay': 'Você pode começar {max} duelos por dia. Volte amanhã.',
   'server.organizerOnly': 'Só quem organiza o evento pode fazer isso.',
   'server.eventStarted': 'Você só pode mudar um evento antes de ele começar.',
   'server.eventNotLive': 'Este evento não está acontecendo agora.',

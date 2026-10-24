@@ -8,6 +8,7 @@ import BadgeIcon from '../../components/ui/badge-icon/badge-icon.jsx'
 import PixelBug from '../../components/ui/pixel-bug/pixel-bug.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import ProfileCard from '../../components/profile/profile-card/profile-card.jsx'
+import NoteTags from '../../components/notes/note-tags/note-tags.jsx'
 import PublicHeader, { TryLink } from '../../components/layout/public-header/public-header.jsx'
 import { getPublicProfile, listPublicNotes } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
@@ -41,6 +42,7 @@ function PublicNotes({ handle, notes }) {
               >
                 <strong className="font-pixel text-lg leading-tight wrap-break-word text-ink">{note.title || t('landing.profile.untitled')}</strong>
                 {note.excerpt && <span className="mt-2 line-clamp-3 text-sm wrap-break-word text-muted">{note.excerpt}</span>}
+                <NoteTags tags={note.tags} max={3} className="mt-3" />
                 <span className="mt-auto pt-3 font-label text-[10px] text-secondary">
                   {t('landing.profile.blocks', { count: note.blockCount })} · {format.date(note.updatedAt)}
                 </span>

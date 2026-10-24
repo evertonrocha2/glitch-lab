@@ -21,6 +21,39 @@ const NOTE = {
   ],
 }
 
+it('draws the rich blocks: levels, lists, quote, a light code block, divider, callout and marks', () => {
+  const blocks = [
+    { id: 'h', type: 'heading', text: 'Sub', level: 2 },
+    { id: 't', type: 'text', text: 'Use **bold** and [MDN](https://developer.mozilla.org) not [x](javascript:alert(1))' },
+    { id: 'b1', type: 'bullet', text: 'one' },
+    { id: 'b2', type: 'bullet', text: 'nested', indent: 1 },
+    { id: 'n1', type: 'numbered', text: 'first' },
+    { id: 'q', type: 'quote', text: 'Quoted' },
+    { id: 'c', type: 'code', text: 'print(1)', language: 'python' },
+    { id: 'd', type: 'divider' },
+    { id: 'o', type: 'callout', text: 'Careful', tone: 'warning', emoji: '⚠️' },
+  ]
+  const { container } = render(<NoteSheet note={{ ...NOTE, blocks }} cases={CASES} date="Oct 22, 2026" />)
+  expect(screen.getByRole('heading', { level: 3, name: 'Sub' })).toBeInTheDocument()
+  expect(screen.getByText('bold').tagName).toBe('STRONG')
+  expect(screen.getByRole('link', { name: 'MDN' })).toHaveAttribute('rel', 'noopener noreferrer nofollow')
+  expect(container.querySelector('a[href^="javascript"]')).toBeNull()
+  expect(container.querySelector('ul ul li')).toHaveTextContent('nested')
+  expect(container.querySelector('ol li')).toHaveTextContent('first')
+  expect(container.querySelector('blockquote')).toHaveTextContent('Quoted')
+  const code = screen.getByRole('figure')
+  expect(code).toHaveTextContent('python')
+  expect(code.className).toContain('bg-white')
+  expect(container.querySelector('hr')).not.toBeNull()
+  expect(screen.getByRole('complementary', { name: 'Warning' })).toHaveTextContent('⚠️Careful')
+})
+
+it('shows the tags as chips under the title', () => {
+  render(<NoteSheet note={{ ...NOTE, tags: ['loops', 'c#'] }} cases={CASES} date="Oct 22, 2026" />)
+  expect(screen.getAllByRole('listitem').slice(0, 2).map((item) => item.textContent)).toEqual(['#loops', '#c#'])
+  expect(screen.getByRole('list', { name: 'Note tags' })).toBeInTheDocument()
+})
+
 it('lays out the whole note as a printable sheet', () => {
   const { container } = render(<NoteSheet note={NOTE} cases={CASES} date="Oct 22, 2026" />)
   expect(screen.getByText('Glitch Lab')).toBeInTheDocument()

@@ -1,7 +1,9 @@
+import { serverDay } from '../../core/days.js'
 import { AppError, badRequest } from '../../core/errors.js'
+import { spendUsage } from '../../core/usage.js'
 import { withAi } from '../../infra/ai/failure.js'
 import { createBoundary, findLeak, GUARD_TEXT, screenInput } from '../../infra/ai/guard/index.js'
-import { spendAiCall } from '../../infra/ai/quota.js'
+import { DAILY_AI_LIMIT, dailyLimitReached, spendAiCall } from '../../infra/ai/quota.js'
 import { seedDemo } from '../demo/demo.seed.js'
 import { parseCard } from '../questions/card.js'
 import { parseConversation } from '../questions/request.js'
@@ -41,6 +43,10 @@ export async function createFromQuestion({ store }, user, body) {
   const input = questionCase(conversation.value.messages, card)
   const repeat = await recentSameCase(store, user.id, input, sameQuestion)
   if (repeat) return { case: repeat, created: false }
+  // The card comes back from the browser, so the server can't tell it from a made-up one; each case
+  // pays XP. A real card costs a tutor turn, so no more cases a day than the AI limit allows turns.
+  const limit = user.isDemo ? DAILY_AI_LIMIT.demo : DAILY_AI_LIMIT.user
+  if (!(await spendUsage(store, `question-cases:${user.id}`, serverDay(), limit))) throw dailyLimitReached()
   return { case: await store.createCase(user.id, input), created: true }
 }
 

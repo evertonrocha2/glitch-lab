@@ -49,7 +49,8 @@ export function trailFacts({ cases, notes, progress }) {
       ? notes.slice(0, MAX_NOTES).map((note) => {
           const mentions = note.blocks.filter((block) => block.type === 'case').map((block) => block.caseId)
           const about = mentions.length ? ` (mentions case ${mentions.slice(0, 3).join(', ')})` : ''
-          return `- "${clip(note.title || 'Untitled', 80)}"${about}: ${clip(noteExcerpt(note), 160) || '(empty)'}`
+          const tags = note.tags?.length ? ` [tags: ${note.tags.join(', ')}]` : ''
+          return `- "${clip(note.title || 'Untitled', 80)}"${tags}${about}: ${clip(noteExcerpt(note), 160) || '(empty)'}`
         })
       : ['- none yet']),
     '',

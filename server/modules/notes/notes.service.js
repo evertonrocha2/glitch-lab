@@ -1,4 +1,5 @@
 import { NOTE_LIMITS } from '../../../shared/limits.js'
+import { normalizeTag, NOTE_TAG_LIMITS, noteTagProblem } from '../../../shared/note-tags.js'
 import { handleProblem, normalizeHandle } from '../../../shared/profile.js'
 import { badRequest, conflict, forbidden, notFound, valueOrThrow } from '../../core/errors.js'
 import { profileCard } from '../profile/profile.model.js'
@@ -14,7 +15,13 @@ async function authorCases(store, userId) {
   return (caseId) => byId.get(caseId) ?? null
 }
 
-export const listNotes = (store, user) => store.listNotes(user.id)
+// tag: one string or a list (?tag=a&tag=b), the notes carrying all of them. A tag that can't exist
+// matches nothing, without asking the store.
+export async function listNotes(store, user, tag) {
+  const tags = [...new Set((Array.isArray(tag) ? tag : tag === undefined ? [] : [tag]).map((value) => normalizeTag(String(value))).filter(Boolean))]
+  if (tags.length > NOTE_TAG_LIMITS.tags || tags.some(noteTagProblem)) return []
+  return store.listNotes(user.id, tags.length ? { tags } : undefined)
+}
 
 export async function createNote(store, user, body) {
   const value = valueOrThrow(parseNote(body ?? {}))
@@ -23,10 +30,10 @@ export async function createNote(store, user, body) {
   if ((await store.listNotes(user.id)).length >= NOTE_LIMITS.notes) {
     throw conflict(`You have ${NOTE_LIMITS.notes} notes. Delete one to write another.`)
   }
-  return store.createNote(user.id, { title: '', blocks: [], ...value })
+  return store.createNote(user.id, { title: '', blocks: [], tags: [], ...value })
 }
 
-// Title, blocks and isPublic: only the fields sent change.
+// Title, blocks, tags and isPublic: only the fields sent change.
 export async function updateNote(store, user, id, body) {
   if (!body) throw badRequest()
   const value = valueOrThrow(parseNote(body))

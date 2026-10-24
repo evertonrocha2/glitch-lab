@@ -21,16 +21,14 @@ export async function startQuestion(store, user, body) {
 }
 
 // The Lab assistant: a router agent hands the question to 1-2 specialist agents.
-// The question takes one AI call from the daily limit up front; a second specialist takes another
-// afterwards, so the limit keeps tracking the real Gemini usage.
+// The question takes one AI call from the daily limit up front (the short routing call rides on
+// it); a second specialist takes another before it runs, and is skipped once the limit is used up.
 export async function ask({ store, ai }, user, body, locale) {
   const { blocked, ...input } = await startQuestion(store, user, body)
   if (blocked) return guardAnswer(blocked.kind, locale)
-  return withAi(async () => {
-    const result = await runAssistant({ store, userId: user.id, ...input, generate: ai.generateJson, locale })
-    for (let extra = 1; extra < result.agents.length; extra++) await takeAiCall(store, user)
-    return result
-  })
+  return withAi(() =>
+    runAssistant({ store, userId: user.id, ...input, generate: ai.generateJson, locale, allowExtra: () => takeAiCall(store, user) }),
+  )
 }
 
 // The same answer, streamed: emit(event, data) gets the steps and the text as it is written, and

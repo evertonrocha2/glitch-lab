@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNote, deleteNote, getMyProfile, listCases, listNotes, setNotePublic, updateNote } from '../../lib/api.js'
 import { noteToMarkdown } from '../../lib/export-markdown.js'
 import { exportNoteImage, exportNotePdf } from '../../lib/export-note.js'
@@ -311,4 +311,86 @@ it('says an export failed in Portuguese', async () => {
   await userEvent.click(await screen.findByRole('button', { name: 'Exportar' }))
   await userEvent.click(screen.getByRole('menuitem', { name: /PDF/ }))
   expect(await screen.findByText('Não deu para gerar o PDF. Tente de novo.')).toBeInTheDocument()
+})
+
+describe('tags', () => {
+  const TAGGED = [
+    { ...NOTE, id: 'n1', title: 'Loops in JS', tags: ['loops', 'javascript', 'arrays', 'c#', 'laço'] },
+    { ...NOTE, id: 'n2', title: 'Python loops', tags: ['loops', 'python'], blocks: [] },
+    { ...NOTE, id: 'n3', title: 'Plain', tags: [], blocks: [{ id: 'p', type: 'text', text: 'nothing tagged' }] },
+  ]
+  const listed = () => within(screen.getByRole('navigation', { name: 'Notes' })).queryAllByRole('link').map((link) => link.querySelector('span').textContent)
+  const filterChip = (name) => screen.getByRole('button', { name })
+
+  beforeEach(() => {
+    vi.mocked(listNotes).mockResolvedValue(TAGGED)
+  })
+
+  it('saves the tags I add with the autosave', async () => {
+    renderAt('/notes/n3', { user: 'alice' })
+    await userEvent.type(await screen.findByRole('combobox', { name: 'Tags' }), 'Loops{Enter}python,')
+    await waitFor(() => expect(updateNote).toHaveBeenCalledWith('n3', expect.objectContaining({ tags: ['loops', 'python'] }), 'token-alice', undefined), { timeout: 2000 })
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+    // My other notes' tags are offered as I type.
+    await userEvent.type(screen.getByRole('combobox', { name: 'Tags' }), 'arr')
+    expect(screen.getByRole('option', { name: '#arrays' })).toBeInTheDocument()
+  })
+
+  it('shows the first 3 chips of each note and how many more', async () => {
+    renderAt('/notes', { user: 'alice' })
+    const link = await screen.findByRole('link', { name: /Loops in JS/ })
+    const tags = within(link).getByRole('list', { name: 'Note tags' })
+    expect(within(tags).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['#loops', '#javascript', '#arrays', '+22 more tags'])
+  })
+
+  it('filters by tags (all of them), keeps it in the address and clears it', async () => {
+    renderAt('/notes', { user: 'alice' })
+    await userEvent.click(await screen.findByRole('button', { name: 'loops, 2 notes' }))
+    expect(currentLocation()).toBe('/notes?tag=loops')
+    expect(listed()).toEqual(['Loops in JS', 'Python loops'])
+    expect(filterChip('loops, 2 notes')).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(filterChip('python, 1 note'))
+    expect(currentLocation()).toBe('/notes?tag=loops&tag=python')
+    expect(listed()).toEqual(['Python loops'])
+
+    // Opening a note keeps the filter.
+    await userEvent.click(screen.getByRole('link', { name: /Python loops/ }))
+    expect(currentLocation()).toBe('/notes/n2?tag=loops&tag=python')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(currentLocation()).toBe('/notes/n2')
+    expect(listed()).toEqual(['Loops in JS', 'Python loops', 'Plain'])
+  })
+
+  it('reads the filter from the address on load and says when nothing matches', async () => {
+    renderAt('/notes?tag=python&tag=Javascript', { user: 'alice' })
+    expect(await screen.findByText('No notes with these tags.')).toBeInTheDocument()
+    expect(listed()).toEqual([])
+    expect(filterChip('python, 1 note')).toHaveAttribute('aria-pressed', 'true')
+    expect(filterChip('javascript, 1 note')).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Notes' })).getAllByRole('button', { name: 'Clear' }).at(-1))
+    expect(listed()).toHaveLength(3)
+  })
+
+  it('finds notes by tag, title or text in the search', async () => {
+    renderAt('/notes', { user: 'alice' })
+    await userEvent.type(await screen.findByRole('searchbox', { name: 'Search your notes' }), 'laço')
+    expect(listed()).toEqual(['Loops in JS'])
+    expect(currentLocation()).toBe(`/notes?q=${encodeURIComponent('laço')}`)
+    await userEvent.clear(screen.getByRole('searchbox'))
+    await userEvent.type(screen.getByRole('searchbox'), 'tagged')
+    expect(listed()).toEqual(['Plain'])
+    await userEvent.type(screen.getByRole('searchbox'), 'zzz')
+    expect(screen.getByText('No notes match that search.')).toBeInTheDocument()
+  })
+
+  it('speaks Brazilian Portuguese', async () => {
+    renderAt('/notes?tag=python&tag=c%23', { user: 'alice', locale: 'pt-BR' })
+    expect(await screen.findByText('Nenhuma nota com essas tags.')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Filtrar por tag' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'loops, 2 notas' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Limpar' }).length).toBeGreaterThan(0)
+    expect(screen.getByRole('searchbox', { name: 'Buscar nas suas notas' })).toBeInTheDocument()
+  })
 })

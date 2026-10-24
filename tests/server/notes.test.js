@@ -61,6 +61,53 @@ it('refuses broken blocks and oversized notes', async () => {
   expect(longTitle.status).toBe(413)
 })
 
+it('keeps the rich blocks, with only the fields each one allows', async () => {
+  const blocks = [
+    { id: 'h', type: 'heading', text: 'Sub', level: 2, color: 'red' },
+    { id: 'h1', type: 'heading', text: 'Top', level: 1 },
+    { id: 'q', type: 'quote', text: 'Said once' },
+    { id: 'l', type: 'bullet', text: 'item', indent: 1 },
+    { id: 'n', type: 'numbered', text: 'first', indent: 0 },
+    { id: 'c', type: 'code', text: 'if x:\n    pass', language: 'py' },
+    { id: 'c2', type: 'code', text: 'x', language: 'klingon' },
+    { id: 'd', type: 'divider', text: 'ignored' },
+    { id: 'o', type: 'callout', text: 'Careful', tone: 'warning', emoji: '⚠️' },
+  ]
+  const { note } = await (await create({ title: 'Rich', blocks })).json()
+  expect(note.blocks).toEqual([
+    { id: 'h', type: 'heading', text: 'Sub', level: 2 },
+    // Level 1 is the default, stored like the headings written before levels existed.
+    { id: 'h1', type: 'heading', text: 'Top' },
+    { id: 'q', type: 'quote', text: 'Said once' },
+    { id: 'l', type: 'bullet', text: 'item', indent: 1 },
+    { id: 'n', type: 'numbered', text: 'first' },
+    { id: 'c', type: 'code', text: 'if x:\n    pass', language: 'python' },
+    { id: 'c2', type: 'code', text: 'x', language: '' },
+    { id: 'd', type: 'divider' },
+    { id: 'o', type: 'callout', text: 'Careful', tone: 'warning', emoji: '⚠️' },
+  ])
+})
+
+it('refuses broken rich blocks', async () => {
+  for (const block of [
+    { type: 'heading', text: 'x', level: 4 },
+    { type: 'bullet', text: 'x', indent: 2 },
+    { type: 'code', text: 'x', language: 5 },
+    { type: 'callout', text: 'x', tone: 'loud', emoji: '💡' },
+    { type: 'callout', text: 'x', tone: 'tip', emoji: '' },
+    { type: 'callout', text: 'x', tone: 'tip', emoji: '<img src=x>' },
+    { type: 'quote' },
+  ]) {
+    const res = await create({ blocks: [{ id: 'b', ...block }] })
+    expect(res.status, JSON.stringify(block)).toBe(400)
+  }
+  // A code block holds more than a line of prose, up to its own limit.
+  expect((await create({ blocks: [{ id: 'b', type: 'code', text: 'x'.repeat(NOTE_LIMITS.text + 1) }] })).status).toBe(201)
+  const longCode = await create({ blocks: [{ id: 'b', type: 'code', text: 'x'.repeat(NOTE_LIMITS.code + 1) }] })
+  expect(longCode.status).toBe(413)
+  expect((await longCode.json()).message).toBe(`Too long. Keep each code block under ${NOTE_LIMITS.code} characters.`)
+})
+
 it('stops at the note limit', async () => {
   vi.spyOn(store, 'listNotes').mockResolvedValue(Array.from({ length: NOTE_LIMITS.notes }, (_, i) => ({ id: `n${i}` })))
   const res = await create({ title: 'one more' })
@@ -92,6 +139,52 @@ it('asks for sign in', async () => {
 })
 
 const update = ({ id, ...body }, token) => api(`/api/notes/${id}`, { method: 'PATCH', body, token })
+
+describe('tags', () => {
+  const listTagged = async (query) => (await (await api(`/api/notes${query}`, { method: 'GET' })).json()).notes.map((note) => note.title)
+
+  it('saves tags normalized and deduped, and defaults to none', async () => {
+    const { note } = await (await create({ title: 'Loops', tags: ['  JavaScript ', 'Laço  de  repetição', 'javascript', 'C#', 'c++'] })).json()
+    expect(note.tags).toEqual(['javascript', 'laço de repetição', 'c#', 'c++'])
+    expect((await (await create({ title: 'Bare' })).json()).note.tags).toEqual([])
+
+    // A PATCH with only the title keeps the tags; one with tags replaces them.
+    expect((await (await update({ id: note.id, title: 'Loops!' })).json()).note.tags).toEqual(['javascript', 'laço de repetição', 'c#', 'c++'])
+    expect((await (await update({ id: note.id, tags: ['arrays'] })).json()).note).toMatchObject({ title: 'Loops!', tags: ['arrays'] })
+    expect((await (await update({ id: note.id, tags: [] })).json()).note.tags).toEqual([])
+  })
+
+  it('refuses bad tags with a reason', async () => {
+    const { note } = await (await create({ title: 'x' })).json()
+    const cases = [
+      [Array.from({ length: 9 }, (_, i) => `t${i}`), 'Use up to 8 tags.'],
+      [['x'.repeat(25)], 'Keep each tag up to 24 characters.'],
+      [['a/b'], 'Note tags use letters, numbers, spaces and - . # +.'],
+      [['<b>'], 'Note tags use letters, numbers, spaces and - . # +.'],
+      ['loops', 'Invalid request.'],
+      [[42], 'Invalid request.'],
+    ]
+    for (const [tags, message] of cases) {
+      for (const res of [await create({ title: 'x', tags }), await update({ id: note.id, tags })]) {
+        expect(res.status, JSON.stringify(tags)).toBe(400)
+        expect((await res.json()).message).toBe(message)
+      }
+    }
+    expect((await store.getNote('alice', note.id)).tags).toEqual([])
+  })
+
+  it('filters the list by every tag asked for (AND)', async () => {
+    await create({ title: 'Both', tags: ['loops', 'javascript'] })
+    await create({ title: 'Loops only', tags: ['Loops'] })
+    await create({ title: 'None' })
+    expect(await listTagged('')).toEqual(['None', 'Loops only', 'Both'])
+    expect(await listTagged('?tag=loops')).toEqual(['Loops only', 'Both'])
+    expect(await listTagged('?tag=LOOPS&tag=javascript')).toEqual(['Both'])
+    expect(await listTagged('?tag=python')).toEqual([])
+    // A tag that can't exist matches nothing instead of failing.
+    expect(await listTagged(`?tag=${encodeURIComponent('a/b')}`)).toEqual([])
+  })
+})
 
 it('keeps a note private until it is marked public', async () => {
   const { note } = await (await create({ title: 'Draft' })).json()
@@ -140,6 +233,7 @@ describe('public notes', () => {
     const shared = await adaNote({
       title: 'Reading undefined',
       isPublic: true,
+      tags: ['javascript', 'laço'],
       blocks: [
         { id: 'b1', type: 'heading', text: 'What I learned' },
         { id: 'b2', type: 'text', text: `Check the object first. ${'More words. '.repeat(30)}` },
@@ -152,7 +246,7 @@ describe('public notes', () => {
     expect(res.status).toBe(200)
     const { notes } = await res.json()
     expect(notes).toHaveLength(1)
-    expect(notes[0]).toEqual({ id: shared.id, title: 'Reading undefined', updatedAt: shared.updatedAt, excerpt: expect.any(String), blockCount: 3 })
+    expect(notes[0]).toEqual({ id: shared.id, title: 'Reading undefined', tags: ['javascript', 'laço'], updatedAt: shared.updatedAt, excerpt: expect.any(String), blockCount: 3 })
     expect(notes[0].excerpt.startsWith('What I learned · Check the object first.')).toBe(true)
     expect(notes[0].excerpt.length).toBeLessThanOrEqual(160)
     const text = JSON.stringify(notes)
@@ -177,6 +271,7 @@ describe('public notes', () => {
     expect(body.note).toEqual({
       id: note.id,
       title: 'Reading undefined',
+      tags: [],
       updatedAt: note.updatedAt,
       blocks: [
         { id: 'b1', type: 'text', text: 'Check first.' },
@@ -216,6 +311,20 @@ describe('public notes', () => {
     ]) {
       expect(text, secret).not.toContain(secret)
     }
+  })
+
+  it('shares the rich blocks as stored, and a plain excerpt without marks or code', async () => {
+    const blocks = [
+      { id: 'b1', type: 'heading', text: 'Loops', level: 2 },
+      { id: 'b2', type: 'code', text: 'SECRET_LOOKING_CODE()', language: 'javascript' },
+      { id: 'b3', type: 'divider' },
+      { id: 'b4', type: 'callout', text: '**Tip:** read [the docs](https://x.dev)', tone: 'tip', emoji: '💡' },
+      { id: 'b5', type: 'bullet', text: 'item', indent: 1 },
+    ]
+    const note = await adaNote({ title: 'Rich', isPublic: true, blocks })
+    expect((await (await readPublic('ada_dev', note.id)).json()).note.blocks).toEqual(blocks)
+    const [summary] = (await (await listPublic('ada_dev')).json()).notes
+    expect(summary.excerpt).toBe('Loops · Tip: read the docs · item')
   })
 
   it('hides private notes, notes of private profiles and notes of other people', async () => {

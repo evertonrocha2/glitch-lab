@@ -189,6 +189,7 @@ async function seedPassedChallenge(store, userId, kase, hintsRevealed, locale) {
 const NOTE_TEXT = {
   en: {
     title: 'My debugging notebook',
+    tags: ['javascript', 'lists'],
     heading: 'Things I keep getting wrong',
     undefined: 'Reading a property of something that is not there yet. Check the object exists before going deeper.',
     chaining: 'Try optional chaining (?.) in my own project',
@@ -197,6 +198,7 @@ const NOTE_TEXT = {
   },
   'pt-BR': {
     title: 'Meu caderno de debugging',
+    tags: ['javascript', 'listas'],
     heading: 'Coisas que eu sempre erro',
     undefined: 'Ler uma propriedade de algo que ainda não existe. Confira se o objeto existe antes de ir mais fundo.',
     chaining: 'Testar optional chaining (?.) no meu próprio projeto',
@@ -209,6 +211,7 @@ function demoNote(byConcept, locale) {
   const text = NOTE_TEXT[locale] ?? NOTE_TEXT.en
   return {
     title: text.title,
+    tags: text.tags,
     blocks: [
       { id: 'demo-1', type: 'heading', text: text.heading },
       { id: 'demo-2', type: 'text', text: text.undefined },
