@@ -49,3 +49,23 @@ export function dailySummary(solved = [], today) {
   const xp = DIFFICULTIES.reduce((sum, level) => sum + solvedBy[level] * DAILY_XP[level], 0) + globalSolved * DAILY_XP.global
   return { xp, streak, longestStreak, globalSolved, solved: solvedBy }
 }
+
+// The programming languages a daily or global puzzle can be switched to, with their display names.
+// Each player may move a puzzle to one other language, once (see server/modules/daily/switch.js).
+export const PUZZLE_LANGUAGES = {
+  javascript: 'JavaScript',
+  typescript: 'TypeScript',
+  python: 'Python',
+  java: 'Java',
+  csharp: 'C#',
+  go: 'Go',
+  ruby: 'Ruby',
+  php: 'PHP',
+  c: 'C',
+  cpp: 'C++',
+  kotlin: 'Kotlin',
+  rust: 'Rust',
+  swift: 'Swift',
+}
+
+export const isPuzzleLanguage = (id) => typeof id === 'string' && Object.hasOwn(PUZZLE_LANGUAGES, id)

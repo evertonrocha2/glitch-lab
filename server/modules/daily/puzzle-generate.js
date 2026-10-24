@@ -6,7 +6,7 @@ import { buildPuzzlePrompt, PUZZLE_SCHEMA, PUZZLE_SYSTEM } from './puzzle.prompt
 
 export const HINTS_PER_PUZZLE = 3
 const MAX_TITLE = 60
-const MAX_LINES = { daily: 20, global: 40 }
+export const MAX_LINES = { daily: 20, global: 40 }
 const DAY_MS = 24 * 3_600_000
 
 // Each bug type, with the languages where it shows up naturally. The order of the keys is the
@@ -37,12 +37,12 @@ export function planSlot({ kind, day, difficulty }) {
   return { concept, language: languages[(step + offset) % languages.length] }
 }
 
-const filled = (value) => typeof value === 'string' && value.trim() !== ''
+export const filled = (value) => typeof value === 'string' && value.trim() !== ''
 // The app never shows em dashes; the AI likes them in prose.
-const prose = (text) => text.replace(/\s*\u2014\s*/g, ', ')
+export const prose = (text) => text.replace(/\s*\u2014\s*/g, ', ')
 
-const threeHints = (list) => (Array.isArray(list) ? list.slice(0, HINTS_PER_PUZZLE) : [])
-const hintsOk = (list) => list.length === HINTS_PER_PUZZLE && list.every(filled)
+export const threeHints = (list) => (Array.isArray(list) ? list.slice(0, HINTS_PER_PUZZLE) : [])
+export const hintsOk = (list) => list.length === HINTS_PER_PUZZLE && list.every(filled)
 
 // A short one-line name, or it throws.
 function shortName(title) {

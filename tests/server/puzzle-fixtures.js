@@ -16,3 +16,17 @@ export const AI_PUZZLE = {
 // The Portuguese copy parsePuzzle keeps from AI_PUZZLE, on the puzzle and on its secret.
 export const AI_PUZZLE_PT = { title: AI_PUZZLE.titlePt, symptom: AI_PUZZLE.symptomPt, hints: AI_PUZZLE.hintsPt }
 export const AI_SECRET_PT = { bugExplanation: AI_PUZZLE.bugExplanationPt }
+
+// What the AI sends back for a port of store-contract's puzzleFor (an off-by-one in Python) to
+// JavaScript: the same bug, every student text in both languages, the code once.
+export const AI_PORT = {
+  concept: 'off-by-one',
+  brokenCode: 'const items = [1, 2, 3]\nfor (let i = 0; i < items.length - 1; i++) {\n  console.log(items[i])\n}',
+  symptom: 'Prints 1 and 2, but never 3.',
+  symptomPt: 'Imprime 1 e 2, mas nunca 3.',
+  hints: ['Count the lines it prints.', 'Look at the loop condition.', 'The loop stops one index early.'],
+  hintsPt: ['Conte as linhas impressas.', 'Olhe a condição do laço.', 'O laço para um índice antes.'],
+  solution: 'const items = [1, 2, 3]\nfor (let i = 0; i < items.length; i++) {\n  console.log(items[i])\n}',
+  bugExplanation: 'items.length - 1 stops the loop before the last index.',
+  bugExplanationPt: 'items.length - 1 para o laço antes do último índice.',
+}
