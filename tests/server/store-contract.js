@@ -7,6 +7,7 @@ import { questionStoreContract } from './store-contract-questions.js'
 import { messagesStoreContract } from './store-contract-messages.js'
 import { noteFoldersStoreContract } from './store-contract-note-folders.js'
 import { studyStoreContract } from './store-contract-study.js'
+import { variantsStoreContract } from './store-contract-variants.js'
 
 // Every store (local file, Supabase) must pass these. Not a test file itself: suites import it.
 export const CASE = {
@@ -425,7 +426,7 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
 
       await store.updateChallenge(ids.alice, mine.id, { status: 'passed', attempts: 3 })
       const solves = await store.puzzleSolves(puzzle.id)
-      expect(solves).toEqual([{ userId: ids.alice, attempts: 3, startedAt: mine.createdAt, passedAt: expect.any(String) }])
+      expect(solves).toEqual([{ userId: ids.alice, attempts: 3, startedAt: mine.createdAt, passedAt: expect.any(String), language: 'python' }])
       expect(Date.parse(solves[0].passedAt)).toBeGreaterThanOrEqual(Date.parse(solves[0].startedAt))
     })
 
@@ -809,6 +810,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
     studyStoreContract(() => store, ids)
     // Note folders: see store-contract-note-folders.js.
     noteFoldersStoreContract(() => store, ids)
+    // Daily puzzle ports and language switches: see store-contract-variants.js.
+    variantsStoreContract(() => store, ids)
   })
 }
 

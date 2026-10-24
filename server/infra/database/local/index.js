@@ -11,6 +11,7 @@ import { createLocalInterrogations } from './interrogation.js'
 import { createLocalCommunities } from './communities.js'
 import { createLocalMessaging } from './messaging.js'
 import { createLocalNoteFolders } from './note-folders.js'
+import { createLocalPuzzleVariants } from './puzzle-variants.js'
 import { createLocalStudy } from './study.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
@@ -191,14 +192,15 @@ export function createLocalStore({ file }) {
       return copy((await load()).challenges.find((item) => item.userId === userId && item.puzzleId === puzzleId))
     },
 
-    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt }], first pass first.
+    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt, language }], first pass first.
+    // language: the one they solved it in (another one when they switched).
     async puzzleSolves(puzzleId) {
       const data = await load()
       // Demo accounts are free and unlimited: they play, but never rank.
       const demos = new Set((data.users ?? []).filter((user) => user.isDemo).map((user) => user.id))
       return data.challenges
         .filter((item) => item.puzzleId === puzzleId && item.status === 'passed' && item.passedAt && !demos.has(item.userId))
-        .map((item) => ({ userId: item.userId, attempts: item.attempts, startedAt: item.createdAt, passedAt: item.passedAt }))
+        .map((item) => ({ userId: item.userId, attempts: item.attempts, startedAt: item.createdAt, passedAt: item.passedAt, language: item.language }))
         .sort((a, b) => a.passedAt.localeCompare(b.passedAt))
     },
 
@@ -435,5 +437,7 @@ export function createLocalStore({ file }) {
     ...createLocalStudy({ load, save }),
     // Note folders: see note-folders.js.
     ...createLocalNoteFolders({ load, save }),
+    // Daily puzzle ports and language switches: see puzzle-variants.js.
+    ...createLocalPuzzleVariants({ load, save }),
   }
 }

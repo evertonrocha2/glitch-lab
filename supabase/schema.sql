@@ -270,6 +270,90 @@ alter table public.puzzle_secrets add column if not exists pt jsonb;
 alter table public.puzzles enable row level security;
 alter table public.puzzle_secrets enable row level security;
 
+-- A puzzle is written in one programming language for everyone, and each player may switch it to
+-- another one, once. puzzle_variants holds the puzzle ported to a language (the AI writes it on the
+-- first switch to that language, and everyone switching to it later gets the same one); its
+-- solution sits in puzzle_variant_secrets, like puzzle_secrets, and never reaches the browser.
+-- pt is the Brazilian Portuguese copy: { symptom, hints } on the variant, { bugExplanation } on the secret.
+create table if not exists public.puzzle_variants (
+  puzzle_id uuid not null references public.puzzles (id) on delete cascade,
+  language text not null,
+  broken_code text not null,
+  symptom text not null,
+  hints jsonb not null,
+  pt jsonb,
+  created_at timestamptz not null default now(),
+  primary key (puzzle_id, language)
+);
+
+create table if not exists public.puzzle_variant_secrets (
+  puzzle_id uuid not null,
+  language text not null,
+  solution text not null,
+  bug_explanation text not null,
+  pt jsonb,
+  primary key (puzzle_id, language),
+  foreign key (puzzle_id, language) references public.puzzle_variants (puzzle_id, language) on delete cascade
+);
+
+-- One switch per player per puzzle. The player's challenge keeps its id, start time, attempts and
+-- hints revealed; its code, symptom, hints, language (challenges.language) and secret move to the port.
+create table if not exists public.puzzle_switches (
+  user_id uuid not null references public.users (id) on delete cascade,
+  puzzle_id uuid not null references public.puzzles (id) on delete cascade,
+  from_language text not null,
+  to_language text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, puzzle_id),
+  check (from_language <> to_language)
+);
+
+alter table public.puzzle_variants enable row level security;
+alter table public.puzzle_variant_secrets enable row level security;
+alter table public.puzzle_switches enable row level security;
+
+-- Records a switch and moves the player's open challenge (and its secret) to the port in one
+-- transaction. Returns { switch, challenge } (challenge null when there was none to move), or null
+-- when the player already switched this puzzle.
+create or replace function public.switch_puzzle(
+  p_user uuid, p_puzzle uuid, p_from text, p_to text,
+  p_challenge uuid, p_broken_code text, p_symptom text, p_hints jsonb, p_solution text, p_bug_explanation text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_switch public.puzzle_switches;
+  v_challenge public.challenges;
+begin
+  insert into public.puzzle_switches (user_id, puzzle_id, from_language, to_language)
+  values (p_user, p_puzzle, p_from, p_to)
+  on conflict (user_id, puzzle_id) do nothing
+  returning * into v_switch;
+  if not found then
+    return null;
+  end if;
+  if p_challenge is not null then
+    update public.challenges
+      set broken_code = p_broken_code, symptom = p_symptom, hints = p_hints, language = p_to
+      where id = p_challenge and user_id = p_user and puzzle_id = p_puzzle and status = 'open'
+      returning * into v_challenge;
+    if found then
+      update public.challenge_secrets
+        set solution = p_solution, bug_explanation = p_bug_explanation
+        where challenge_id = p_challenge;
+    end if;
+  end if;
+  return jsonb_build_object(
+    'switch', to_jsonb(v_switch),
+    'challenge', case when v_challenge.id is null then null else to_jsonb(v_challenge) end
+  );
+end;
+$$;
+revoke execute on function public.switch_puzzle(uuid, uuid, text, text, uuid, text, text, jsonb, text, text) from public, anon, authenticated;
+
 -- Community articles: anyone can read them through /api/community; only the server writes.
 -- Like everything else, RLS is on with no policies, so the browser can't touch these tables directly.
 -- "if not exists" so this block also upgrades a database made before the community existed.

@@ -9,6 +9,7 @@ import { createSupabaseInterrogations } from './interrogation.js'
 import { createSupabaseCommunities } from './communities.js'
 import { createSupabaseMessaging } from './messaging.js'
 import { createSupabaseNoteFolders } from './note-folders.js'
+import { createSupabasePuzzleVariants } from './puzzle-variants.js'
 import { createSupabaseStudy } from './study.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
@@ -278,12 +279,13 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toChallenge(unwrap(await db.from('challenges').select('*').eq('user_id', userId).eq('puzzle_id', puzzleId).maybeSingle()))
     },
 
-    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt }], first pass first.
+    // Who passed a puzzle: [{ userId, attempts, startedAt, passedAt, language }], first pass first.
+    // language: the one they solved it in (another one when they switched).
     async puzzleSolves(puzzleId) {
       const rows = unwrap(
         await db
           .from('challenges')
-          .select('user_id, attempts, created_at, passed_at, users!inner(is_demo)')
+          .select('user_id, attempts, language, created_at, passed_at, users!inner(is_demo)')
           .eq('puzzle_id', puzzleId)
           .eq('status', 'passed')
           // Demo accounts are free and unlimited: they play, but never rank.
@@ -291,7 +293,7 @@ export function createSupabaseStore({ url, serviceKey }) {
           .not('passed_at', 'is', null)
           .order('passed_at', { ascending: true }),
       )
-      return (rows ?? []).map((row) => ({ userId: row.user_id, attempts: row.attempts, startedAt: row.created_at, passedAt: row.passed_at }))
+      return (rows ?? []).map((row) => ({ userId: row.user_id, attempts: row.attempts, startedAt: row.created_at, passedAt: row.passed_at, language: row.language }))
     },
 
     // Glitchdle. One riddle per (day, mode): null when that slot is already taken.
@@ -494,5 +496,7 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabaseStudy(db),
     // Note folders: see note-folders.js.
     ...createSupabaseNoteFolders(db),
+    // Daily puzzle ports and language switches: see puzzle-variants.js.
+    ...createSupabasePuzzleVariants(db, { toChallenge }),
   }
 }
