@@ -26,7 +26,12 @@ async function request(path, { method = 'GET', body, token, keepalive } = {}) {
 
   const data = await res.json().catch(() => null)
   if (res.status === 401) throw new AuthError(serverMessage(data, () => translate(currentLocale(), 'server.signIn')))
-  if (!res.ok || !data) throw new Error(serverMessage(data, genericMessage))
+  if (!res.ok || !data) {
+    // The status rides along, so a caller can tell "gone" (404) from a hiccup worth retrying.
+    const error = new Error(serverMessage(data, genericMessage))
+    error.status = res.status
+    throw error
+  }
   return data
 }
 
@@ -167,8 +172,40 @@ export async function deleteNote(id, token) {
 }
 
 // keepalive lets the last report go out while the tab is closing. Returns today's total in seconds.
-export async function addStudyTime({ seconds, day }, token, { keepalive = false } = {}) {
-  return (await request('/api/progress/study-time', { method: 'POST', body: { seconds, day }, token, keepalive })).todaySeconds
+// With a sessionId the seconds also go to that open timer run in the study log. Answers
+// { todaySeconds, sessionId? }: the run to report to next (null when it's gone).
+export async function addStudyTime({ seconds, day, sessionId }, token, { keepalive = false } = {}) {
+  const body = sessionId ? { seconds, day, sessionId } : { seconds, day }
+  return request('/api/progress/study-time', { method: 'POST', body, token, keepalive })
+}
+
+// The study log: { sessions, days: [{ day, seconds }] } between two days (both included).
+export function listStudySessions({ from, to }, token) {
+  return request(`/api/study/sessions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token })
+}
+
+// A past session logged by hand: { day, startedAt?, minutes, topic, caseId?, noteId? }.
+export async function logStudySession(fields, token) {
+  return (await request('/api/study/sessions', { method: 'POST', body: fields, token })).session
+}
+
+// The timer starts a run: { topic, caseId, noteId, day, startedAt }.
+export async function startStudySession(fields, token) {
+  return (await request('/api/study/sessions/start', { method: 'POST', body: fields, token })).session
+}
+
+// The run ends at endedAt (the last time its tab was seen). null when it was too short to keep.
+export async function stopStudySession(id, { endedAt } = {}, token, { keepalive = false } = {}) {
+  return (await request(`/api/study/sessions/${encodeURIComponent(id)}/stop`, { method: 'POST', body: endedAt ? { endedAt } : {}, token, keepalive })).session
+}
+
+// { topic?, caseId?, noteId? }; null clears a link.
+export async function updateStudySession(id, fields, token) {
+  return (await request(`/api/study/sessions/${encodeURIComponent(id)}`, { method: 'PATCH', body: fields, token })).session
+}
+
+export async function deleteStudySession(id, token) {
+  await request(`/api/study/sessions/${encodeURIComponent(id)}`, { method: 'DELETE', token })
 }
 
 export async function getProgress(today, token) {

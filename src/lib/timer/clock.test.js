@@ -12,6 +12,11 @@ import {
   STALE_MS,
   start,
   takeUnsent,
+  markOpening,
+  runClosed,
+  runMoved,
+  runOpened,
+  setFocus,
 } from './clock.js'
 
 const T = 1_000_000
@@ -80,4 +85,61 @@ it('pauses a timer left in a closed tab where it was last seen, keeping that tim
 
 it('starts idle when nothing was saved', () => {
   expect(restore(null, T)).toEqual(idle())
+})
+
+// The study log: every run (start to pause) is its own session.
+const FOCUS = { topic: 'Promises', caseId: 'c1', noteId: null }
+
+it('starts a run with what it is about, waiting for its session', () => {
+  const state = start(idle(), T, FOCUS)
+  expect(state.focus).toEqual(FOCUS)
+  expect(state.run).toMatchObject({ id: null, startedAt: T, endedAt: null, detached: false })
+  // A click handler passing no focus starts with none.
+  expect(start(idle(), T).focus).toBeNull()
+})
+
+it('ends the run where the timer paused, and a resume opens a new one with the same topic', () => {
+  const opened = runOpened(start(idle(), T, FOCUS), { startedAt: T }, 's1')
+  const paused = pause(opened, T + 90_000)
+  expect(paused.run).toMatchObject({ id: 's1', endedAt: T + 90_000 })
+  const closed = runClosed(paused, paused.run)
+  expect(closed.run).toBeNull()
+  const resumed = start(closed, T + 200_000)
+  expect(resumed.focus).toEqual(FOCUS)
+  expect(resumed.run).toMatchObject({ id: null, startedAt: T + 200_000 })
+})
+
+it('keeps a stopped run until the server closes it, and never closes a running one', () => {
+  const opened = runOpened(start(idle(), T), { startedAt: T }, 's1')
+  expect(runClosed(opened, opened.run)).toBe(opened)
+  const cleared = reset(pause(opened, T + 70_000))
+  expect(cleared.focus).toBeNull()
+  expect(cleared.run).toMatchObject({ id: 's1', endedAt: T + 70_000 })
+})
+
+it('ends the run of a closed tab at its last heartbeat', () => {
+  const state = heartbeat(runOpened(start(idle(), T), { startedAt: T }, 's1'), T + 45_000)
+  const restored = restore(state, T + 3_600_000)
+  expect(restored.run).toMatchObject({ id: 's1', endedAt: T + 45_000 })
+})
+
+it('ignores answers about an older run', () => {
+  const state = start(idle(), T + 100_000)
+  expect(runOpened(state, { startedAt: T }, 'old')).toBe(state)
+  expect(markOpening(state, { startedAt: T }, T)).toBe(state)
+  expect(markOpening(state, state.run, T + 100_000).run).toMatchObject({ opening: T + 100_000, tries: 1 })
+})
+
+it('follows the session the server says to report to next', () => {
+  const opened = runOpened(start(idle(), T), { startedAt: T }, 's1')
+  expect(runMoved(opened, 's1', 's2').run).toMatchObject({ id: 's2', detached: false })
+  expect(runMoved(opened, 's1', null).run).toMatchObject({ id: null, detached: true })
+  expect(runMoved(opened, 'other', 's2')).toBe(opened)
+})
+
+it('changes the topic without touching the clock', () => {
+  const state = start(idle(), T, FOCUS)
+  const edited = setFocus(state, { topic: 'Closures' })
+  expect(edited.focus).toEqual({ ...FOCUS, topic: 'Closures' })
+  expect(elapsed(edited, T + 5_000)).toBe(5)
 })

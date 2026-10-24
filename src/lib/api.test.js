@@ -87,9 +87,15 @@ it('deletes a note with its id in the path', async () => {
 
 it('reports study time, with keepalive when the tab is closing', async () => {
   fetch.mockResolvedValue(Response.json({ todaySeconds: 120 }))
-  await expect(addStudyTime({ seconds: 60, day: '2026-10-22' }, 'tok', { keepalive: true })).resolves.toBe(120)
+  await expect(addStudyTime({ seconds: 60, day: '2026-10-22' }, 'tok', { keepalive: true })).resolves.toEqual({ todaySeconds: 120 })
   const [url, init] = fetch.mock.calls[0]
   expect(url).toBe('/api/progress/study-time')
   expect(init.keepalive).toBe(true)
   expect(JSON.parse(init.body)).toEqual({ seconds: 60, day: '2026-10-22' })
+})
+
+it('reports study time to the open study session when there is one', async () => {
+  fetch.mockResolvedValue(Response.json({ todaySeconds: 120, sessionId: 's1' }))
+  await expect(addStudyTime({ seconds: 60, day: '2026-10-22', sessionId: 's1' }, 'tok')).resolves.toEqual({ todaySeconds: 120, sessionId: 's1' })
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ seconds: 60, day: '2026-10-22', sessionId: 's1' })
 })
