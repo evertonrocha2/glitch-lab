@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { serverDay } from '../../server/core/days.js'
 import { COMMUNITY_LIMITS } from '../../shared/community.js'
 import { ARTICLE, call, makeUser } from './community-helpers.js'
 import { useTempStore } from './helpers.js'
@@ -68,7 +69,8 @@ describe('comments', () => {
   })
 
   it(`allows ${COMMUNITY_LIMITS.commentsPerDay} comments a day`, async () => {
-    for (let index = 0; index < COMMUNITY_LIMITS.commentsPerDay; index++) await comment(`c${index}`, bob.token)
+    for (let index = 1; index < COMMUNITY_LIMITS.commentsPerDay; index++) await store.addUsage(`comments:${bob.id}`, serverDay())
+    expect((await comment('last one', bob.token)).status).toBe(201)
     expect((await comment('one more', bob.token)).status).toBe(429)
   })
 })

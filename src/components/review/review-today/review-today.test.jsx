@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { beforeEach, expect, it, vi } from 'vitest'
+import { addDays } from '../../../../shared/daily.js'
 import { answerReview, getReview, startReview } from '../../../lib/api.js'
 import { AuthProvider } from '../../../lib/auth/auth-provider.jsx'
 import { localDay } from '../../../lib/day.js'
@@ -95,7 +96,7 @@ it('lists what is due and runs a session card by card', async () => {
   // A wrong answer: the right one is marked, the box drops and the concept is back tomorrow.
   vi.mocked(answerReview).mockResolvedValueOnce({
     result: { index: 0, choice: 'a', correct: false, answer: 'b', concept: 'undefined-access', explanation: 'user.address is undefined.', fixed: null },
-    item: { concept: 'undefined-access', box: 1, dueDay: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10) },
+    item: { concept: 'undefined-access', box: 1, dueDay: addDays(TODAY, 1) },
     xp: 0,
     session: { ...SESSION, answers: [{ index: 0, choice: 'a', correct: false, answer: 'b', concept: 'undefined-access', explanation: 'user.address is undefined.', fixed: null }] },
     day: { cards: 1, right: 0, completed: false, xp: 0 },
@@ -115,7 +116,7 @@ it('lists what is due and runs a session card by card', async () => {
   const answered = { index: 1, choice: 'l2', correct: true, answer: 'l2', concept: 'off-by-one', explanation: null, fixed: 'for i in range(len(items)):' }
   vi.mocked(answerReview).mockResolvedValueOnce({
     result: answered,
-    item: { concept: 'off-by-one', box: 3, dueDay: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10) },
+    item: { concept: 'off-by-one', box: 3, dueDay: addDays(TODAY, 7) },
     xp: 3,
     session: { ...SESSION, answers: [SESSION.answers[0], answered].filter(Boolean), right: 1, done: true },
     day: { cards: 2, right: 1, completed: true, xp: 3 },
