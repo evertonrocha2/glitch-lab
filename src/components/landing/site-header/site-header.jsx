@@ -40,9 +40,11 @@ export default function SiteHeader() {
             </Link>
           )}
           <LanguageSelect compact />
-          <PixelButton as="a" href="#try" className="hidden whitespace-nowrap px-3 py-2 sm:inline-flex">
-            {t('landing.nav.try')}
-          </PixelButton>
+          {!user && (
+            <PixelButton as={Link} to="/login?mode=signup" className="hidden whitespace-nowrap px-3 py-2 sm:inline-flex">
+              {t('landing.nav.signUp')}
+            </PixelButton>
+          )}
         </nav>
       </div>
     </header>

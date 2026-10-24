@@ -1,8 +1,11 @@
+import { Link } from 'react-router'
+import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import HeroExample from '../hero-example/hero-example.jsx'
 
 export default function Hero() {
+  const { user } = useAuth()
   const t = useT()
   return (
     <section id="top" className="relative overflow-hidden border-b-2 border-ink bg-white">
@@ -28,12 +31,20 @@ export default function Hero() {
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">{t('landing.hero.body')}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <PixelButton as="a" href="#try" variant="secondary">
-              {t('landing.hero.try')}
-            </PixelButton>
-            <PixelButton as="a" href="#how" variant="ghost">
-              {t('landing.hero.how')}
-            </PixelButton>
+            {user ? (
+              <PixelButton as={Link} to="/board" variant="secondary">
+                {t('landing.nav.board')}
+              </PixelButton>
+            ) : (
+              <>
+                <PixelButton as={Link} to="/login?mode=signup" variant="secondary">
+                  {t('landing.hero.signUp')}
+                </PixelButton>
+                <PixelButton as={Link} to="/login" variant="ghost">
+                  {t('landing.hero.signIn')}
+                </PixelButton>
+              </>
+            )}
           </div>
         </div>
         <HeroExample />

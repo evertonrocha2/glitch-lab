@@ -10,7 +10,7 @@ export default {
     'landing.nav.articles': 'Articles',
     'landing.nav.board': 'My board',
     'landing.nav.signIn': 'Sign in',
-    'landing.nav.try': 'Try it',
+    'landing.nav.signUp': 'Create account',
     'landing.footer.ai': 'Explanations by Gemini. AI can be wrong, so test the fix yourself.',
 
     // Hero
@@ -22,8 +22,8 @@ export default {
     'landing.hero.line3': 'Practice so it never happens again.',
     'landing.hero.body':
       'AI chatbots hand you the fix. Glitch Lab explains why it broke, saves it to your board, and trains you with fresh bugs of the same kind until you stop writing them.',
-    'landing.hero.try': 'Try it with your error',
-    'landing.hero.how': 'How it works',
+    'landing.hero.signUp': 'Create a free account',
+    'landing.hero.signIn': 'Sign in',
     'landing.hero.found': 'Bug found: line 2',
     'landing.hero.why': 'Why it broke',
     'landing.hero.answer': 'user.name was never set. It is undefined, and undefined has no .length to read.',
@@ -174,7 +174,7 @@ export default {
     'landing.faq.export.a': 'Yes. Export your whole board or a single note as a Markdown file. Notion, Obsidian and GitHub all open it.',
     'landing.faq.account.q': 'Do I need an account?',
     'landing.faq.account.a':
-      'To keep a board, yes: sign up with email and password. Just looking? Press "Use demo account" on the sign-in page to get a board that is already filled in.',
+      'Yes, to keep a board: sign up free with an email and a password.',
 
     // Try section
     'landing.try.kicker': 'Your turn',
@@ -223,8 +223,6 @@ export default {
     'landing.login.title': 'Sign in to your case board',
     'landing.login.body':
       'Your board keeps every error you investigate, with the why and the fix, so you can study it and train on it in the gym.',
-    'landing.login.demoPitch': 'Judging or just curious? Skip the sign up.',
-    'landing.login.demo': 'Use demo account',
 
     // Public header
     'landing.public.try': 'Try Glitch Lab',
@@ -305,7 +303,7 @@ export default {
     'landing.nav.articles': 'Artigos',
     'landing.nav.board': 'Meu board',
     'landing.nav.signIn': 'Entrar',
-    'landing.nav.try': 'Testar',
+    'landing.nav.signUp': 'Criar conta',
     'landing.footer.ai': 'Explicações feitas pelo Gemini. A IA pode errar, então teste a correção você mesmo.',
 
     'landing.hero.kicker': '> gym de debug para estudantes',
@@ -316,8 +314,8 @@ export default {
     'landing.hero.line3': 'Pratique para nunca mais errar igual.',
     'landing.hero.body':
       'Chatbots de IA te entregam a correção. O Glitch Lab explica por que quebrou, salva no seu board e te treina com bugs novos do mesmo tipo até você parar de cometê-los.',
-    'landing.hero.try': 'Teste com o seu erro',
-    'landing.hero.how': 'Como funciona',
+    'landing.hero.signUp': 'Criar conta grátis',
+    'landing.hero.signIn': 'Entrar',
     'landing.hero.found': 'Bug encontrado: linha 2',
     'landing.hero.why': 'Por que quebrou',
     'landing.hero.answer': 'user.name nunca foi definido. Ele é undefined, e undefined não tem .length para ler.',
@@ -461,7 +459,7 @@ export default {
     'landing.faq.export.a': 'Pode. Exporte o board inteiro ou uma nota só como arquivo Markdown. Notion, Obsidian e GitHub abrem ele.',
     'landing.faq.account.q': 'Preciso de uma conta?',
     'landing.faq.account.a':
-      'Para manter um board, sim: cadastre-se com e-mail e senha. Só dando uma olhada? Clique em "Usar conta demo" na página de login e ganhe um board já preenchido.',
+      'Sim, para manter um board: cadastre-se de graça com e-mail e senha.',
 
     'landing.try.kicker': 'Sua vez',
     'landing.try.title': 'Investigue seu erro',
@@ -507,8 +505,6 @@ export default {
     'landing.login.title': 'Entre no seu board de casos',
     'landing.login.body':
       'Seu board guarda cada erro que você investiga, com o porquê e a correção, para você estudar e treinar no gym.',
-    'landing.login.demoPitch': 'Veio avaliar ou só está curioso? Pule o cadastro.',
-    'landing.login.demo': 'Usar conta demo',
 
     'landing.public.try': 'Experimente grátis',
     'landing.public.people': 'Pessoas',
