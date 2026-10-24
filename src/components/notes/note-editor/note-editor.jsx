@@ -76,6 +76,7 @@ const MARK_LETTERS = { b: 'bold', i: 'italic', e: 'code', k: 'link' }
 const SAVE_TEXT = { saved: 'notes.editor.saved', unsaved: 'notes.editor.unsaved', saving: 'notes.editor.saving', error: 'notes.editor.saveFailed' }
 
 const NOTE_SHORTCUTS = [
+  { combos: [['/']], label: 'notes.keys.slash' },
   { combos: [['Enter'], ['Shift', 'Enter']], label: 'notes.keys.lineBreak' },
   { combos: [['Enter']], label: 'notes.keys.newBlock' },
   { combos: [['Tab'], ['Shift', 'Tab']], label: 'notes.keys.indent' },
@@ -1227,8 +1228,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       />
       <TagInput tags={tags} onChange={setTags} suggestions={tagSuggestions} />
       <p className="mt-2 text-sm text-muted">
-        {t('notes.editor.hintBefore')} <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> {t('notes.editor.hintMiddle')}{' '}
-        <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> {t('notes.editor.hintAfter')}
+        {t('notes.editor.hintBefore')} <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> {t('notes.editor.hintMiddle')}{' '}
+        <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> {t('notes.editor.hintAfter')}
       </p>
       <p id={KEYS_ID} className="sr-only">
         {t('notes.editor.trap')}
