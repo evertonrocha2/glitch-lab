@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { conceptLabel } from '../../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../../shared/limits.js'
+import { NOTE_AI_ACTIONS } from '../../../../shared/note-ai.js'
 import { CALLOUT_EMOJI, CALLOUT_TONES, hasMarks, headingLevel, isList, listNumbers } from '../../../../shared/note-blocks.js'
 import { isQuestion } from '../../../../shared/question.js'
 import { caseHeading } from '../../../lib/case-info.js'
@@ -27,7 +28,10 @@ import {
 } from '../../../lib/notes/blocks.js'
 import { rememberEmoji, searchEmojis, useEmojis } from '../../../lib/notes/emoji.js'
 import CodeEditorShortcuts from '../../ui/code-editor/code-editor-shortcuts.jsx'
+import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
+import Working from '../../ui/working/working.jsx'
+import AiPreview from '../ai-preview/ai-preview.jsx'
 import BlockHandle from '../block-handle/block-handle.jsx'
 import BlockMenu from '../block-menu/block-menu.jsx'
 import CaseBlock from '../case-block/case-block.jsx'
@@ -35,6 +39,7 @@ import CodeBlock from '../code-block/code-block.jsx'
 import EmojiPicker from '../emoji-picker/emoji-picker.jsx'
 import ExportMenu from '../export-menu/export-menu.jsx'
 import InlineText from '../inline-text/inline-text.jsx'
+import MenuButton from '../menu-button/menu-button.jsx'
 import { CALLOUT_TONE } from '../rich-blocks/rich-blocks.jsx'
 import ShareToggle from '../share-toggle/share-toggle.jsx'
 import TagInput from '../tag-input/tag-input.jsx'
@@ -98,8 +103,11 @@ const fieldLabel = (block, t) => (block.type === 'heading' ? t(`notes.block.head
 // typing. The keys work like an IDE's (Tab nests, Enter continues, Ctrl+Z undoes across blocks), with
 // Esc then Tab as the way out. With onShare, a switch puts the note on your public profile.
 // tagSuggestions: the writer's tags across every note, offered as they type a tag.
-export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare, tagSuggestions = [] }) {
+// folders and onMove(folderId): the "Move to folder" menu. onAi({ action, blockIds }, signal): the AI
+// tools, answering { blockIds, blocks } to preview; nothing changes until the writer applies it.
+export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare, tagSuggestions = [], folders, onMove, onAi }) {
   const t = useT()
+  const aiButtonId = useId()
   const labels = useLabels()
   const [initialBlocks] = useState(() => (note.blocks.length ? note.blocks : [newBlock('text')]))
   const [title, setTitle] = useState(note.title)
@@ -114,10 +122,21 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   // { blockId, kind: 'insert' | 'callout', spot }: the emoji picker and where its emoji goes.
   const [picker, setPicker] = useState(null)
   const [wantEmojis, setWantEmojis] = useState(false)
-  const [notice, setNotice] = useState(false)
+  // What the line next to the save status says, with an Undo: 'deleted' (a block) or 'ai' (applied).
+  const [notice, setNotice] = useState(null)
   const [status, setStatus] = useState('saved')
   const [confirming, setConfirming] = useState(false)
   const [saveError, setSaveError] = useState('')
+  // Blocks picked for the AI from their handle menus, in the order picked.
+  const [selected, setSelected] = useState([])
+  // 'selection' (the picked blocks, or the block with selected text) or 'all'.
+  const [aiScope, setAiScope] = useState('selection')
+  // null, { phase: 'working', action } or { phase: 'preview', action, blockIds, before, after }.
+  const [ai, setAi] = useState(null)
+  const [aiError, setAiError] = useState('')
+  const aiRun = useRef(null)
+  // The block whose text was selected when the AI button was reached.
+  const textPick = useRef(null)
   const emojiData = useEmojis(wantEmojis)
   const fields = useRef(new Map())
   const blocksRef = useRef(blocks)
@@ -135,19 +154,22 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   // Saves run one after another, so an older save can never land after a newer one.
   const queue = useRef(Promise.resolve())
 
+  // Resolves true once what was written so far is saved, false when the save failed.
   const flush = useCallback(() => {
     queue.current = queue.current.then(async () => {
       const snapshot = latest.current
       const json = JSON.stringify(snapshot)
-      if (json === saved.current) return
+      if (json === saved.current) return true
       setStatus('saving')
       try {
         await onSaveRef.current(snapshot)
         saved.current = json
         setStatus(JSON.stringify(latest.current) === json ? 'saved' : 'unsaved')
+        return true
       } catch (err) {
         setSaveError(err.message)
         setStatus('error')
+        return false
       }
     })
     return queue.current
@@ -160,8 +182,15 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     return () => clearTimeout(timer)
   }, [title, blocks, tags, flush])
 
-  // Leaving the note saves whatever the timer hadn't sent yet, in line after any save still running.
-  useEffect(() => () => flush(), [flush])
+  // Leaving the note saves whatever the timer hadn't sent yet, in line after any save still running,
+  // and stops waiting for the AI.
+  useEffect(
+    () => () => {
+      aiRun.current?.abort()
+      flush()
+    },
+    [flush],
+  )
 
   // Closing the tab skips React's cleanup: send the last edits with keepalive so they still arrive,
   // and warn before leaving a note the server keeps refusing.
@@ -197,7 +226,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
 
   useEffect(() => {
     if (!notice) return
-    const timer = setTimeout(() => setNotice(false), NOTICE_MS)
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS)
     return () => clearTimeout(timer)
   }, [notice])
 
@@ -241,7 +270,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     blocksRef.current = next
     setBlocks(next)
     setMenu(null)
-    setNotice(false)
+    setNotice(null)
     // The caret goes to the first block that changed, so you see what came back.
     let index = 0
     while (index < next.length && next[index] === current[index]) index++
@@ -310,7 +339,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     const index = list.findIndex((item) => item.id === block.id)
     const previous = list.slice(0, index).reverse().find(focusable) ?? list.slice(index + 1).find(focusable)
     apply(removeBlock(list, block.id))
-    if (notify) setNotice(true)
+    if (notify) setNotice('deleted')
     if (previous) setFocus({ id: previous.id })
   }
 
@@ -835,14 +864,115 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     }
   }
 
+  // Picked blocks still in the note, in note order: what "the selection" means for the AI.
+  const picked = blocks.filter((block) => selected.includes(block.id)).map((block) => block.id)
+  const toggleSelected = (id) => setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
+
   function handleActions(block, index) {
+    const on = selected.includes(block.id)
     return [
       { key: 'up', label: t('notes.editor.moveUp'), disabled: index === 0, onSelect: () => move(block, -1) },
       { key: 'down', label: t('notes.editor.moveDown'), disabled: index === blocks.length - 1, onSelect: () => move(block, 1) },
       { key: 'duplicate', label: t('notes.editor.duplicate'), disabled: full, onSelect: () => duplicate(block) },
+      ...(onAi ? [{ key: 'select', label: on ? t('notes.editor.unselect') : t('notes.editor.select'), onSelect: () => toggleSelected(block.id) }] : []),
       { key: 'delete', label: t('notes.editor.deleteBlock'), danger: true, onSelect: () => remove(block) },
     ]
   }
+
+  // A block whose textarea has some of its text selected, or null.
+  function selectionIn(element) {
+    for (const [id, field] of fields.current) {
+      if (field === element && field.tagName === 'TEXTAREA' && field.selectionStart !== field.selectionEnd) return id
+    }
+    return null
+  }
+  // Blocks picked from their menus win; otherwise the block with selected text; otherwise none.
+  const textBlock = textPick.current && blocks.some((block) => block.id === textPick.current) ? textPick.current : null
+  const selection = picked.length ? picked : textBlock ? [textBlock] : []
+  const scoped = aiScope === 'selection' && selection.length > 0
+
+  // Back to the AI button once it is enabled again (it is disabled while the AI works).
+  const backToAi = useRef(false)
+  useEffect(() => {
+    if (ai || !backToAi.current) return
+    backToAi.current = false
+    document.getElementById(aiButtonId)?.focus()
+  }, [ai, aiButtonId])
+
+  async function runAi(action) {
+    const blockIds = scoped ? selection : null
+    const wanted = blockIds && new Set(blockIds)
+    const before = wanted ? blocksRef.current.filter((block) => wanted.has(block.id)) : blocksRef.current
+    const run = new AbortController()
+    aiRun.current = run
+    setAiError('')
+    setAi({ phase: 'working', action })
+    try {
+      // The server reads the saved note: these words have to be there first.
+      if (!(await flush())) throw new Error(t('notes.ai.saveFirst'))
+      if (run.signal.aborted) return
+      const result = await onAi({ action, blockIds }, run.signal)
+      if (run.signal.aborted) return
+      setAi({ phase: 'preview', action, blockIds: result.blockIds, before, after: result.blocks })
+    } catch (err) {
+      if (run.signal.aborted) return
+      setAi(null)
+      setAiError(err.message)
+    }
+  }
+
+  function stopAi() {
+    aiRun.current?.abort()
+    backToAi.current = true
+    setAi(null)
+  }
+
+  function discardAi() {
+    backToAi.current = true
+    setAi(null)
+  }
+
+  // The new blocks take the place of the ones in scope (where the first of them was), as one step
+  // that Ctrl+Z or the Undo next to the status takes back.
+  function applyAi() {
+    const replaced = new Set(ai.blockIds)
+    const list = blocksRef.current
+    const at = Math.max(list.findIndex((block) => replaced.has(block.id)), 0)
+    const rest = list.filter((block) => !replaced.has(block.id))
+    const next = [...rest.slice(0, at), ...ai.after, ...rest.slice(at)]
+    const target = ai.after.find(focusable)
+    setAi(null)
+    if (next.length > NOTE_LIMITS.blocks) {
+      setAiError(t('notes.ai.full'))
+      return
+    }
+    apply(next)
+    setSelected([])
+    setNotice('ai')
+    if (target) setFocus({ id: target.id })
+  }
+
+  const aiGroups = [
+    ...(selection.length
+      ? [
+          {
+            key: 'scope',
+            label: t('notes.ai.scope'),
+            items: [
+              { key: 'selection', label: t('notes.ai.scopeSelection', { count: selection.length }), checked: scoped, keepOpen: true, onSelect: () => setAiScope('selection') },
+              { key: 'all', label: t('notes.ai.scopeAll'), checked: !scoped, keepOpen: true, onSelect: () => setAiScope('all') },
+            ],
+          },
+        ]
+      : []),
+    {
+      key: 'actions',
+      label: t('notes.ai.actions'),
+      items: NOTE_AI_ACTIONS.map((action) => ({ key: action, label: t(`notes.ai.${action}`), sub: t(`notes.ai.${action}Sub`), onSelect: () => runAi(action) })),
+    },
+  ]
+
+  const folderName = (note.folderId && folders?.find((folder) => folder.id === note.folderId)?.name) || t('notes.folders.none')
 
   return (
     <article aria-label={t('notes.editor.label')}>
@@ -857,7 +987,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           )}
           {notice && (
             <span className="inline-flex items-center gap-1.5 text-ink">
-              · {t('notes.editor.deleted')}
+              · {t(notice === 'ai' ? 'notes.ai.applied' : 'notes.editor.deleted')}
               <button type="button" onClick={undo} className="min-h-10 px-1 text-primary underline underline-offset-2">
                 {t('notes.editor.undo')}
               </button>
@@ -865,6 +995,49 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           )}
         </p>
         <div className="flex flex-wrap gap-2">
+          {onAi && (
+            <MenuButton
+              variant="secondary"
+              heading={t('notes.ai.menu')}
+              menuLabel={t('notes.ai.menu')}
+              groups={aiGroups}
+              footer={t('notes.ai.codeSafe')}
+              button={{
+                id: aiButtonId,
+                disabled: Boolean(ai),
+                // The text selected in a block, read before the button takes the focus (mouse) or
+                // from the field it came from (keyboard).
+                onPointerDown: (event) => {
+                  if (document.activeElement !== event.currentTarget) textPick.current = selectionIn(document.activeElement)
+                },
+                onFocus: (event) => {
+                  if (event.relatedTarget) textPick.current = selectionIn(event.relatedTarget)
+                },
+              }}
+              menuClassName="w-72"
+            >
+              <span aria-hidden="true">✦</span> {t('notes.ai.button')}
+            </MenuButton>
+          )}
+          {onMove && folders && (
+            <MenuButton
+              heading={t('notes.move.heading')}
+              menuLabel={t('notes.move.menu')}
+              button={{ 'aria-label': t('notes.move.label', { name: folderName }) }}
+              menuClassName="w-56"
+              groups={[
+                {
+                  key: 'folders',
+                  items: [
+                    { key: 'none', label: t('notes.folders.none'), checked: !folders.some((folder) => folder.id === note.folderId), onSelect: () => onMove(null) },
+                    ...folders.map((folder) => ({ key: folder.id, label: folder.name, checked: folder.id === note.folderId, onSelect: () => onMove(folder.id) })),
+                  ],
+                },
+              ]}
+            >
+              <span className="max-w-32 truncate">{t('notes.move.button', { name: folderName })}</span>
+            </MenuButton>
+          )}
           <ExportMenu onExport={(format) => onExport({ ...note, title, blocks, tags }, format)} />
           {confirming ? (
             <>
@@ -882,6 +1055,23 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           )}
         </div>
       </div>
+
+      {ai?.phase === 'working' && (
+        <div className="mt-4 flex flex-wrap items-stretch gap-3">
+          <div className="min-w-0 flex-1">
+            <Working label={t(`notes.ai.working.${ai.action}`)} />
+          </div>
+          <PixelButton variant="ghost" onClick={stopAi} className="self-center px-4">
+            {t('notes.ai.stop')}
+          </PixelButton>
+        </div>
+      )}
+      {aiError && (
+        <div className="mt-4">
+          <ErrorNotice message={aiError} />
+        </div>
+      )}
+      {ai?.phase === 'preview' && <AiPreview action={ai.action} before={ai.before} after={ai.after} cases={casesById} onApply={applyAi} onDiscard={discardAi} />}
 
       {onShare && <ShareToggle noteId={note.id} isPublic={Boolean(note.isPublic)} sharing={sharing} onShare={onShare} />}
 
@@ -912,7 +1102,13 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
 
       <div className="mt-6 space-y-2">
         {blocks.map((block, index) => (
-          <div key={block.id} data-block={block.type} className="group relative flex flex-wrap items-start gap-1">
+          <div
+            key={block.id}
+            data-block={block.type}
+            data-selected={selected.includes(block.id) || undefined}
+            className={`group relative flex flex-wrap items-start gap-1 ${selected.includes(block.id) ? 'bg-secondary-soft outline-2 outline-offset-2 outline-secondary outline-dashed' : ''}`}
+          >
+            {selected.includes(block.id) && <span className="sr-only">{t('notes.editor.selected')}</span>}
             <div className="min-w-0 flex-1">{control(block)}</div>
             <BlockHandle actions={handleActions(block, index)} />
             {menuFor(block.id)}
