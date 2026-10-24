@@ -76,13 +76,26 @@ export default function useBlockDrag(onMove) {
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
-    const track = (event) => {
+    // Anywhere on the page counts, not just over the list: above it is the top, below it the end,
+    // so a drop that misses by a little (or after the pointer crossed the header) still lands.
+    const over = (event) => {
+      if (!live.current || touch.current) return
+      event.preventDefault()
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
       pointerY.current = event.clientY
+      hover(event.clientY)
     }
-    document.addEventListener('dragover', track)
+    const dropped = (event) => {
+      if (!live.current || touch.current) return
+      event.preventDefault()
+      drop()
+    }
+    document.addEventListener('dragover', over)
+    document.addEventListener('drop', dropped)
     return () => {
       cancelAnimationFrame(frame)
-      document.removeEventListener('dragover', track)
+      document.removeEventListener('dragover', over)
+      document.removeEventListener('drop', dropped)
     }
   }, [dragging])
 
@@ -143,21 +156,7 @@ export default function useBlockDrag(onMove) {
     touch.current = { stop }
   }
 
-  const listProps = {
-    ref: list,
-    onDragOver: (event) => {
-      if (!live.current) return
-      event.preventDefault()
-      event.dataTransfer.dropEffect = 'move'
-      pointerY.current = event.clientY
-      hover(event.clientY)
-    },
-    onDrop: (event) => {
-      if (!live.current) return
-      event.preventDefault()
-      drop()
-    },
-  }
+  const listProps = { ref: list }
 
   const handleProps = (id) => ({
     draggable: true,

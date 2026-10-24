@@ -274,6 +274,22 @@ describe('moving a block anywhere', () => {
     expect(document.querySelector('[data-drop-line]')).toBeNull()
   })
 
+  it('a drop just above the list, on the title, puts the block at the top', () => {
+    setup([text('a', 'one'), text('b', 'two')])
+    layOut()
+    const dataTransfer = transfer()
+    const title = box('Note title')
+    fireEvent.dragStart(handles()[1], { dataTransfer })
+    for (const type of ['dragOver', 'drop']) {
+      const event = createEvent[type](title, { dataTransfer })
+      Object.defineProperty(event, 'clientY', { value: -30 })
+      fireEvent(title, event)
+      if (type === 'drop') expect(event.defaultPrevented).toBe(true)
+    }
+    expect(values('Text')).toEqual(['two', 'one'])
+    expect(title).toHaveValue('Note')
+  })
+
   it('on a phone, holding the handle picks the block up and the finger moves it', () => {
     vi.useFakeTimers()
     setup([text('a', 'one'), text('b', 'two'), text('c', 'three')])

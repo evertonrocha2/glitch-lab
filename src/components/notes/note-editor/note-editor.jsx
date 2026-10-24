@@ -982,7 +982,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       return item ? caseHeading(item).type : t('notes.block.case')
     }
     if (block.type === 'divider') return t('notes.block.divider')
-    return blockWords(block.text) || (block.type === 'text' ? t('notes.editor.emptyLine') : fieldLabel(block, t))
+    const words = blockWords(block.text)
+    if (words) return words
+    if (block.type === 'code') return t('notes.block.code')
+    return block.type === 'text' ? t('notes.editor.emptyLine') : fieldLabel(block, t)
   }
 
   // Every gap the block can go to, for keyboards and screen readers: the top, after each other block
