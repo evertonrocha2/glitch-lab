@@ -1,8 +1,10 @@
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import BlockIcon from '../block-icon/block-icon.jsx'
 
-// The pop-up under a block: "/" block types or "@" cases. The input that opened it keeps focus and
-// drives it with the arrow keys (aria-activedescendant); a search box appears when nothing else can type.
-export default function BlockMenu({ id, label, items, active, onPick, empty, search, onSearch, onKeyDown, onClose }) {
+// The pop-up under a block: "/" block types, "@" cases or ":" emojis. The input that opened it keeps
+// focus and drives it with the arrow keys (aria-activedescendant); a search box appears when nothing
+// else can type. searchLabel / searchPlaceholder name that box (cases by default).
+export default function BlockMenu({ id, label, items, active, onPick, empty, search, onSearch, onKeyDown, onClose, searchLabel, searchPlaceholder }) {
   const t = useT()
   return (
     <div className="absolute top-full left-0 z-20 mt-1 w-full max-w-md border-2 border-ink bg-white shadow-pixel">
@@ -16,10 +18,10 @@ export default function BlockMenu({ id, label, items, active, onPick, empty, sea
           onChange={(event) => onSearch(event.target.value)}
           onKeyDown={onKeyDown}
           onBlur={onClose}
-          aria-label={t('notes.editor.searchCases')}
+          aria-label={searchLabel ?? t('notes.editor.searchCases')}
           aria-controls={id}
           aria-activedescendant={items.length ? `${id}-${active}` : undefined}
-          placeholder={t('notes.editor.searchPlaceholder')}
+          placeholder={searchPlaceholder ?? t('notes.editor.searchPlaceholder')}
           className="w-full border-b-2 border-ink px-3 py-2 text-sm text-ink focus-visible:outline-none"
         />
       )}
@@ -36,10 +38,18 @@ export default function BlockMenu({ id, label, items, active, onPick, empty, sea
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => onPick(item)}
             onKeyDown={() => {}}
-            className={`cursor-pointer px-3 py-2 ${index === active ? 'bg-primary-soft' : 'hover:bg-mist'}`}
+            className={`flex min-h-10 cursor-pointer items-center gap-3 px-3 py-1.5 ${index === active ? 'bg-primary-soft' : 'hover:bg-mist'}`}
           >
-            <span className="block truncate text-sm font-semibold text-ink">{item.label}</span>
-            {item.sub && <span className="block truncate text-xs text-muted">{item.sub}</span>}
+            {item.icon && <BlockIcon kind={item.icon} />}
+            {item.glyph && (
+              <span aria-hidden="true" className="w-6 shrink-0 text-center text-xl leading-none">
+                {item.glyph}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-ink">{item.label}</span>
+              {item.sub && <span className="block truncate text-xs text-muted">{item.sub}</span>}
+            </span>
           </div>
         ))}
       </div>

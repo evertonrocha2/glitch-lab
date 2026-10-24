@@ -1,15 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conceptLabel } from '../../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../../shared/limits.js'
+import { CALLOUT_EMOJI, CALLOUT_TONES, hasMarks, headingLevel, isList, listNumbers } from '../../../../shared/note-blocks.js'
 import { isQuestion } from '../../../../shared/question.js'
 import { caseHeading } from '../../../lib/case-info.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
-import { insertAfter, matchCases, mentionAt, newBlock, placeCase, removeBlock, updateBlock } from '../../../lib/notes/blocks.js'
+import {
+  duplicateBlock,
+  emojiQueryAt,
+  indentText,
+  insertAfter,
+  insertBefore,
+  markdownShortcut,
+  matchCases,
+  matchSlash,
+  mentionAt,
+  moveBlock,
+  newBlock,
+  outdentText,
+  placeCase,
+  removeBlock,
+  slashQuery,
+  updateBlock,
+  wrapSelection,
+} from '../../../lib/notes/blocks.js'
+import { rememberEmoji, searchEmojis, useEmojis } from '../../../lib/notes/emoji.js'
+import CodeEditorShortcuts from '../../ui/code-editor/code-editor-shortcuts.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
+import BlockHandle from '../block-handle/block-handle.jsx'
 import BlockMenu from '../block-menu/block-menu.jsx'
 import CaseBlock from '../case-block/case-block.jsx'
+import CodeBlock from '../code-block/code-block.jsx'
+import EmojiPicker from '../emoji-picker/emoji-picker.jsx'
 import ExportMenu from '../export-menu/export-menu.jsx'
+import InlineText from '../inline-text/inline-text.jsx'
+import { CALLOUT_TONE } from '../rich-blocks/rich-blocks.jsx'
 import ShareToggle from '../share-toggle/share-toggle.jsx'
 import TagInput from '../tag-input/tag-input.jsx'
 
@@ -17,12 +43,42 @@ export const SAVE_AFTER_MS = 700
 // The menu opened from the "Add" bar rather than from a block.
 const APPEND = 'append'
 const MENU_ID = 'note-block-menu'
-
-const BLOCK_TYPES = ['text', 'heading', 'todo', 'case']
+const PICKER_ID = 'note-emoji-picker'
+const KEYS_ID = 'note-editor-keys'
+// Typing in one block within this long is a single step for undo.
+const TYPING_MS = 1000
+const HISTORY_MAX = 100
+const NOTICE_MS = 8000
+const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph'])
+// Enter in these starts another of the same kind; on an empty one it goes back to plain text.
+const CONTINUES = ['todo', 'bullet', 'numbered', 'quote']
+// By physical key first, so the shortcuts work on any keyboard layout.
+const MARK_KEYS = { KeyB: 'bold', KeyI: 'italic', KeyE: 'code', KeyK: 'link' }
+const MARK_LETTERS = { b: 'bold', i: 'italic', e: 'code', k: 'link' }
 
 const SAVE_TEXT = { saved: 'notes.editor.saved', unsaved: 'notes.editor.unsaved', saving: 'notes.editor.saving', error: 'notes.editor.saveFailed' }
 
+const NOTE_SHORTCUTS = [
+  { combos: [['Enter']], label: 'notes.keys.newBlock' },
+  { combos: [['Shift', 'Enter']], label: 'notes.keys.lineBreak' },
+  { combos: [['Tab'], ['Shift', 'Tab']], label: 'notes.keys.indent' },
+  { combos: [['Mod', 'Enter'], ['Mod', 'Shift', 'Enter']], label: 'notes.keys.below' },
+  { combos: [['Alt', 'Up'], ['Alt', 'Down']], label: 'notes.keys.move' },
+  { combos: [['Mod', 'D']], label: 'notes.keys.duplicate' },
+  { combos: [['Mod', 'Shift', 'K']], label: 'notes.keys.delete' },
+  { combos: [['Mod', '/']], label: 'notes.keys.menu' },
+  { combos: [['Mod', 'B'], ['Mod', 'I'], ['Mod', 'E'], ['Mod', 'K']], label: 'notes.keys.marks' },
+  { combos: [['Mod', 'Z'], ['Mod', 'Shift', 'Z']], label: 'notes.keys.undo' },
+  { combos: [['Esc'], ['Tab']], label: 'editor.keys.leave', sequence: true },
+]
+
 const lineClass = 'w-full bg-transparent text-ink placeholder:text-muted/60 focus-visible:outline-none'
+const HEADING_CLASS = ['pt-3 text-2xl', 'pt-2 text-xl', 'pt-1 text-lg']
+const FIELD_LABEL = { text: 'notes.block.text', todo: 'notes.block.todo', quote: 'notes.block.quote', bullet: 'notes.block.bulletItem', numbered: 'notes.block.numberedItem', callout: 'notes.block.calloutText' }
+
+const isMod = (event) => event.ctrlKey || event.metaKey
+const keyIs = (event, letter) => event.key.toLowerCase() === letter || event.code === `Key${letter.toUpperCase()}`
+const focusable = (block) => block.type !== 'case'
 
 function caseOption(item, labels, t) {
   const { type, message } = caseHeading(item)
@@ -36,8 +92,11 @@ function caseOption(item, labels, t) {
   }
 }
 
-// A Notion-style page: a title and a list of blocks. Saves on its own a moment after you stop typing.
-// With onShare, a switch puts the note on your public profile (sharing says whether that's allowed).
+const fieldLabel = (block, t) => (block.type === 'heading' ? t(`notes.block.heading${headingLevel(block)}`) : t(FIELD_LABEL[block.type] ?? 'notes.block.text'))
+
+// A Notion-style page: a title, tags and a list of blocks. Saves on its own a moment after you stop
+// typing. The keys work like an IDE's (Tab nests, Enter continues, Ctrl+Z undoes across blocks), with
+// Esc then Tab as the way out. With onShare, a switch puts the note on your public profile.
 // tagSuggestions: the writer's tags across every note, offered as they type a tag.
 export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sharing, onShare, tagSuggestions = [] }) {
   const t = useT()
@@ -46,13 +105,28 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const [title, setTitle] = useState(note.title)
   const [blocks, setBlocks] = useState(initialBlocks)
   const [tags, setTags] = useState(note.tags ?? [])
-  // { blockId, kind: 'slash' | 'case', start, query, active }
+  // { blockId, kind: 'slash' | 'case' | 'emoji', start, query, active, searchable }
   const [menu, setMenu] = useState(null)
-  const [focusId, setFocusId] = useState(null)
+  // { id, start?, end? }: where the caret goes next (the end of the text when no start).
+  const [focus, setFocus] = useState(null)
+  // The block being typed in: it shows its markdown as typed, the others show it drawn.
+  const [editing, setEditing] = useState(null)
+  // { blockId, kind: 'insert' | 'callout', spot }: the emoji picker and where its emoji goes.
+  const [picker, setPicker] = useState(null)
+  const [wantEmojis, setWantEmojis] = useState(false)
+  const [notice, setNotice] = useState(false)
   const [status, setStatus] = useState('saved')
   const [confirming, setConfirming] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const emojiData = useEmojis(wantEmojis)
   const fields = useRef(new Map())
+  const blocksRef = useRef(blocks)
+  const history = useRef({ past: [], future: [], key: null, at: 0 })
+  // The last caret in a block, so the toolbar's emoji lands where you were writing.
+  const caret = useRef(null)
+  // Esc frees Tab for one press, so keyboard users can leave the editor.
+  const leaving = useRef(false)
+  const pickerReturn = useRef(null)
   const saved = useRef(JSON.stringify({ title: note.title, blocks: initialBlocks, tags: note.tags ?? [] }))
   const latest = useRef({ title, blocks, tags })
   latest.current = { title, blocks, tags }
@@ -109,52 +183,257 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   }, [])
 
   useEffect(() => {
-    if (!focusId) return
-    const field = fields.current.get(focusId)
+    if (!focus) return
+    const field = fields.current.get(focus.id)
     if (field) {
       field.focus()
-      const end = field.value.length
-      field.setSelectionRange(end, end)
+      if (field.setSelectionRange) {
+        const end = field.value.length
+        field.setSelectionRange(Math.min(focus.start ?? end, end), Math.min(focus.end ?? focus.start ?? end, end))
+      }
     }
-    setFocusId(null)
-  }, [focusId])
+    setFocus(null)
+  }, [focus])
 
-  const register = (id) => (element) => {
-    if (element) fields.current.set(id, element)
-    else fields.current.delete(id)
+  useEffect(() => {
+    if (!notice) return
+    const timer = setTimeout(() => setNotice(false), NOTICE_MS)
+    return () => clearTimeout(timer)
+  }, [notice])
+
+  // A stable callback per block id, so a code block registers its textarea once.
+  const registers = useRef(new Map())
+  const register = (id) => {
+    if (!registers.current.has(id)) {
+      registers.current.set(id, (element) => {
+        if (element) fields.current.set(id, element)
+        else fields.current.delete(id)
+      })
+    }
+    return registers.current.get(id)
   }
+
+  // Every change to the blocks goes through here, so undo can step back over it. Typing in one
+  // block (same key, soon after) adds to the last step instead of making a new one.
+  function apply(next, key = null) {
+    const current = blocksRef.current
+    if (next === current) return
+    const log = history.current
+    const now = Date.now()
+    if (!key || key !== log.key || now - log.at > TYPING_MS) {
+      log.past.push(current)
+      if (log.past.length > HISTORY_MAX) log.past.shift()
+    }
+    log.future = []
+    log.key = key
+    log.at = now
+    blocksRef.current = next
+    setBlocks(next)
+  }
+
+  function travel(from, to) {
+    const log = history.current
+    if (!log[from].length) return
+    const current = blocksRef.current
+    const next = log[from].pop()
+    log[to].push(current)
+    log.key = null
+    blocksRef.current = next
+    setBlocks(next)
+    setMenu(null)
+    setNotice(false)
+    // The caret goes to the first block that changed, so you see what came back.
+    let index = 0
+    while (index < next.length && next[index] === current[index]) index++
+    const target = next.slice(Math.min(index, next.length - 1)).find(focusable) ?? next.findLast(focusable)
+    if (target) setFocus({ id: target.id })
+  }
+  const undo = () => travel('past', 'future')
+  const redo = () => travel('future', 'past')
 
   // placeCase can add two blocks (the case and a line after it).
   const full = blocks.length + 2 > NOTE_LIMITS.blocks
+  const numbers = listNumbers(blocks)
   const casesById = new Map(cases.map((item) => [item.id, item]))
-  const blockTypes = BLOCK_TYPES.map((key) => ({ key, label: t(`notes.block.${key}`), sub: t(`notes.block.${key}Sub`) }))
   // Search finds a bug type by its English name and by its name in the reader's language.
   const conceptWords = (id) => `${conceptLabel(id)} ${labels.concept(id)}`
-  const items = !menu ? [] : menu.kind === 'slash' ? blockTypes : matchCases(cases, menu.query, conceptWords).map((item) => caseOption(item, labels, t))
+  const slashLabel = (item) => t(`notes.block.${item.key}`)
+
+  let items = []
+  if (menu?.kind === 'slash') {
+    items = matchSlash(menu.query, slashLabel).map((item) => ({ key: item.key, icon: item.key, label: slashLabel(item), sub: t(`notes.block.${item.key}Sub`), item }))
+  } else if (menu?.kind === 'case') {
+    items = matchCases(cases, menu.query, conceptWords).map((item) => caseOption(item, labels, t))
+  } else if (menu?.kind === 'emoji' && emojiData) {
+    items = searchEmojis(emojiData.emojis, menu.query)
+      .slice(0, 8)
+      .map((emoji) => ({ key: emoji.char, glyph: emoji.char, label: `:${emoji.name}:`, char: emoji.char }))
+  }
   const active = Math.min(menu?.active ?? 0, Math.max(items.length - 1, 0))
+
+  const blockById = (id) => blocksRef.current.find((block) => block.id === id)
+
+  // The next block the caret can go to, up (-1) or down (1). false when there is none.
+  function go(block, direction) {
+    const list = blocksRef.current
+    const index = list.findIndex((item) => item.id === block.id)
+    const rest = direction < 0 ? list.slice(0, index).reverse() : list.slice(index + 1)
+    const target = rest.find(focusable)
+    if (!target) return false
+    setFocus(direction < 0 ? { id: target.id } : { id: target.id, start: 0, end: 0 })
+    return true
+  }
+
+  function addBlock(block, where) {
+    if (full) return
+    const next = newBlock('text')
+    apply(where === 'before' ? insertBefore(blocksRef.current, block.id, next) : insertAfter(blocksRef.current, block.id, next))
+    setFocus({ id: next.id })
+  }
+
+  function duplicate(block) {
+    if (full) return
+    const { blocks: next, copyId } = duplicateBlock(blocksRef.current, block.id)
+    apply(next)
+    setFocus({ id: copyId })
+  }
+
+  function move(block, direction) {
+    const field = fields.current.get(block.id)
+    apply(moveBlock(blocksRef.current, block.id, direction))
+    setFocus({ id: block.id, start: field?.selectionStart, end: field?.selectionEnd })
+  }
+
+  // Undoable, and said out loud with an Undo button: nothing written goes away for good by accident.
+  function remove(block, { notify = true } = {}) {
+    const list = blocksRef.current
+    const index = list.findIndex((item) => item.id === block.id)
+    const previous = list.slice(0, index).reverse().find(focusable) ?? list.slice(index + 1).find(focusable)
+    apply(removeBlock(list, block.id))
+    if (notify) setNotice(true)
+    if (previous) setFocus({ id: previous.id })
+  }
+
+  function setText(block, next) {
+    apply(updateBlock(blocksRef.current, block.id, { text: next.value }))
+    setFocus({ id: block.id, start: next.start, end: next.end })
+  }
+
+  // The block becomes another kind in place (same id), keeping what follows the markdown.
+  function convert(block, { type, fields: extra }) {
+    setMenu(null)
+    if (type === 'divider') {
+      const after = newBlock('text')
+      const list = blocksRef.current.map((item) => (item.id === block.id ? { id: block.id, type: 'divider' } : item))
+      apply(insertAfter(list, block.id, after))
+      setFocus({ id: after.id })
+      return
+    }
+    const next = { ...newBlock(type, extra), id: block.id }
+    apply(blocksRef.current.map((item) => (item.id === block.id ? next : item)))
+    setFocus({ id: block.id, start: 0, end: 0 })
+  }
+
+  function openPicker(target) {
+    setWantEmojis(true)
+    setMenu(null)
+    pickerReturn.current = document.activeElement
+    setPicker(target)
+  }
+
+  function closePicker({ refocus = true } = {}) {
+    setPicker(null)
+    const back = pickerReturn.current
+    if (refocus && back?.isConnected) back.focus()
+  }
+
+  function pickEmoji(char) {
+    const target = picker
+    closePicker({ refocus: false })
+    if (target.kind === 'callout') {
+      apply(updateBlock(blocksRef.current, target.blockId, { emoji: char }))
+      setFocus({ id: target.blockId })
+      return
+    }
+    const spot = target.spot
+    const block = spot && blockById(spot.blockId)
+    if (block && typeof block.text === 'string') {
+      const start = Math.min(spot.start, block.text.length)
+      const end = Math.min(spot.end, block.text.length)
+      setText(block, { value: block.text.slice(0, start) + char + block.text.slice(end), start: start + char.length, end: start + char.length })
+      return
+    }
+    // Nowhere written yet: an empty last line takes it, or a new one does.
+    const last = blocksRef.current.at(-1)
+    if (last?.type === 'text' && last.text === '') {
+      setText(last, { value: char, start: char.length, end: char.length })
+      return
+    }
+    if (full) return
+    const added = newBlock('text', { text: char })
+    apply([...blocksRef.current, added])
+    setFocus({ id: added.id })
+  }
+
+  function pickSlash(entry, block) {
+    const keep = menu.searchable ? (block.text ?? '') : ''
+    setMenu(null)
+    if (entry.key === 'case') {
+      if (menu.searchable) {
+        setMenu({ blockId: block.id, kind: 'case', start: 0, query: '', active: 0, searchable: true })
+        return
+      }
+      // Swap the "/" for "@" so typing keeps filtering the cases, just like a mention.
+      apply(updateBlock(blocksRef.current, block.id, { text: '@' }))
+      setMenu({ blockId: block.id, kind: 'case', start: 0, query: '', active: 0 })
+      setFocus({ id: block.id })
+      return
+    }
+    if (entry.key === 'emoji') {
+      apply(updateBlock(blocksRef.current, block.id, { text: keep }))
+      setFocus({ id: block.id })
+      openPicker({ blockId: block.id, kind: 'insert', spot: { blockId: block.id, start: keep.length, end: keep.length } })
+      return
+    }
+    if (entry.type === 'divider' && keep) {
+      if (full) return
+      const after = newBlock('divider')
+      apply(insertAfter(blocksRef.current, block.id, after))
+      setFocus({ id: after.id })
+      return
+    }
+    convert(block, { type: entry.type, fields: { text: keep, level: entry.level } })
+    if (entry.type !== 'divider') setFocus({ id: block.id })
+  }
 
   function pick(item) {
     if (menu.kind === 'slash') {
-      if (item.key === 'case') {
-        // Swap the "/" for "@" so typing keeps filtering the cases, just like a mention.
-        setBlocks((current) => updateBlock(current, menu.blockId, { text: '@' }))
-        setMenu({ blockId: menu.blockId, kind: 'case', start: 0, query: '', active: 0 })
-        setFocusId(menu.blockId)
-        return
-      }
-      setBlocks((current) => current.map((block) => (block.id === menu.blockId ? { ...newBlock(item.key), id: block.id } : block)))
-      setFocusId(menu.blockId)
+      pickSlash(item.item, blockById(menu.blockId))
+      return
+    }
+    if (menu.kind === 'emoji') {
+      const block = blockById(menu.blockId)
+      const end = menu.start + 1 + menu.query.length
+      rememberEmoji(item.char)
       setMenu(null)
+      setText(block, { value: block.text.slice(0, menu.start) + item.char + block.text.slice(end), start: menu.start + item.char.length, end: menu.start + item.char.length })
       return
     }
     if (full) {
       setMenu(null)
       return
     }
+    if (menu.searchable && menu.blockId !== APPEND) {
+      // Picked from the Ctrl+/ menu: the case goes right under the block, which keeps its text.
+      apply(insertAfter(blocksRef.current, menu.blockId, newBlock('case', { caseId: item.caseId })))
+      setFocus({ id: menu.blockId })
+      setMenu(null)
+      return
+    }
     const target = menu.blockId === APPEND ? null : menu.blockId
-    const placed = placeCase(blocks, target, item.caseId, { start: menu.start, query: menu.query })
-    setBlocks(placed.blocks)
-    setFocusId(placed.focusId)
+    const placed = placeCase(blocksRef.current, target, item.caseId, { start: menu.start, query: menu.query })
+    apply(placed.blocks)
+    setFocus({ id: placed.focusId })
     setMenu(null)
   }
 
@@ -175,141 +454,406 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     }
     if (event.key === 'Escape') {
       event.preventDefault()
+      event.stopPropagation()
+      // A menu with its own search box had the focus: give it back to the block.
+      if (menu.searchable && menu.blockId !== APPEND) setFocus({ id: menu.blockId })
       setMenu(null)
       return true
     }
     return false
   }
 
-  function changeText(block, value, caret) {
-    setBlocks((current) => updateBlock(current, block.id, { text: value }))
-    if (block.type === 'text' && value === '/') {
-      setMenu({ blockId: block.id, kind: 'slash', active: 0 })
+  function changeText(block, value, caretAt) {
+    if (block.type === 'text') {
+      const shortcut = markdownShortcut(value)
+      if (shortcut && !markdownShortcut(block.text)) {
+        convert(block, shortcut)
+        return
+      }
+    }
+    apply(updateBlock(blocksRef.current, block.id, { text: value }), `type:${block.id}`)
+    if (block.type === 'code' || menu?.searchable) return
+    const slash = block.type === 'text' ? slashQuery(value) : null
+    if (slash !== null) {
+      setMenu((current) => ({ blockId: block.id, kind: 'slash', query: slash, active: current?.kind === 'slash' && current.query === slash ? current.active : 0 }))
       return
     }
-    const mention = mentionAt(value, caret)
+    const mention = mentionAt(value, caretAt)
     if (mention) {
       setMenu((current) => ({ blockId: block.id, kind: 'case', ...mention, active: current?.query === mention.query ? current.active : 0 }))
-    } else if (menu?.blockId === block.id) {
-      setMenu(null)
+      return
     }
+    const emoji = emojiQueryAt(value, caretAt)
+    if (emoji) {
+      setWantEmojis(true)
+      setMenu((current) => ({ blockId: block.id, kind: 'emoji', ...emoji, active: current?.kind === 'emoji' && current.query === emoji.query ? current.active : 0 }))
+      return
+    }
+    if (menu?.blockId === block.id) setMenu(null)
+  }
+
+  // Keys every block shares (code blocks too). true when the key was used.
+  function commonKey(event, block) {
+    const mod = isMod(event)
+    if (mod && !event.altKey && keyIs(event, 'z')) {
+      if (event.shiftKey) redo()
+      else undo()
+      return true
+    }
+    if (mod && !event.altKey && !event.shiftKey && keyIs(event, 'y')) {
+      redo()
+      return true
+    }
+    if (mod && !event.altKey && event.key === 'Enter') {
+      if (event.shiftKey) addBlock(block, 'before')
+      else if (block.type === 'todo') apply(updateBlock(blocksRef.current, block.id, { done: !block.done }))
+      else addBlock(block, 'after')
+      return true
+    }
+    if (mod && !event.altKey && !event.shiftKey && keyIs(event, 'd')) {
+      duplicate(block)
+      return true
+    }
+    // In code these keys move, delete or comment lines, as in the gym editor.
+    if (block.type === 'code') return false
+    if (event.altKey && !mod && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      move(block, event.key === 'ArrowUp' ? -1 : 1)
+      return true
+    }
+    if (mod && event.shiftKey && !event.altKey && keyIs(event, 'k')) {
+      remove(block)
+      return true
+    }
+    if (mod && !event.altKey && !event.shiftKey && (event.key === '/' || event.code === 'Slash')) {
+      setMenu({ blockId: block.id, kind: 'slash', query: '', active: 0, searchable: true })
+      return true
+    }
+    return false
+  }
+
+  // Esc, then Tab: the one way Tab leaves the editor. true when this Tab should leave.
+  function escapeHatch(event) {
+    if (event.key === 'Escape') {
+      leaving.current = true
+      return false
+    }
+    if (MODIFIERS.has(event.key)) return false
+    const free = leaving.current
+    leaving.current = false
+    return event.key === 'Tab' && free
+  }
+
+  function enter(block, { value, start, end }) {
+    if (full) return
+    if (block.type === 'text') {
+      const fence = /^```([\w+#.-]*)$/.exec(value)
+      if (fence) {
+        convert(block, { type: 'code', fields: { language: fence[1] } })
+        return
+      }
+    }
+    const continues = CONTINUES.includes(block.type)
+    if (continues && value === '') {
+      // Enter on an empty item leaves the list (or the to-dos, or the quote).
+      apply(blocksRef.current.map((item) => (item.id === block.id ? { id: block.id, type: 'text', text: '' } : item)))
+      setFocus({ id: block.id })
+      return
+    }
+    const next = newBlock(continues ? block.type : 'text', { text: value.slice(end), indent: isList(block) ? block.indent : undefined })
+    apply(insertAfter(updateBlock(blocksRef.current, block.id, { text: value.slice(0, start) }), block.id, next))
+    setFocus({ id: next.id, start: 0, end: 0 })
   }
 
   function keyDown(event, block) {
-    if (menu?.blockId === block.id && menuKey(event)) return
-    // Headings and to-dos are one line: Enter starts the next block instead of a line break.
-    if (event.key === 'Enter' && block.type !== 'text') {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    // While a menu is open its keys win, and no other shortcut fires.
+    if (menu?.blockId === block.id) {
+      if (!menuKey(event) && (isMod(event) || event.altKey || event.key === 'Tab')) event.preventDefault()
+      return
+    }
+    if (escapeHatch(event)) return
+    if (commonKey(event, block)) {
       event.preventDefault()
-      if (full) return
-      const next = newBlock(block.type === 'todo' ? 'todo' : 'text')
-      setBlocks((current) => insertAfter(current, block.id, next))
-      setFocusId(next.id)
-    } else if (event.key === 'Backspace' && block.text === '' && blocks.length > 1) {
+      return
+    }
+    const field = event.currentTarget
+    const state = { value: field.value, start: field.selectionStart, end: field.selectionEnd }
+    const mark = isMod(event) && !event.altKey && !event.shiftKey ? (MARK_KEYS[event.code] ?? MARK_LETTERS[event.key.toLowerCase()]) : null
+    if (mark) {
       event.preventDefault()
-      const index = blocks.findIndex((item) => item.id === block.id)
-      const previous = blocks
-        .slice(0, index)
-        .reverse()
-        .find((item) => item.type !== 'case')
-      setBlocks((current) => removeBlock(current, block.id))
-      if (previous) setFocusId(previous.id)
+      setText(block, wrapSelection(state, mark))
+      return
+    }
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (isList(block)) {
+        const indent = event.shiftKey ? undefined : 1
+        if (block.indent !== indent) apply(updateBlock(blocksRef.current, block.id, { indent }))
+        return
+      }
+      const next = event.shiftKey ? outdentText(state) : indentText(state)
+      if (next) setText(block, next)
+      return
+    }
+    if (event.key === 'Enter' && !event.shiftKey && !isMod(event) && !event.altKey) {
+      event.preventDefault()
+      enter(block, state)
+      return
+    }
+    if (event.key === 'Backspace' && !isMod(event) && !event.altKey && state.start === 0 && state.end === 0) {
+      if (isList(block) && block.indent === 1) {
+        event.preventDefault()
+        apply(updateBlock(blocksRef.current, block.id, { indent: undefined }))
+      } else if (block.text === '' && blocksRef.current.length > 1) {
+        event.preventDefault()
+        remove(block, { notify: false })
+      } else if (block.type !== 'text') {
+        // At the very start, Backspace takes the block back to plain text, words kept.
+        event.preventDefault()
+        convert(block, { type: 'text', fields: { text: block.text } })
+      }
+      return
+    }
+    const plainArrow = !isMod(event) && !event.altKey && !event.shiftKey && state.start === state.end
+    if (plainArrow && ((event.key === 'ArrowUp' && state.start === 0) || (event.key === 'ArrowDown' && state.end === state.value.length))) {
+      if (go(block, event.key === 'ArrowUp' ? -1 : 1)) event.preventDefault()
     }
   }
 
-  function append(type) {
-    if (full) return
-    const block = newBlock(type)
-    setBlocks((current) => [...current, block])
-    setFocusId(block.id)
+  // Runs before the code editor's own keys: the note's keys win where they overlap (Ctrl+Enter).
+  function codeKeyCapture(event, block) {
+    if (event.target.tagName !== 'TEXTAREA' || event.nativeEvent.isComposing || event.keyCode === 229) return
+    const field = event.target
+    let used = commonKey(event, block)
+    if (!used && event.key === 'Backspace' && field.value === '' && blocksRef.current.length > 1) {
+      remove(block, { notify: false })
+      used = true
+    }
+    const plain = !isMod(event) && !event.altKey && !event.shiftKey && field.selectionStart === field.selectionEnd
+    if (!used && plain && ((event.key === 'ArrowUp' && field.selectionStart === 0) || (event.key === 'ArrowDown' && field.selectionEnd === field.value.length))) {
+      used = go(block, event.key === 'ArrowUp' ? -1 : 1)
+    }
+    if (used) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+  }
+
+  function dividerKey(event, block) {
+    if (escapeHatch(event)) return
+    if (commonKey(event, block)) {
+      event.preventDefault()
+      return
+    }
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      event.preventDefault()
+      remove(block, { notify: false })
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      addBlock(block, 'after')
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      if (go(block, event.key === 'ArrowUp' ? -1 : 1)) event.preventDefault()
+    } else if (event.key === 'Tab') {
+      event.preventDefault()
+    }
   }
 
   const closeMenuFor = (blockId) => () => setMenu((current) => (current?.blockId === blockId ? null : current))
+  const remember = (block) => (event) => {
+    caret.current = { blockId: block.id, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }
+  }
 
   function menuFor(blockId, extra = {}) {
     if (menu?.blockId !== blockId) return null
-    return (
-      <BlockMenu
-        id={MENU_ID}
-        label={menu.kind === 'slash' ? t('notes.editor.turnInto') : t('notes.editor.mention')}
-        items={items}
-        active={active}
-        onPick={pick}
-        empty={cases.length ? t('notes.editor.noMatch') : t('notes.editor.emptyBoard')}
-        {...extra}
-      />
-    )
+    const kind = menu.kind
+    const search = menu.searchable
+      ? {
+          search: menu.query,
+          onSearch: (query) => setMenu((current) => ({ ...current, query, active: 0 })),
+          onKeyDown: menuKey,
+          onClose: closeMenuFor(blockId),
+          ...(kind === 'slash' ? { searchLabel: t('notes.editor.searchBlocks'), searchPlaceholder: t('notes.editor.searchBlocksPlaceholder') } : {}),
+        }
+      : {}
+    const label = { slash: t('notes.editor.turnInto'), case: t('notes.editor.mention'), emoji: t('notes.editor.emojiMenu') }[kind]
+    const empty = { slash: t('notes.editor.slashNoMatch'), case: cases.length ? t('notes.editor.noMatch') : t('notes.editor.emptyBoard'), emoji: emojiData ? t('notes.emoji.none') : t('notes.emoji.loading') }[kind]
+    return <BlockMenu id={MENU_ID} label={label} items={items} active={active} onPick={pick} empty={empty} {...search} {...extra} />
+  }
+
+  function pickerFor(blockId) {
+    if (!picker || picker.blockId !== blockId) return null
+    return <EmojiPicker id={PICKER_ID} onPick={pickEmoji} onClose={() => closePicker()} className="absolute top-full left-0 mt-1" />
   }
 
   function inputProps(block) {
-    const open = menu?.blockId === block.id && items.length > 0
+    const open = menu?.blockId === block.id && !menu.searchable && items.length > 0
     return {
       ref: register(block.id),
       value: block.text,
       onChange: (event) => changeText(block, event.target.value, event.target.selectionStart),
       onKeyDown: (event) => keyDown(event, block),
-      onBlur: closeMenuFor(block.id),
+      onFocus: () => setEditing(block.id),
+      onBlur: (event) => {
+        remember(block)(event)
+        setEditing((current) => (current === block.id ? null : current))
+        if (!menu?.searchable) closeMenuFor(block.id)()
+      },
+      onSelect: remember(block),
       maxLength: NOTE_LIMITS.text,
+      'aria-label': fieldLabel(block, t),
+      'aria-describedby': KEYS_ID,
       'aria-controls': open ? MENU_ID : undefined,
       'aria-activedescendant': open ? `${MENU_ID}-${active}` : undefined,
     }
   }
 
+  // A written block: its textarea, or (when not being typed in and it has marks) the marks drawn,
+  // with the textarea kept for the keyboard and screen readers. A click on the drawing edits it.
+  function written(block, className, placeholder) {
+    const drawn = editing !== block.id && hasMarks(block.text)
+    const field = (
+      <textarea
+        {...inputProps(block)}
+        rows={1}
+        placeholder={placeholder ?? fieldLabel(block, t)}
+        className={drawn ? 'sr-only' : `${lineClass} block resize-none field-sizing-content ${className}`}
+      />
+    )
+    if (!drawn) return field
+    return (
+      <>
+        {field}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: a mouse shortcut; the textarea above is the keyboard way in */}
+        <div
+          onMouseDown={(event) => {
+            if (event.target.closest('a')) return
+            event.preventDefault()
+            setFocus({ id: block.id })
+          }}
+          className={`cursor-text wrap-break-word whitespace-pre-wrap text-ink ${className}`}
+        >
+          <InlineText text={block.text} />
+        </div>
+      </>
+    )
+  }
+
   function control(block) {
     switch (block.type) {
       case 'heading':
-        return (
-          <textarea
-            {...inputProps(block)}
-            rows={1}
-            aria-label={t('notes.block.heading')}
-            placeholder={t('notes.block.heading')}
-            className={`${lineClass} block resize-none pt-3 font-pixel text-2xl font-bold field-sizing-content`}
-          />
-        )
+        return written(block, `font-pixel font-bold ${HEADING_CLASS[headingLevel(block) - 1]}`)
       case 'todo':
         return (
           <div className="flex items-start gap-2.5 py-0.5">
             <input
               type="checkbox"
               checked={block.done}
-              onChange={(event) => setBlocks((current) => updateBlock(current, block.id, { done: event.target.checked }))}
+              onChange={(event) => apply(updateBlock(blocksRef.current, block.id, { done: event.target.checked }))}
               aria-label={t('notes.block.todoDone', { text: block.text || t('notes.block.todoFallback') })}
               className="mt-1 size-4 shrink-0 accent-primary"
             />
-            <textarea
-              {...inputProps(block)}
-              rows={1}
-              aria-label={t('notes.block.todo')}
-              placeholder={t('notes.block.todo')}
-              className={`${lineClass} block resize-none field-sizing-content ${block.done ? 'text-muted line-through' : ''}`}
-            />
+            <div className="min-w-0 flex-1">{written(block, block.done ? 'text-muted line-through' : '')}</div>
+          </div>
+        )
+      case 'bullet':
+      case 'numbered':
+        return (
+          <div data-indent={block.indent ?? 0} className={`flex items-start gap-2 py-0.5 ${block.indent === 1 ? 'ml-6' : ''}`}>
+            <span aria-hidden="true" className="w-5 shrink-0 pt-0.5 text-right font-label text-xs text-primary">
+              {block.type === 'numbered' ? `${numbers.get(block.id)}.` : <span className="mt-1.5 ml-auto block size-1.5 bg-primary" />}
+            </span>
+            <div className="min-w-0 flex-1">{written(block, 'leading-relaxed')}</div>
+          </div>
+        )
+      case 'quote':
+        return <div className="border-l-4 border-primary py-0.5 pl-3">{written(block, 'leading-relaxed italic text-ink/85')}</div>
+      case 'callout':
+        return (
+          <div className={`flex flex-wrap items-start gap-1 border-2 p-1 ${CALLOUT_TONE[block.tone] ?? CALLOUT_TONE.info}`}>
+            <button
+              type="button"
+              onClick={() => openPicker({ blockId: block.id, kind: 'callout' })}
+              aria-label={t('notes.callout.emoji', { emoji: block.emoji })}
+              className="grid size-10 shrink-0 place-items-center text-xl hover:bg-white/60"
+            >
+              <span aria-hidden="true">{block.emoji}</span>
+            </button>
+            <div className="min-w-40 flex-1 py-2">{written(block, 'leading-relaxed')}</div>
+            <select
+              aria-label={t('notes.callout.tone')}
+              value={block.tone}
+              onChange={(event) => {
+                const tone = event.target.value
+                // The emoji follows the style unless it was picked by hand.
+                const emoji = block.emoji === CALLOUT_EMOJI[block.tone] ? CALLOUT_EMOJI[tone] : block.emoji
+                apply(updateBlock(blocksRef.current, block.id, { tone, emoji }))
+              }}
+              className="min-h-10 cursor-pointer bg-transparent px-1 font-label text-[10px] text-ink"
+            >
+              {CALLOUT_TONES.map((tone) => (
+                <option key={tone} value={tone}>
+                  {t(`notes.callout.${tone}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
+      case 'code':
+        return (
+          // biome-ignore lint/a11y/noStaticElementInteractions: listens for the note's keys on the way to the code editor
+          <div onKeyDownCapture={(event) => codeKeyCapture(event, block)} className="py-1">
+            <CodeBlock block={block} fieldRef={register(block.id)} onChange={(patch) => apply(updateBlock(blocksRef.current, block.id, patch), patch.text !== undefined ? `type:${block.id}` : null)} />
+          </div>
+        )
+      case 'divider':
+        return (
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: the divider can be selected, moved and deleted with the keyboard
+          <div
+            ref={register(block.id)}
+            tabIndex={0}
+            role="group"
+            aria-label={t('notes.block.divider')}
+            onKeyDown={(event) => dividerKey(event, block)}
+            className="py-4 focus-visible:outline-2 focus-visible:outline-secondary"
+          >
+            <hr className="border-0 border-t-2 border-dashed border-ink/50" />
           </div>
         )
       case 'case':
         return <CaseBlock item={casesById.get(block.caseId)} />
       default:
-        return (
-          <textarea
-            {...inputProps(block)}
-            rows={1}
-            aria-label={t('notes.block.text')}
-            placeholder={t('notes.block.textPlaceholder')}
-            className={`${lineClass} block resize-none py-1 leading-relaxed field-sizing-content`}
-          />
-        )
+        return written(block, 'py-1 leading-relaxed', t('notes.block.textPlaceholder'))
     }
+  }
+
+  function handleActions(block, index) {
+    return [
+      { key: 'up', label: t('notes.editor.moveUp'), disabled: index === 0, onSelect: () => move(block, -1) },
+      { key: 'down', label: t('notes.editor.moveDown'), disabled: index === blocks.length - 1, onSelect: () => move(block, 1) },
+      { key: 'duplicate', label: t('notes.editor.duplicate'), disabled: full, onSelect: () => duplicate(block) },
+      { key: 'delete', label: t('notes.editor.deleteBlock'), danger: true, onSelect: () => remove(block) },
+    ]
   }
 
   return (
     <article aria-label={t('notes.editor.label')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p aria-live="polite" className="flex items-center gap-2 font-label text-[10px] text-muted">
+        <p aria-live="polite" className="flex flex-wrap items-center gap-2 font-label text-[10px] text-muted">
           <span aria-hidden="true" className={`size-2 border border-ink ${status === 'saved' ? 'bg-primary' : status === 'error' ? 'bg-ink' : 'bg-white'}`} />
           {status === 'error' ? saveError || t(SAVE_TEXT.error) : t(SAVE_TEXT[status])}
           {status === 'error' && (
             <button type="button" onClick={flush} className="text-primary underline underline-offset-2">
               {t('notes.editor.retry')}
             </button>
+          )}
+          {notice && (
+            <span className="inline-flex items-center gap-1.5 text-ink">
+              · {t('notes.editor.deleted')}
+              <button type="button" onClick={undo} className="min-h-10 px-1 text-primary underline underline-offset-2">
+                {t('notes.editor.undo')}
+              </button>
+            </span>
           )}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -340,10 +884,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
         onKeyDown={(event) => {
           if (event.key !== 'Enter') return
           event.preventDefault()
-          const first = blocks.find((block) => block.type !== 'case')
-          if (first) setFocusId(first.id)
+          const first = blocks.find(focusable)
+          if (first) setFocus({ id: first.id })
         }}
-        maxLength={120}
+        maxLength={NOTE_LIMITS.title}
         aria-label={t('notes.editor.titleLabel')}
         placeholder={t('notes.untitled')}
         className={`${lineClass} mt-5 block resize-none font-pixel text-3xl font-bold field-sizing-content sm:text-4xl`}
@@ -353,20 +897,18 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
         {t('notes.editor.hintBefore')} <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">@</kbd> {t('notes.editor.hintMiddle')}{' '}
         <kbd className="border border-line bg-white px-1 font-mono text-xs text-ink">/</kbd> {t('notes.editor.hintAfter')}
       </p>
+      <p id={KEYS_ID} className="sr-only">
+        {t('notes.editor.trap')}
+      </p>
+      <CodeEditorShortcuts shortcuts={NOTE_SHORTCUTS} listLabel="notes.keys.list" footer="notes.keys.markdown" className="mt-1" />
 
       <div className="mt-6 space-y-2">
-        {blocks.map((block) => (
-          <div key={block.id} className="group relative flex items-start gap-2">
+        {blocks.map((block, index) => (
+          <div key={block.id} data-block={block.type} className="group relative flex items-start gap-1">
             <div className="min-w-0 flex-1">{control(block)}</div>
-            <button
-              type="button"
-              onClick={() => setBlocks((current) => removeBlock(current, block.id))}
-              aria-label={t('notes.editor.removeBlock')}
-              className="mt-1 px-1.5 text-lg leading-none text-muted opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-ink focus:opacity-100"
-            >
-              ×
-            </button>
+            <BlockHandle actions={handleActions(block, index)} />
             {menuFor(block.id)}
+            {pickerFor(block.id)}
           </div>
         ))}
       </div>
@@ -378,25 +920,40 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           ['heading', t('notes.editor.addHeading')],
           ['todo', t('notes.editor.addTodo')],
         ].map(([type, label]) => (
-          <PixelButton key={type} variant="ghost" onClick={() => append(type)} disabled={full} className="px-2.5 py-1.5">
+          <PixelButton
+            key={type}
+            variant="ghost"
+            onClick={() => {
+              if (full) return
+              const block = newBlock(type)
+              apply([...blocksRef.current, block])
+              setFocus({ id: block.id })
+            }}
+            disabled={full}
+            className="px-2.5 py-1.5"
+          >
             {label}
           </PixelButton>
         ))}
         <PixelButton
           variant="secondary"
-          onClick={() => setMenu({ blockId: APPEND, kind: 'case', start: 0, query: '', active: 0 })}
+          onClick={() => setMenu({ blockId: APPEND, kind: 'case', start: 0, query: '', active: 0, searchable: true })}
           disabled={full}
           className="px-2.5 py-1.5"
         >
           {t('notes.editor.addCase')}
         </PixelButton>
+        <PixelButton
+          variant="ghost"
+          onClick={() => openPicker({ blockId: null, kind: 'insert', spot: caret.current })}
+          aria-expanded={picker?.blockId === null}
+          className="px-2.5 py-1.5"
+        >
+          <span aria-hidden="true">😀</span> {t('notes.editor.addEmoji')}
+        </PixelButton>
         {full && <span className="text-xs text-muted">{t('notes.editor.full')}</span>}
-        {menuFor(APPEND, {
-          search: menu?.query ?? '',
-          onSearch: (query) => setMenu((current) => ({ ...current, query, active: 0 })),
-          onKeyDown: menuKey,
-          onClose: closeMenuFor(APPEND),
-        })}
+        {menuFor(APPEND)}
+        {pickerFor(null)}
       </div>
     </article>
   )
