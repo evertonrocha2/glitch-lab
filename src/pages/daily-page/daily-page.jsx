@@ -4,6 +4,7 @@ import { gameNumber } from '../../../shared/riddle/game.js'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import Leaderboard from '../../components/daily/leaderboard/leaderboard.jsx'
 import PuzzleCard, { PuzzleStatus, PuzzleTags, StartButton, xpFor } from '../../components/daily/puzzle-card/puzzle-card.jsx'
+import SwitchLanguage from '../../components/daily/switch-language/switch-language.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import HuntTeaser from '../../components/hunt/hunt-teaser/hunt-teaser.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
@@ -37,7 +38,7 @@ function EndsIn({ until }) {
   return <p className="font-label text-xs text-muted">{t('board.global.endsIn', { time: formatCountdown(Date.parse(until) - now) })}</p>
 }
 
-function GlobalChallenge({ data, onStart, starting }) {
+function GlobalChallenge({ data, onStart, starting, onSwitched }) {
   const t = useT()
   const { day } = useFormat()
   const { puzzle, solvedCount, leaderboard, you } = data
@@ -63,8 +64,9 @@ function GlobalChallenge({ data, onStart, starting }) {
           </div>
           <div className="relative p-5 sm:p-6">
             <h3 className="font-pixel text-2xl font-bold leading-tight text-ink sm:text-3xl">{puzzle.title}</h3>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <PuzzleTags puzzle={puzzle} />
+              <SwitchLanguage puzzle={puzzle} started={puzzle.status !== 'new'} onSwitched={onSwitched} />
             </div>
             <p className="mt-4 border-2 border-ink bg-mist px-3 py-2 font-mono text-xs leading-relaxed text-ink wrap-break-word">
               <span aria-hidden="true" className="font-bold text-secondary">
@@ -186,6 +188,12 @@ export default function DailyPage() {
     }
   }
 
+  // A switch answers with my card in the new language: it replaces the old one, wherever it is.
+  const switched = useCallback(({ puzzle }) => {
+    setDaily((current) => current && { ...current, puzzles: current.puzzles.map((item) => (item.id === puzzle.id ? puzzle : item)) })
+    setGlobal((current) => (current?.puzzle.id === puzzle.id ? { ...current, puzzle } : current))
+  }, [])
+
   const solvedToday = daily?.puzzles.filter((item) => item.status === 'passed').length ?? 0
 
   return (
@@ -223,7 +231,7 @@ export default function DailyPage() {
           <ul aria-label={t('board.daily.list')} className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-3 lg:col-span-2">
             {daily.puzzles.map((puzzle) => (
               <li key={puzzle.id}>
-                <PuzzleCard puzzle={puzzle} onStart={start} busy={starting !== null} />
+                <PuzzleCard puzzle={puzzle} onStart={start} busy={starting !== null} onSwitched={switched} />
               </li>
             ))}
           </ul>
@@ -236,7 +244,7 @@ export default function DailyPage() {
       {/* Spaced review of the bug types already met (see components/review). */}
       <ReviewToday className="mt-14" />
 
-      {global ? <GlobalChallenge data={global} onStart={start} starting={starting} /> : !daily && !message && <GlobalChallengeSkeleton />}
+      {global ? <GlobalChallenge data={global} onStart={start} starting={starting} onSwitched={switched} /> : !daily && !message && <GlobalChallengeSkeleton />}
     </AppShell>
   )
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { formatSolveTime } from '../../../lib/daily.js'
+import { formatSolveTime, languageName } from '../../../lib/daily.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
 
@@ -15,6 +15,7 @@ function Avatar({ entry }) {
 
 // Top solvers of the global challenge: fastest from start to pass, then fewer attempts.
 // Names and pictures only for public profiles; the API already blanks out everyone else.
+// A solver who switched the puzzle to another programming language says which one.
 export default function Leaderboard({ entries, you }) {
   const t = useT()
   const meOutside = you && !entries.some((entry) => entry.isYou)
@@ -42,10 +43,15 @@ export default function Leaderboard({ entries, you }) {
                     t('player.anonymous')
                   )}
                 </span>
-                {(entry.firstSolver || entry.isYou) && (
+                {(entry.firstSolver || entry.isYou || entry.switchedTo) && (
                   <span className="mt-0.5 flex flex-wrap gap-1.5">
                     {entry.firstSolver && <span className="bg-primary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('board.leaderboard.firstSolver')}</span>}
                     {entry.isYou && <span className="bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('board.leaderboard.you')}</span>}
+                    {entry.switchedTo && (
+                      <span className="border border-ink bg-white px-1 py-0.5 font-label text-[10px] leading-none text-ink">
+                        {t('daily.switch.leaderboard', { language: languageName(entry.switchedTo) })}
+                      </span>
+                    )}
                   </span>
                 )}
               </span>

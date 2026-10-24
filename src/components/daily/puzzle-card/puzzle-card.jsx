@@ -4,6 +4,7 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../ui/pixel-card/pixel-card.jsx'
+import SwitchLanguage from '../switch-language/switch-language.jsx'
 
 // Easy leans blue (practice), hard goes full purple.
 export const DIFFICULTY_STYLES = {
@@ -70,8 +71,9 @@ export function StartButton({ puzzle, onStart, busy, variant, className = '' }) 
   )
 }
 
-// One daily puzzle: what it is about, never its code. "Solve" opens it in the gym.
-export default function PuzzleCard({ puzzle, onStart, busy }) {
+// One daily puzzle: what it is about, never its code. "Solve" opens it in the gym; "Switch language"
+// moves it to another programming language, once (onSwitched gets the API's answer).
+export default function PuzzleCard({ puzzle, onStart, busy, onSwitched }) {
   const labels = useLabels()
   const style = DIFFICULTY_STYLES[puzzle.difficulty] ?? DIFFICULTY_STYLES.medium
   return (
@@ -91,6 +93,7 @@ export default function PuzzleCard({ puzzle, onStart, busy }) {
         </span>
         {puzzle.symptom}
       </p>
+      <SwitchLanguage puzzle={puzzle} started={puzzle.status !== 'new'} onSwitched={onSwitched} className="relative mt-3 self-start" />
       <div className="relative mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
         <PuzzleStatus puzzle={puzzle} />
         <StartButton puzzle={puzzle} onStart={onStart} busy={busy} variant={style.button} />

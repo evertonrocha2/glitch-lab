@@ -1,7 +1,7 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { AuthError, checkFix, getChallenge, revealHint } from '../../lib/api.js'
+import { AuthError, checkFix, getChallenge, revealHint, switchPuzzleLanguage } from '../../lib/api.js'
 import { saveGymDraft, takeGymDraft } from '../../lib/draft.js'
 import { makeCase, makeChallenge } from '../../test/fixtures.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
@@ -11,6 +11,7 @@ vi.mock('../../lib/api.js', () => ({
   getChallenge: vi.fn(),
   revealHint: vi.fn(),
   checkFix: vi.fn(),
+  switchPuzzleLanguage: vi.fn(),
   listCases: vi.fn().mockResolvedValue([]),
   listNotes: vi.fn().mockResolvedValue([]),
 }))
@@ -21,6 +22,7 @@ beforeEach(() => {
   vi.mocked(getChallenge).mockReset().mockResolvedValue(makeChallenge())
   vi.mocked(revealHint).mockReset()
   vi.mocked(checkFix).mockReset()
+  vi.mocked(switchPuzzleLanguage).mockReset()
 })
 
 const editor = () => screen.findByLabelText('Your fix')
@@ -216,4 +218,84 @@ it('reads a daily puzzle again in the new language after a switch, keeping the f
   expect(screen.queryByText('Count the lines.')).not.toBeInTheDocument()
   expect(screen.getByLabelText('Sua correção').value).toMatch(/# mine$/)
   expect(getChallenge).toHaveBeenCalledTimes(2)
+})
+
+// Switching a puzzle to another programming language, once, from the gym header.
+const PYTHON = { brokenCode: 'items = [1, 2, 3]\nfor i in range(len(items) - 1):\n    print(items[i])', language: 'python', symptom: 'Prints 1 and 2.' }
+const PORTED = {
+  brokenCode: 'const items = [1, 2, 3]\nfor (let i = 0; i < items.length - 1; i++) console.log(items[i])',
+  language: 'javascript',
+  symptom: 'Logs 1 and 2.',
+}
+
+it('switches a puzzle to another language from the gym: the code starts over, hints stay opened, then the button is gone', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(
+    puzzleChallenge({ ...PYTHON, hints: ['Count the lines.'], hintsRevealed: 1, attempts: 2, puzzle: { ...PUZZLE, switchedFrom: null, canSwitch: true } }),
+  )
+  vi.mocked(switchPuzzleLanguage).mockResolvedValue({
+    puzzle: { id: 'p1' },
+    challenge: puzzleChallenge({ ...PORTED, hints: ['Count the logs.'], hintsRevealed: 1, attempts: 2, puzzle: { ...PUZZLE, switchedFrom: 'python', canSwitch: false } }),
+    switchedFrom: 'python',
+  })
+  renderAt('/gym/ch1', { user: 'alice' })
+  await userEvent.type(await editor(), '# my try')
+
+  await userEvent.click(screen.getByRole('button', { name: 'Switch language: The missing last item' }))
+  const dialog = screen.getByRole('dialog', { name: 'Switch language' })
+  // The current language is not on the list.
+  const options = within(dialog).getAllByRole('radio')
+  expect(options).toHaveLength(12)
+  expect(within(dialog).queryByRole('radio', { name: 'Python' })).not.toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('radio', { name: 'JavaScript' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }))
+
+  const confirm = screen.getByRole('dialog', { name: 'Switch to JavaScript?' })
+  expect(confirm).toHaveTextContent('You can only switch once in this challenge.')
+  expect(confirm).toHaveTextContent('Your code starts over in JavaScript.')
+  expect(within(confirm).getByRole('button', { name: 'Back' })).toHaveFocus()
+  await userEvent.click(within(confirm).getByRole('button', { name: 'Switch to JavaScript' }))
+
+  expect(switchPuzzleLanguage).toHaveBeenCalledWith('p1', 'javascript', 'token-alice')
+  expect(await screen.findByText('Switched from Python to JavaScript')).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Switch language/ })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Your fix')).toHaveValue(PORTED.brokenCode)
+  expect(screen.getByText('Logs 1 and 2.')).toBeInTheDocument()
+  expect(screen.getByText('Count the logs.')).toBeInTheDocument()
+  expect(screen.queryByText('Count the lines.')).not.toBeInTheDocument()
+})
+
+it('keeps the picker open with the reason when a switch fails, and goes back to the list', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge({ ...PYTHON, puzzle: { ...PUZZLE, switchedFrom: null, canSwitch: true } }))
+  vi.mocked(switchPuzzleLanguage).mockRejectedValue(new Error("Couldn't make this challenge in Go right now. Your switch is still unused, so you can try again later."))
+  renderAt('/gym/ch1', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Switch language: The missing last item' }))
+  await userEvent.click(screen.getByRole('radio', { name: 'Go' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Switch to Go' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your switch is still unused')
+  expect(screen.getByLabelText('Your fix')).toHaveValue(PYTHON.brokenCode)
+  await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+  expect(screen.getByRole('radio', { name: 'Go' })).toBeChecked()
+  await userEvent.keyboard('{Escape}')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Switch language: The missing last item' })).toHaveFocus()
+})
+
+it('shows the switch note in Portuguese and no button on a switched or solved puzzle', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge({ ...PORTED, puzzle: { ...PUZZLE, switchedFrom: 'python', canSwitch: false } }))
+  renderAt('/gym/ch1', { user: 'alice', locale: 'pt-BR' })
+  expect(await screen.findByText('Trocado de Python para JavaScript')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Trocar linguagem/ })).not.toBeInTheDocument()
+})
+
+it('hides the switch once the fix passes', async () => {
+  vi.mocked(getChallenge).mockResolvedValue(puzzleChallenge({ ...PYTHON, puzzle: { ...PUZZLE, switchedFrom: null, canSwitch: true } }))
+  vi.mocked(checkFix).mockResolvedValue({ passed: true, feedback: 'Every item prints now.', case: null })
+  renderAt('/gym/ch1', { user: 'alice' })
+  await userEvent.type(await editor(), '# fixed')
+  expect(screen.getByRole('button', { name: 'Switch language: The missing last item' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Submit fix' }))
+  expect(await screen.findByText('Every item prints now.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Switch language/ })).not.toBeInTheDocument()
 })

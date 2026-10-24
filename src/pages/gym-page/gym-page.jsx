@@ -5,6 +5,7 @@ import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import CodeEditor from '../../components/ui/code-editor/code-editor.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import FixResult from '../../components/gym/fix-result/fix-result.jsx'
+import SwitchLanguage from '../../components/daily/switch-language/switch-language.jsx'
 import HintList from '../../components/gym/hint-list/hint-list.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import { Line } from '../../components/ui/skeleton/skeleton.jsx'
@@ -87,6 +88,17 @@ export default function GymPage() {
     }
   }, [locale, id, getToken, handleError])
 
+  // A daily or global challenge moved to another programming language: the code starts over in it,
+  // and the hints already opened come back in the new language (the same number of them).
+  function switched({ challenge: moved }) {
+    if (!moved) return
+    setChallenge(moved)
+    setCode(moved.brokenCode)
+    setHints(moved.hints)
+    setResult(null)
+    setMessage('')
+  }
+
   async function nextHint() {
     if (hintBusy.current) return
     hintBusy.current = true
@@ -144,6 +156,14 @@ export default function GymPage() {
             <span className="border border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">{labels.difficulty(puzzle.difficulty).toLowerCase()}</span>
           )}
         </p>
+      )}
+      {puzzle && (
+        <SwitchLanguage
+          puzzle={{ ...puzzle, language: challenge.language, canSwitch: puzzle.canSwitch && !passed }}
+          started
+          onSwitched={switched}
+          className="mt-3"
+        />
       )}
       {!challenge && !message && <Line className="mt-3 text-sm" width="w-56" />}
       <p className="mt-2 max-w-2xl text-muted">

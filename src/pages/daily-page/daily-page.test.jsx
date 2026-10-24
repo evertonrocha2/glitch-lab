@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { getDaily, getGlobalChallenge, startPuzzle } from '../../lib/api.js'
+import { getDaily, getGlobalChallenge, startPuzzle, switchPuzzleLanguage } from '../../lib/api.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
 
 vi.mock('../../lib/api.js', () => ({
@@ -9,6 +9,7 @@ vi.mock('../../lib/api.js', () => ({
   getDaily: vi.fn(),
   getGlobalChallenge: vi.fn(),
   startPuzzle: vi.fn(),
+  switchPuzzleLanguage: vi.fn(),
   getChallenge: vi.fn().mockReturnValue(new Promise(() => {})),
   getRiddle: vi.fn().mockReturnValue(new Promise(() => {})),
   // Today's review loads on its own (see components/review); these tests leave it loading.
@@ -26,6 +27,8 @@ const card = (overrides) => ({
   status: 'new',
   challengeId: null,
   attempts: 0,
+  switchedFrom: null,
+  canSwitch: true,
   ...overrides,
 })
 
@@ -36,7 +39,7 @@ const DAILY = () => ({
   nextResetAt: inHours(5),
   streak: 4,
   puzzles: [
-    card({ id: 'p1', difficulty: 'easy', title: 'The missing last item', status: 'passed', challengeId: 'ch1', attempts: 1 }),
+    card({ id: 'p1', difficulty: 'easy', title: 'The missing last item', status: 'passed', challengeId: 'ch1', attempts: 1, canSwitch: false }),
     card({ id: 'p2', difficulty: 'medium', title: 'Not quite an adult', language: 'javascript', concept: 'wrong-comparison', status: 'open', challengeId: 'ch2', attempts: 2 }),
     card({ id: 'p3', difficulty: 'hard', title: 'The cart that remembers', concept: 'mutation-reference' }),
   ],
@@ -60,6 +63,7 @@ beforeEach(() => {
   vi.mocked(getDaily).mockReset().mockResolvedValue(DAILY())
   vi.mocked(getGlobalChallenge).mockReset().mockResolvedValue(GLOBAL())
   vi.mocked(startPuzzle).mockReset()
+  vi.mocked(switchPuzzleLanguage).mockReset()
 })
 
 const dailyList = () => screen.findByRole('list', { name: "Today's challenges" })
@@ -204,4 +208,107 @@ it('speaks Portuguese: puzzles, summary, global challenge and leaderboard', asyn
 it('asks for sign in', () => {
   renderAt('/daily')
   expect(currentLocation()).toBe('/login?next=%2Fdaily')
+})
+
+// Switching a puzzle to another programming language, once, from its card.
+it('switches a card to another language after a confirm step, then shows the note instead of the button', async () => {
+  vi.mocked(switchPuzzleLanguage).mockResolvedValue({
+    puzzle: card({ id: 'p3', difficulty: 'hard', title: 'The cart that remembers', concept: 'mutation-reference', language: 'rust', symptom: 'The cart keeps old items.', switchedFrom: 'python', canSwitch: false }),
+    challenge: null,
+    switchedFrom: 'python',
+  })
+  renderAt('/daily', { user: 'alice' })
+  const items = within(await dailyList()).getAllByRole('listitem')
+  // Solved puzzles can't switch.
+  expect(within(items[0]).queryByRole('button', { name: /Switch language/ })).not.toBeInTheDocument()
+
+  await userEvent.click(within(items[2]).getByRole('button', { name: 'Switch language: The cart that remembers' }))
+  const dialog = screen.getByRole('dialog', { name: 'Switch language' })
+  expect(dialog).toHaveTextContent('This challenge is in Python.')
+  const group = within(dialog).getByRole('group', { name: 'Languages' })
+  expect(within(group).getAllByRole('radio').map((radio) => radio.labels[0].textContent)).toEqual([
+    'JavaScript',
+    'TypeScript',
+    'Java',
+    'C#',
+    'Go',
+    'Ruby',
+    'PHP',
+    'C',
+    'C++',
+    'Kotlin',
+    'Rust',
+    'Swift',
+  ])
+  expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled()
+  await userEvent.click(within(group).getByRole('radio', { name: 'Rust' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }))
+
+  const confirm = screen.getByRole('dialog', { name: 'Switch to Rust?' })
+  expect(confirm).toHaveTextContent('You can only switch once in this challenge.')
+  expect(confirm).toHaveTextContent('Same bug, same difficulty, written in Rust.')
+  await userEvent.click(within(confirm).getByRole('button', { name: 'Switch to Rust' }))
+  expect(switchPuzzleLanguage).toHaveBeenCalledWith('p3', 'rust', 'token-alice')
+
+  expect(await within(items[2]).findByText('Switched from Python to Rust')).toBeInTheDocument()
+  expect(within(items[2]).getByText('Rust')).toBeInTheDocument()
+  expect(within(items[2]).getByText(/The cart keeps old items/)).toBeInTheDocument()
+  expect(within(items[2]).queryByRole('button', { name: /Switch language/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+it('cancels a switch without calling the API', async () => {
+  renderAt('/daily', { user: 'alice' })
+  const items = within(await dailyList()).getAllByRole('listitem')
+  await userEvent.click(within(items[1]).getByRole('button', { name: 'Switch language: Not quite an adult' }))
+  // The card's own language (JavaScript) is not offered.
+  expect(screen.queryByRole('radio', { name: 'JavaScript' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('radio', { name: 'Python' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+  expect(screen.getByRole('dialog')).toHaveTextContent('Your code starts over in Python.')
+  await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(switchPuzzleLanguage).not.toHaveBeenCalled()
+})
+
+it('switches the global challenge too, and shows who switched on the leaderboard', async () => {
+  const board = GLOBAL()
+  board.leaderboard[0].switchedTo = 'javascript'
+  vi.mocked(getGlobalChallenge).mockResolvedValue(board)
+  vi.mocked(switchPuzzleLanguage).mockResolvedValue({ puzzle: { ...board.puzzle, language: 'go', switchedFrom: 'javascript', canSwitch: false }, challenge: null, switchedFrom: 'javascript' })
+  renderAt('/daily', { user: 'alice' })
+  const section = await screen.findByRole('region', { name: 'Global challenge' })
+  const rows = within(within(section).getByRole('list', { name: 'Leaderboard' })).getAllByRole('listitem')
+  expect(rows[0]).toHaveTextContent('Switched to JavaScript')
+  expect(rows[1]).not.toHaveTextContent('Switched to')
+
+  await userEvent.click(within(section).getByRole('button', { name: 'Switch language: Everybody passes' }))
+  await userEvent.click(screen.getByRole('radio', { name: 'Go' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Switch to Go' }))
+  expect(await within(section).findByText('Switched from JavaScript to Go')).toBeInTheDocument()
+  expect(switchPuzzleLanguage).toHaveBeenCalledWith('g1', 'go', 'token-alice')
+})
+
+it('speaks Portuguese in the switch', async () => {
+  const board = GLOBAL()
+  board.leaderboard[0].switchedTo = 'csharp'
+  vi.mocked(getGlobalChallenge).mockResolvedValue(board)
+  vi.mocked(switchPuzzleLanguage).mockRejectedValue(new Error('Não deu para gerar este desafio em Go agora. Sua troca não foi usada, então dá para tentar de novo mais tarde.'))
+  renderAt('/daily', { user: 'alice', locale: 'pt-BR' })
+  const items = within(await screen.findByRole('list', { name: 'Desafios de hoje' })).getAllByRole('listitem')
+  const section = screen.getByRole('region', { name: 'Desafio global' })
+  expect(within(section).getByText('Trocou para C#')).toBeInTheDocument()
+
+  await userEvent.click(within(items[2]).getByRole('button', { name: 'Trocar linguagem: The cart that remembers' }))
+  const dialog = screen.getByRole('dialog', { name: 'Trocar linguagem' })
+  expect(dialog).toHaveTextContent('Este desafio está em Python.')
+  await userEvent.click(within(within(dialog).getByRole('group', { name: 'Linguagens' })).getByRole('radio', { name: 'Go' }))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Avançar' }))
+  const confirm = screen.getByRole('dialog', { name: 'Trocar para Go?' })
+  expect(confirm).toHaveTextContent('Você só pode trocar uma vez neste desafio.')
+  await userEvent.click(within(confirm).getByRole('button', { name: 'Trocar para Go' }))
+  expect(await within(confirm).findByRole('alert')).toHaveTextContent('Sua troca não foi usada')
+  expect(within(confirm).getByRole('button', { name: 'Voltar' })).toBeEnabled()
 })
