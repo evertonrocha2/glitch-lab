@@ -55,7 +55,7 @@ export const GUIDE_SECTIONS = [
     id: 'glitchdle',
     name: 'Glitchdle',
     match: /^\/glitchdle$/,
-    text: `Guess the tools of the day, the same for everyone. Languages has 3 modes: Classic (each guess compares traits like typing, paradigm and year), Error (which language printed this error; hints after 3 and 6 wrong guesses), Snippet (one more line shows after each wrong guess). Frameworks and Databases are classic boards (language, area, license, data model, Stack Overflow questions...), built from Wikidata and Stack Overflow data. 10 to 25 XP per solved board, more for fewer guesses, at most 100 a day. "Copy result". Solve all 3 language modes in a day for Lingo master, every board for Full stack.`,
+    text: `Guess the tools of the day, the same for everyone. Languages has 3 modes: Classic (each guess compares 12 traits: typing, paradigm, runtime, year...), Error (which language printed this error; hints after 3 and 6 wrong guesses), Snippet (one more line shows after each wrong guess). Frameworks and Databases are classic boards (language, license, ACID transactions...) built from Wikidata and Stack Overflow data. 10 to 25 XP per solved board, more for fewer guesses, at most 100 a day. "Copy result". Solve all 3 language modes in a day for Lingo master, every board for Full stack.`,
   },
   {
     id: 'hunt',
