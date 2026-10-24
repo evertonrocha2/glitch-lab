@@ -1,5 +1,6 @@
 import { conceptLabel } from '../../../shared/concepts.js'
 import { NOTE_LIMITS } from '../../../shared/limits.js'
+import { parseNoteTags } from '../../../shared/note-tags.js'
 import { caseText, isQuestion } from '../../../shared/question.js'
 
 const TOO_LONG = `Too long. Keep each block under ${NOTE_LIMITS.text} characters.`
@@ -26,7 +27,7 @@ function cleanBlock(block) {
   }
 }
 
-// { value: { title?, blocks? } } or { status, message }. Missing fields stay undefined.
+// { value: { title?, blocks?, tags?, isPublic? } } or { status, message }. Missing fields stay undefined.
 export function parseNote(body) {
   const value = {}
   if (body.title !== undefined) {
@@ -43,6 +44,11 @@ export function parseNote(body) {
       if (typeof cleaned === 'string') return { status: cleaned === TOO_LONG ? 413 : 400, message: cleaned }
       value.blocks.push(cleaned)
     }
+  }
+  if (body.tags !== undefined) {
+    const parsed = parseNoteTags(body.tags)
+    if (parsed.problem) return { status: 400, message: parsed.problem }
+    value.tags = parsed.tags
   }
   if (body.isPublic !== undefined) {
     if (typeof body.isPublic !== 'boolean') return { status: 400, message: 'Invalid request.' }
@@ -66,6 +72,7 @@ export function publicNoteSummary(note) {
   return {
     id: note.id,
     title: note.title,
+    tags: note.tags,
     updatedAt: note.updatedAt,
     excerpt: cut(words.join(' · '), EXCERPT),
     blockCount: note.blocks.length,
@@ -102,5 +109,5 @@ export async function publicNote(note, getCase) {
     const kase = getCase(block.caseId)
     return { id: block.id, type: 'case', case: kase ? caseSummary(kase) : null }
   })
-  return { id: note.id, title: note.title, updatedAt: note.updatedAt, blocks }
+  return { id: note.id, title: note.title, tags: note.tags, updatedAt: note.updatedAt, blocks }
 }

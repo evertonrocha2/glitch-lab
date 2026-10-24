@@ -93,6 +93,52 @@ it('asks for sign in', async () => {
 
 const update = ({ id, ...body }, token) => api(`/api/notes/${id}`, { method: 'PATCH', body, token })
 
+describe('tags', () => {
+  const listTagged = async (query) => (await (await api(`/api/notes${query}`, { method: 'GET' })).json()).notes.map((note) => note.title)
+
+  it('saves tags normalized and deduped, and defaults to none', async () => {
+    const { note } = await (await create({ title: 'Loops', tags: ['  JavaScript ', 'Laço  de  repetição', 'javascript', 'C#', 'c++'] })).json()
+    expect(note.tags).toEqual(['javascript', 'laço de repetição', 'c#', 'c++'])
+    expect((await (await create({ title: 'Bare' })).json()).note.tags).toEqual([])
+
+    // A PATCH with only the title keeps the tags; one with tags replaces them.
+    expect((await (await update({ id: note.id, title: 'Loops!' })).json()).note.tags).toEqual(['javascript', 'laço de repetição', 'c#', 'c++'])
+    expect((await (await update({ id: note.id, tags: ['arrays'] })).json()).note).toMatchObject({ title: 'Loops!', tags: ['arrays'] })
+    expect((await (await update({ id: note.id, tags: [] })).json()).note.tags).toEqual([])
+  })
+
+  it('refuses bad tags with a reason', async () => {
+    const { note } = await (await create({ title: 'x' })).json()
+    const cases = [
+      [Array.from({ length: 9 }, (_, i) => `t${i}`), 'Use up to 8 tags.'],
+      [['x'.repeat(25)], 'Keep each tag up to 24 characters.'],
+      [['a/b'], 'Note tags use letters, numbers, spaces and - . # +.'],
+      [['<b>'], 'Note tags use letters, numbers, spaces and - . # +.'],
+      ['loops', 'Invalid request.'],
+      [[42], 'Invalid request.'],
+    ]
+    for (const [tags, message] of cases) {
+      for (const res of [await create({ title: 'x', tags }), await update({ id: note.id, tags })]) {
+        expect(res.status, JSON.stringify(tags)).toBe(400)
+        expect((await res.json()).message).toBe(message)
+      }
+    }
+    expect((await store.getNote('alice', note.id)).tags).toEqual([])
+  })
+
+  it('filters the list by every tag asked for (AND)', async () => {
+    await create({ title: 'Both', tags: ['loops', 'javascript'] })
+    await create({ title: 'Loops only', tags: ['Loops'] })
+    await create({ title: 'None' })
+    expect(await listTagged('')).toEqual(['None', 'Loops only', 'Both'])
+    expect(await listTagged('?tag=loops')).toEqual(['Loops only', 'Both'])
+    expect(await listTagged('?tag=LOOPS&tag=javascript')).toEqual(['Both'])
+    expect(await listTagged('?tag=python')).toEqual([])
+    // A tag that can't exist matches nothing instead of failing.
+    expect(await listTagged(`?tag=${encodeURIComponent('a/b')}`)).toEqual([])
+  })
+})
+
 it('keeps a note private until it is marked public', async () => {
   const { note } = await (await create({ title: 'Draft' })).json()
   expect(note.isPublic).toBe(false)
@@ -140,6 +186,7 @@ describe('public notes', () => {
     const shared = await adaNote({
       title: 'Reading undefined',
       isPublic: true,
+      tags: ['javascript', 'laço'],
       blocks: [
         { id: 'b1', type: 'heading', text: 'What I learned' },
         { id: 'b2', type: 'text', text: `Check the object first. ${'More words. '.repeat(30)}` },
@@ -152,7 +199,7 @@ describe('public notes', () => {
     expect(res.status).toBe(200)
     const { notes } = await res.json()
     expect(notes).toHaveLength(1)
-    expect(notes[0]).toEqual({ id: shared.id, title: 'Reading undefined', updatedAt: shared.updatedAt, excerpt: expect.any(String), blockCount: 3 })
+    expect(notes[0]).toEqual({ id: shared.id, title: 'Reading undefined', tags: ['javascript', 'laço'], updatedAt: shared.updatedAt, excerpt: expect.any(String), blockCount: 3 })
     expect(notes[0].excerpt.startsWith('What I learned · Check the object first.')).toBe(true)
     expect(notes[0].excerpt.length).toBeLessThanOrEqual(160)
     const text = JSON.stringify(notes)
@@ -177,6 +224,7 @@ describe('public notes', () => {
     expect(body.note).toEqual({
       id: note.id,
       title: 'Reading undefined',
+      tags: [],
       updatedAt: note.updatedAt,
       blocks: [
         { id: 'b1', type: 'text', text: 'Check first.' },

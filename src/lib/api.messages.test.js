@@ -44,6 +44,10 @@ it('translates messages with numbers in them', () => {
   )
   expect(pt('You can publish 3 articles a day. Come back tomorrow.')).toBe('Você pode publicar 3 artigos por dia. Volte amanhã.')
   expect(pt('Use a password with at least 8 characters.')).toBe('Use uma senha com pelo menos 8 caracteres.')
+  // Note tags (shared/note-tags.js).
+  expect(pt('Use up to 8 tags.')).toBe('Use até 8 tags.')
+  expect(pt('Keep each tag up to 24 characters.')).toBe('Deixe cada tag com até 24 caracteres.')
+  expect(pt('Note tags use letters, numbers, spaces and - . # +.')).toBe('Tags de nota usam letras, números, espaços e - . # +.')
 })
 
 it('translates the words and the inner problem of a composed message', () => {
@@ -96,6 +100,9 @@ it('knows the messages the API builds from limits and checks', () => {
     parseNote({ blocks: Array.from({ length: 500 }, () => ({ type: 'text', text: '' })) }).message,
     parseNote({ blocks: [{ type: 'text', text: 'x'.repeat(5000) }] }).message,
     parseNote({ blocks: [{ type: 'mystery' }] }).message,
+    parseNote({ tags: Array.from({ length: 9 }, (_, i) => `tag${i}`) }).message,
+    parseNote({ tags: ['x'.repeat(25)] }).message,
+    parseNote({ tags: ['a/b'] }).message,
     parseProfile({ handle: 'a' }).message,
     parseProfile({ handle: 'a'.repeat(40) }).message,
     parseProfile({ handle: 'Bad Handle!' }).message,

@@ -21,8 +21,8 @@ const PROFILE_FIELDS = ['handle', 'displayName', 'bio', 'avatar', 'featuredBadge
 // "About you" fields, added later still: same story.
 const ABOUT_FIELDS = ['role', 'headline', 'university', 'course', 'work', 'location', 'languages', 'links', 'openTo']
 const toProfile = profileFromUser
-// Notes made before sharing existed are private.
-const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false })
+// Notes made before sharing (or tags) existed are private (and untagged).
+const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false, tags: note.tags ?? [] })
 // Cases saved before doubt chats existed are investigated errors, with no question fields.
 const toCase = (item) => (item == null ? null : copy({ ...item, kind: item.kind ?? 'error', question: item.question ?? '', topic: item.topic ?? '', title: item.title ?? '', recap: item.recap ?? '' }))
 
@@ -254,20 +254,20 @@ export function createLocalStore({ file }) {
         .map((item) => ({ userId: item.userId, mode: item.mode, guessCount: item.guesses.length, solved: item.solved }))
     },
 
-    async createNote(userId, { title, blocks, isPublic = false }) {
+    async createNote(userId, { title, blocks, tags = [], isPublic = false }) {
       const data = await load()
       const stamp = now()
-      const created = { id: randomUUID(), userId, title, blocks, isPublic, createdAt: stamp, updatedAt: stamp }
+      const created = { id: randomUUID(), userId, title, blocks, tags, isPublic, createdAt: stamp, updatedAt: stamp }
       notesOf(data).push(created)
       await save()
       return toNote(created)
     },
 
-    // Most recently edited first.
-    async listNotes(userId) {
+    // Most recently edited first. tags: only the notes carrying all of them.
+    async listNotes(userId, { tags = [] } = {}) {
       const data = await load()
       return notesOf(data)
-        .filter((note) => note.userId === userId)
+        .filter((note) => note.userId === userId && tags.every((tag) => (note.tags ?? []).includes(tag)))
         .reverse()
         .map(toNote)
     },
@@ -278,13 +278,14 @@ export function createLocalStore({ file }) {
       return found ? toNote(found) : null
     },
 
-    async updateNote(userId, id, { title, blocks, isPublic }) {
+    async updateNote(userId, id, { title, blocks, tags, isPublic }) {
       const notes = notesOf(await load())
       const index = notes.findIndex((note) => note.id === id && note.userId === userId)
       if (index === -1) return null
       const [found] = notes.splice(index, 1)
       if (title !== undefined) found.title = title
       if (blocks !== undefined) found.blocks = blocks
+      if (tags !== undefined) found.tags = tags
       if (isPublic !== undefined) found.isPublic = isPublic
       found.updatedAt = now()
       // Kept in edit order, so the list stays "last edited first".

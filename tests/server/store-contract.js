@@ -267,6 +267,29 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
       expect(await store.searchPublicProfiles(`%${tag}`, 20)).toEqual([])
     })
 
+    it('keeps note tags, defaults them to none and filters by all of them', async () => {
+      const bare = await store.createNote(ids.alice, { title: 'Bare', blocks: [] })
+      expect(bare.tags).toEqual([])
+      expect((await store.getNote(ids.alice, bare.id)).tags).toEqual([])
+
+      const tagged = await store.createNote(ids.alice, { title: 'Tagged', blocks: [], tags: ['loops', 'laço', 'c#'] })
+      expect(tagged.tags).toEqual(['loops', 'laço', 'c#'])
+      expect((await store.getNote(ids.alice, tagged.id)).tags).toEqual(['loops', 'laço', 'c#'])
+      const other = await store.createNote(ids.alice, { title: 'Loops only', blocks: [], tags: ['loops'] })
+      await store.createNote(ids.bob, { title: 'Bob loops', blocks: [], tags: ['loops'] })
+
+      // An update that leaves tags out keeps them; one with tags replaces them.
+      expect((await store.updateNote(ids.alice, tagged.id, { title: 'Tagged!' })).tags).toEqual(['loops', 'laço', 'c#'])
+      expect((await store.updateNote(ids.alice, other.id, { tags: ['loops', 'arrays'] })).tags).toEqual(['loops', 'arrays'])
+
+      const titles = async (tags) => (await store.listNotes(ids.alice, { tags })).map((note) => note.title)
+      expect(await titles(['loops'])).toEqual(['Loops only', 'Tagged!'])
+      expect(await titles(['loops', 'laço'])).toEqual(['Tagged!'])
+      expect(await titles(['python'])).toEqual([])
+      expect(await titles([])).toEqual(['Loops only', 'Tagged!', 'Bare'])
+      expect((await store.listNotes(ids.alice)).every((note) => Array.isArray(note.tags))).toBe(true)
+    })
+
     it('keeps notes private until marked public', async () => {
       const note = await store.createNote(ids.alice, { title: 'Shy', blocks: [] })
       expect(note.isPublic).toBe(false)

@@ -118,6 +118,8 @@ const en = {
   'server.tooManyNotes': 'You have {max} notes. Delete one to write another.',
   'server.tooLongTitle': 'Too long. Keep the title under {max} characters.',
   'server.tooManyBlocks': 'Too long. A note holds up to {max} blocks.',
+  // Note tags (shared/note-tags.js). "Use up to {max} tags." and the length one are the article texts.
+  'server.noteTagChars': 'Note tags use letters, numbers, spaces and - . # +.',
   'server.tooLongBlock': 'Too long. Keep each block under {max} characters.',
   'server.invalidBlock': 'Invalid block.',
 
@@ -361,6 +363,7 @@ const ptBR = {
   'server.tooManyNotes': 'Você tem {max} notas. Apague uma para escrever outra.',
   'server.tooLongTitle': 'Muito longo. Deixe o título com menos de {max} caracteres.',
   'server.tooManyBlocks': 'Muito longo. Uma nota cabe até {max} blocos.',
+  'server.noteTagChars': 'Tags de nota usam letras, números, espaços e - . # +.',
   'server.tooLongBlock': 'Muito longo. Deixe cada bloco com menos de {max} caracteres.',
   'server.invalidBlock': 'Bloco inválido.',
 

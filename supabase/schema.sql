@@ -150,6 +150,9 @@ alter table public.users add column if not exists links jsonb not null default '
 alter table public.users add column if not exists open_to jsonb not null default '[]';
 alter table public.notes add column if not exists is_public boolean not null default false;
 create index if not exists notes_user_public on public.notes (user_id) where is_public;
+-- Note tags (up to 8, each 1 to 24 characters; the API checks the rules). GIN for "has all these tags".
+alter table public.notes add column if not exists tags text[] not null default '{}';
+create index if not exists notes_tags on public.notes using gin (tags);
 
 -- Study trails: AI-built missions from the student's own cases and notes. "if not exists" so this block
 -- also upgrades an older database. Only hand-ticked reflect missions are stored in done; the rest is
