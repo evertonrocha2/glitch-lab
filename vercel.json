@@ -1,4 +1,10 @@
 {
+  "headers": [
+    {
+      "source": "/fonts/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://glitch-lab-api.onrender.com/api/:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }

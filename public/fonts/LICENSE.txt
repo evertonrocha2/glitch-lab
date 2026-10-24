@@ -1,0 +1,4 @@
+Geist, Geist Mono and Geist Pixel are by Vercel, licensed under the SIL Open Font License 1.1.
+https://github.com/vercel/geist-font
+https://openfontlicense.org
+The files here are the latin and latin-ext subsets served by Google Fonts.
