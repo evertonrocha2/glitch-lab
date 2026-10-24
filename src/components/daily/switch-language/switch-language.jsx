@@ -78,7 +78,7 @@ function SwitchDialog({ puzzle, started, onSwitched, onClose }) {
                 {choices.map((value) => (
                   <label
                     key={value}
-                    className={`flex min-h-10 cursor-pointer items-center gap-2.5 border-2 px-2.5 text-sm text-ink has-[:focus-visible]:shadow-pixel ${language === value ? 'border-ink bg-primary-soft' : 'border-line hover:bg-mist'}`}
+                    className={`flex min-h-10 cursor-pointer items-center gap-2.5 border-2 px-2.5 text-sm text-ink has-focus-visible:shadow-pixel ${language === value ? 'border-ink bg-primary-soft' : 'border-line hover:bg-mist'}`}
                   >
                     <input type="radio" name={`${id}-language`} value={value} checked={language === value} onChange={() => setLanguage(value)} className="size-4 accent-primary" />
                     <span className="font-mono">{languageName(value)}</span>
@@ -100,7 +100,7 @@ function SwitchDialog({ puzzle, started, onSwitched, onClose }) {
             <h2 id={`${id}-title`} className="font-pixel text-xl font-bold text-ink">
               {t('daily.switch.confirmTitle', { language: name })}
             </h2>
-            <p className="mt-3 border-2 border-ink bg-primary-soft px-3 py-2 text-sm font-semibold text-ink">{t('daily.switch.once')}</p>
+            <p className="mt-3 border-l-4 border-primary py-1 pl-3 text-sm font-semibold text-ink">{t('daily.switch.once')}</p>
             <p className="mt-3 text-sm text-muted">{t(started ? 'daily.switch.keepsOpen' : 'daily.switch.keepsNew', { language: name })}</p>
             {sending && (
               <div className="mt-4">
