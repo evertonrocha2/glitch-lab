@@ -261,3 +261,12 @@ it('links to the study log', () => {
   renderAt('/progress', { user: 'alice' })
   expect(screen.getByRole('link', { name: 'Open the study log' })).toHaveAttribute('href', '/study')
 })
+
+it('shows one Start while asking what you study, and Cancel brings the timer button back', async () => {
+  renderAt('/progress', { user: 'alice' })
+  fireEvent.click(screen.getByRole('button', { name: 'Start the study timer' }))
+  expect(screen.queryByRole('button', { name: 'Start the study timer' })).toBeNull()
+  expect(screen.getAllByRole('button', { name: /^Start/ })).toHaveLength(1)
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(screen.getByRole('button', { name: 'Start the study timer' })).toBeInTheDocument()
+})

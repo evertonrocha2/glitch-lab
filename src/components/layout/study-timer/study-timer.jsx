@@ -106,9 +106,10 @@ export default function StudyTimer() {
             <PixelButton onClick={() => start()} className="px-2.5 py-2" aria-label={t('app.timer.startLabel')}>
               {t('app.timer.resume')}
             </PixelButton>
-          ) : (
+          ) : form === 'start' ? null : (
+            // While the "what are you studying?" form is open, its own Start is the only one.
             <PixelButton
-              onClick={() => setForm((open) => (open === 'start' ? null : 'start'))}
+              onClick={() => setForm('start')}
               aria-expanded={form === 'start'}
               className="px-2.5 py-2"
               aria-label={t('app.timer.startLabel')}
