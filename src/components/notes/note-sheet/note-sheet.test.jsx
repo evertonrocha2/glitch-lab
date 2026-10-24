@@ -21,6 +21,12 @@ const NOTE = {
   ],
 }
 
+it('shows the tags as chips under the title', () => {
+  render(<NoteSheet note={{ ...NOTE, tags: ['loops', 'c#'] }} cases={CASES} date="Oct 22, 2026" />)
+  expect(screen.getAllByRole('listitem').slice(0, 2).map((item) => item.textContent)).toEqual(['#loops', '#c#'])
+  expect(screen.getByRole('list', { name: 'Note tags' })).toBeInTheDocument()
+})
+
 it('lays out the whole note as a printable sheet', () => {
   const { container } = render(<NoteSheet note={NOTE} cases={CASES} date="Oct 22, 2026" />)
   expect(screen.getByText('Glitch Lab')).toBeInTheDocument()

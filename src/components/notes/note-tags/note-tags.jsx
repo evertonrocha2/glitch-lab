@@ -11,7 +11,7 @@ export default function NoteTags({ tags, max, large = false, className = '' }) {
     <ul aria-label={t('notes.tags.list')} className={`flex flex-wrap gap-1.5 ${className}`}>
       {shown.map((tag) => (
         <li key={tag} className={`bg-primary-soft font-mono break-all text-primary ${size}`}>
-          #{tag}
+          {`#${tag}`}
         </li>
       ))}
       {more > 0 && (

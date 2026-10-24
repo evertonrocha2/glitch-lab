@@ -4,6 +4,7 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import StepIcon from '../../ui/step-icon/step-icon.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import NoteTags from '../../notes/note-tags/note-tags.jsx'
 import QuestionBadge from '../question-badge/question-badge.jsx'
 
 // The board's own colors, stacked: a PDF page is tall, not wide.
@@ -186,6 +187,7 @@ function NotesSection({ notes }) {
                 ) : (
                   <p className="mt-1.5 text-sm text-muted">{t('board.sheet.nothingWritten')}</p>
                 )}
+                <NoteTags tags={note.tags} className="mt-2" />
                 {linked > 0 && <p className="mt-2 font-label text-[10px] text-muted">{t('board.sheet.linked', { count: linked })}</p>}
               </div>
             </li>

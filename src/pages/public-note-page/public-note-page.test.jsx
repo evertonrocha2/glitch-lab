@@ -15,6 +15,7 @@ const SHARED = {
   note: {
     id: 'n1',
     title: 'Reading undefined',
+    tags: ['javascript', 'laço'],
     updatedAt: '2026-10-21T12:00:00Z',
     blocks: [
       { id: 'b1', type: 'heading', text: 'What I learned' },
@@ -64,6 +65,10 @@ it('shows a shared note read-only to a signed-out visitor', async () => {
   expect(within(kase).getByText('javascript')).toBeInTheDocument()
   expect(within(kase).getByText('Solved')).toBeInTheDocument()
   expect(screen.getByText('This case is private.')).toBeInTheDocument()
+
+  const tags = screen.getByRole('list', { name: 'Note tags' })
+  expect(within(tags).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['#javascript', '#laço'])
+  expect(within(tags).queryByRole('button')).toBeNull()
 
   // Nothing to edit or open.
   expect(screen.queryByRole('textbox')).toBeNull()

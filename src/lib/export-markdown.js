@@ -40,6 +40,7 @@ function blockToMarkdown(block, casesById, depth, t) {
 export function noteToMarkdown(note, cases, depth = 1, t = ENGLISH) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
   const parts = [`${'#'.repeat(depth)} ${note.title || t('board.md.untitled')}`]
+  if (note.tags?.length) parts.push(t('notes.tags.md', { list: note.tags.join(', ') }))
   for (const block of note.blocks) {
     if (block.type === 'text' && block.text.trim() === '') continue
     parts.push(blockToMarkdown(block, casesById, depth, t))

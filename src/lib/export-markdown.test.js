@@ -35,6 +35,13 @@ it('writes a note as Markdown', () => {
   expect(noteToMarkdown(NOTE, CASES)).toBe(`${blocks.join('\n\n')}\n`)
 })
 
+it('puts a Tags line under the title, and none when there are no tags', () => {
+  const note = { title: 'Loops', tags: ['loops', 'c#', 'laço'], blocks: [{ id: 'b1', type: 'text', text: 'for and while' }] }
+  expect(noteToMarkdown(note, [])).toBe('# Loops\n\nTags: loops, c#, laço\n\nfor and while\n')
+  expect(noteToMarkdown({ ...note, tags: [] }, [])).toBe('# Loops\n\nfor and while\n')
+  expect(noteToMarkdown(note, [], 1, (key, vars) => translate('pt-BR', key, vars))).toContain('Tags: loops, c#, laço')
+})
+
 it('writes the board by column, with progress and notes', () => {
   const progress = {
     level: 2,

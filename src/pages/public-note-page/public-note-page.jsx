@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
+import NoteTags from '../../components/notes/note-tags/note-tags.jsx'
 import PublicNoteBody from '../../components/notes/public-note-body/public-note-body.jsx'
 import PixelBug from '../../components/ui/pixel-bug/pixel-bug.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
@@ -66,6 +67,7 @@ export default function PublicNotePage() {
             </p>
             <PixelCard as="article" className="mt-4 p-5 sm:p-10">
               <h1 className="font-pixel text-3xl leading-[1.1] font-bold wrap-break-word text-ink sm:text-[40px]">{note.title || t('landing.profile.untitled')}</h1>
+              <NoteTags tags={note.tags} className="mt-4" />
               <p className="mt-3 font-label text-[10px] text-muted">
                 {t('landing.note.updated', { date: format.date(note.updatedAt) })}
                 {cases ? ` · ${t('landing.note.cases', { count: cases })}` : ''}

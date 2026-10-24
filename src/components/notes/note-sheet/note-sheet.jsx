@@ -4,6 +4,7 @@ import QuestionBadge from '../../board/question-badge/question-badge.jsx'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useLabels } from '../../../lib/i18n/labels.js'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import NoteTags from '../note-tags/note-tags.jsx'
 
 const STRIPE = { new: 'bg-muted', training: 'bg-secondary', solved: 'bg-primary' }
 
@@ -136,6 +137,7 @@ export default function NoteSheet({ note, cases, date }) {
       <main className="px-14 pt-11 pb-12">
         <p className="font-label text-xs text-secondary">&gt; {t('notes.sheet.prompt')}_</p>
         <h1 className="mt-3 font-pixel text-[44px] leading-[1.1] font-bold wrap-break-word text-ink">{note.title || t('notes.untitled')}</h1>
+        <NoteTags tags={note.tags} large className="mt-4" />
         {line && <p className="mt-3 font-label text-[10px] text-muted">{line}</p>}
         <div aria-hidden="true" className="mt-7 mb-6 h-0.5 bg-ink" />
         <div className="space-y-3">
