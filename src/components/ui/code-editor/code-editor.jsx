@@ -55,7 +55,9 @@ function applyEdit(textarea, before, next) {
 
 // A textarea with a line-number gutter and the common VS Code keys. It grows with the code, so the
 // gutter always lines up. `language` picks the comment token for Ctrl+/ and the Python colon indent.
-export default function CodeEditor({ id, value, onChange, minLines = 8, maxLength, placeholder, readOnly = false, language }) {
+// showShortcuts: false where the page lists the keys itself (the notes editor). label: an aria-label
+// when no <label> points at it.
+export default function CodeEditor({ id, value, onChange, minLines = 8, maxLength, placeholder, readOnly = false, language, showShortcuts = true, label }) {
   const t = useT()
   const lines = Math.max(minLines, value.split('\n').length)
   // Esc frees Tab for one press, so keyboard users can leave the editor.
@@ -102,6 +104,7 @@ export default function CodeEditor({ id, value, onChange, minLines = 8, maxLengt
           onFocus={() => {
             tabLeaves.current = false
           }}
+          aria-label={label}
           aria-describedby={readOnly ? undefined : `${id}-keys`}
           maxLength={maxLength}
           rows={lines}
@@ -117,7 +120,7 @@ export default function CodeEditor({ id, value, onChange, minLines = 8, maxLengt
           <p id={`${id}-keys`} className="sr-only">
             {t('editor.keys.trap')}
           </p>
-          <CodeEditorShortcuts />
+          {showShortcuts && <CodeEditorShortcuts />}
         </>
       )}
     </div>

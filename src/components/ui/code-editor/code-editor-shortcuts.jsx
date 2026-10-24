@@ -43,11 +43,12 @@ function Key({ name, mac, t }) {
 }
 
 // The list under the editor, closed until asked for, so it never pushes the Submit button down.
-export default function CodeEditorShortcuts() {
+// Other editors pass their own shortcuts, list label (a key) and footer (a key) to the same chips.
+export default function CodeEditorShortcuts({ shortcuts = SHORTCUTS, listLabel = 'editor.keys.list', footer = 'editor.keys.pairs', className = 'mt-2' }) {
   const t = useT()
   const mac = isMac()
   return (
-    <details className="group mt-2 text-xs text-muted">
+    <details className={`group text-xs text-muted ${className}`}>
       <summary className="inline-flex cursor-pointer items-center gap-1.5 py-1 font-label text-[10px] text-ink select-none">
         <svg aria-hidden="true" viewBox="0 0 3 5" shapeRendering="crispEdges" className="size-2.5 fill-current transition-transform group-open:rotate-90">
           <rect x="0" y="0" width="1" height="5" />
@@ -57,8 +58,8 @@ export default function CodeEditorShortcuts() {
         {t('editor.keys.title')}
       </summary>
       <div className="mt-2 border-2 border-ink bg-white p-3">
-        <ul aria-label={t('editor.keys.list')} className="divide-y divide-line">
-          {SHORTCUTS.map(({ combos, label, sequence }) => (
+        <ul aria-label={t(listLabel)} className="divide-y divide-line">
+          {shortcuts.map(({ combos, label, sequence }) => (
             <li key={label} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 py-1.5 first:pt-0">
               <span className="text-ink">{t(label)}</span>
               <span className="ml-auto inline-flex flex-wrap items-center justify-end gap-1">
@@ -77,7 +78,7 @@ export default function CodeEditorShortcuts() {
             </li>
           ))}
         </ul>
-        <p className="mt-1.5 border-t border-line pt-2.5">{t('editor.keys.pairs')}</p>
+        <p className="mt-1.5 border-t border-line pt-2.5">{t(footer)}</p>
       </div>
     </details>
   )
