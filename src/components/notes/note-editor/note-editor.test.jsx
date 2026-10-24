@@ -188,6 +188,31 @@ describe('"/" anywhere in the text', () => {
   })
 })
 
+describe('the "+" beside a block', () => {
+  it('adds an empty line below and opens the block menu on it', async () => {
+    setup([text('a', 'first'), text('b', 'second')])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Add block below' })[0])
+    expect(values('Text')).toEqual(['first', '', 'second'])
+    const search = screen.getByRole('searchbox', { name: 'Search blocks' })
+    expect(search).toHaveFocus()
+    await userEvent.type(search, 'código{Enter}')
+    expect(types()).toEqual(['text', 'code', 'text'])
+    expect(box('Code')).toHaveFocus()
+    // One step back takes the new block away.
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(types()).toEqual(['text', 'text', 'text'])
+  })
+
+  it('on an empty line opens the menu there instead of adding another', async () => {
+    setup([text('a', 'first'), text('b', '')])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Add block below' })[1])
+    expect(types()).toEqual(['text', 'text'])
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(boxes('Text')[1]).toHaveFocus()
+  })
+})
+
 describe('markdown shortcuts at the start of a text block', () => {
   const cases = [
     ['# ', 'heading', 'Heading 1'],

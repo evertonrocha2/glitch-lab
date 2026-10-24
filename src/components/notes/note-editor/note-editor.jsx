@@ -330,6 +330,20 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     setFocus({ id: next.id })
   }
 
+  // The "+" beside a block: an empty line under it with the block menu open, to pick what it becomes.
+  // An empty text line already is one, so the menu opens right there.
+  function addBelow(block) {
+    const blank = block.type === 'text' && block.text === ''
+    if (!blank && full) return
+    let target = block
+    if (!blank) {
+      target = newBlock('text')
+      apply(insertAfter(blocksRef.current, block.id, target))
+    }
+    setPicker(null)
+    setMenu({ blockId: target.id, kind: 'slash', query: '', active: 0, searchable: true })
+  }
+
   function duplicate(block) {
     if (full) return
     const { blocks: next, copyId } = duplicateBlock(blocksRef.current, block.id)
@@ -1178,7 +1192,25 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
           >
             {selected.includes(block.id) && <span className="sr-only">{t('notes.editor.selected')}</span>}
             <div className="min-w-0 flex-1">{control(block)}</div>
-            <BlockHandle actions={handleActions(block, index)} />
+            {/* On a phone the "+" only shows on the block being written, under the handle, so it never takes width from the text. */}
+            <div className="flex shrink-0 max-sm:flex-col">
+              <button
+                type="button"
+                aria-label={t('notes.editor.addBelow')}
+                title={t('notes.editor.addBelow')}
+                disabled={full && !(block.type === 'text' && block.text === '')}
+                // Keeps the caret (and a phone's keyboard) in the block until the menu takes over.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => addBelow(block)}
+                className="grid size-10 place-items-center text-muted transition-opacity hover:text-ink focus-visible:opacity-100 disabled:text-muted/40 max-sm:order-last max-sm:hidden max-sm:group-focus-within:grid sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+              >
+                <svg aria-hidden="true" viewBox="0 0 5 5" shapeRendering="crispEdges" className="size-2.5 fill-current">
+                  <rect x="2" y="0" width="1" height="5" />
+                  <rect x="0" y="2" width="5" height="1" />
+                </svg>
+              </button>
+              <BlockHandle actions={handleActions(block, index)} />
+            </div>
             {menuFor(block.id)}
             {pickerFor(block.id)}
           </div>

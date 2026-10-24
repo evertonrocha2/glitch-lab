@@ -134,6 +134,7 @@ const ROWS = [
   ['notes.editor.moveUp', 'Move up', 'Mover para cima'],
   ['notes.editor.moveDown', 'Move down', 'Mover para baixo'],
   ['notes.editor.duplicate', 'Duplicate', 'Duplicar'],
+  ['notes.editor.addBelow', 'Add block below', 'Adicionar bloco abaixo'],
   ['notes.editor.deleteBlock', 'Delete block', 'Apagar bloco'],
   ['notes.editor.deleted', 'Block deleted.', 'Bloco apagado.'],
   ['notes.editor.undo', 'Undo', 'Desfazer'],
