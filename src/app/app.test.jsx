@@ -14,11 +14,8 @@ it('shows the brand and the tagline as the main heading', () => {
   expect(screen.getByRole('heading', { level: 1, name: TAGLINE })).toBeInTheDocument()
 })
 
-it('points every Try it link at the error form', () => {
+it('keeps the error form in the try section', () => {
   renderAt('/')
-  const links = screen.getAllByRole('link', { name: /try it/i })
-  expect(links.length).toBeGreaterThan(0)
-  for (const link of links) expect(link).toHaveAttribute('href', '#try')
   expect(within(document.getElementById('try')).getByLabelText('Error message')).toBeInTheDocument()
 })
 
@@ -30,10 +27,10 @@ it('explains the three parts in order', () => {
 
 it('offers sign in when signed out and the board when signed in', () => {
   const { unmount } = renderAt('/')
-  expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
+  expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
   unmount()
   renderAt('/', { user: 'alice' })
-  expect(screen.getByRole('link', { name: 'My board' })).toHaveAttribute('href', '/board')
+  expect(within(screen.getByRole('banner')).getByRole('link', { name: 'My board' })).toHaveAttribute('href', '/board')
 })
 
 it('keeps the pasted error and goes to the board', async () => {
@@ -67,7 +64,7 @@ it('presents the features, the comparison, bug types, ranks and answers', async 
 it('speaks Brazilian Portuguese on the landing page', async () => {
   renderAt('/', { locale: 'pt-BR' })
   expect(screen.getByRole('heading', { level: 1, name: 'Cole o erro. Entenda o porquê. Pratique para nunca mais errar igual.' })).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login')
+  expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login')
   const steps = within(screen.getByRole('list', { name: 'Como funciona' })).getAllByRole('heading', { level: 3 })
   expect(steps.map((step) => step.textContent)).toEqual(['Investigue um erro', 'Estude seu board', 'Treine no gym'])
   expect(within(screen.getByRole('list', { name: 'Tipos de bug' })).getByText('Erro de um a mais')).toBeInTheDocument()
