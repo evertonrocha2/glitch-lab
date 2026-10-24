@@ -683,7 +683,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
 
   function pickerFor(blockId) {
     if (!picker || picker.blockId !== blockId) return null
-    return <EmojiPicker id={PICKER_ID} onPick={pickEmoji} onClose={() => closePicker()} className="absolute top-full left-0 mt-1" />
+    // In the flow, not floating: on a phone a floating picker would hang off the bottom of the page.
+    return <EmojiPicker id={PICKER_ID} onPick={pickEmoji} onClose={() => closePicker()} className="mt-1 basis-full" />
   }
 
   function inputProps(block) {
@@ -904,7 +905,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
 
       <div className="mt-6 space-y-2">
         {blocks.map((block, index) => (
-          <div key={block.id} data-block={block.type} className="group relative flex items-start gap-1">
+          <div key={block.id} data-block={block.type} className="group relative flex flex-wrap items-start gap-1">
             <div className="min-w-0 flex-1">{control(block)}</div>
             <BlockHandle actions={handleActions(block, index)} />
             {menuFor(block.id)}
