@@ -266,6 +266,56 @@ it('shows the error message and its hints in Error mode', async () => {
   expect(within(panel).getByRole('list', { name: 'Your guesses' })).toHaveTextContent('Go(wrong)')
 })
 
+it('shows the hints a classic board has unlocked, and when the next one comes', async () => {
+  const game = GAME()
+  game.modes.classic = { ...game.modes.classic, hints: [{ kind: 'trait', key: 'typing', value: 'static' }, { kind: 'letter', value: 'R' }], nextHintIn: 4 }
+  vi.mocked(getRiddle).mockResolvedValue(game)
+  renderAt('/glitchdle', { user: 'alice' })
+  const hints = within(await board()).getByRole('list', { name: 'Hints' })
+  const items = within(hints).getAllByRole('listitem')
+  expect(items.map((item) => item.textContent)).toEqual(["Answer's TypingStatic", 'First letterR', 'Hint 3 lockedUnlocks after 4 more wrong guesses'])
+})
+
+it('names the decade and the name length on a framework board, in Brazilian Portuguese too', async () => {
+  const user = userEvent.setup()
+  const game = GAME()
+  game.modes.frameworks = {
+    ...game.modes.frameworks,
+    hints: [
+      { kind: 'decade', value: 2010 },
+      { kind: 'letter', value: 'D' },
+      { kind: 'length', value: 6 },
+    ],
+    nextHintIn: null,
+  }
+  vi.mocked(getRiddle).mockResolvedValue(game)
+  renderAt('/glitchdle', { user: 'alice', locale: 'pt-BR' })
+  await user.click(await screen.findByRole('tab', { name: /Frameworks/ }))
+  const hints = screen.getByRole('list', { name: 'Dicas' })
+  expect(within(hints).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['DécadaAnos 2010', 'Primeira letraD', 'Tamanho do nome6 caracteres, sem espaços'])
+})
+
+it('starts a classic board with every hint locked, and drops the box once the board is over', async () => {
+  const game = GAME()
+  game.modes.classic = { ...game.modes.classic, hints: [], nextHintIn: 4 }
+  vi.mocked(getRiddle).mockResolvedValue(game)
+  const { unmount } = renderAt('/glitchdle', { user: 'alice' })
+  const hints = within(await board()).getByRole('list', { name: 'Hints' })
+  expect(within(hints).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    'Hint 1 lockedUnlocks after 4 more wrong guesses',
+    'Hint 2 lockedUnlocks later',
+    'Hint 3 lockedUnlocks later',
+  ])
+  unmount()
+  const won = WON()
+  won.modes.classic = { ...won.modes.classic, hints: [{ kind: 'letter', value: 'R' }], nextHintIn: null }
+  vi.mocked(getRiddle).mockResolvedValue(won)
+  renderAt('/glitchdle', { user: 'alice' })
+  await userEvent.click(await screen.findByRole('tab', { name: /Classic/ }))
+  expect(await screen.findByText(/Solved in 2 guesses!/)).toBeInTheDocument()
+  expect(screen.queryByRole('list', { name: 'Hints' })).not.toBeInTheDocument()
+})
+
 it('hides snippet lines until they are earned', async () => {
   renderAt('/glitchdle', { user: 'alice' })
   await userEvent.click(await screen.findByRole('tab', { name: /Snippet/ }))

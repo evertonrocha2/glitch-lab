@@ -13,6 +13,9 @@ export const LAUNCH_DAY = '2026-10-22'
 export const MAX_GUESSES = 30
 // Error mode: wrong guesses that unlock the first hint (file extension) and the second (syntax family).
 export const ERROR_HINTS_AT = [3, 6]
+// Classic boards (every category): wrong guesses that unlock a free trait, then the answer's first
+// letter, then the length of its name.
+export const CLASSIC_HINTS_AT = [5, 8, 12]
 // Snippet mode: lines shown before any guess; each wrong guess shows one more.
 export const SNIPPET_START_LINES = 1
 // The guess distribution's columns: 1 to 9 guesses, then "10+".
@@ -63,6 +66,25 @@ export function compareGuess(guess, answer, attributes = ATTRIBUTES) {
     return { key, value, status: near ? 'partial' : 'miss' }
   })
   return { correct: guess.id === answer.id, cells }
+}
+
+// The hints a classic board has unlocked, in order. Server side only: it reads the answer.
+// guesses: the items guessed so far, oldest first; wrong: how many of them missed; over: the board
+// is done, so every hint shows. Locked hints aren't in the list at all.
+// - { kind: 'trait', key, value }: the answer's value for the first column (in board order) that
+//   none of the guesses before the hint unlocked has matched. Stable: later guesses don't change it.
+// - { kind: 'decade', value: 1990 }: instead of the exact year, when the year is that column, or
+//   when every column was matched already.
+// - { kind: 'letter', value }: the first character of the answer's name, as written.
+// - { kind: 'length', value }: how many characters the name has, spaces left out.
+export function classicHints({ answer, guesses, attributes, wrong, over }) {
+  const unlocked = over ? CLASSIC_HINTS_AT.length : CLASSIC_HINTS_AT.filter((at) => wrong >= at).length
+  const decade = { kind: 'decade', value: Math.floor(answer.year / 10) * 10 }
+  const seen = guesses.slice(0, CLASSIC_HINTS_AT[0]).map((guess) => compareGuess(guess, answer, attributes).cells)
+  const open = attributes.find((_, index) => !seen.some((cells) => cells[index].status === 'match'))
+  const free = !open || open.kind === 'year' ? decade : { kind: 'trait', key: open.key, value: answer[open.key] }
+  const all = [free, { kind: 'letter', value: answer.name.charAt(0) }, { kind: 'length', value: answer.name.replace(/\s/g, '').length }]
+  return all.slice(0, unlocked)
 }
 
 const bucket = (guesses) => Math.min(guesses, DISTRIBUTION_SIZE) - 1

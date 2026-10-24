@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CATEGORIES, categoryById, categoryOfSlot } from '../../../shared/riddle/categories.js'
 import { MAX_GUESSES } from '../../../shared/riddle/game.js'
 import { shareText } from '../../../shared/riddle/share.js'
-import { Check, ClassicBoard, ErrorBoard, GuessList, Legend, SnippetBoard } from '../../components/glitchdle/boards/boards.jsx'
+import { Check, ClassicBoard, ClassicHints, ErrorBoard, GuessList, Legend, SnippetBoard } from '../../components/glitchdle/boards/boards.jsx'
 import Countdown from '../../components/glitchdle/countdown/countdown.jsx'
 import LanguagePicker from '../../components/glitchdle/language-picker/language-picker.jsx'
 import { CommunityPanel, DistributionPanel, ResultCard, StatsPanel } from '../../components/glitchdle/panels/panels.jsx'
@@ -374,6 +374,8 @@ export default function GlitchdlePage() {
                     max={MAX_GUESSES}
                   />
                 )}
+
+                {classic && state.hints && !state.over && <ClassicHints state={state} category={category} />}
 
                 {classic ? (
                   <>

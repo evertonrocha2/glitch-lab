@@ -1,6 +1,6 @@
 import { challengeDay, nextResetAt } from '../../../shared/daily.js'
 import { categoryOfSlot, itemById, SLOTS } from '../../../shared/riddle/categories.js'
-import { compareGuess, ERROR_HINTS_AT, gameNumber, MAX_GUESSES, riddleSummary, SNIPPET_START_LINES } from '../../../shared/riddle/game.js'
+import { CLASSIC_HINTS_AT, classicHints, compareGuess, ERROR_HINTS_AT, gameNumber, MAX_GUESSES, riddleSummary, SNIPPET_START_LINES } from '../../../shared/riddle/game.js'
 import { label } from '../../../shared/riddle/languages.js'
 import { badRequest, conflict } from '../../core/errors.js'
 import { ensureRiddleSet } from './riddle-daily.js'
@@ -30,6 +30,12 @@ function snippetLines({ lines, order }, wrong, over) {
   return lines.map((text, index) => (text.trim() === '' || shown.has(index) ? { text } : { hidden: true, width: text.length }))
 }
 
+// How many more wrong guesses until the next hint, or null when there's none left (or the board is done).
+function nextHintIn(thresholds, wrong, over) {
+  const next = thresholds.find((at) => at > wrong)
+  return over || !next ? null : next - wrong
+}
+
 // One board as the browser sees it. Guesses come newest first.
 export function publicMode(riddle, result) {
   const guesses = result?.guesses ?? []
@@ -49,12 +55,17 @@ export function publicMode(riddle, result) {
   }
   const newestFirst = [...guesses].reverse()
   if (riddle.mode === 'classic' || category.id !== 'languages') {
-    return { ...state, guesses: newestFirst.map((id) => ({ ...named(riddle.mode, id), ...compareGuess(itemOf(riddle.mode, id), answer, category.attributes) })) }
+    const hints = classicHints({ answer, guesses: guesses.map((id) => itemOf(riddle.mode, id)), attributes: category.attributes, wrong, over })
+    return {
+      ...state,
+      guesses: newestFirst.map((id) => ({ ...named(riddle.mode, id), ...compareGuess(itemOf(riddle.mode, id), answer, category.attributes) })),
+      hints,
+      nextHintIn: nextHintIn(CLASSIC_HINTS_AT, wrong, over),
+    }
   }
   const guessList = newestFirst.map((id) => ({ ...named(riddle.mode, id), correct: id === answer.id }))
   if (riddle.mode === 'error') {
-    const nextHint = ERROR_HINTS_AT.find((at) => at > wrong)
-    return { ...state, guesses: guessList, text: riddle.payload.text, hints: errorHints(answer, wrong, over), nextHintIn: over || !nextHint ? null : nextHint - wrong }
+    return { ...state, guesses: guessList, text: riddle.payload.text, hints: errorHints(answer, wrong, over), nextHintIn: nextHintIn(ERROR_HINTS_AT, wrong, over) }
   }
   return { ...state, guesses: guessList, lines: snippetLines(riddle.payload, wrong, over) }
 }

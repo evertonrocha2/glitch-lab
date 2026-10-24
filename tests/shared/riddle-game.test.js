@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { categoryById, itemById } from '../../shared/riddle/categories.js'
-import { compareGuess, gameNumber, RIDDLE_DAY_XP_CAP, riddleSummary, riddleXp } from '../../shared/riddle/game.js'
-import { languageById } from '../../shared/riddle/languages.js'
+import { CLASSIC_HINTS_AT, classicHints, compareGuess, gameNumber, MAX_GUESSES, RIDDLE_DAY_XP_CAP, riddleSummary, riddleXp } from '../../shared/riddle/game.js'
+import { ATTRIBUTES, languageById } from '../../shared/riddle/languages.js'
 
 const lang = (id, overrides = {}) => ({ ...languageById(id), ...overrides })
 const cell = (result, key) => result.cells.find((item) => item.key === key)
@@ -153,6 +153,60 @@ describe('comparing a framework or database guess', () => {
     expect(cell(compareGuess(database('mysql'), database('mongodb'), databases), 'maker')).toEqual({ key: 'maker', value: 'big-tech', status: 'partial' })
     expect(cell(compareGuess(database('postgresql'), database('mongodb'), databases), 'maker').status).toBe('miss')
     expect(cell(compareGuess(database('postgresql'), database('apache-cassandra'), databases), 'maker').status).toBe('match')
+  })
+})
+
+describe('classic hints', () => {
+  const answer = lang('rust')
+  const wrong = ['python', 'java', 'go', 'c', 'ruby', 'php', 'swift', 'kotlin', 'scala', 'haskell', 'elixir', 'lua', 'perl'].map((id) => lang(id))
+  const hints = (count, over = false, guesses = wrong) => classicHints({ answer, guesses: guesses.slice(0, count), attributes: ATTRIBUTES, wrong: count, over })
+
+  it('unlocks a free trait at 5 wrong guesses, the first letter at 8 and the length at 12, inside the 30-guess limit', () => {
+    expect(CLASSIC_HINTS_AT).toEqual([5, 8, 12])
+    expect(Math.max(...CLASSIC_HINTS_AT)).toBeLessThan(MAX_GUESSES)
+    expect([0, 4, 5, 7, 8, 11, 12, 13].map((count) => hints(count).map((hint) => hint.kind))).toEqual([
+      [],
+      [],
+      ['trait'],
+      ['trait'],
+      ['trait', 'letter'],
+      ['trait', 'letter'],
+      ['trait', 'letter', 'length'],
+      ['trait', 'letter', 'length'],
+    ])
+    expect(hints(8)[1]).toEqual({ kind: 'letter', value: 'R' })
+    expect(hints(12)[2]).toEqual({ kind: 'length', value: 4 })
+  })
+
+  it('names the first column no guess before the hint matched, and keeps it as more guesses come in', () => {
+    // No guess shares Rust's exact paradigms: the first column is the free one.
+    expect(hints(5)[0]).toEqual({ kind: 'trait', key: 'paradigms', value: answer.paradigms })
+    // Once a guess matches the paradigms, the hint moves on to the next column nobody matched.
+    const lookalikes = [lang('go', { paradigms: answer.paradigms }), ...wrong]
+    const free = hints(5, false, lookalikes)[0]
+    const index = ATTRIBUTES.findIndex((item) => item.key === free.key)
+    const matched = (column) => lookalikes.slice(0, 5).some((guess) => compareGuess(guess, answer).cells[column].status === 'match')
+    expect(free).toEqual({ kind: 'trait', key: 'memory', value: 'ownership' })
+    expect(matched(index)).toBe(false)
+    for (let column = 0; column < index; column++) expect(matched(column), ATTRIBUTES[column].key).toBe(true)
+    // Later guesses don't move it.
+    expect(hints(12, false, lookalikes)[0]).toEqual(hints(5, false, lookalikes)[0])
+  })
+
+  it('gives the decade, not the year, when the year is the column left, or when every column matched', () => {
+    const twin = (fields) => ({ ...answer, id: 'twin', ...fields })
+    const sameButYear = [twin({ year: 2010 }), ...wrong]
+    expect(hints(5, false, sameButYear)[0]).toEqual({ kind: 'decade', value: 2010 })
+    expect(hints(5, false, [twin({}), ...wrong])[0]).toEqual({ kind: 'decade', value: 2010 })
+  })
+
+  it('shows every hint once the board is over, and counts the name without spaces', () => {
+    expect(hints(2, true).map((hint) => hint.kind)).toEqual(['trait', 'letter', 'length'])
+    const vb = classicHints({ answer: lang('vbnet'), guesses: [], attributes: ATTRIBUTES, wrong: 12, over: false })
+    expect(vb.slice(1)).toEqual([
+      { kind: 'letter', value: 'V' },
+      { kind: 'length', value: 'VisualBasic.NET'.length },
+    ])
   })
 })
 

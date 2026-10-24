@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react'
+import { CLASSIC_HINTS_AT } from '../../../../shared/riddle/game.js'
 import { LABELS } from '../../../../shared/riddle/languages.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { categoryValueName, traitName, useLabels } from '../../../lib/i18n/labels.js'
@@ -159,18 +160,57 @@ const GuessCard = memo(function GuessCard({ guess, attributes, columns, labelOf,
   )
 })
 
-// Classic boards (languages' Classic, frameworks, databases): one card per guess, newest on top,
-// each attribute graded against the answer. category: 'languages', 'frameworks' or 'databases'.
-export function ClassicBoard({ guesses, animateId, category = 'languages', attributes = [] }) {
+// A board's column names and value names in the reader's language. Stable for a language and
+// category, so the memoized rows skip re-rendering.
+function useBoardNames(category) {
   const t = useT()
-  // Stable for a language and category, so the memoized cards skip re-rendering.
-  const { labelOf, name } = useMemo(() => {
+  return useMemo(() => {
     const languages = category === 'languages'
     return {
       labelOf: (key) => t(languages ? `app.glitchdle.attr.${key}` : `app.glitchdle.attr.${category}.${key}`),
       name: languages ? (value) => traitName(t, value) : (value) => categoryValueName(t, category, value),
     }
   }, [t, category])
+}
+
+// A classic board's hints: what the server has unlocked (it never sends the rest), then a dashed
+// slot per hint still locked, the next one saying how many wrong guesses it takes.
+export function ClassicHints({ state, category }) {
+  const t = useT()
+  const { labelOf, name } = useBoardNames(category)
+  const text = (hint) => {
+    if (hint.kind === 'trait') return [t('app.glitchdle.hint.trait', { trait: labelOf(hint.key) }), valueText(name, hint.value)]
+    if (hint.kind === 'decade') return [t('app.glitchdle.hint.decade'), t('app.glitchdle.hint.decadeValue', { decade: hint.value })]
+    if (hint.kind === 'letter') return [t('app.glitchdle.hint.letter'), hint.value]
+    return [t('app.glitchdle.hint.length'), t('app.glitchdle.hint.lengthValue', { count: hint.value })]
+  }
+  const locked = CLASSIC_HINTS_AT.length - state.hints.length
+  return (
+    <ul aria-label={t('app.glitchdle.hints')} className="grid gap-2 sm:grid-cols-3">
+      {state.hints.map((hint) => {
+        const [label, value] = text(hint)
+        return (
+          <li key={hint.kind} className="min-w-0 border-2 border-ink bg-secondary-soft px-3 py-2">
+            <span className="block font-label text-[10px] text-secondary">{label}</span>
+            <span className="block text-sm font-semibold text-ink wrap-break-word">{value}</span>
+          </li>
+        )
+      })}
+      {Array.from({ length: locked }, (_, index) => (
+        <li key={`locked-${index}`} className="border-2 border-dashed border-line bg-white px-3 py-2 text-xs text-muted">
+          <span className="block font-label text-[10px]">{t('app.glitchdle.hintLocked', { number: state.hints.length + index + 1 })}</span>
+          {index === 0 && state.nextHintIn ? t('app.glitchdle.unlocksAfter', { count: state.nextHintIn }) : t('app.glitchdle.unlocksLater')}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// Classic boards (languages' Classic, frameworks, databases): one card per guess, newest on top,
+// each attribute graded against the answer. category: 'languages', 'frameworks' or 'databases'.
+export function ClassicBoard({ guesses, animateId, category = 'languages', attributes = [] }) {
+  const t = useT()
+  const { labelOf, name } = useBoardNames(category)
   if (guesses.length === 0) {
     return <p className="border-2 border-dashed border-line bg-white px-4 py-6 text-center text-sm text-muted">{t('app.glitchdle.empty')}</p>
   }

@@ -153,6 +153,49 @@ describe('guessing', () => {
     expect(mode.answer).toBeNull()
   })
 
+  it('unlocks classic hints after 5, 8 and 12 wrong guesses, never sending a locked one', async () => {
+    const answer = LANGUAGES.find((item) => item.id === answers.classic)
+    const steps = { 4: [], 5: ['trait'], 7: ['trait'], 8: ['trait', 'letter'], 11: ['trait', 'letter'], 12: ['trait', 'letter', 'length'] }
+    const next = { 4: 1, 5: 3, 7: 1, 8: 4, 11: 1, 12: null }
+    for (let count = 1; count <= 12; count++) {
+      await guess('classic', wrongFor('classic', count - 1))
+      if (!steps[count]) continue
+      const { body } = await json(await state())
+      const board = body.modes.classic
+      expect(board.hints.map((hint) => hint.kind).sort(), `${count} wrong`).toEqual([...steps[count]].sort())
+      expect(board.nextHintIn, `${count} wrong`).toBe(next[count])
+      // Nothing beyond the unlocked hints leaves the server, under any name.
+      const text = JSON.stringify(body.modes.classic)
+      if (count < 8) expect(text).not.toContain('"letter"')
+      if (count < 12) expect(text).not.toContain('"length"')
+      expect(board.answer).toBeNull()
+    }
+    const { body } = await json(await state())
+    const [free, letter, length] = body.modes.classic.hints
+    expect(letter).toEqual({ kind: 'letter', value: answer.name.charAt(0) })
+    expect(length).toEqual({ kind: 'length', value: answer.name.replace(/\s/g, '').length })
+    if (free.kind === 'trait') {
+      expect(free.value).toEqual(answer[free.key])
+      // None of the first five guesses had it right.
+      const firstFive = (await store.getRiddleResult('alice', TODAY, 'classic')).guesses.slice(0, 5)
+      expect(firstFive.map((id) => LANGUAGES.find((item) => item.id === id)[free.key])).not.toContainEqual(answer[free.key])
+    } else {
+      expect(free).toEqual({ kind: 'decade', value: Math.floor(answer.year / 10) * 10 })
+    }
+    // The other boards still have none.
+    expect(body.modes.frameworks.hints).toEqual([])
+    expect(body.modes.frameworks.nextHintIn).toBe(5)
+  })
+
+  it('gives framework and database boards the same hints', async () => {
+    for (let index = 0; index < 8; index++) await guess('databases', wrongFor('databases', index))
+    const { body } = await json(await state())
+    const answer = ITEMS.databases.find((item) => item.id === answers.databases)
+    expect(body.modes.databases.hints.map((hint) => hint.kind)).toEqual([expect.stringMatching(/^(trait|decade)$/), 'letter'])
+    expect(body.modes.databases.hints[1].value).toBe(answer.name.charAt(0))
+    expect(body.modes.databases.nextHintIn).toBe(4)
+  })
+
   it('shows one more snippet line per wrong guess', async () => {
     const visible = (body) => body.modes.snippet.lines.filter((line) => !line.hidden && line.text.trim() !== '').length
     expect(visible((await json(await state())).body)).toBe(1)
