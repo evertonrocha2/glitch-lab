@@ -222,6 +222,12 @@ it('guide: knows a section for every route the app has', () => {
   expect(guideSection('/nope/nope/nope')).toBeNull()
 })
 
+it('guide: sends people to sign up, with no demo account (the live site has none)', () => {
+  expect(APP_GUIDE).not.toMatch(/demo account|Use demo|Try it\b/i)
+  expect(guideSection('/login').text).toContain('"Create account"')
+  expect(guideSection('/').text).toContain('"Create a free account"')
+})
+
 it('guide: leads with the page the student is on', async () => {
   const text = await loadContext('guide', store, 'alice', { page: { path: '/profile' }, needs: ['app_guide'] })
   expect(text.startsWith('The student is on this page now. Your profile:')).toBe(true)

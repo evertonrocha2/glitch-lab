@@ -13,13 +13,13 @@ export const GUIDE_SECTIONS = [
     id: 'landing',
     name: 'Landing page',
     match: /^\/$/,
-    text: `What Glitch Lab is: a debugging gym. Paste an error, understand why it broke, then practice so it never happens again. The form here saves your error and opens the board (sign in first if needed). Top links: How it works, Features, FAQ, Articles, Sign in, Try it.`,
+    text: `What Glitch Lab is: a debugging gym. Paste an error, understand why it broke, then practice so it never happens again. The form here saves your error and opens the board (sign in first if needed). Top links: How it works, Features, FAQ, Articles, Sign in, Create account. The hero buttons "Create a free account" and "Sign in" open the sign in page.`,
   },
   {
     id: 'login',
     name: 'Sign in page',
     match: /^\/login$/,
-    text: `Sign in or "Create account" (email and a password of at least 8 characters). "Use demo account" skips sign up and comes with a sample board. Demo accounts cannot publish articles, comment, share notes or create, join or vote in events.`,
+    text: `Sign in, or "Create an account" then "Create account" (email and a password of at least 8 characters). Signing up is free.`,
   },
   {
     id: 'board',
@@ -143,7 +143,7 @@ const ALWAYS = `Everywhere when signed in:
 - Study timer, bottom left: Start (optional topic), Pause, Reset. It survives reloads and counts toward the streak.
 - New badges pop up bottom right.
 - Lab assistant (this assistant): five specialists (Board analyst, Gym coach, Notes keeper, Study planner, App guide). Open or close it with the top bar button, Alt+A or Ctrl+/ (Cmd+/ on a Mac); Escape closes it. Enter sends, Shift+Enter adds a line, "New chat" starts over, and answers can have buttons that open a case, a note or a page.
-- Daily AI limit: ${DAILY_AI_LIMIT.user} AI calls per account (${DAILY_AI_LIMIT.demo} for demo accounts). Investigating, new gym challenges, fix checks, interrogation answers, trails and this assistant use it. Hints, review, Glitchdle, hunt and duels are free.`
+- Daily AI limit: ${DAILY_AI_LIMIT.user} AI calls per account. Investigating, new gym challenges, fix checks, interrogation answers, trails and this assistant use it. Hints, review, Glitchdle, hunt and duels are free.`
 
 const sectionText = (section) => `${section.name}: ${section.text}`
 
