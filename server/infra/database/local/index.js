@@ -10,6 +10,7 @@ import { createLocalReview } from './review.js'
 import { createLocalInterrogations } from './interrogation.js'
 import { createLocalCommunities } from './communities.js'
 import { createLocalMessaging } from './messaging.js'
+import { createLocalStudy } from './study.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
 const now = () => new Date().toISOString()
@@ -421,5 +422,7 @@ export function createLocalStore({ file }) {
     // Direct messages, blocks and reports: see messaging.js. Communities and their chat: communities.js.
     ...createLocalMessaging({ load, save }),
     ...createLocalCommunities({ load, save }),
+    // The study log (timer runs and sessions logged by hand): see study.js.
+    ...createLocalStudy({ load, save }),
   }
 }

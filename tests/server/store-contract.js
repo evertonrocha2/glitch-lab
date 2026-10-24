@@ -5,6 +5,7 @@ import { reviewStoreContract } from './store-contract-review.js'
 import { interrogationStoreContract } from './store-contract-interrogation.js'
 import { questionStoreContract } from './store-contract-questions.js'
 import { messagesStoreContract } from './store-contract-messages.js'
+import { studyStoreContract } from './store-contract-study.js'
 
 // Every store (local file, Supabase) must pass these. Not a test file itself: suites import it.
 export const CASE = {
@@ -780,6 +781,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
     questionStoreContract(() => store, ids)
     // Direct messages, blocks, reports and communities: see store-contract-messages.js.
     messagesStoreContract(() => store, newUser)
+    // The study log: see store-contract-study.js.
+    studyStoreContract(() => store, ids)
   })
 }
 

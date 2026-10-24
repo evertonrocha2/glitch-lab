@@ -8,6 +8,7 @@ import { createSupabaseReview } from './review.js'
 import { createSupabaseInterrogations } from './interrogation.js'
 import { createSupabaseCommunities } from './communities.js'
 import { createSupabaseMessaging } from './messaging.js'
+import { createSupabaseStudy } from './study.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
@@ -479,5 +480,7 @@ export function createSupabaseStore({ url, serviceKey }) {
     // Direct messages, blocks and reports: see messaging.js. Communities and their chat: communities.js.
     ...createSupabaseMessaging(db),
     ...createSupabaseCommunities(db),
+    // The study log (timer runs and sessions logged by hand): see study.js.
+    ...createSupabaseStudy(db),
   }
 }
