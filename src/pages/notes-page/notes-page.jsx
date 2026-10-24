@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate, useParams } from 'react-router'
+import { Link, NavLink, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
+import { tagCounts } from '../../../shared/note-tags.js'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import NoteEditor from '../../components/notes/note-editor/note-editor.jsx'
+import NoteTags from '../../components/notes/note-tags/note-tags.jsx'
+import TagFilter from '../../components/notes/tag-filter/tag-filter.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
@@ -12,6 +15,7 @@ import { exportNoteImage, exportNoteMarkdown, exportNotePdf } from '../../lib/ex
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../lib/i18n/format.js'
 import { newBlock } from '../../lib/notes/blocks.js'
+import { filterNotes, readFilters } from '../../lib/notes/filter.js'
 import { useMyProfile } from '../../lib/profile/my-profile.js'
 import { useProgressRefresh } from '../../lib/progress/progress-provider.jsx'
 import NotesPageSkeleton from './notes-page-skeleton.jsx'
@@ -28,10 +32,11 @@ function sharingFor(user, profile) {
   return { status: 'ready', handle: profile.handle }
 }
 
-function NoteList({ notes, showPublic }) {
+// search: the list filters, carried along so opening a note keeps them.
+function NoteList({ notes, showPublic, search, empty }) {
   const t = useT()
   const { timeAgo } = useFormat()
-  if (notes.length === 0) return <p className="text-sm text-muted">{t('notes.empty')}</p>
+  if (notes.length === 0) return empty ?? <p className="text-sm text-muted">{t('notes.empty')}</p>
   return (
     <ul className="space-y-2">
       {notes.map((note) => {
@@ -39,7 +44,7 @@ function NoteList({ notes, showPublic }) {
         return (
           <li key={note.id}>
             <NavLink
-              to={`/notes/${note.id}`}
+              to={{ pathname: `/notes/${note.id}`, search }}
               className={({ isActive }) =>
                 `block border-2 border-ink px-3 py-2.5 transition-colors ${isActive ? 'bg-primary-soft shadow-pixel' : 'bg-white hover:bg-primary-soft'}`
               }
@@ -50,6 +55,7 @@ function NoteList({ notes, showPublic }) {
                 {t('notes.edited', { time: timeAgo(note.updatedAt) })}
                 {showPublic && note.isPublic && <span className="ml-1.5 bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('notes.public')}</span>}
               </span>
+              <NoteTags tags={note.tags} max={3} className="mt-1.5" />
             </NavLink>
           </li>
         )
@@ -62,6 +68,9 @@ function NoteList({ notes, showPublic }) {
 export default function NotesPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { search } = useLocation()
+  const [params, setParams] = useSearchParams()
+  const filters = readFilters(params)
   const t = useT()
   const { user, getToken, signOut } = useAuth()
   const myProfile = useMyProfile()
@@ -140,7 +149,7 @@ export default function NotesPage() {
     try {
       await deleteNote(noteId, await getToken())
       setNotes((current) => current.filter((note) => note.id !== noteId))
-      navigate('/notes')
+      navigate({ pathname: '/notes', search })
       refreshProgress()
     } catch (err) {
       await handleError(err)
@@ -168,6 +177,20 @@ export default function NotesPage() {
 
   const open = notes?.find((note) => note.id === id)
   const sharing = sharingFor(user, myProfile?.profile)
+  // Every note is already here (the API caps them at 200), so the filters run in the page: instant,
+  // and they see edits the server hasn't answered yet.
+  const counts = tagCounts(notes ?? [])
+  const visible = filterNotes(notes ?? [], filters)
+
+  // Replace, not push: typing a search shouldn't fill the back button with one entry per letter.
+  function setFilters({ tags = filters.tags, query = filters.query }) {
+    const next = new URLSearchParams()
+    for (const tag of tags) next.append('tag', tag)
+    if (query) next.set('q', query)
+    setParams(next, { replace: true })
+  }
+  const toggleTag = (tag) => setFilters({ tags: filters.tags.includes(tag) ? filters.tags.filter((item) => item !== tag) : [...filters.tags, tag] })
+  const clearFilters = () => setFilters({ tags: [], query: '' })
 
   return (
     <AppShell>
@@ -193,12 +216,36 @@ export default function NotesPage() {
       ) : (
         <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label={t('notes.nav')} className={id ? 'hidden lg:block' : ''}>
-            <NoteList notes={notes} showPublic={sharing.status === 'ready'} />
+            {notes.length > 0 && (
+              <TagFilter
+                counts={counts}
+                selected={filters.tags}
+                query={filters.query}
+                onToggle={toggleTag}
+                onQuery={(query) => setFilters({ query })}
+                onClear={clearFilters}
+              />
+            )}
+            <NoteList
+              notes={visible}
+              showPublic={sharing.status === 'ready'}
+              search={search}
+              empty={
+                notes.length > 0 ? (
+                  <div className="border-2 border-dashed border-ink/40 p-4 text-sm text-muted">
+                    <p>{filters.tags.length ? t('notes.filter.empty') : t('notes.filter.emptySearch')}</p>
+                    <button type="button" onClick={clearFilters} className="mt-2 min-h-10 font-label text-[10px] text-ink underline underline-offset-2 hover:text-primary">
+                      {t('notes.filter.clear')}
+                    </button>
+                  </div>
+                ) : null
+              }
+            />
           </nav>
 
           <section className={id ? '' : 'hidden lg:block'}>
             {id && (
-              <Link to="/notes" className="-my-3 mb-1 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary lg:hidden">
+              <Link to={{ pathname: '/notes', search }} className="-my-3 mb-1 inline-flex min-h-10 items-center font-label text-xs text-ink hover:text-primary lg:hidden">
                 &lt; {t('notes.all')}
               </Link>
             )}
@@ -213,6 +260,7 @@ export default function NotesPage() {
                   onExport={exportNote}
                   sharing={sharing}
                   onShare={(isPublic) => share(open.id, isPublic)}
+                  tagSuggestions={counts.map((item) => item.tag)}
                 />
               </PixelCard>
             ) : (
