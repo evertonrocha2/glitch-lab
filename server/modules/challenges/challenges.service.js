@@ -6,7 +6,8 @@ import { withAi } from '../../infra/ai/failure.js'
 import { createBoundary, findLeak, guardText, screenInput, secretLines } from '../../infra/ai/guard/index.js'
 import { spendAiCall } from '../../infra/ai/quota.js'
 import { buildChallengePrompt, CHALLENGE_SCHEMA, challengeSystem } from './challenge.prompt.js'
-import { hintAt, parseChallenge, toPublicChallenge, toPublicPuzzleChallenge } from './challenges.model.js'
+import { challengeVariant, challengeView } from '../daily/switch.js'
+import { hintAt, parseChallenge, toPublicChallenge } from './challenges.model.js'
 import { buildCheckPrompt, CHECK_SCHEMA, checkSystem } from './check.prompt.js'
 
 export const PASSES_TO_SOLVE = 2
@@ -63,7 +64,7 @@ export async function startChallenge({ store, ai }, user, body, locale) {
 export async function getChallenge(store, user, id, locale = 'en') {
   const record = await store.getChallenge(user.id, id)
   if (!record) throw notFound(NOT_FOUND)
-  if (record.puzzleId) return toPublicPuzzleChallenge(record, await store.getPuzzle(record.puzzleId), locale)
+  if (record.puzzleId) return challengeView(store, user.id, record, await store.getPuzzle(record.puzzleId), locale)
   const kase = await store.getCase(user.id, record.caseId)
   return toPublicChallenge(record, kase?.concept ?? 'other')
 }
@@ -77,7 +78,8 @@ export async function revealHint(store, user, id, locale = 'en') {
   const hintsRevealed = record.hintsRevealed + 1
   await store.updateChallenge(user.id, record.id, { hintsRevealed })
   const puzzle = record.puzzleId ? await store.getPuzzle(record.puzzleId) : null
-  return { hint: hintAt(record, puzzle, hintsRevealed - 1, locale), hintsRevealed }
+  const variant = await challengeVariant(store, record, puzzle)
+  return { hint: hintAt(record, puzzle, hintsRevealed - 1, locale, variant), hintsRevealed }
 }
 
 // The AI grades the student's fix against the secret solution; passing twice solves the case.

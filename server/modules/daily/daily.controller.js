@@ -13,3 +13,8 @@ export async function startPuzzle(req, res) {
   const { challenge, created } = await daily.startPuzzle(req.deps.store, req.user, idParam(req, 'puzzleId'), req.locale)
   res.status(created ? 201 : 200).json({ challenge })
 }
+
+// Switches one of my puzzles to another programming language, once: { puzzle, challenge, switchedFrom }.
+export async function switchLanguage(req, res) {
+  res.json(await daily.switchPuzzle(req.deps, req.user, idParam(req, 'puzzleId'), req.body, req.locale))
+}

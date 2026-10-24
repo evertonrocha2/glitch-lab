@@ -83,9 +83,9 @@ it('ranks by time from start to pass, then fewer attempts, and marks the first s
   const body = JSON.parse(text)
   expect(body.solvedCount).toBe(3)
   expect(body.leaderboard).toEqual([
-    { rank: 1, name: 'Anonymous player', handle: null, avatar: null, seconds: 300, attempts: 4, firstSolver: false, isYou: false },
-    { rank: 2, name: 'cy-dev', handle: 'cy-dev', avatar: expect.objectContaining({ seed: expect.any(String) }), seconds: 600, attempts: 1, firstSolver: false, isYou: false },
-    { rank: 3, name: 'Ada', handle: 'ada-lab', avatar: expect.objectContaining({ seed: expect.any(String) }), seconds: 600, attempts: 2, firstSolver: true, isYou: false },
+    { rank: 1, name: 'Anonymous player', handle: null, avatar: null, seconds: 300, attempts: 4, switchedTo: null, firstSolver: false, isYou: false },
+    { rank: 2, name: 'cy-dev', handle: 'cy-dev', avatar: expect.objectContaining({ seed: expect.any(String) }), seconds: 600, attempts: 1, switchedTo: null, firstSolver: false, isYou: false },
+    { rank: 3, name: 'Ada', handle: 'ada-lab', avatar: expect.objectContaining({ seed: expect.any(String) }), seconds: 600, attempts: 2, switchedTo: null, firstSolver: true, isYou: false },
   ])
   // Private names, emails and account ids never leave the server.
   for (const secret of ['Bob Secret', 'secret-mail', ada.id, bob.id, cy.id]) expect(text).not.toContain(secret)

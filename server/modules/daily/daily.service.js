@@ -1,20 +1,23 @@
 import { challengeDay, dailySummary, nextResetAt, weekEndsAt, weekStart } from '../../../shared/daily.js'
 import { conflict, notFound } from '../../core/errors.js'
-import { toPublicPuzzleChallenge } from '../challenges/challenges.model.js'
-import { ensureSet, isCurrent, toPuzzleCard, withStatus } from './daily-set.js'
+import { ensureSet, isCurrent } from './daily-set.js'
 import { leaderboard } from './leaderboard.js'
 import { loadDaily } from './solved.js'
+import { challengeView, PUZZLE_NOT_FOUND, PUZZLE_OVER, playerState, toPlayerCard } from './switch.js'
 
-// Today's three puzzles (in the reader's language), where I am on each, and my daily streak.
+export { switchPuzzle } from './switch.js'
+
+// Today's three puzzles (in the reader's language, and in the programming language I'm on), where
+// I am on each, and my daily streak.
 export async function getDaily(store, user, locale = 'en', now = new Date()) {
   const day = challengeDay(now)
   const { dailies } = await ensureSet(store, day)
-  const [mine, daily] = await Promise.all([Promise.all(dailies.map((item) => store.findPuzzleChallenge(user.id, item.id))), loadDaily(store, user.id)])
+  const [states, daily] = await Promise.all([Promise.all(dailies.map((item) => playerState(store, user.id, item))), loadDaily(store, user.id)])
   return {
     day,
     nextResetAt: nextResetAt(now),
     streak: dailySummary(daily.solved, day).streak,
-    puzzles: dailies.map((item, index) => withStatus(toPuzzleCard(item, locale), mine[index])),
+    puzzles: dailies.map((item, index) => toPlayerCard(item, states[index], locale, now)),
   }
 }
 
@@ -22,24 +25,29 @@ export async function getDaily(store, user, locale = 'en', now = new Date()) {
 export async function getWeekly(store, user, locale = 'en', now = new Date()) {
   const week = weekStart(challengeDay(now))
   const { global } = await ensureSet(store, challengeDay(now))
-  const [mine, board] = await Promise.all([store.findPuzzleChallenge(user.id, global.id), leaderboard(store, global.id, user.id)])
-  return { week, endsAt: weekEndsAt(week), puzzle: withStatus(toPuzzleCard(global, locale), mine), ...board }
+  const [state, board] = await Promise.all([playerState(store, user.id, global), leaderboard(store, global, user.id)])
+  return { week, endsAt: weekEndsAt(week), puzzle: toPlayerCard(global, state, locale, now), ...board }
 }
 
 // My own gym challenge for a puzzle, or the one I already started ({ challenge, created }).
-// No AI call and no quota: the puzzle and its secret are already written.
+// No AI call and no quota: the puzzle and its secret are already written, and so is the port when I
+// switched the puzzle to another language before starting it.
 export async function startPuzzle(store, user, puzzleId, locale = 'en', now = new Date()) {
   const puzzle = await store.getPuzzle(puzzleId)
-  if (!puzzle) throw notFound('Challenge not found.')
+  if (!puzzle) throw notFound(PUZZLE_NOT_FOUND)
   const existing = await store.findPuzzleChallenge(user.id, puzzle.id)
-  if (existing) return { challenge: toPublicPuzzleChallenge(existing, puzzle, locale), created: false }
-  if (!isCurrent(puzzle, now)) throw conflict("This challenge is over. Try today's set.")
+  if (existing) return { challenge: await challengeView(store, user.id, existing, puzzle, locale, now), created: false }
+  if (!isCurrent(puzzle, now)) throw conflict(PUZZLE_OVER)
 
-  const secret = await store.getPuzzleSecret(puzzle.id)
-  const { brokenCode, symptom, language, hints } = puzzle
+  const switched = await store.findPuzzleSwitch(user.id, puzzle.id)
+  const [source, secret] = switched
+    ? await Promise.all([store.getPuzzleVariant(puzzle.id, switched.toLanguage), store.getPuzzleVariantSecret(puzzle.id, switched.toLanguage)])
+    : await Promise.all([puzzle, store.getPuzzleSecret(puzzle.id)])
+  const { brokenCode, symptom, hints } = source
+  const language = switched?.toLanguage ?? puzzle.language
   const created =
     (await store.createChallenge(user.id, { caseId: null, puzzleId: puzzle.id, brokenCode, symptom, language, hints }, secret)) ??
     // A double click raced us to it: use that one.
     (await store.findPuzzleChallenge(user.id, puzzle.id))
-  return { challenge: toPublicPuzzleChallenge(created, puzzle, locale), created: true }
+  return { challenge: await challengeView(store, user.id, created, puzzle, locale, now), created: true }
 }

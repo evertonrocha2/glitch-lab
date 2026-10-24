@@ -1,7 +1,7 @@
 import { addDays, challengeDay, DIFFICULTIES, weekStart } from '../../../shared/daily.js'
 import { generatePuzzle } from './puzzle-generate.js'
 import { pickFromPool } from './puzzle-pool.js'
-import { puzzleText } from './puzzle-text.js'
+import { puzzleText, variantSource } from './puzzle-text.js'
 
 // The cron avoids titles from this many days back.
 const RECENT_DAYS = 30
@@ -78,14 +78,16 @@ export async function runCron(store, now = new Date()) {
 }
 
 // A daily card in the reader's language: what the puzzle is about, never its code, hints or solution.
-export function toPuzzleCard(puzzle, locale = 'en') {
-  const { title, symptom } = puzzleText(puzzle, locale)
+// variant: the port to the language the player switched to; the card then shows its language and symptom.
+export function toPuzzleCard(puzzle, locale = 'en', variant = null) {
+  const { title } = puzzleText(puzzle, locale)
+  const { symptom } = puzzleText(variantSource(puzzle, variant), locale)
   return {
     id: puzzle.id,
     kind: puzzle.kind,
     day: puzzle.day,
     difficulty: puzzle.difficulty,
-    language: puzzle.language,
+    language: variant?.language ?? puzzle.language,
     concept: puzzle.concept,
     title,
     symptom,

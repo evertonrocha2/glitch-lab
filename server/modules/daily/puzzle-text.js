@@ -20,3 +20,11 @@ export function puzzleText(puzzle, locale, secret = null) {
     bugExplanation: secret ? pick('bugExplanation') : null,
   }
 }
+
+// A puzzle as a player who switched it to another programming language sees it: the port's code,
+// symptom and hints (and their Portuguese copy) in place of the original's. Everything else, the
+// title included, stays the puzzle's own, so read the title from the original.
+export function variantSource(puzzle, variant) {
+  if (!variant) return puzzle
+  return { ...puzzle, language: variant.language, brokenCode: variant.brokenCode, symptom: variant.symptom, hints: variant.hints, pt: variant.pt }
+}
