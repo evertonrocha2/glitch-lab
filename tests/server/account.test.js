@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { demoLoginEnabled } from '../../server/config/env.js'
 import { SIGNUP_LIMITS } from '../../server/modules/auth/credentials.js'
 import { api, useTempStore } from './helpers.js'
 
@@ -131,6 +132,49 @@ it('routes sign in, sign up and demo under /api/auth', async () => {
   const unknown = await call('nope', {})
   expect(unknown.status).toBe(404)
   expect(await unknown.json()).toEqual({ message: 'Not found.' })
+})
+
+describe('the demo login', () => {
+  const deployed = () => {
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('RENDER', '')
+    vi.stubEnv('VERCEL', '1')
+  }
+
+  it('is there outside production', async () => {
+    vi.stubEnv('VERCEL', '')
+    vi.stubEnv('RENDER', '')
+    vi.stubEnv('DEMO_LOGIN', '')
+    expect((await demo()).status).toBe(201)
+  })
+
+  it('answers 404 like an unknown route on a deployed server, and creates nobody', async () => {
+    const createUser = vi.spyOn(store, 'createUser')
+    deployed()
+    vi.stubEnv('DEMO_LOGIN', '')
+    const res = await demo({ today: '2026-10-22' })
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual({ message: 'Not found.' })
+    expect(createUser).not.toHaveBeenCalled()
+  })
+
+  it('is off on Render and under NODE_ENV=production too', async () => {
+    vi.stubEnv('VERCEL', '')
+    vi.stubEnv('DEMO_LOGIN', '')
+    vi.stubEnv('RENDER', 'true')
+    expect((await demo()).status).toBe(404)
+    vi.stubEnv('RENDER', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    expect((await demo()).status).toBe(404)
+  })
+
+  it('can be turned back on in production with DEMO_LOGIN=1', async () => {
+    deployed()
+    vi.stubEnv('DEMO_LOGIN', '1')
+    expect(demoLoginEnabled()).toBe(true)
+    vi.stubEnv('DEMO_LOGIN', 'true')
+    expect(demoLoginEnabled()).toBe(false)
+  })
 })
 
 it("seeds the demo in the visitor's language", async () => {

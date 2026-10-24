@@ -4,6 +4,10 @@
 // A deployed server (Vercel, Render or any host that sets NODE_ENV=production), where dev fallbacks are off.
 export const isProduction = () => process.env.VERCEL === '1' || Boolean(process.env.RENDER) || process.env.NODE_ENV === 'production'
 
+// One-click demo accounts: always on locally and in tests, off on a deployed server unless DEMO_LOGIN=1,
+// so the live site never hands out throwaway accounts.
+export const demoLoginEnabled = () => !isProduction() || process.env.DEMO_LOGIN === '1'
+
 export const env = {
   get port() {
     return Number(process.env.PORT ?? 3000)
