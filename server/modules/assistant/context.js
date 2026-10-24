@@ -123,6 +123,9 @@ function noteText(note, cases) {
     .join('\n')
 }
 
+// The student's own words for what a note is about, so "notes about loops" finds it by tag too.
+const tagList = (note) => (note.tags?.length ? ` | tags: ${note.tags.join(', ')}` : '')
+
 async function notesContext({ store, userId, page, needs }) {
   const [notes, cases] = await Promise.all([store.listNotes(userId), store.listCases(userId)])
   const parts = []
@@ -131,12 +134,12 @@ async function notesContext({ store, userId, page, needs }) {
       `Notes (last edited first, ${Math.min(notes.length, MAX_NOTES)} of ${notes.length}):`,
       ...notes
         .slice(0, MAX_NOTES)
-        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}" | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
+        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}"${tagList(note)} | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
     )
   }
   if (needs.includes('current_note') && page.noteId) {
     const note = notes.find((item) => item.id === page.noteId)
-    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"`, clip(noteText(note, cases), 2500))
+    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"${tagList(note)}`, clip(noteText(note, cases), 2500))
   }
   return parts.join('\n')
 }
