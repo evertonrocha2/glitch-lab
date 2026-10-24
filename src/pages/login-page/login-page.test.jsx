@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signIn, signUp, startDemo } from '../../lib/api.js'
 import { currentLocation, renderAt } from '../../test/render.jsx'
 
@@ -19,6 +19,9 @@ beforeEach(() => {
   vi.mocked(signIn).mockReset()
   vi.mocked(signUp).mockReset()
   vi.mocked(startDemo).mockReset().mockResolvedValue({ ...SESSION, user: { ...SESSION.user, isDemo: true } })
+})
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 async function fillIn(email, password) {
@@ -65,17 +68,57 @@ it('keeps me signed in after a reload', async () => {
   expect(currentLocation()).toBe('/board')
 })
 
-it('goes to next after the demo login', async () => {
-  renderAt('/login?next=/gym/abc')
-  await userEvent.click(screen.getByRole('button', { name: 'Use demo account' }))
-  await waitFor(() => expect(currentLocation()).toBe('/gym/abc'))
-  expect(startDemo).toHaveBeenCalled()
+it('opens on sign up from a "Create account" link', async () => {
+  vi.mocked(signUp).mockResolvedValue(SESSION)
+  renderAt('/login?mode=signup')
+  expect(screen.getByText('At least 8 characters.')).toBeInTheDocument()
+  await fillIn('ada@example.com', 'correct horse')
+  await userEvent.click(screen.getByRole('button', { name: 'Create account' }))
+  await waitFor(() => expect(currentLocation()).toBe('/board'))
+  expect(signUp).toHaveBeenCalledWith({ email: 'ada@example.com', password: 'correct horse' })
+  expect(signIn).not.toHaveBeenCalled()
 })
 
-it('ignores a next that would leave the site', async () => {
-  renderAt('/login?next=//evil.example')
-  await userEvent.click(screen.getByRole('button', { name: 'Use demo account' }))
-  await waitFor(() => expect(currentLocation()).toBe('/board'))
+describe('the demo login', () => {
+  // What a production build sees: not DEV, and no VITE_DEMO_LOGIN.
+  const production = () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_DEMO_LOGIN', '')
+  }
+
+  it('goes to next after the demo login in development', async () => {
+    renderAt('/login?next=/gym/abc')
+    await userEvent.click(screen.getByRole('button', { name: 'Use demo account' }))
+    await waitFor(() => expect(currentLocation()).toBe('/gym/abc'))
+    expect(startDemo).toHaveBeenCalled()
+  })
+
+  it('ignores a next that would leave the site', async () => {
+    renderAt('/login?next=//evil.example')
+    await userEvent.click(screen.getByRole('button', { name: 'Use demo account' }))
+    await waitFor(() => expect(currentLocation()).toBe('/board'))
+  })
+
+  it('is not offered in a production build', () => {
+    production()
+    renderAt('/login')
+    expect(screen.queryByRole('button', { name: 'Use demo account' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/demo/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+  })
+
+  it('comes back in a build made with VITE_DEMO_LOGIN=1', () => {
+    production()
+    vi.stubEnv('VITE_DEMO_LOGIN', '1')
+    renderAt('/login')
+    expect(screen.getByRole('button', { name: 'Use demo account' })).toBeInTheDocument()
+  })
+
+  it('speaks Brazilian Portuguese', () => {
+    renderAt('/login', { locale: 'pt-BR' })
+    expect(screen.getByText('Testando localmente? Pule o cadastro.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Usar conta demo' })).toBeInTheDocument()
+  })
 })
 
 it('speaks Brazilian Portuguese', () => {
@@ -84,5 +127,5 @@ it('speaks Brazilian Portuguese', () => {
   expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
   expect(screen.getByLabelText('Senha')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Usar conta demo' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Criar uma conta' })).toBeInTheDocument()
 })

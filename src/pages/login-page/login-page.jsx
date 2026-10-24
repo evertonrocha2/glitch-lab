@@ -7,6 +7,7 @@ import LanguageSelect from '../../components/ui/language-select/language-select.
 import PixelLogo from '../../components/ui/pixel-logo/pixel-logo.jsx'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
+import DemoLogin from './demo-login.jsx'
 
 // Only paths inside this site: "//evil.example" would leave it.
 function safeNext(next) {
@@ -16,9 +17,10 @@ function safeNext(next) {
 const fieldClass =
   'mt-2 w-full border-2 border-ink bg-white px-3 py-2.5 text-ink transition-shadow duration-150 focus:shadow-pixel focus-visible:outline-none'
 
-function PasswordForm({ auth, run, busy }) {
+// startCreating: opened from a "Create account" link (?mode=signup), so the form starts on sign up.
+function PasswordForm({ auth, run, busy, startCreating }) {
   const t = useT()
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(startCreating)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -74,6 +76,11 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
+  const signingUp = params.get('mode') === 'signup'
+  // The one-click demo account is for local development, or a build made with VITE_DEMO_LOGIN=1 (the API
+  // answers 404 on a deployed server). Written out here, read on each render so tests can stub it: a
+  // production build turns it into `false` and drops the button and its copy from the bundle.
+  const demoLogin = import.meta.env.DEV || import.meta.env.VITE_DEMO_LOGIN === '1'
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -125,13 +132,8 @@ export default function LoginPage() {
 
         <PixelCard className="p-6 sm:p-8">
           <div className="space-y-6">
-            <PasswordForm auth={auth} run={run} busy={busy} />
-            <div className="border-t-2 border-dashed border-line pt-5">
-              <p className="mb-3 text-sm text-muted">{t('landing.login.demoPitch')}</p>
-              <PixelButton variant="secondary" onClick={() => run(auth.signInDemo)} disabled={busy}>
-                {t('landing.login.demo')}
-              </PixelButton>
-            </div>
+            <PasswordForm auth={auth} run={run} busy={busy} startCreating={signingUp} />
+            {demoLogin && <DemoLogin onClick={() => run(auth.signInDemo)} disabled={busy} />}
           </div>
           {message && (
             <p role="alert" className="mt-5 border-2 border-ink bg-primary-soft p-3 text-sm text-ink">
