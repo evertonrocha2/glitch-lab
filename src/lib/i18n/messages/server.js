@@ -121,6 +121,7 @@ const en = {
   // Note tags (shared/note-tags.js). "Use up to {max} tags." and the length one are the article texts.
   'server.noteTagChars': 'Note tags use letters, numbers, spaces and - . # +.',
   'server.tooLongBlock': 'Too long. Keep each block under {max} characters.',
+  'server.tooLongCodeBlock': 'Too long. Keep each code block under {max} characters.',
   'server.invalidBlock': 'Invalid block.',
 
   // Profiles.
@@ -365,6 +366,7 @@ const ptBR = {
   'server.tooManyBlocks': 'Muito longo. Uma nota cabe até {max} blocos.',
   'server.noteTagChars': 'Tags de nota usam letras, números, espaços e - . # +.',
   'server.tooLongBlock': 'Muito longo. Deixe cada bloco com menos de {max} caracteres.',
+  'server.tooLongCodeBlock': 'Muito longo. Deixe cada bloco de código com menos de {max} caracteres.',
   'server.invalidBlock': 'Bloco inválido.',
 
   'server.noPublicProfile': 'Não tem perfil público aqui.',

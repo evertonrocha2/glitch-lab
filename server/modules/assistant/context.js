@@ -1,5 +1,6 @@
 import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
+import { noteAsText } from '../../../shared/note-blocks.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
 import { isQuestion } from '../../../shared/question.js'
 import { kindLabel, trailViews } from '../../../shared/trails.js'
@@ -108,19 +109,12 @@ async function gymContext({ store, userId, page, needs }) {
   return parts.join('\n')
 }
 
+// Headings, lists, quotes and ``` fences stay readable; the whole thing still goes inside the data fence.
 function noteText(note, cases) {
-  return note.blocks
-    .map((block) => {
-      if (block.type === 'heading') return `# ${block.text}`
-      if (block.type === 'todo') return `[${block.done ? 'x' : ' '}] ${block.text}`
-      if (block.type === 'case') {
-        const item = cases.find((kase) => kase.id === block.caseId)
-        return `[case ${block.caseId}: ${item ? caseType(item) : 'no longer on the board'}]`
-      }
-      return block.text
-    })
-    .filter(Boolean)
-    .join('\n')
+  return noteAsText(note.blocks, (block) => {
+    const item = cases.find((kase) => kase.id === block.caseId)
+    return `[case ${block.caseId}: ${item ? caseType(item) : 'no longer on the board'}]`
+  })
 }
 
 // The student's own words for what a note is about, so "notes about loops" finds it by tag too.

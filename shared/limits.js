@@ -3,4 +3,5 @@
 export const LIMITS = { error: 2000, code: 6000, context: 300, files: 5, filesTotal: 15000, path: 200 }
 
 // Notes: how many per account, blocks per note, and characters per block or title.
-export const NOTE_LIMITS = { notes: 200, blocks: 200, text: 2000, title: 120 }
+// code: characters in a code block, which runs longer than a line of prose.
+export const NOTE_LIMITS = { notes: 200, blocks: 200, text: 2000, code: 6000, title: 120 }
