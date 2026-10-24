@@ -94,6 +94,12 @@ export const GUIDE_SECTIONS = [
     text: `Your level and XP bar, study streak (a day counts with 5 minutes of study), time today and in total, a one year activity graph, the skill map (mastery per bug type, "Train" the weakest), a "How to earn XP" list and ${BADGES.length} badges. Levels: ${levels} XP. XP: case 10, gym pass 30 (+15 without hints), solved case 50, note 5, study minute 1, plus trails, daily puzzles, Glitchdle, hunt, duels, interrogations, review cards, articles and events. "Find people" opens the people directory.`,
   },
   {
+    id: 'study',
+    name: 'Study log',
+    match: /^\/study$/,
+    text: `Each timer run by day: time, topic, linked case or note; week total and top topics. Edit or delete (counted time stays). "Log a session" adds past study, tagged Manual, no XP.`,
+  },
+  {
     id: 'profile',
     name: 'Your profile',
     match: /^\/profile$/,
@@ -134,7 +140,7 @@ export const GUIDE_SECTIONS = [
 const ALWAYS = `Everywhere when signed in:
 - Top bar: language select (EN or PT), Lab assistant button, notifications bell (comments, likes and ratings on your articles, event joins, votes and winners; "Mark all read"), your avatar (opens your profile) and Sign out.
 - Nav: Board, Daily, Glitchdle, Duel, Notes, Trail, Articles, Events, Progress. Line hunt opens from Daily, People from Progress or Profile.
-- Study timer, bottom left: Start, Pause, Reset. It survives reloads and counts toward the streak.
+- Study timer, bottom left: Start (optional topic), Pause, Reset. It survives reloads and counts toward the streak.
 - New badges pop up bottom right.
 - Lab assistant (this assistant): five specialists (Board analyst, Gym coach, Notes keeper, Study planner, App guide). Open or close it with the top bar button, Alt+A or Ctrl+/ (Cmd+/ on a Mac); Escape closes it. Enter sends, Shift+Enter adds a line, "New chat" starts over, and answers can have buttons that open a case, a note or a page.
 - Daily AI limit: ${DAILY_AI_LIMIT.user} AI calls per account (${DAILY_AI_LIMIT.demo} for demo accounts). Investigating, new gym challenges, fix checks, interrogation answers, trails and this assistant use it. Hints, review, Glitchdle, hunt and duels are free.`

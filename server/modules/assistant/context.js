@@ -2,6 +2,7 @@ import { BADGES } from '../../../shared/badges.js'
 import { conceptLabel } from '../../../shared/concepts.js'
 import { computeProgress, XP } from '../../../shared/progress.js'
 import { isQuestion } from '../../../shared/question.js'
+import { addDays, STUDY_LOG, weekSummary } from '../../../shared/study-log.js'
 import { kindLabel, trailViews } from '../../../shared/trails.js'
 import { loadDaily } from '../daily/solved.js'
 import { loadRiddle } from '../glitchdle/solved.js'
@@ -15,10 +16,11 @@ import { clip, firstLines } from './text.js'
 // Characters of data one specialist gets, so prompts stay small and fast on the free tier.
 export const CONTEXT_BUDGET = 6000
 // The app guide is static text covering every page, so it gets more room.
-export const GUIDE_BUDGET = 11_000
+export const GUIDE_BUDGET = 11_500
 const MAX_CASES = 15
 const MAX_CHALLENGES = 10
 const MAX_NOTES = 20
+const MAX_SESSIONS = 20
 
 const errorLine = (error) => clip(firstLines(error, 1), 160)
 const errorType = (error) => /^([A-Za-z_$][\w$.]*)\s*:/.exec(firstLines(error, 1).trim())?.[1] ?? 'Error'
@@ -141,9 +143,42 @@ async function notesContext({ store, userId, page, needs }) {
   return parts.join('\n')
 }
 
+// The study log's last 14 days: each session's day, time, length, topic and links. The topics are
+// the student's own words; like everything a loader returns, they reach the AI inside a data fence.
+async function studyLogLines(store, userId) {
+  const today = serverDay()
+  const [sessions, study] = await Promise.all([
+    store.listStudySessions(userId, { from: addDays(today, -13), to: addDays(today, 1) }),
+    store.listStudyTime(userId),
+  ])
+  const week = weekSummary(sessions, study, today)
+  const shown = sessions.slice(0, MAX_SESSIONS)
+  const at = (iso) => iso.slice(11, 16)
+  return [
+    `Study log (/study), this week (${week.from} to ${week.to}): ${duration(week.countedSeconds)} counted by the timer` +
+      `${week.manualSeconds ? `, plus ${duration(week.manualSeconds)} logged by hand (no XP)` : ''}. ` +
+      `Top topics: ${week.topTopics.map((item) => `"${clip(item.topic, 60)}" ${duration(item.seconds)}`).join(', ') || 'none written'}.`,
+    `Sessions of the last 14 days (latest first, ${shown.length} of ${sessions.length}; times in UTC):`,
+    ...shown.map((session) =>
+      [
+        `- ${session.day}`,
+        session.endedAt || session.source === 'timer' ? `${at(session.startedAt)}-${session.endedAt ? at(session.endedAt) : 'now'}` : 'no time given',
+        duration(session.seconds),
+        session.source === 'manual' ? 'manual' : 'timer',
+        session.topic ? `"${clip(session.topic, STUDY_LOG.topic)}"` : 'no topic',
+        session.caseId ? `case ${session.caseId}` : '',
+        session.noteId ? `note ${session.noteId}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    ),
+  ].join('\n')
+}
+
 async function studyContext({ store, userId, needs }) {
   const parts = []
-  if (!needs.includes('progress') && !needs.includes('study_plan')) return ''
+  if (needs.includes('study_log')) parts.push(await studyLogLines(store, userId))
+  if (!needs.includes('progress') && !needs.includes('study_plan')) return parts.join('\n')
   const [cases, challenges, notes, study, trails, community] = await Promise.all([
     store.listCases(userId),
     store.listChallenges(userId),
