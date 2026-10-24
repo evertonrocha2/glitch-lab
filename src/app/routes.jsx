@@ -32,6 +32,7 @@ const {
   ProgressPage,
   PublicNotePage,
   PublicProfilePage,
+  StudyPage,
   TrailPage,
 } = pages
 
@@ -150,6 +151,14 @@ export function AppRoutes() {
           element={
             <RequireAuth>
               <ProgressPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/study"
+          element={
+            <RequireAuth>
+              <StudyPage />
             </RequireAuth>
           }
         />
