@@ -121,21 +121,26 @@ function noteText(note, cases) {
 
 // The student's own words for what a note is about, so "notes about loops" finds it by tag too.
 const tagList = (note) => (note.tags?.length ? ` | tags: ${note.tags.join(', ')}` : '')
+// And the folder they keep it in (private, like the rest of this context).
+function folderOf(note, folders) {
+  const folder = note.folderId && folders.find((item) => item.id === note.folderId)
+  return folder ? ` | folder: ${clip(folder.name, 40)}` : ''
+}
 
 async function notesContext({ store, userId, page, needs }) {
-  const [notes, cases] = await Promise.all([store.listNotes(userId), store.listCases(userId)])
+  const [notes, cases, folders] = await Promise.all([store.listNotes(userId), store.listCases(userId), store.listNoteFolders(userId)])
   const parts = []
   if (needs.includes('note_list')) {
     parts.push(
       `Notes (last edited first, ${Math.min(notes.length, MAX_NOTES)} of ${notes.length}):`,
       ...notes
         .slice(0, MAX_NOTES)
-        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}"${tagList(note)} | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
+        .map((note) => `- id ${note.id} | "${clip(note.title || 'Untitled', 80)}"${tagList(note)}${folderOf(note, folders)} | ${clip(noteText(note, cases).replace(/\n/g, ' / '), 160)}`),
     )
   }
   if (needs.includes('current_note') && page.noteId) {
     const note = notes.find((item) => item.id === page.noteId)
-    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"${tagList(note)}`, clip(noteText(note, cases), 2500))
+    if (note) parts.push('', `Open note ${note.id}: "${note.title || 'Untitled'}"${tagList(note)}${folderOf(note, folders)}`, clip(noteText(note, cases), 2500))
   }
   return parts.join('\n')
 }

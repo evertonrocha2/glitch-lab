@@ -115,6 +115,16 @@ it('notes: carries the tags of each note, so a topic finds it by tag', async () 
   expect(text).not.toContain('"Untagged" | tags')
 })
 
+it('notes: names the folder a note is kept in, and only mine', async () => {
+  const { folder } = await store.createNoteFolder('alice', { name: 'Estudos de JS', position: 0 })
+  const note = await store.createNote('alice', { title: 'Week 4', tags: ['loops'], folderId: folder.id, blocks: [{ id: 'b1', type: 'text', text: 'map and filter' }] })
+  await store.createNote('alice', { title: 'Loose', blocks: [] })
+  const text = await load('notes', { path: `/notes/${note.id}`, noteId: note.id })
+  expect(text).toContain(`- id ${note.id} | "Week 4" | tags: loops | folder: Estudos de JS | map and filter`)
+  expect(text).toContain(`Open note ${note.id}: "Week 4" | tags: loops | folder: Estudos de JS`)
+  expect(text).not.toContain('"Loose" | folder')
+})
+
 it('notes: reads rich blocks as plain text, code fences intact', async () => {
   const note = await store.createNote('alice', {
     title: 'Loops',
