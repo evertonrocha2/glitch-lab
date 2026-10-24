@@ -1,5 +1,6 @@
-import { AREAS, categoryById, MODELS, POPULARITY, POPULARITY_STEPS } from '../../shared/riddle/categories.js'
-import { LANGUAGES } from '../../shared/riddle/languages.js'
+import { AREAS, categoryById, MODELS } from '../../shared/riddle/categories.js'
+import { LANGUAGES, languageById } from '../../shared/riddle/languages.js'
+import { bucketOf, POPULARITY_STEPS, WIKIPEDIA_STEPS, WIKIPEDIAS } from '../../shared/riddle/popularity.js'
 import { normalize } from '../../shared/riddle/search.js'
 
 // Turns what Wikidata and Stack Overflow say into Glitchdle's trait vocabulary. Pure functions, so
@@ -91,10 +92,13 @@ export function makerOf(facts) {
 }
 
 // Stack Overflow questions -> a bucket, with steps per category.
-export function popularityOf(count, steps) {
-  if (!Number.isFinite(count)) return null
-  return POPULARITY[steps.filter((step) => count >= step).length]
-}
+export const popularityOf = (count, steps) => bucketOf(count, steps)
+
+// How many Wikipedias have an article on the item (its sitelinks) -> a bucket: a second measure of
+// fame, kinder to old or academic items than Stack Overflow is. An override can name the count when
+// the article sits on another item (Xamarin's is on the company's).
+export const sitelinksOf = (facts) => (facts.sitelinks?.length ? Number(facts.sitelinks[0]) : null)
+export const wikipediasOf = (sitelinks, steps) => bucketOf(sitelinks, steps, WIKIPEDIAS)
 
 // Search words besides the name: the Stack Overflow tag, the Portuguese name when it differs, and
 // English aliases that look like a name for the same thing (a word of the name, or its initials).
@@ -154,7 +158,7 @@ export function kindOf(types = []) {
   return null
 }
 
-export function normalizeFramework({ label, facts, count, thisYear }) {
+export function normalizeFramework({ label, facts, count, sitelinks, thisYear }) {
   const language = firstBy(FRAMEWORK_LANGUAGE_ORDER, languageIds(facts.language))
   return {
     id: idOf(label),
@@ -165,8 +169,16 @@ export function normalizeFramework({ label, facts, count, thisYear }) {
     maker: makerOf(facts),
     license: licenseOf(facts.license),
     popularity: popularityOf(count, POPULARITY_STEPS.frameworks),
+    wikipedias: wikipediasOf(sitelinks, WIKIPEDIA_STEPS.frameworks),
     year: firstYear(facts, thisYear),
   }
+}
+
+// What a framework inherits from its main language (shared/riddle/languages.js), worked out after
+// the overrides so a corrected language carries over: what runs it and how it's typed.
+export function deriveFramework(item) {
+  const language = languageById(item.language)
+  return { runtime: language?.runtime ?? null, typing: language?.typing ?? null }
 }
 
 // ---- Databases -------------------------------------------------------------------------------
@@ -205,6 +217,14 @@ const QUERY_BY_MODEL = [
 ]
 export const queryOf = (models) => QUERY_BY_MODEL.find(([model]) => models.includes(model))?.[1] ?? null
 
+// How far transactions go: every relational engine here runs full ACID transactions; for the other
+// models the overrides say (see ACID in shared/riddle/categories.js).
+export const acidOf = (models = []) => (models.includes('relational') ? 'full' : null)
+
+// Where the data lives while the database runs: Wikidata types some as in-memory databases; the
+// overrides add the ones it doesn't.
+export const storageOf = (types = []) => (types.some((type) => /in-memory/i.test(type)) ? 'memory' : 'disk')
+
 export function hostingOf(types = []) {
   if (types.some((type) => /serverless|embedded|in-process|embeddable/i.test(type))) return 'embedded'
   if (types.some((type) => /cloud database|software as a service|database as a service|cloud computing/i.test(type))) return 'cloud'
@@ -213,7 +233,7 @@ export function hostingOf(types = []) {
 
 // A cloud-only service publishes neither a license nor its source: it's proprietary. Closed
 // software doesn't say what it's written in either.
-export function normalizeDatabase({ label, facts, count, thisYear }) {
+export function normalizeDatabase({ label, facts, count, sitelinks, thisYear }) {
   const model = modelsOf([...(facts.type ?? []), ...(facts.use ?? [])])
   const hosting = hostingOf(facts.type)
   const license = licenseOf(facts.license) ?? (hosting === 'cloud' ? 'proprietary' : null)
@@ -225,9 +245,28 @@ export function normalizeDatabase({ label, facts, count, thisYear }) {
     license,
     writtenIn: firstBy(ENGINE_LANGUAGE_ORDER, languageIds(facts.language)) ?? (license === 'proprietary' ? 'undisclosed' : null),
     hosting,
+    acid: acidOf(model),
+    storage: storageOf(facts.type),
     popularity: popularityOf(count, POPULARITY_STEPS.databases),
+    maker: makerOf(facts),
+    wikipedias: wikipediasOf(sitelinks, WIKIPEDIA_STEPS.databases),
     year: firstYear(facts, thisYear),
   }
+}
+
+// ---- Languages -------------------------------------------------------------------------------
+
+// The languages are hand-curated; the sync only brings their Stack Overflow counts.
+// tags: { languageId: tag }; counts: [{ name, count }] -> { questions: { languageId: count }, missing: [ids] }.
+export function languageQuestions(tags, counts) {
+  const byTag = new Map(counts.map(({ name, count }) => [name, count]))
+  const questions = {}
+  const missing = []
+  for (const [id, tag] of Object.entries(tags)) {
+    if (Number.isFinite(byTag.get(tag))) questions[id] = byTag.get(tag)
+    else missing.push(id)
+  }
+  return { questions, missing }
 }
 
 // ---- Validation and the whole pipeline -------------------------------------------------------
@@ -254,6 +293,9 @@ export function problemsOf(item, categoryId, thisYear) {
 }
 
 const NORMALIZERS = { frameworks: normalizeFramework, databases: normalizeDatabase }
+// Worked out again from the final model: an override that makes a database relational makes it ACID.
+const deriveDatabase = (item) => ({ acid: acidOf(item.model) })
+const DERIVED = { frameworks: deriveFramework, databases: deriveDatabase }
 
 // Everything for one category: { items (sorted by id), dropped: [{ tag, reasons }] }.
 // overrides: { tag: { ...fields, drop?: 'why' } }, applied on top of the data.
@@ -275,16 +317,19 @@ export function buildCatalog({ categoryId, seeds, resolveRows, factRows, counts,
       continue
     }
     const count = questions.get(tag)
-    const { aliases: extraAliases = [], ...fields } = fix
-    const base = NORMALIZERS[categoryId]({ label, facts: facts[wikidata] ?? {}, count, thisYear })
-    const item = { ...base, ...fields }
+    const { aliases: extraAliases = [], sitelinks: linked, ...fields } = fix
+    const sitelinks = linked ?? sitelinksOf(facts[wikidata] ?? {})
+    const base = NORMALIZERS[categoryId]({ label, facts: facts[wikidata] ?? {}, count, sitelinks, thisYear })
+    const merged = { ...base, ...fields }
+    // Derived traits follow the final values, and an explicit override still wins.
+    const item = { ...merged, ...DERIVED[categoryId]?.(merged), ...fields }
     const reasons = [...problemsOf(item, categoryId, thisYear), ...(Number.isFinite(count) ? [] : ['no Stack Overflow tag'])]
     if (reasons.length) {
       dropped.push({ tag, reasons })
       continue
     }
     const aliases = [...new Set([...aliasesOf(item.name, tag, facts[wikidata] ?? {}), ...extraAliases])]
-    items.push({ ...item, aliases, questions: count, wikidata })
+    items.push({ ...item, aliases, questions: count, sitelinks, wikidata })
   }
   // Two seeds can land on the same item (spring and spring-boot are different, but a rename could merge them).
   const seen = new Set()

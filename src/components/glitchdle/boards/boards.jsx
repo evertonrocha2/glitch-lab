@@ -88,16 +88,19 @@ export function Legend({ ranked = false }) {
   )
 }
 
+// What an arrow means, read out to screen readers, by column (a year when the column isn't listed).
 const DIRECTION_HINTS = {
   year: { higher: 'app.glitchdle.later', lower: 'app.glitchdle.earlier' },
-  rank: { higher: 'app.glitchdle.more', lower: 'app.glitchdle.fewer' },
+  popularity: { higher: 'app.glitchdle.more', lower: 'app.glitchdle.fewer' },
+  wikipedias: { higher: 'app.glitchdle.direction.wikipedias.higher', lower: 'app.glitchdle.direction.wikipedias.lower' },
+  acid: { higher: 'app.glitchdle.direction.acid.higher', lower: 'app.glitchdle.direction.acid.lower' },
 }
 
 // wide: the last of an odd number of cells fills the row, so no empty slot shows.
 function Cell({ cell, kind, label, name, index, animate, wide }) {
   const style = STATUS[cell.status]
   const t = useT()
-  const hint = cell.direction ? t(DIRECTION_HINTS[kind]?.[cell.direction] ?? DIRECTION_HINTS.year[cell.direction]) : ''
+  const hint = cell.direction ? t((DIRECTION_HINTS[cell.key] ?? DIRECTION_HINTS.year)[cell.direction]) : ''
   return (
     <div
       style={{ ...style.style, ...(animate ? { animationDelay: `${index * 90}ms` } : null) }}

@@ -164,7 +164,7 @@ it('celebrates a win, shows the answer and copies a spoiler-free result', async 
       '\u{1F5C4}️ Databases: not played',
       '',
       squares(classicGuess('python')),
-      P.repeat(8),
+      P.repeat(classicGuess('rust').cells.length),
       '',
       `Can you do better? ${host()}/glitchdle`,
     ].join('\n'),
@@ -197,7 +197,7 @@ it('copies the result in Brazilian Portuguese, with the streak and the earlier g
       '',
       squares(classicGuess('java')),
       ...rows,
-      P.repeat(8),
+      P.repeat(classicGuess('rust').cells.length),
       '(+2 palpites antes)',
       '',
       '\u{1F525} 3 dias seguidos',
@@ -232,7 +232,7 @@ it('switches to the framework board and grades it with its own traits', async ()
   expect(card).toHaveTextContent('Main language')
   expect(card).toHaveTextContent('Python')
   expect(card).toHaveTextContent('Backend')
-  expect(screen.getByRole('list', { name: 'What the colors mean' })).toHaveTextContent('Answer is newer or more asked')
+  expect(screen.getByRole('list', { name: 'What the colors mean' })).toHaveTextContent('Answer is newer or ranks higher')
   expect(screen.getByRole('heading', { name: 'Frameworks guess distribution' })).toBeInTheDocument()
 })
 
@@ -249,7 +249,7 @@ it('shows the database board in Brazilian Portuguese, and where the data comes f
   expect(card).toHaveTextContent('Modelo de dados')
   expect(card).toHaveTextContent('Documentos')
   expect(card).toHaveTextContent('Escrito em')
-  expect(screen.getByText(/Dados de frameworks e bancos de dados/)).toBeInTheDocument()
+  expect(screen.getByText(/Dados das características/)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Wikidata (CC0)' })).toHaveAttribute('href', 'https://www.wikidata.org')
 })
 

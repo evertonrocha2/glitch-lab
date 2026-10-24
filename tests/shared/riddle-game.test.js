@@ -11,7 +11,20 @@ describe('comparing a Classic guess', () => {
   it('marks a correct guess with every cell matching', () => {
     const result = compareGuess(lang('rust'), lang('rust'))
     expect(result.correct).toBe(true)
-    expect(result.cells.map((item) => item.key)).toEqual(['paradigms', 'typing', 'strength', 'execution', 'memory', 'domains', 'syntax', 'year'])
+    expect(result.cells.map((item) => item.key)).toEqual([
+      'paradigms',
+      'typing',
+      'strength',
+      'execution',
+      'runtime',
+      'memory',
+      'domains',
+      'syntax',
+      'indentation',
+      'standard',
+      'popularity',
+      'year',
+    ])
     expect(result.cells.every((item) => item.status === 'match')).toBe(true)
   })
 
@@ -39,6 +52,29 @@ describe('comparing a Classic guess', () => {
     expect(guess.correct).toBe(false)
   })
 
+  it('grades the runtime: same, both on a virtual machine, or different', () => {
+    expect(cell(compareGuess(lang('kotlin'), lang('java')), 'runtime')).toEqual({ key: 'runtime', value: 'jvm', status: 'match' })
+    expect(cell(compareGuess(lang('csharp'), lang('java')), 'runtime')).toEqual({ key: 'runtime', value: 'dotnet', status: 'partial' })
+    expect(cell(compareGuess(lang('elixir'), lang('javascript')), 'runtime').status).toBe('partial')
+    expect(cell(compareGuess(lang('c'), lang('python')), 'runtime')).toEqual({ key: 'runtime', value: 'native', status: 'miss' })
+    expect(cell(compareGuess(lang('python'), lang('sql')), 'runtime').status).toBe('miss')
+  })
+
+  it('grades significant indentation and ISO or Ecma standards as yes or no', () => {
+    expect(cell(compareGuess(lang('haskell'), lang('python')), 'indentation')).toEqual({ key: 'indentation', value: 'yes', status: 'match' })
+    expect(cell(compareGuess(lang('ruby'), lang('python')), 'indentation')).toEqual({ key: 'indentation', value: 'no', status: 'miss' })
+    expect(cell(compareGuess(lang('ruby'), lang('c')), 'standard')).toEqual({ key: 'standard', value: 'yes', status: 'match' })
+    expect(cell(compareGuess(lang('java'), lang('c')), 'standard')).toEqual({ key: 'standard', value: 'no', status: 'miss' })
+  })
+
+  it('points the Stack Overflow arrow toward the answer bucket', () => {
+    expect(lang('python').popularity).toBe('huge')
+    expect(lang('rust').popularity).toBe('known')
+    expect(cell(compareGuess(lang('rust'), lang('python')), 'popularity')).toEqual({ key: 'popularity', value: 'known', status: 'miss', direction: 'higher' })
+    expect(cell(compareGuess(lang('python'), lang('zig')), 'popularity')).toEqual({ key: 'popularity', value: 'huge', status: 'miss', direction: 'lower' })
+    expect(cell(compareGuess(lang('java'), lang('python')), 'popularity')).toEqual({ key: 'popularity', value: 'huge', status: 'match' })
+  })
+
   it('points the year arrow toward the answer', () => {
     expect(cell(compareGuess(lang('c'), lang('go')), 'year')).toEqual({ key: 'year', value: 1972, status: 'miss', direction: 'higher' })
     expect(cell(compareGuess(lang('go'), lang('c')), 'year')).toEqual({ key: 'year', value: 2009, status: 'miss', direction: 'lower' })
@@ -64,6 +100,26 @@ describe('comparing a framework or database guess', () => {
     expect(cell(compareGuess(framework('django', { kind: 'library' }), framework('react', { kind: 'framework' }), frameworks), 'kind').status).toBe('miss')
   })
 
+  it("grades a framework's runtime and typing, which follow its language", () => {
+    const answer = framework('laravel')
+    const guess = compareGuess(framework('django'), answer, frameworks)
+    expect(cell(guess, 'runtime')).toEqual({ key: 'runtime', value: 'interpreter', status: 'match' })
+    expect(cell(guess, 'typing')).toEqual({ key: 'typing', value: 'dynamic', status: 'match' })
+    expect(cell(guess, 'language').status).toBe('miss')
+    const jvm = compareGuess(framework('spring-boot'), answer, frameworks)
+    expect(cell(jvm, 'runtime')).toEqual({ key: 'runtime', value: 'jvm', status: 'miss' })
+    expect(cell(jvm, 'typing')).toEqual({ key: 'typing', value: 'static', status: 'miss' })
+    // The JVM and .NET are both virtual machines: close.
+    expect(cell(compareGuess(framework('spring-boot'), framework('asp-net-core'), frameworks), 'runtime').status).toBe('partial')
+  })
+
+  it('points the Wikipedias arrow toward the answer bucket', () => {
+    const answer = framework('react', { wikipedias: 'top' })
+    expect(cell(compareGuess(framework('gin', { wikipedias: 'low' }), answer, frameworks), 'wikipedias')).toEqual({ key: 'wikipedias', value: 'low', status: 'miss', direction: 'higher' })
+    expect(cell(compareGuess(answer, framework('gin', { wikipedias: 'mid' }), frameworks), 'wikipedias').direction).toBe('lower')
+    expect(cell(compareGuess(answer, answer, frameworks), 'wikipedias').status).toBe('match')
+  })
+
   it('points the popularity arrow toward the answer bucket', () => {
     const answer = framework('react', { popularity: 'huge' })
     expect(cell(compareGuess(framework('htmx', { popularity: 'niche' }), answer, frameworks), 'popularity')).toEqual({ key: 'popularity', value: 'niche', status: 'miss', direction: 'higher' })
@@ -74,11 +130,29 @@ describe('comparing a framework or database guess', () => {
   it('grades database models as sets and C with C++ as close', () => {
     const answer = database('postgresql', { model: ['relational'], writtenIn: 'c', query: 'sql' })
     const guess = compareGuess(database('duckdb', { model: ['relational', 'columnar'], writtenIn: 'cpp', query: 'sql-dialect' }), answer, databases)
-    expect(guess.cells.map((item) => item.key)).toEqual(['model', 'query', 'writtenIn', 'license', 'hosting', 'popularity', 'year'])
+    expect(guess.cells.map((item) => item.key)).toEqual(['model', 'query', 'acid', 'storage', 'writtenIn', 'maker', 'license', 'hosting', 'popularity', 'wikipedias', 'year'])
     expect(cell(guess, 'model').status).toBe('partial')
     expect(cell(guess, 'writtenIn').status).toBe('partial')
     expect(cell(guess, 'query').status).toBe('partial')
     expect(compareGuess(answer, answer, databases).correct).toBe(true)
+  })
+
+  it('ranks ACID transactions from none to full, with arrows', () => {
+    const postgres = database('postgresql')
+    expect(postgres.acid).toBe('full')
+    expect(cell(compareGuess(database('redis'), postgres, databases), 'acid')).toEqual({ key: 'acid', value: 'partial', status: 'miss', direction: 'higher' })
+    expect(cell(compareGuess(database('elasticsearch'), database('redis'), databases), 'acid')).toEqual({ key: 'acid', value: 'none', status: 'miss', direction: 'higher' })
+    expect(cell(compareGuess(postgres, database('elasticsearch'), databases), 'acid').direction).toBe('lower')
+    expect(cell(compareGuess(database('mongodb'), postgres, databases), 'acid')).toEqual({ key: 'acid', value: 'full', status: 'match' })
+  })
+
+  it('grades storage as the same or not, and the maker by family', () => {
+    expect(cell(compareGuess(database('memcached'), database('redis'), databases), 'storage')).toEqual({ key: 'storage', value: 'memory', status: 'match' })
+    expect(cell(compareGuess(database('postgresql'), database('redis'), databases), 'storage')).toEqual({ key: 'storage', value: 'disk', status: 'miss' })
+    // Big tech and a company are both corporate: close. A foundation isn't.
+    expect(cell(compareGuess(database('mysql'), database('mongodb'), databases), 'maker')).toEqual({ key: 'maker', value: 'big-tech', status: 'partial' })
+    expect(cell(compareGuess(database('postgresql'), database('mongodb'), databases), 'maker').status).toBe('miss')
+    expect(cell(compareGuess(database('postgresql'), database('apache-cassandra'), databases), 'maker').status).toBe('match')
   })
 })
 

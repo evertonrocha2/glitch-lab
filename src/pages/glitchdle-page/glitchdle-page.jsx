@@ -377,7 +377,7 @@ export default function GlitchdlePage() {
 
                 {classic ? (
                   <>
-                    <Legend ranked={category !== 'languages'} />
+                    <Legend ranked={active.attributes.some((item) => item.kind === 'rank')} />
                     <ClassicBoard guesses={state.guesses} category={category} attributes={active.attributes} animateId={last?.mode === slot ? last.id : null} />
                   </>
                 ) : (

@@ -3,7 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 // The two public sources the Glitchdle catalogs come from. Both are free and need no key:
-// - Wikidata's SPARQL endpoint (CC0): what each item is, its language, license, maker and year.
+// - Wikidata's SPARQL endpoint (CC0): what each item is, its language, license, maker and year, and
+//   how many Wikipedias have an article on it.
 // - The Stack Exchange API (CC BY-SA): how many Stack Overflow questions each tag has.
 // One request per category and source, and every answer is cached on disk, so running the sync
 // again the same day asks nothing (and a rerun after a fix to the normalizer is free).
@@ -48,6 +49,7 @@ export function buildFactsQuery(ids) {
     { ?item rdfs:label ?value FILTER(LANG(?value) = "en") BIND("name" AS ?fact) }
     UNION { ?item rdfs:label ?value FILTER(LANG(?value) IN ("pt-br", "pt")) BIND("namePt" AS ?fact) }
     UNION { ?item skos:altLabel ?value FILTER(LANG(?value) = "en") BIND("alias" AS ?fact) }
+    UNION { ?item wikibase:sitelinks ?value BIND("sitelinks" AS ?fact) }
     UNION { ?item wdt:P571 ?value BIND("inception" AS ?fact) }
     UNION { ?item wdt:P577 ?value BIND("published" AS ?fact) }
     UNION { ?item wdt:P31 ?type . ?type rdfs:label ?value FILTER(LANG(?value) = "en") BIND("type" AS ?fact) }

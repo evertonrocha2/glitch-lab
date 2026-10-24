@@ -1,10 +1,11 @@
 import { DATABASES } from './catalogs/databases.js'
 import { FRAMEWORKS } from './catalogs/frameworks.js'
-import { ATTRIBUTES as LANGUAGE_ATTRIBUTES, LABELS as LANGUAGE_LABELS, LANGUAGES, languageById } from './languages.js'
+import { ATTRIBUTES as LANGUAGE_ATTRIBUTES, LABELS as LANGUAGE_LABELS, LANGUAGES, languageById, RUNTIME_FAMILY, RUNTIMES, TYPING } from './languages.js'
+import { POPULARITY, POPULARITY_STEPS, WIKIPEDIAS } from './popularity.js'
 import { CATEGORY_MODES, SLOTS } from './slots.js'
 
 export { searchItems } from './search.js'
-export { SLOTS }
+export { POPULARITY, POPULARITY_STEPS, SLOTS, WIKIPEDIAS }
 
 // Glitchdle's categories: languages (three modes) and the classic-only ones built from public data
 // (scripts/sync-glitchdle.mjs writes catalogs/*.js from Wikidata and Stack Overflow). Public on
@@ -16,6 +17,7 @@ export { SLOTS }
 // - 'one': a single value; 'partial' when both sit in the same family (MIT and BSD are both permissive).
 // - 'year': arrows say if the answer is newer or older.
 // - 'rank': ordered buckets; arrows say if the answer ranks higher or lower.
+// `share: false` leaves a column out of the share grid (shared/riddle/share.js).
 
 const languageName = (id) => languageById(id)?.name ?? id
 
@@ -26,7 +28,11 @@ export const LICENSES = ['mit', 'apache', 'bsd', 'permissive', 'gpl', 'weak-copy
 export const MODELS = ['relational', 'document', 'key-value', 'wide-column', 'columnar', 'graph', 'time-series', 'search', 'vector']
 export const QUERIES = ['sql', 'sql-dialect', 'document-api', 'graph-language', 'key-commands', 'own-language']
 export const HOSTING = ['server', 'embedded', 'cloud']
-export const POPULARITY = ['niche', 'known', 'popular', 'huge']
+// How far transactions go, weakest first: 'partial' is atomic per record (row, document, key) or
+// limited in some documented way; 'full' is multi-record ACID transactions.
+export const ACID = ['none', 'partial', 'full']
+// Where the working data lives: in RAM (with disk for durability, if any) or on disk.
+export const STORAGE = ['disk', 'memory']
 
 const LICENSE_FAMILY = {
   mit: 'permissive',
@@ -45,6 +51,8 @@ const FRONT_FAMILY = { javascript: 'js', typescript: 'js' }
 const ENGINE_FAMILY = { c: 'c', cpp: 'c', java: 'jvm', scala: 'jvm', kotlin: 'jvm' }
 const QUERY_FAMILY = { sql: 'sql', 'sql-dialect': 'sql' }
 
+const MAKER_LABELS = { 'big-tech': 'Big tech', company: 'Company', foundation: 'Foundation', community: 'Community' }
+
 const SHARED_LABELS = {
   mit: 'MIT',
   apache: 'Apache 2.0',
@@ -56,8 +64,12 @@ const SHARED_LABELS = {
   proprietary: 'Proprietary',
 }
 
+// What runs a framework's code and how its language is typed, named like the language board does.
+const LANGUAGE_TRAIT_LABELS = Object.fromEntries([...RUNTIMES, ...TYPING].map((value) => [value, LANGUAGE_LABELS[value]]))
+
 const FRAMEWORK_LABELS = {
   ...SHARED_LABELS,
+  ...LANGUAGE_TRAIT_LABELS,
   frontend: 'Frontend',
   backend: 'Backend',
   mobile: 'Mobile',
@@ -67,18 +79,21 @@ const FRAMEWORK_LABELS = {
   games: 'Games',
   framework: 'Framework',
   library: 'Library',
-  'big-tech': 'Big tech',
-  company: 'Company',
-  foundation: 'Foundation',
-  community: 'Community',
+  ...MAKER_LABELS,
   niche: 'Under 5k',
   known: '5k to 25k',
   popular: '25k to 100k',
   huge: '100k+',
+  // Wikipedias with an article, steps in shared/riddle/popularity.js.
+  low: 'Under 5',
+  mid: '5 to 14',
+  high: '15 to 29',
+  top: '30+',
 }
 
 const DATABASE_LABELS = {
   ...SHARED_LABELS,
+  ...MAKER_LABELS,
   relational: 'Relational',
   document: 'Document',
   'key-value': 'Key-value',
@@ -98,17 +113,19 @@ const DATABASE_LABELS = {
   embedded: 'Embedded',
   cloud: 'Cloud only',
   undisclosed: 'Not public',
+  none: 'None',
+  partial: 'Partial',
+  full: 'Full',
+  disk: 'Disk',
+  memory: 'Memory',
   niche: 'Under 2k',
   known: '2k to 15k',
   popular: '15k to 100k',
   huge: '100k+',
-}
-
-// Stack Overflow questions per bucket, per category: the lower bound of each bucket after 'niche'.
-// Chosen so each bucket holds a fair share of the catalog.
-export const POPULARITY_STEPS = {
-  frameworks: [5_000, 25_000, 100_000],
-  databases: [2_000, 15_000, 100_000],
+  low: 'Under 3',
+  mid: '3 to 7',
+  high: '8 to 17',
+  top: '18+',
 }
 
 export const CATEGORIES = [
@@ -125,11 +142,14 @@ export const CATEGORIES = [
     items: FRAMEWORKS,
     attributes: [
       { key: 'language', kind: 'one', family: FRONT_FAMILY, values: 'languages' },
+      { key: 'runtime', kind: 'one', family: RUNTIME_FAMILY, values: RUNTIMES },
+      { key: 'typing', kind: 'one', values: TYPING },
       { key: 'area', kind: 'set', values: AREAS },
       { key: 'kind', kind: 'one', values: KINDS },
       { key: 'maker', kind: 'one', family: MAKER_FAMILY, values: MAKERS },
       { key: 'license', kind: 'one', family: LICENSE_FAMILY, values: LICENSES },
       { key: 'popularity', kind: 'rank', values: POPULARITY },
+      { key: 'wikipedias', kind: 'rank', values: WIKIPEDIAS },
       { key: 'year', kind: 'year' },
     ],
     labels: FRAMEWORK_LABELS,
@@ -141,10 +161,15 @@ export const CATEGORIES = [
     attributes: [
       { key: 'model', kind: 'set', values: MODELS },
       { key: 'query', kind: 'one', family: QUERY_FAMILY, values: QUERIES },
+      { key: 'acid', kind: 'rank', values: ACID },
+      // Binary, and most answers keep data on disk: left out of the share grid.
+      { key: 'storage', kind: 'one', values: STORAGE, share: false },
       { key: 'writtenIn', kind: 'one', family: ENGINE_FAMILY, values: 'languages' },
+      { key: 'maker', kind: 'one', family: MAKER_FAMILY, values: MAKERS },
       { key: 'license', kind: 'one', family: LICENSE_FAMILY, values: LICENSES },
       { key: 'hosting', kind: 'one', values: HOSTING },
       { key: 'popularity', kind: 'rank', values: POPULARITY },
+      { key: 'wikipedias', kind: 'rank', values: WIKIPEDIAS },
       { key: 'year', kind: 'year' },
     ],
     labels: DATABASE_LABELS,

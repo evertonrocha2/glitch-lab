@@ -150,6 +150,19 @@ const TRAITS_PT = {
   'ruby-like': 'Estilo Ruby',
   basic: 'BASIC',
   other: 'Outra',
+  native: 'Código nativo',
+  jvm: 'JVM',
+  dotnet: '.NET',
+  'js-engine': 'Motor JS',
+  'own-runtime': 'Runtime própria',
+  interpreter: 'Interpretador',
+  database: 'Banco de dados',
+  yes: 'Sim',
+  no: 'Não',
+  niche: 'Menos de 10 mil',
+  known: '10 a 100 mil',
+  popular: '100 mil a 1 mi',
+  huge: '1 mi+',
 }
 
 // Glitchdle's framework and database traits, by category: the same value can read differently in
@@ -164,9 +177,16 @@ const LICENSES_PT = {
   'source-available': 'Código disponível',
   proprietary: 'Proprietária',
 }
+const MAKERS_PT = { 'big-tech': 'Big tech', company: 'Empresa', foundation: 'Fundação', community: 'Comunidade' }
+// What runs a framework and how its language is typed read like the language board.
+const LANGUAGE_TRAITS_PT = Object.fromEntries(
+  ['native', 'jvm', 'dotnet', 'js-engine', 'own-runtime', 'interpreter', 'static', 'dynamic', 'gradual'].map((id) => [id, TRAITS_PT[id]]),
+)
 const CATEGORY_VALUES_PT = {
   frameworks: {
     ...LICENSES_PT,
+    ...LANGUAGE_TRAITS_PT,
+    ...MAKERS_PT,
     frontend: 'Frontend',
     backend: 'Backend',
     mobile: 'Mobile',
@@ -176,17 +196,18 @@ const CATEGORY_VALUES_PT = {
     games: 'Jogos',
     framework: 'Framework',
     library: 'Biblioteca',
-    'big-tech': 'Big tech',
-    company: 'Empresa',
-    foundation: 'Fundação',
-    community: 'Comunidade',
     niche: 'Menos de 5 mil',
     known: '5 a 25 mil',
     popular: '25 a 100 mil',
     huge: '100 mil+',
+    low: 'Menos de 5',
+    mid: '5 a 14',
+    high: '15 a 29',
+    top: '30+',
   },
   databases: {
     ...LICENSES_PT,
+    ...MAKERS_PT,
     relational: 'Relacional',
     document: 'Documentos',
     'key-value': 'Chave-valor',
@@ -206,10 +227,19 @@ const CATEGORY_VALUES_PT = {
     embedded: 'Embutido',
     cloud: 'Só na nuvem',
     undisclosed: 'Não divulgado',
+    none: 'Nenhuma',
+    partial: 'Parcial',
+    full: 'Completa',
+    disk: 'Disco',
+    memory: 'Memória',
     niche: 'Menos de 2 mil',
     known: '2 a 15 mil',
     popular: '15 a 100 mil',
     huge: '100 mil+',
+    low: 'Menos de 3',
+    mid: '3 a 7',
+    high: '8 a 17',
+    top: '18+',
   },
 }
 

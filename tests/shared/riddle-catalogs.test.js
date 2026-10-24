@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { LANGUAGE_QUESTIONS } from '../../shared/riddle/catalogs/language-questions.js'
 import { CATEGORIES, categoryById, itemById, searchItems, SLOTS, valueLabel } from '../../shared/riddle/categories.js'
-import { languageById } from '../../shared/riddle/languages.js'
+import { LANGUAGES, languageById } from '../../shared/riddle/languages.js'
 
 const synced = CATEGORIES.filter((category) => category.id !== 'languages')
 
@@ -11,6 +12,15 @@ describe('the synced catalogs', () => {
       expect(items.length, id).toBeGreaterThanOrEqual(60)
       expect(new Set(items.map((item) => item.id)).size, id).toBe(items.length)
       expect(new Set(items.map((item) => item.name.toLowerCase())).size, id).toBe(items.length)
+    }
+  })
+
+  it('has a raw count behind every ranked bucket', () => {
+    for (const { id, items } of synced) {
+      for (const item of items) {
+        expect(Number.isInteger(item.questions), `${id} ${item.id} questions`).toBe(true)
+        expect(Number.isInteger(item.sitelinks), `${id} ${item.id} sitelinks`).toBe(true)
+      }
     }
   })
 
@@ -49,7 +59,43 @@ describe('the synced catalogs', () => {
     expect(itemById('frameworks', 'react')).toMatchObject({ language: 'javascript', area: ['frontend'] })
     expect(itemById('frameworks', 'django')).toMatchObject({ language: 'python', area: ['backend'] })
     expect(itemById('databases', 'postgresql')).toMatchObject({ model: ['relational'], query: 'sql', writtenIn: 'c' })
-    expect(itemById('databases', 'mongodb')).toMatchObject({ model: ['document'] })
+    expect(itemById('databases', 'mongodb')).toMatchObject({ model: ['document'], acid: 'full', maker: 'company' })
+    expect(itemById('databases', 'redis')).toMatchObject({ acid: 'partial', storage: 'memory' })
+    expect(itemById('databases', 'elasticsearch')).toMatchObject({ acid: 'none', storage: 'disk' })
+    expect(itemById('frameworks', 'spring-boot')).toMatchObject({ runtime: 'jvm', typing: 'static' })
+    expect(itemById('frameworks', 'angular')).toMatchObject({ runtime: 'js-engine', typing: 'gradual' })
+  })
+})
+
+describe('the languages', () => {
+  const { attributes, labels } = categoryById('languages')
+
+  it('fills every new trait for every language, with a label for each value', () => {
+    for (const item of LANGUAGES) {
+      for (const { key, kind, values } of attributes) {
+        if (kind === 'year') continue
+        for (const value of [item[key]].flat()) {
+          expect(value, `${item.id} ${key}`).toEqual(expect.any(String))
+          if (values) expect(values, `${item.id} ${key}`).toContain(value)
+          expect(labels[value], `${item.id} ${key} ${value}`).toEqual(expect.any(String))
+        }
+      }
+    }
+  })
+
+  it('has a Stack Overflow count behind every popularity bucket', () => {
+    expect(Object.keys(LANGUAGE_QUESTIONS).sort()).toEqual(LANGUAGES.map((item) => item.id).sort())
+    for (const count of Object.values(LANGUAGE_QUESTIONS)) expect(count).toBeGreaterThan(0)
+    // Every bucket gets a fair share of the languages.
+    for (const bucket of ['niche', 'known', 'popular', 'huge']) expect(LANGUAGES.filter((item) => item.popularity === bucket).length, bucket).toBeGreaterThanOrEqual(4)
+  })
+
+  it('knows a few well-known values', () => {
+    expect(languageById('java')).toMatchObject({ runtime: 'jvm', indentation: 'no', standard: 'no', popularity: 'huge' })
+    expect(languageById('python')).toMatchObject({ runtime: 'interpreter', indentation: 'yes' })
+    expect(languageById('c')).toMatchObject({ runtime: 'native', standard: 'yes' })
+    expect(languageById('sql')).toMatchObject({ runtime: 'database', standard: 'yes' })
+    expect(languageById('elixir')).toMatchObject({ runtime: 'own-runtime', popularity: 'niche' })
   })
 })
 

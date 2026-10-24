@@ -3,21 +3,30 @@ import { readFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  acidOf,
   aliasesOf,
   areasOf,
   buildCatalog,
+  deriveFramework,
   firstYear,
   idOf,
   languageIds,
+  languageQuestions,
   licenseOf,
   makerOf,
   modelsOf,
   popularityOf,
   problemsOf,
   resolveItems,
+  sitelinksOf,
+  storageOf,
+  wikipediasOf,
 } from '../../scripts/glitchdle/normalize.js'
 import { DATABASE_OVERRIDES, FRAMEWORK_OVERRIDES } from '../../scripts/glitchdle/overrides.js'
-import { DATABASE_SEEDS, FRAMEWORK_SEEDS } from '../../scripts/glitchdle/seeds.js'
+import { DATABASE_SEEDS, FRAMEWORK_SEEDS, LANGUAGE_TAGS } from '../../scripts/glitchdle/seeds.js'
+import { categoryById } from '../../shared/riddle/categories.js'
+import { LANGUAGES } from '../../shared/riddle/languages.js'
+import { WIKIPEDIA_STEPS } from '../../shared/riddle/popularity.js'
 import { buildFactsQuery, buildResolveQuery, fetchTagCounts, USER_AGENT } from '../../scripts/glitchdle/sources.js'
 
 // Recorded answers from Wikidata and the Stack Exchange API (a few items each, trimmed by hand),
@@ -99,11 +108,42 @@ describe('the rules', () => {
   })
 
   it('names every missing or unknown trait', () => {
-    expect(problemsOf({ name: 'X', language: 'javascript', area: [], kind: 'framework', maker: 'alien', license: 'mit', popularity: 'huge', year: 1800 }, 'frameworks', 2026)).toEqual([
-      'no area',
-      'unknown maker alien',
-      'no year',
-    ])
+    const item = { name: 'X', language: 'javascript', runtime: 'js-engine', typing: 'dynamic', area: [], kind: 'framework', maker: 'alien', license: 'mit', popularity: 'huge', wikipedias: 'top', year: 1800 }
+    expect(problemsOf(item, 'frameworks', 2026)).toEqual(['no area', 'unknown maker alien', 'no year'])
+    expect(problemsOf({ ...item, area: ['frontend'], maker: 'community', year: 2020, runtime: null, wikipedias: 'lots' }, 'frameworks', 2026)).toEqual(['no runtime', 'unknown wikipedias lots'])
+  })
+
+  it('counts Wikipedias from the sitelinks and buckets them per category', () => {
+    expect(sitelinksOf({ sitelinks: ['52'] })).toBe(52)
+    expect(sitelinksOf({})).toBeNull()
+    expect([0, 4, 5, 14, 15, 29, 30, 90].map((count) => wikipediasOf(count, WIKIPEDIA_STEPS.frameworks))).toEqual(['low', 'low', 'mid', 'mid', 'high', 'high', 'top', 'top'])
+    expect([2, 3, 8, 18].map((count) => wikipediasOf(count, WIKIPEDIA_STEPS.databases))).toEqual(['low', 'mid', 'high', 'top'])
+    expect(wikipediasOf(null, WIKIPEDIA_STEPS.databases)).toBeNull()
+  })
+
+  it("derives a framework's runtime and typing from its main language", () => {
+    expect(deriveFramework({ language: 'python' })).toEqual({ runtime: 'interpreter', typing: 'dynamic' })
+    expect(deriveFramework({ language: 'typescript' })).toEqual({ runtime: 'js-engine', typing: 'gradual' })
+    expect(deriveFramework({ language: 'kotlin' })).toEqual({ runtime: 'jvm', typing: 'static' })
+    expect(deriveFramework({ language: 'elixir' })).toEqual({ runtime: 'own-runtime', typing: 'dynamic' })
+    expect(deriveFramework({ language: 'brainfudge' })).toEqual({ runtime: null, typing: null })
+  })
+
+  it('gives relational engines full ACID, and reads in-memory databases from their type', () => {
+    expect(acidOf(['relational', 'columnar'])).toBe('full')
+    expect(acidOf(['document'])).toBeNull()
+    expect(acidOf()).toBeNull()
+    expect(storageOf(['relational database management system', 'in-memory database system'])).toBe('memory')
+    expect(storageOf(['key–value database system'])).toBe('disk')
+    expect(storageOf()).toBe('disk')
+  })
+
+  it("pairs each language's Stack Overflow tag with its count and names the missing ones", () => {
+    const { counts } = fixture('languages')
+    const tags = { javascript: 'javascript', cpp: 'c++', csharp: 'c#', fsharp: 'f#', nim: 'nim-lang', vbnet: 'vb.net', cobol: 'cobol' }
+    const { questions, missing } = languageQuestions(tags, counts)
+    expect(questions).toEqual({ javascript: 2_521_455, cpp: 813_953, csharp: 1_621_623, fsharp: 17_084, nim: 697, vbnet: 139_865 })
+    expect(missing).toEqual(['cobol'])
   })
 })
 
@@ -132,6 +172,11 @@ describe('building a catalog from recorded answers', () => {
     const byId = Object.fromEntries(items.map((item) => [item.id, item]))
     expect(Object.keys(byId)).toEqual(['django', 'express-js', 'flutter', 'qt', 'react'])
     expect(byId.react).toMatchObject({ name: 'React', language: 'javascript', area: ['frontend'], kind: 'library', maker: 'big-tech', license: 'mit', popularity: 'huge', year: 2013 })
+    // New traits: derived from the language, and the Wikipedias from the item's sitelinks.
+    expect(byId.react).toMatchObject({ runtime: 'js-engine', typing: 'dynamic', wikipedias: 'top', sitelinks: 52 })
+    expect(byId.flutter).toMatchObject({ runtime: 'native', typing: 'static', wikipedias: 'top' })
+    expect(byId['express-js']).toMatchObject({ runtime: 'js-engine', wikipedias: 'high', sitelinks: 26 })
+    expect(byId.qt).toMatchObject({ runtime: 'native', typing: 'static', wikipedias: 'top' })
     expect(byId.react.aliases).toContain('reactjs')
     expect(byId.django).toMatchObject({ language: 'python', area: ['backend'], maker: 'foundation', license: 'bsd', year: 2004 })
     // The data alone calls Express frontend and gives Flutter no area: the overrides fix both.
@@ -152,6 +197,18 @@ describe('building a catalog from recorded answers', () => {
     const { items, dropped } = buildCatalog({ categoryId: 'frameworks', seeds, resolveRows, factRows, counts, overrides: {}, thisYear: 2026 })
     expect(items.map((item) => item.id)).not.toContain('flutter')
     expect(dropped).toContainEqual({ tag: 'flutter', reasons: ['no area'] })
+    // Without the reviewed list, a document store has no ACID value and stays out.
+    const databases = fixture('databases')
+    const result = buildCatalog({ categoryId: 'databases', ...databases, overrides: {}, thisYear: 2026 })
+    expect(result.dropped).toContainEqual({ tag: 'mongodb', reasons: ['no acid'] })
+    expect(result.items.map((item) => item.id)).toContain('postgresql')
+  })
+
+  it('lets an override name the Wikipedias and still derives the rest from the final language', () => {
+    const { seeds, resolveRows, factRows, counts } = fixture('frameworks')
+    const overrides = { ...FRAMEWORK_OVERRIDES, reactjs: { sitelinks: 3, language: 'typescript' } }
+    const { items } = buildCatalog({ categoryId: 'frameworks', seeds, resolveRows, factRows, counts, overrides, thisYear: 2026 })
+    expect(items.find((item) => item.id === 'react')).toMatchObject({ sitelinks: 3, wikipedias: 'low', language: 'typescript', typing: 'gradual' })
   })
 
   it('normalizes databases: cloud services are proprietary and closed engines undisclosed', () => {
@@ -164,6 +221,12 @@ describe('building a catalog from recorded answers', () => {
     expect(byId['amazon-dynamodb']).toMatchObject({ hosting: 'cloud', license: 'proprietary', writtenIn: 'undisclosed', model: ['key-value', 'document'] })
     expect(byId['microsoft-access']).toMatchObject({ writtenIn: 'undisclosed', hosting: 'embedded' })
     expect(byId.redis).toMatchObject({ model: ['key-value'], query: 'key-commands', license: 'gpl' })
+    // New traits: ACID (relational by rule, the rest reviewed), storage, maker and Wikipedias.
+    expect(byId.postgresql).toMatchObject({ acid: 'full', storage: 'disk', maker: 'foundation', wikipedias: 'top', sitelinks: 58 })
+    expect(byId.redis).toMatchObject({ acid: 'partial', storage: 'memory', maker: 'company', wikipedias: 'top' })
+    expect(byId.mongodb).toMatchObject({ acid: 'full', storage: 'disk', maker: 'company' })
+    expect(byId['amazon-dynamodb']).toMatchObject({ acid: 'full', maker: 'big-tech', wikipedias: 'high', sitelinks: 16 })
+    expect(byId['microsoft-access']).toMatchObject({ acid: 'full', maker: 'big-tech' })
   })
 })
 
@@ -175,7 +238,7 @@ describe('the requests', () => {
     expect(resolve).toContain('wdt:P1482')
     const facts = buildFactsQuery(['Q1', 'Q2'])
     expect(facts).toContain('VALUES ?item { wd:Q1 wd:Q2 }')
-    for (const property of ['P571', 'P577', 'P31', 'P366', 'P277', 'P275', 'P178']) expect(facts).toContain(property)
+    for (const property of ['P571', 'P577', 'P31', 'P366', 'P277', 'P275', 'P178', 'wikibase:sitelinks']) expect(facts).toContain(property)
   })
 
   it('asks Stack Exchange for up to 100 tags at a time, with our user agent, and caches the answer', async () => {
@@ -202,12 +265,21 @@ describe('the seeds', () => {
   })
 
   it('only overrides tags that are seeds, each with known fields', () => {
-    for (const [seeds, overrides] of [
-      [FRAMEWORK_SEEDS, FRAMEWORK_OVERRIDES],
-      [DATABASE_SEEDS, DATABASE_OVERRIDES],
+    for (const [seeds, overrides, category] of [
+      [FRAMEWORK_SEEDS, FRAMEWORK_OVERRIDES, 'frameworks'],
+      [DATABASE_SEEDS, DATABASE_OVERRIDES, 'databases'],
     ]) {
       const tags = new Set(seeds.map(([tag]) => tag))
-      for (const tag of Object.keys(overrides)) expect(tags, tag).toContain(tag)
+      const fields = new Set([...categoryById(category).attributes.map(({ key }) => key), 'name', 'aliases', 'drop', 'sitelinks'])
+      for (const [tag, fix] of Object.entries(overrides)) {
+        expect(tags, tag).toContain(tag)
+        for (const key of Object.keys(fix)) expect(fields, `${tag}.${key}`).toContain(key)
+      }
     }
+  })
+
+  it('has a Stack Overflow tag for every language', () => {
+    expect(Object.keys(LANGUAGE_TAGS).sort()).toEqual(LANGUAGES.map((item) => item.id).sort())
+    expect(new Set(Object.values(LANGUAGE_TAGS)).size).toBe(LANGUAGES.length)
   })
 })

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { answersFor, datasetPayload } from '../../server/modules/glitchdle/schedule.js'
 import { categoryById } from '../../shared/riddle/categories.js'
 import { MAX_GUESSES, RIDDLE_DAY_XP_CAP } from '../../shared/riddle/game.js'
-import { LANGUAGES } from '../../shared/riddle/languages.js'
+import { ATTRIBUTES, LANGUAGES } from '../../shared/riddle/languages.js'
 import { api, useTempStore } from './helpers.js'
 
 const TODAY = '2026-10-22'
@@ -84,7 +84,7 @@ describe('guessing', () => {
     expect(classic).toMatchObject({ solved: false, over: false, guessCount: 1, guessesLeft: MAX_GUESSES - 1, answer: null })
     expect(classic.guesses).toHaveLength(1)
     expect(classic.guesses[0]).toMatchObject({ id: wrong, correct: false })
-    expect(classic.guesses[0].cells).toHaveLength(8)
+    expect(classic.guesses[0].cells).toHaveLength(ATTRIBUTES.length)
     expect(JSON.stringify(body.modes)).not.toContain(`"${answers.classic}"`)
 
     // A reload keeps the board.
@@ -196,7 +196,7 @@ describe('frameworks and databases', () => {
     expect(body.correct).toBe(false)
     const board = body.modes.frameworks
     expect(board).toMatchObject({ category: 'frameworks', solved: false, guessCount: 1, answer: null })
-    expect(board.guesses[0].cells.map((cell) => cell.key)).toEqual(['language', 'area', 'kind', 'maker', 'license', 'popularity', 'year'])
+    expect(board.guesses[0].cells.map((cell) => cell.key)).toEqual(['language', 'runtime', 'typing', 'area', 'kind', 'maker', 'license', 'popularity', 'wikipedias', 'year'])
     expect(JSON.stringify(body.modes)).not.toContain(`"${answers.frameworks}"`)
     expect((await store.getRiddleResult('alice', TODAY, 'frameworks')).guesses).toEqual([wrong])
   })
