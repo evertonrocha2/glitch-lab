@@ -67,12 +67,12 @@ São quatro serviços. Cada um faz uma coisa só.
 
 ## O caminho de uma requisição
 
-Exemplo: você clica em "Testar demo".
+Exemplo: você clica em "Criar conta grátis" e cadastra seu e-mail e senha.
 
-1. O navegador chama `POST /api/auth/demo` no endereço da Vercel.
-2. A Vercel vê que o caminho começa com `/api/` e repassa a chamada para `https://glitch-lab-api.onrender.com/api/auth/demo`. Para o navegador, tudo parece vir do mesmo site, então não existe problema de CORS.
+1. O navegador chama `POST /api/auth/register` no endereço da Vercel.
+2. A Vercel vê que o caminho começa com `/api/` e repassa a chamada para `https://glitch-lab-api.onrender.com/api/auth/register`. Para o navegador, tudo parece vir do mesmo site, então não existe problema de CORS.
 3. No Render, o Express recebe a chamada e ela passa pelas camadas: rota, controller, service e repositório.
-4. O repositório grava a conta demo no Supabase.
+4. O repositório grava a conta nova no Supabase.
 5. A resposta volta pelo mesmo caminho com um token de sessão.
 6. O navegador guarda o token e manda ele em toda chamada seguinte, no cabeçalho `Authorization: Bearer ...`.
 
@@ -328,7 +328,7 @@ src/
 
 ## Os fluxos do produto
 
-1. **Conta:** cadastro com email e senha, ou "Testar demo" (conta temporária com dados de exemplo).
+1. **Conta:** cadastro com email e senha. Para testar o site no ar, crie uma conta grátis. A conta demo de um clique (com dados de exemplo) só existe no desenvolvimento local.
 2. **Investigar:** cole o erro, o código e anexe arquivos. A IA explica, aponta as pistas e a linha. Vira um caso no board.
 3. **Treinar (gym):** a partir de um caso, a IA cria um desafio. Você corrige, pede dicas, a IA confere. Passou, o caso fica resolvido.
 4. **Interrogatório:** um coach guia pelos 6 passos do debug (reproduzir, ler o erro, hipótese, isolar, corrigir, prevenir) sem entregar a resposta.
@@ -348,7 +348,7 @@ src/
 - **Banco:** fechado por RLS. Só a API entra.
 - **Cron:** exige a senha (`CRON_SECRET`), comparada em tempo constante.
 - **IA:** limite diário por pessoa, e o coach tem uma trava que impede entregar a correção antes da hora.
-- **Contas demo:** não entram em rankings e não ganham medalhas de jogar contra pessoas.
+- **Contas demo:** só nascem no desenvolvimento local. No site no ar, `POST /api/auth/demo` responde 404 e o build de produção não tem o botão. Contas demo antigas continuam valendo até a sessão expirar, mas não entram em rankings e não ganham medalhas de jogar contra pessoas.
 
 **Depois do hackathon:** troque a senha do banco do Supabase e a chave secreta (`sb_secret_...`), porque elas passaram por uma conversa.
 
@@ -364,6 +364,7 @@ bun run dev              # site + API em http://localhost:5173
 
 - Sem `SUPABASE_*` no `.env`, tudo é salvo em `.data/db.json`, um banco local em arquivo.
 - Mesmo com as chaves do Supabase no `.env`, o dev usa o arquivo local. Para usar o banco de verdade, rode `DEV_SUPABASE=1 bun run dev`. Isso evita sujar a produção sem querer.
+- No login aparece "Usar conta demo": uma conta pronta, com casos de exemplo, para testar sem cadastro. Ele só existe no dev. Num servidor publicado fica desligado, a não ser com `DEMO_LOGIN=1` (API) e `VITE_DEMO_LOGIN=1` (build do site). Nenhum dos dois está ligado no site.
 
 Testes:
 

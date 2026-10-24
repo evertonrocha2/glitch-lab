@@ -4,7 +4,7 @@
 
 A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Detective). In English and Brazilian Portuguese.
 
-**Live:** https://glitch-lab-app.vercel.app (press *Use demo account*). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
+**Live:** https://glitch-lab-app.vercel.app (create a free account to try it). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
 
 **How it all works** (hosting, cron, layers, flows), in Portuguese: [docs/como-funciona.md](docs/como-funciona.md).
 
@@ -101,7 +101,9 @@ Data: [Wikidata](https://www.wikidata.org) (CC0) and [Stack Overflow](https://st
 
 ## Try it
 
-Open the app and press **Use demo account**. Each visitor gets their own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak, a few badges and a study trail already half done, so you can try everything without waiting for the AI.
+Open the live site, press **Create a free account** and sign up with an email and a password. Then paste an error on the board to open your first case.
+
+The one-click demo account exists only in local development: press **Use demo account** on the sign-in page and you get your own board, already filled with sample cases in every column, an open gym challenge, a notebook page, a 3-day study streak, a few badges and a study trail already half done, so you can try everything without waiting for the AI. The live site has no demo: the API answers 404 on `/api/auth/demo` unless `DEMO_LOGIN=1`, and the production build shows no demo button unless it's built with `VITE_DEMO_LOGIN=1`. Neither is set.
 
 ## Architecture
 
@@ -144,7 +146,7 @@ cp .env.example .env      # add your GEMINI_API_KEY
 bun run dev               # http://localhost:5173
 ```
 
-Without Supabase variables, accounts and data live in `.data/db.json`. Create an account on the login screen, or press **Use demo account**.
+Without Supabase variables, accounts and data live in `.data/db.json`. Create an account on the login screen, or press **Use demo account** (local development only).
 
 For production, create a Supabase project, run `supabase/schema.sql`, then set the variables listed in `.env.example` on the API host, Render (`AUTH_SECRET` included).
 
