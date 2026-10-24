@@ -27,12 +27,45 @@ it('writes a note as Markdown', () => {
     '# Undefined again',
     '## Pattern',
     'Check before reading.',
-    '- [x] Use ?.',
-    '- [ ] Second pass',
+    // To-dos in a row make one tight list.
+    '- [x] Use ?.\n- [ ] Second pass',
     '> **Case:** TypeError: boom\n> Reading undefined · javascript · Training (1/2)',
     '> **Case:** (no longer on the board)',
   ]
   expect(noteToMarkdown(NOTE, CASES)).toBe(`${blocks.join('\n\n')}\n`)
+})
+
+it('writes every rich block as real Markdown', () => {
+  const note = {
+    title: 'Rich',
+    blocks: [
+      { id: 'h2', type: 'heading', text: 'Sub', level: 2 },
+      { id: 'h3', type: 'heading', text: 'Small', level: 3 },
+      { id: 't', type: 'text', text: 'Some **bold** and `code` 🔥' },
+      { id: 'b1', type: 'bullet', text: 'one' },
+      { id: 'b2', type: 'bullet', text: 'nested', indent: 1 },
+      { id: 'n1', type: 'numbered', text: 'first' },
+      { id: 'n2', type: 'numbered', text: 'second' },
+      { id: 'q', type: 'quote', text: 'line one\nline two' },
+      { id: 'c', type: 'code', text: 'const a = "```"\nif (a) {\n  go()\n}', language: 'javascript' },
+      { id: 'p', type: 'code', text: 'plain', language: '' },
+      { id: 'd', type: 'divider' },
+      { id: 'o', type: 'callout', text: 'Read the docs', tone: 'tip', emoji: '💡' },
+    ],
+  }
+  const parts = [
+    '# Rich',
+    '### Sub',
+    '#### Small',
+    'Some **bold** and `code` 🔥',
+    '- one\n   - nested\n1. first\n2. second',
+    '> line one\n> line two',
+    '````javascript\nconst a = "```"\nif (a) {\n  go()\n}\n````',
+    '```\nplain\n```',
+    '---',
+    '> 💡 Read the docs',
+  ]
+  expect(noteToMarkdown(note, [])).toBe(`${parts.join('\n\n')}\n`)
 })
 
 it('puts a Tags line under the title, and none when there are no tags', () => {
