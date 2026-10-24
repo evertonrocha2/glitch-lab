@@ -59,8 +59,8 @@ const MARK_LETTERS = { b: 'bold', i: 'italic', e: 'code', k: 'link' }
 const SAVE_TEXT = { saved: 'notes.editor.saved', unsaved: 'notes.editor.unsaved', saving: 'notes.editor.saving', error: 'notes.editor.saveFailed' }
 
 const NOTE_SHORTCUTS = [
+  { combos: [['Enter'], ['Shift', 'Enter']], label: 'notes.keys.lineBreak' },
   { combos: [['Enter']], label: 'notes.keys.newBlock' },
-  { combos: [['Shift', 'Enter']], label: 'notes.keys.lineBreak' },
   { combos: [['Tab'], ['Shift', 'Tab']], label: 'notes.keys.indent' },
   { combos: [['Mod', 'Enter'], ['Mod', 'Shift', 'Enter']], label: 'notes.keys.below' },
   { combos: [['Alt', 'Up'], ['Alt', 'Down']], label: 'notes.keys.move' },
@@ -465,8 +465,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
 
   function changeText(block, value, caretAt) {
     if (block.type === 'text') {
+      // Only the shortcut typed into an empty block converts it ("- " then the words), never words
+      // already written or pasted that happen to start like one.
       const shortcut = markdownShortcut(value)
-      if (shortcut && !markdownShortcut(block.text)) {
+      if (shortcut && !markdownShortcut(block.text) && !shortcut.fields.text && value.length === block.text.length + 1) {
         convert(block, shortcut)
         return
       }
@@ -596,7 +598,12 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       if (next) setText(block, next)
       return
     }
-    if (event.key === 'Enter' && !event.shiftKey && !isMod(event) && !event.altKey) {
+    // In plain text and quotes Enter is a line break, like any text box; Ctrl+Enter makes a new block.
+    // Lists, to-dos and headings keep Enter for the next item. Two exceptions: "```js" then Enter
+    // opens a code block, and Enter on an empty quote leaves it.
+    const lineBreak =
+      (block.type === 'text' && !/^```[\w+#.-]*$/.test(state.value)) || (block.type === 'quote' && state.value !== '')
+    if (event.key === 'Enter' && !event.shiftKey && !isMod(event) && !event.altKey && !lineBreak) {
       event.preventDefault()
       enter(block, state)
       return

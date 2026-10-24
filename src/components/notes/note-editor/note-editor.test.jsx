@@ -347,16 +347,33 @@ describe('IDE keys', () => {
     expect(box('Text')).not.toHaveFocus()
   })
 
-  it('Enter splits into a new block, Shift+Enter breaks the line', async () => {
+  it('Enter and Shift+Enter break the line in text, never make a new block', async () => {
     setup([text('a', 'onetwo')])
     const field = box('Text')
     await userEvent.click(field)
     field.setSelectionRange(3, 3)
     await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
     expect(field).toHaveValue('one\ntwo')
-    await userEvent.keyboard('{Backspace}{Enter}')
-    expect(values('Text')).toEqual(['one', 'two'])
-    expect(boxes('Text')[1]).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    expect(field).toHaveValue('one\n\ntwo')
+    expect(boxes('Text')).toHaveLength(1)
+  })
+
+  it('a quote takes line breaks, and Enter on an empty quote leaves it', async () => {
+    setup([{ id: 'q', type: 'quote', text: '' }])
+    await userEvent.click(box('Quote'))
+    await userEvent.keyboard('{Enter}')
+    expect(screen.queryByRole('textbox', { name: 'Quote' })).toBeNull()
+    expect(boxes('Text')).toHaveLength(1)
+  })
+
+  it('typed words that start like a shortcut stay text; only an empty block converts', async () => {
+    setup([text('a', 'notes')])
+    const field = box('Text')
+    await userEvent.click(field)
+    field.setSelectionRange(0, 0)
+    await userEvent.keyboard('- ')
+    expect(box('Text')).toHaveValue('- notes')
   })
 
   it('Enter on a to-do starts another; Ctrl+Enter checks it', async () => {
@@ -406,7 +423,7 @@ describe('IDE keys', () => {
 
   it('undoes typing a step at a time, across blocks', async () => {
     setup([text('a', '')])
-    await userEvent.type(box('Text'), 'hello{Enter}world')
+    await userEvent.type(box('Text'), 'hello{Control>}{Enter}{/Control}world')
     expect(values('Text')).toEqual(['hello', 'world'])
     await userEvent.keyboard('{Control>}z{/Control}')
     expect(values('Text')).toEqual(['hello', ''])
