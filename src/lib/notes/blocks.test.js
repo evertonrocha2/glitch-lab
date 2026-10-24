@@ -1,5 +1,28 @@
 import { expect, it } from 'vitest'
-import { duplicateBlock, emojiQueryAt, indentText, insertAfter, insertBefore, markdownShortcut, matchCases, matchSlash, mentionAt, mentionsCase, moveBlock, newBlock, outdentText, placeCase, removeBlock, slashQuery, updateBlock, wrapSelection } from './blocks.js'
+import {
+  blockWords,
+  duplicateBlock,
+  emojiQueryAt,
+  indentText,
+  insertAfter,
+  insertBefore,
+  markdownShortcut,
+  matchCases,
+  matchSlash,
+  mentionAt,
+  mentionsCase,
+  moveBlock,
+  moveBlockTo,
+  newBlock,
+  outdentText,
+  placeCase,
+  removeBlock,
+  slashAt,
+  splitInsert,
+  splitText,
+  updateBlock,
+  wrapSelection,
+} from './blocks.js'
 
 const text = (id, value) => ({ id, type: 'text', text: value })
 
@@ -85,10 +108,10 @@ it('turns markdown typed at the start of a line into blocks', () => {
 })
 
 it('finds the slash command, the emoji being typed and the matching menu items', () => {
-  expect(slashQuery('/cod')).toBe('cod')
-  expect(slashQuery('/')).toBe('')
-  expect(slashQuery('a/b')).toBeNull()
-  expect(slashQuery('/two words')).toBeNull()
+  expect(slashAt('/cod', 4)).toEqual({ start: 0, query: 'cod' })
+  expect(slashAt('/', 1)).toEqual({ start: 0, query: '' })
+  expect(slashAt('a/b', 3)).toBeNull()
+  expect(slashAt('/two words', 10)).toBeNull()
   expect(emojiQueryAt('hot :fogo', 9)).toEqual({ start: 4, query: 'fogo' })
   expect(emojiQueryAt(':f', 2)).toBeNull()
   expect(emojiQueryAt('10:30', 5)).toBeNull()
@@ -124,4 +147,74 @@ it('builds the new kinds of block with their defaults', () => {
   expect(newBlock('heading', { level: 1 })).not.toHaveProperty('level')
   expect(newBlock('bullet', { indent: 1 })).toMatchObject({ indent: 1 })
   expect(Object.keys(newBlock('divider'))).toEqual(['id', 'type'])
+})
+
+it('finds a "/" anywhere a word could start, never inside a word or a URL', () => {
+  expect(slashAt('texto antes /cod', 16)).toEqual({ start: 12, query: 'cod' })
+  expect(slashAt('line one\n/h2', 12)).toEqual({ start: 9, query: 'h2' })
+  // Only what is before the caret counts.
+  expect(slashAt('a /cod and more', 6)).toEqual({ start: 2, query: 'cod' })
+  expect(slashAt('a /cod and more', 15)).toBeNull()
+  expect(slashAt('see https://x.dev/a', 19)).toBeNull()
+  expect(slashAt('and/or', 4)).toBeNull()
+  expect(slashAt('a / ', 4)).toBeNull()
+})
+
+it('splits the text around the typed command', () => {
+  expect(splitText('before /cod after', 7, 11)).toEqual({ before: 'before', after: 'after' })
+  expect(splitText('one\n/cod\ntwo', 4, 8)).toEqual({ before: 'one', after: 'two' })
+  expect(splitText('/cod', 0, 4)).toEqual({ before: '', after: '' })
+  expect(splitText('keep\n/x\n  indented', 5, 7)).toEqual({ before: 'keep', after: '  indented' })
+})
+
+it('puts a block where the caret was, keeping the words on both sides', () => {
+  const blocks = [text('a', 'one /cod two'), text('b', 'later')]
+  const code = newBlock('code')
+  const split = splitInsert(blocks, 'a', code, { before: 'one', after: 'two' })
+  expect(split.blocks.map((block) => [block.type, block.text])).toEqual([
+    ['text', 'one'],
+    ['code', ''],
+    ['text', 'two'],
+    ['text', 'later'],
+  ])
+  expect(split.block.id).toBe(code.id)
+  // Nothing before: the new block takes the place (and the id) of the old one.
+  const start = splitInsert(blocks, 'a', newBlock('quote'), { before: '', after: 'two' })
+  expect(start.blocks.map((block) => [block.id === 'a', block.type, block.text])).toEqual([
+    [true, 'quote', ''],
+    [false, 'text', 'two'],
+    [false, 'text', 'later'],
+  ])
+  expect(start.tail.text).toBe('two')
+  expect(blocks[0].text).toBe('one /cod two')
+})
+
+it('splits the text around a mention: the case goes between the two halves', () => {
+  const { blocks: next, focusId } = placeCase([text('a', 'see @undef then this')], 'a', 'c1', { start: 4, query: 'undef' })
+  expect(next.map((block) => [block.type, block.text])).toEqual([
+    ['text', 'see'],
+    ['case', undefined],
+    ['text', 'then this'],
+  ])
+  expect(focusId).toBe(next[2].id)
+})
+
+it('moves a block into any gap of the list', () => {
+  const blocks = ['a', 'b', 'c', 'd'].map((id) => text(id, id))
+  const ids = (list) => list.map((block) => block.id).join('')
+  expect(ids(moveBlockTo(blocks, 'd', 0))).toBe('dabc')
+  expect(ids(moveBlockTo(blocks, 'd', 2))).toBe('abdc')
+  expect(ids(moveBlockTo(blocks, 'a', 4))).toBe('bcda')
+  expect(ids(moveBlockTo(blocks, 'a', 3))).toBe('bcad')
+  expect(ids(moveBlockTo(blocks, 'b', 99))).toBe('acdb')
+  // Its own gaps (just above or below it) change nothing.
+  expect(moveBlockTo(blocks, 'b', 1)).toBe(blocks)
+  expect(moveBlockTo(blocks, 'b', 2)).toBe(blocks)
+  expect(moveBlockTo(blocks, 'x', 0)).toBe(blocks)
+})
+
+it('names a block by its first words', () => {
+  expect(blockWords('\n  **Bold** start\nsecond')).toBe('Bold start')
+  expect(blockWords('')).toBe('')
+  expect(blockWords('a'.repeat(40))).toBe(`${'a'.repeat(32)}...`)
 })

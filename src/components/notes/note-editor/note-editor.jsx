@@ -22,10 +22,13 @@ import {
   outdentText,
   placeCase,
   removeBlock,
-  slashQuery,
+  slashAt,
+  splitInsert,
+  splitText,
   updateBlock,
   wrapSelection,
 } from '../../../lib/notes/blocks.js'
+import { caretPoint } from '../../../lib/notes/caret.js'
 import { rememberEmoji, searchEmojis, useEmojis } from '../../../lib/notes/emoji.js'
 import CodeEditorShortcuts from '../../ui/code-editor/code-editor-shortcuts.jsx'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
@@ -50,6 +53,12 @@ const APPEND = 'append'
 const MENU_ID = 'note-block-menu'
 const PICKER_ID = 'note-emoji-picker'
 const KEYS_ID = 'note-editor-keys'
+// The block menu's widest (max-w-md), to keep one opened at the caret inside the block.
+const MENU_WIDTH = 448
+// Keys that move the caret: after one, a menu opened by "/", "@" or ":" checks it is still there.
+const CARET_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'])
+// What opened each inline menu, so it can tell when the caret has left it.
+const TRIGGERS = { slash: slashAt, case: mentionAt, emoji: emojiQueryAt }
 // Typing in one block within this long is a single step for undo.
 const TYPING_MS = 1000
 const HISTORY_MAX = 100
@@ -113,7 +122,8 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
   const [title, setTitle] = useState(note.title)
   const [blocks, setBlocks] = useState(initialBlocks)
   const [tags, setTags] = useState(note.tags ?? [])
-  // { blockId, kind: 'slash' | 'case' | 'emoji', start, query, active, searchable }
+  // { blockId, kind: 'slash' | 'case' | 'emoji', start, query, active, searchable, at }: at is where
+  // the menu sits in the block ({ top, left }), under the caret that opened it.
   const [menu, setMenu] = useState(null)
   // { id, start?, end? }: where the caret goes next (the end of the text when no start).
   const [focus, setFocus] = useState(null)
@@ -404,22 +414,14 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     setFocus({ id: added.id })
   }
 
-  function pickSlash(entry, block) {
-    const keep = menu.searchable ? (block.text ?? '') : ''
-    setMenu(null)
+  // Picked from the Ctrl+/ menu (or the "+"): the block turns into the kind, keeping its words.
+  function pickSearched(entry, block) {
+    const keep = block.text ?? ''
     if (entry.key === 'case') {
-      if (menu.searchable) {
-        setMenu({ blockId: block.id, kind: 'case', start: 0, query: '', active: 0, searchable: true })
-        return
-      }
-      // Swap the "/" for "@" so typing keeps filtering the cases, just like a mention.
-      apply(updateBlock(blocksRef.current, block.id, { text: '@' }))
-      setMenu({ blockId: block.id, kind: 'case', start: 0, query: '', active: 0 })
-      setFocus({ id: block.id })
+      setMenu({ blockId: block.id, kind: 'case', start: 0, query: '', active: 0, searchable: true })
       return
     }
     if (entry.key === 'emoji') {
-      apply(updateBlock(blocksRef.current, block.id, { text: keep }))
       setFocus({ id: block.id })
       openPicker({ blockId: block.id, kind: 'insert', spot: { blockId: block.id, start: keep.length, end: keep.length } })
       return
@@ -435,9 +437,50 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     if (entry.type !== 'divider') setFocus({ id: block.id })
   }
 
+  // Picked after typing "/cod" somewhere in the text: the new block goes right where the "/" was.
+  // The words before stay in this block and the words after move to a text block below the new
+  // one, all as one undo step. A block that held only "/cod" turns into the new kind instead.
+  function pickSlash(entry, block, { start, query, at }) {
+    const text = block.text ?? ''
+    const end = start + 1 + query.length
+    if (entry.key === 'case') {
+      // Swap the "/cod" for "@" so typing keeps filtering the cases, just like a mention.
+      apply(updateBlock(blocksRef.current, block.id, { text: `${text.slice(0, start)}@${text.slice(end)}` }))
+      setMenu({ blockId: block.id, kind: 'case', start, query: '', active: 0, at })
+      setFocus({ id: block.id, start: start + 1 })
+      return
+    }
+    if (entry.key === 'emoji') {
+      apply(updateBlock(blocksRef.current, block.id, { text: text.slice(0, start) + text.slice(end) }))
+      setFocus({ id: block.id, start })
+      openPicker({ blockId: block.id, kind: 'insert', spot: { blockId: block.id, start, end: start } })
+      return
+    }
+    const parts = splitText(text, start, end)
+    if (!parts.before && !parts.after) {
+      convert(block, { type: entry.type, fields: { level: entry.level } })
+      return
+    }
+    if (full) return
+    let { blocks: next, block: placed, tail } = splitInsert(blocksRef.current, block.id, newBlock(entry.type, { level: entry.level }), parts)
+    if (entry.type === 'divider') {
+      // Nothing to type in a divider: the caret goes on to the words after it, or a new line.
+      if (!tail) {
+        tail = newBlock('text')
+        next = insertAfter(next, placed.id, tail)
+      }
+      placed = tail
+    }
+    apply(next)
+    setFocus({ id: placed.id, start: 0, end: 0 })
+  }
+
   function pick(item) {
     if (menu.kind === 'slash') {
-      pickSlash(item.item, blockById(menu.blockId))
+      const block = blockById(menu.blockId)
+      setMenu(null)
+      if (menu.searchable) pickSearched(item.item, block)
+      else pickSlash(item.item, block, menu)
       return
     }
     if (menu.kind === 'emoji') {
@@ -504,23 +547,44 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
     }
     apply(updateBlock(blocksRef.current, block.id, { text: value }), `type:${block.id}`)
     if (block.type === 'code' || menu?.searchable) return
-    const slash = block.type === 'text' ? slashQuery(value) : null
-    if (slash !== null) {
-      setMenu((current) => ({ blockId: block.id, kind: 'slash', query: slash, active: current?.kind === 'slash' && current.query === slash ? current.active : 0 }))
+    const slash = block.type === 'text' || block.type === 'quote' ? slashAt(value, caretAt) : null
+    const mention = !slash && mentionAt(value, caretAt)
+    const emoji = !slash && !mention && emojiQueryAt(value, caretAt)
+    const found = slash ? ['slash', slash] : mention ? ['case', mention] : emoji ? ['emoji', emoji] : null
+    if (!found) {
+      if (menu?.blockId === block.id) setMenu(null)
       return
     }
-    const mention = mentionAt(value, caretAt)
-    if (mention) {
-      setMenu((current) => ({ blockId: block.id, kind: 'case', ...mention, active: current?.query === mention.query ? current.active : 0 }))
-      return
+    const [kind, spot] = found
+    if (kind === 'emoji') setWantEmojis(true)
+    // The menu stays put under the "/" (or "@", ":") while the words after it are typed.
+    const same = menu?.blockId === block.id && menu.kind === kind && menu.start === spot.start
+    const at = same && menu.at ? menu.at : anchorAt(block.id, spot.start)
+    setMenu((current) => ({ blockId: block.id, kind, ...spot, at, active: current?.kind === kind && current.query === spot.query ? current.active : 0 }))
+  }
+
+  // Under the line where the menu's "/" (or "@", ":") was typed, inside the block's row.
+  function anchorAt(blockId, index) {
+    const field = fields.current.get(blockId)
+    const row = field?.closest('[data-block]')
+    if (!row || field.tagName !== 'TEXTAREA') return null
+    const point = caretPoint(field, index)
+    const fieldBox = field.getBoundingClientRect()
+    const rowBox = row.getBoundingClientRect()
+    const width = Math.min(rowBox.width, MENU_WIDTH)
+    return {
+      top: Math.round(fieldBox.top - rowBox.top + point.top + point.height),
+      left: Math.round(Math.max(0, Math.min(fieldBox.left - rowBox.left + point.left, rowBox.width - width))),
     }
-    const emoji = emojiQueryAt(value, caretAt)
-    if (emoji) {
-      setWantEmojis(true)
-      setMenu((current) => ({ blockId: block.id, kind: 'emoji', ...emoji, active: current?.kind === 'emoji' && current.query === emoji.query ? current.active : 0 }))
-      return
-    }
-    if (menu?.blockId === block.id) setMenu(null)
+  }
+
+  // The caret moved by a click or an arrow: a menu opened by typing closes once the caret left its word.
+  function recheck(block, field) {
+    setMenu((current) => {
+      if (current?.blockId !== block.id || current.searchable) return current
+      const still = TRIGGERS[current.kind]?.(field.value, field.selectionStart)
+      return still && still.start === current.start && field.selectionStart === field.selectionEnd ? current : null
+    })
   }
 
   // Keys every block shares (code blocks too). true when the key was used.
@@ -714,7 +778,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
       : {}
     const label = { slash: t('notes.editor.turnInto'), case: t('notes.editor.mention'), emoji: t('notes.editor.emojiMenu') }[kind]
     const empty = { slash: t('notes.editor.slashNoMatch'), case: cases.length ? t('notes.editor.noMatch') : t('notes.editor.emptyBoard'), emoji: emojiData ? t('notes.emoji.none') : t('notes.emoji.loading') }[kind]
-    return <BlockMenu id={MENU_ID} label={label} items={items} active={active} onPick={pick} empty={empty} {...search} {...extra} />
+    return <BlockMenu id={MENU_ID} label={label} items={items} active={active} onPick={pick} empty={empty} at={menu.at} {...search} {...extra} />
   }
 
   function pickerFor(blockId) {
@@ -737,6 +801,10 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
         if (!menu?.searchable) closeMenuFor(block.id)()
       },
       onSelect: remember(block),
+      onKeyUp: (event) => {
+        if (CARET_KEYS.has(event.key)) recheck(block, event.currentTarget)
+      },
+      onMouseUp: (event) => recheck(block, event.currentTarget),
       maxLength: NOTE_LIMITS.text,
       'aria-label': fieldLabel(block, t),
       'aria-describedby': KEYS_ID,

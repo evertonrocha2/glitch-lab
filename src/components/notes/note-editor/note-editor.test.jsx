@@ -107,6 +107,87 @@ describe('the "/" menu', () => {
   })
 })
 
+describe('"/" anywhere in the text', () => {
+  // Puts the caret at index in the block, then types there.
+  async function typeAt(field, index, keys) {
+    await userEvent.click(field)
+    field.setSelectionRange(index, index)
+    await userEvent.keyboard(keys)
+  }
+
+  it('splits the paragraph: words before, the new block, words after, and one undo puts it back', async () => {
+    setup([text('a', 'before after'), text('b', 'last')])
+    await typeAt(boxes('Text')[0], 6, ' /código')
+    expect(screen.getByRole('listbox', { name: 'Turn into' })).toBeInTheDocument()
+    expect(boxes('Text')[0]).toHaveValue('before /código after')
+    await userEvent.keyboard('{Enter}')
+    expect(types()).toEqual(['text', 'code', 'text', 'text'])
+    expect(values('Text')).toEqual(['before', 'after', 'last'])
+    expect(box('Code')).toHaveFocus()
+    expect(box('Code')).toHaveValue('')
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(types()).toEqual(['text', 'text'])
+    expect(values('Text')).toEqual(['before /código after', 'last'])
+  })
+
+  it('works at the start of a line inside a paragraph of several lines', async () => {
+    setup([text('a', 'line one\nline two')])
+    await typeAt(box('Text'), 9, '/h2{Enter}')
+    expect(types()).toEqual(['text', 'heading', 'text'])
+    expect(values('Text')).toEqual(['line one', 'line two'])
+    expect(box('Heading 2')).toHaveFocus()
+    expect(await lastSaved()).toMatchObject([{ text: 'line one' }, { type: 'heading', level: 2, text: '' }, { text: 'line two' }])
+  })
+
+  it('a divider in the middle sends the caret on to the words after it', async () => {
+    setup([text('a', 'up down')])
+    await typeAt(box('Text'), 3, '/divisor{Enter}')
+    expect(types()).toEqual(['text', 'divider', 'text'])
+    expect(values('Text')).toEqual(['up', 'down'])
+    expect(boxes('Text')[1]).toHaveFocus()
+  })
+
+  it('works in a quote too', async () => {
+    setup([{ id: 'q', type: 'quote', text: 'said this' }])
+    await typeAt(box('Quote'), 9, ' /lista{Enter}')
+    expect(types()).toEqual(['quote', 'bullet'])
+    expect(box('Quote')).toHaveValue('said this')
+    expect(box('List item')).toHaveFocus()
+  })
+
+  it('leaves a "/" inside a word or a URL alone, and a space after "/" closes the menu', async () => {
+    setup()
+    await userEvent.type(box('Text'), 'and/or https://x.dev/a')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    await userEvent.type(box('Text'), ' /')
+    expect(screen.getByRole('listbox', { name: 'Turn into' })).toBeInTheDocument()
+    await userEvent.type(box('Text'), ' ')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(box('Text')).toHaveValue('and/or https://x.dev/a / ')
+  })
+
+  it('Escape closes the menu and keeps the text as typed', async () => {
+    setup([text('a', 'some words')])
+    await typeAt(box('Text'), 4, ' /cod')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(types()).toEqual(['text'])
+    expect(box('Text')).toHaveValue('some /cod words')
+    expect(box('Text')).toHaveFocus()
+  })
+
+  it('moving the caret off the command closes the menu', async () => {
+    setup([text('a', 'go ')])
+    await typeAt(box('Text'), 3, '/co')
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(box('Text')).toHaveValue('go /co')
+  })
+})
+
 describe('markdown shortcuts at the start of a text block', () => {
   const cases = [
     ['# ', 'heading', 'Heading 1'],

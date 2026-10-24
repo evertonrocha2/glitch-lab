@@ -60,8 +60,35 @@ export function matchSlash(query, labelOf) {
   return SLASH_ITEMS.filter((item) => item.words.some((word) => fold(word).startsWith(needle)) || fold(labelOf(item)).includes(needle))
 }
 
-// "/cod" as the whole text of a block: the "/" menu, filtered by "cod". Otherwise null.
-export const slashQuery = (text) => /^\/([^\s/]*)$/.exec(text)?.[1] ?? null
+// "/cod" right before the caret, at the start of a line or after a space: the "/" menu, filtered by
+// "cod", as { start, query }. A "/" inside a word or a URL ("a/b", "https://x") is just a slash.
+export function slashAt(text, caret) {
+  const match = /(^|\s)\/([^\s/]*)$/.exec(text.slice(0, caret))
+  return match ? { start: caret - match[2].length - 1, query: match[2] } : null
+}
+
+// A block's text cut around [start, end), the "/cod" or "@que" being typed: what comes before (no
+// trailing spaces or line break) and what comes after (minus the line break at the cut).
+export function splitText(text, start, end) {
+  return { before: text.slice(0, start).trimEnd(), after: text.slice(end).replace(/^[ \t]*\n?/, '') }
+}
+
+// Puts block where the caret was in block id: the words before stay in it, the words after go to a
+// new text block below the new one. With nothing before, the new block takes its place (and its id).
+// Returns { blocks, block (as placed), tail (the words after, or null) }.
+export function splitInsert(blocks, id, block, { before, after }) {
+  const tail = after ? newBlock('text', { text: after }) : null
+  let placed = block
+  let next
+  if (before) {
+    next = insertAfter(updateBlock(blocks, id, { text: before }), id, block)
+  } else {
+    placed = { ...block, id }
+    next = blocks.map((item) => (item.id === id ? placed : item))
+  }
+  if (tail) next = insertAfter(next, placed.id, tail)
+  return { blocks: next, block: placed, tail }
+}
 
 // Markdown typed at the start of a text block becomes that block: { type, fields } or null.
 // "```" waits for a space (or Enter) so a language can follow it; "---" turns at the third dash.
@@ -95,6 +122,27 @@ export function moveBlock(blocks, id, direction) {
   const next = [...blocks]
   ;[next[index], next[to]] = [next[to], next[index]]
   return next
+}
+
+// Moves a block into a gap of the list as it is now: 0 is the top, blocks.length the end. The same
+// list back when it would land where it already is.
+export function moveBlockTo(blocks, id, spot) {
+  const from = blocks.findIndex((block) => block.id === id)
+  const gap = Math.max(0, Math.min(spot, blocks.length))
+  if (from === -1 || gap === from || gap === from + 1) return blocks
+  const next = blocks.filter((block) => block.id !== id)
+  next.splice(gap > from ? gap - 1 : gap, 0, blocks[from])
+  return next
+}
+
+// The first words of a block's text, short enough for a menu: "" when it has none.
+export function blockWords(text, max = 32) {
+  const line = String(text ?? '')
+    .split('\n')
+    .map((part) => part.replace(/[*_`~]/g, '').replace(/\s+/g, ' ').trim())
+    .find(Boolean)
+  if (!line) return ''
+  return line.length > max ? `${line.slice(0, max).trimEnd()}...` : line
 }
 
 export function insertBefore(blocks, id, block) {
@@ -159,22 +207,20 @@ export function removeBlock(blocks, id) {
   return blocks.filter((block) => block.id !== id)
 }
 
-// The mention text ("@que") comes out of the block; the case goes in after it, or in its place
-// when nothing else was written. A text block follows so you can keep typing.
-// Returns { blocks, focusId }.
+// The mention text ("@que") comes out of the block and the case goes where it was: the words before
+// stay above it, the words after go to a text block below it (see splitInsert). A text block always
+// follows so you can keep typing. Returns { blocks, focusId }.
 export function placeCase(blocks, blockId, caseId, mention) {
   const block = blocks.find((item) => item.id === blockId)
-  const caseBlock = newBlock('case', { caseId })
+  let caseBlock = newBlock('case', { caseId })
   let next
   if (!block) {
     next = [...blocks, caseBlock]
   } else {
-    const end = mention.start + 1 + mention.query.length
-    const text = block.text.slice(0, mention.start) + block.text.slice(end)
-    next =
-      text.trim() === ''
-        ? blocks.map((item) => (item.id === blockId ? caseBlock : item))
-        : insertAfter(updateBlock(blocks, blockId, { text: text.trimEnd() }), blockId, caseBlock)
+    const placed = splitInsert(blocks, blockId, caseBlock, splitText(block.text, mention.start, mention.start + 1 + mention.query.length))
+    if (placed.tail) return { blocks: placed.blocks, focusId: placed.tail.id }
+    next = placed.blocks
+    caseBlock = placed.block
   }
   const after = next[next.findIndex((item) => item.id === caseBlock.id) + 1]
   if (after?.type === 'text') return { blocks: next, focusId: after.id }

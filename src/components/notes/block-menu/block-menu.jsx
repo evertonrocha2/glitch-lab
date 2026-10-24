@@ -3,11 +3,15 @@ import BlockIcon from '../block-icon/block-icon.jsx'
 
 // The pop-up under a block: "/" block types, "@" cases or ":" emojis. The input that opened it keeps
 // focus and drives it with the arrow keys (aria-activedescendant); a search box appears when nothing
-// else can type. searchLabel / searchPlaceholder name that box (cases by default).
-export default function BlockMenu({ id, label, items, active, onPick, empty, search, onSearch, onKeyDown, onClose, searchLabel, searchPlaceholder }) {
+// else can type. searchLabel / searchPlaceholder name that box (cases by default). at ({ top, left }
+// in px inside the block) puts it under the caret that opened it instead of under the whole block.
+export default function BlockMenu({ id, label, items, active, onPick, empty, search, onSearch, onKeyDown, onClose, searchLabel, searchPlaceholder, at }) {
   const t = useT()
   return (
-    <div className="absolute top-full left-0 z-20 mt-1 w-full max-w-md border-2 border-ink bg-white shadow-pixel">
+    <div
+      style={at ? { top: at.top, left: at.left } : undefined}
+      className="absolute top-full left-0 z-20 mt-1 w-full max-w-md border-2 border-ink bg-white shadow-pixel"
+    >
       <p className="border-b-2 border-ink bg-mist px-3 py-1.5 font-label text-[10px] text-muted">{label}</p>
       {onSearch && (
         <input
