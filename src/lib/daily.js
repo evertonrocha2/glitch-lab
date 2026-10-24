@@ -1,3 +1,5 @@
+import { PUZZLE_LANGUAGES } from '../../shared/daily.js'
+
 const pad = (value) => String(value).padStart(2, '0')
 
 // "11:59:30" for the next daily set; "3d 12h" for a global challenge days away from its end.
@@ -15,6 +17,5 @@ export function formatSolveTime(seconds) {
   return `${Math.floor(seconds / 3600)}h ${pad(Math.floor((seconds % 3600) / 60))}m`
 }
 
-const LANGUAGE_NAMES = { javascript: 'JavaScript', typescript: 'TypeScript', python: 'Python', java: 'Java' }
-
-export const languageName = (id) => LANGUAGE_NAMES[id] ?? id
+// Display names for the languages a puzzle can be in (or switched to).
+export const languageName = (id) => PUZZLE_LANGUAGES[id] ?? id

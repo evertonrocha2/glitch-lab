@@ -60,6 +60,12 @@ const en = {
   'server.alreadySolved': 'This challenge is already solved.',
   'server.noMoreHints': 'No more hints.',
   'server.challengeOver': "This challenge is over. Try today's set.",
+  // Switching a daily or global puzzle to another programming language (server/modules/daily/switch.js).
+  'server.switchUnknownLanguage': 'Pick one of the languages on the list.',
+  'server.switchSameLanguage': 'This challenge is already in that language.',
+  'server.switchAlreadyUsed': 'You already switched the language of this challenge.',
+  'server.switchSolved': "You already solved this challenge, so its language can't change.",
+  'server.switchFailed': "Couldn't make this challenge in {language} right now. Your switch is still unused, so you can try again later.",
 
   // Glitchdle.
   'server.pickMode': 'Pick a game mode.',
@@ -335,6 +341,11 @@ const ptBR = {
   'server.alreadySolved': 'Este desafio já foi resolvido.',
   'server.noMoreHints': 'Acabaram as dicas.',
   'server.challengeOver': 'Este desafio acabou. Tente os de hoje.',
+  'server.switchUnknownLanguage': 'Escolha uma das linguagens da lista.',
+  'server.switchSameLanguage': 'Este desafio já está nessa linguagem.',
+  'server.switchAlreadyUsed': 'Você já trocou a linguagem deste desafio.',
+  'server.switchSolved': 'Você já resolveu este desafio, então a linguagem dele não muda mais.',
+  'server.switchFailed': 'Não deu para gerar este desafio em {language} agora. Sua troca não foi usada, então dá para tentar de novo mais tarde.',
 
   'server.pickMode': 'Escolha um modo de jogo.',
   'server.pickLanguage': 'Escolha uma linguagem da lista.',

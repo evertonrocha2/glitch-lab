@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { getDaily, getGlobalChallenge, getRiddle, guessRiddle, startPuzzle } from './api.js'
+import { getDaily, getGlobalChallenge, getRiddle, guessRiddle, startPuzzle, switchPuzzleLanguage } from './api.js'
+import { translateServerMessage } from './i18n/serverMessages.js'
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
@@ -31,6 +32,27 @@ it('starts a puzzle and returns its challenge', async () => {
   expect(url).toBe('/api/daily/puzzles/p1/challenge')
   expect(init.method).toBe('POST')
   expect(init.body).toBeUndefined()
+})
+
+it('switches a puzzle to another language', async () => {
+  const body = { puzzle: { id: 'p1', language: 'go' }, challenge: null, switchedFrom: 'python' }
+  fetch.mockResolvedValue(Response.json(body))
+  await expect(switchPuzzleLanguage('p1', 'go', 't1')).resolves.toEqual(body)
+  const [url, init] = fetch.mock.calls[0]
+  expect(url).toBe('/api/daily/puzzles/p1/switch')
+  expect(init.method).toBe('POST')
+  expect(JSON.parse(init.body)).toEqual({ language: 'go' })
+})
+
+it('translates why a switch was refused', async () => {
+  const pt = (message) => translateServerMessage(message, 'pt-BR')
+  expect(pt('You already switched the language of this challenge.')).toBe('Você já trocou a linguagem deste desafio.')
+  expect(pt("You already solved this challenge, so its language can't change.")).toBe('Você já resolveu este desafio, então a linguagem dele não muda mais.')
+  expect(pt('Pick one of the languages on the list.')).toBe('Escolha uma das linguagens da lista.')
+  expect(pt('This challenge is already in that language.')).toBe('Este desafio já está nessa linguagem.')
+  expect(pt("Couldn't make this challenge in C# right now. Your switch is still unused, so you can try again later.")).toBe(
+    'Não deu para gerar este desafio em C# agora. Sua troca não foi usada, então dá para tentar de novo mais tarde.',
+  )
 })
 
 it("loads today's Glitchdle and sends a guess", async () => {

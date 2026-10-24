@@ -103,6 +103,12 @@ export async function startPuzzle(puzzleId, token) {
   return (await request(`/api/daily/puzzles/${encodeURIComponent(puzzleId)}/challenge`, { method: 'POST', token })).challenge
 }
 
+// Switches a daily or global puzzle to another programming language, once:
+// { puzzle: my card, challenge: my gym challenge or null, switchedFrom }.
+export function switchPuzzleLanguage(puzzleId, language, token) {
+  return request(`/api/daily/puzzles/${encodeURIComponent(puzzleId)}/switch`, { method: 'POST', body: { language }, token })
+}
+
 // Today's Glitchdle: { day, number, nextResetAt, modes: { classic, error, snippet }, stats, community }.
 export function getRiddle(token) {
   return request('/api/glitchdle', { token })
