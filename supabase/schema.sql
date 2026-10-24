@@ -744,3 +744,20 @@ revoke execute on function public.refresh_community_member_count(uuid) from publ
 alter table public.notifications drop constraint if exists notifications_type_check;
 alter table public.notifications add constraint notifications_type_check
   check (type in ('comment', 'like', 'rating_valid', 'rating_bad', 'event_join', 'event_vote', 'event_winner', 'message'));
+
+-- Note folders: private groups for the notes list (never on a public page or in an export). Up to 30
+-- per account (the API checks it), names unique per account ignoring case. Deleting a folder keeps
+-- its notes: they land outside every folder.
+create table if not exists public.note_folders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 40),
+  position int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists note_folders_user_name on public.note_folders (user_id, lower(name));
+create index if not exists note_folders_user_position on public.note_folders (user_id, position);
+alter table public.note_folders enable row level security;
+alter table public.notes add column if not exists folder_id uuid references public.note_folders (id) on delete set null;
+create index if not exists notes_user_folder on public.notes (user_id, folder_id);

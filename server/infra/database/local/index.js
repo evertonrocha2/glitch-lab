@@ -10,6 +10,7 @@ import { createLocalReview } from './review.js'
 import { createLocalInterrogations } from './interrogation.js'
 import { createLocalCommunities } from './communities.js'
 import { createLocalMessaging } from './messaging.js'
+import { createLocalNoteFolders } from './note-folders.js'
 import { createLocalStudy } from './study.js'
 
 const emptyDb = () => ({ users: [], cases: [], challenges: [], secrets: {}, usage: {}, notes: [], study: {} })
@@ -22,8 +23,8 @@ const PROFILE_FIELDS = ['handle', 'displayName', 'bio', 'avatar', 'featuredBadge
 // "About you" fields, added later still: same story.
 const ABOUT_FIELDS = ['role', 'headline', 'university', 'course', 'work', 'location', 'languages', 'links', 'openTo']
 const toProfile = profileFromUser
-// Notes made before sharing (or tags) existed are private (and untagged).
-const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false, tags: note.tags ?? [] })
+// Notes made before sharing, tags (or folders) existed are private, untagged and outside every folder.
+const toNote = (note) => copy({ ...note, isPublic: note.isPublic ?? false, tags: note.tags ?? [], folderId: note.folderId ?? null })
 // Cases saved before doubt chats existed are investigated errors, with no question fields.
 const toCase = (item) => (item == null ? null : copy({ ...item, kind: item.kind ?? 'error', question: item.question ?? '', topic: item.topic ?? '', title: item.title ?? '', recap: item.recap ?? '' }))
 
@@ -255,10 +256,10 @@ export function createLocalStore({ file }) {
         .map((item) => ({ userId: item.userId, mode: item.mode, guessCount: item.guesses.length, solved: item.solved }))
     },
 
-    async createNote(userId, { title, blocks, tags = [], isPublic = false }) {
+    async createNote(userId, { title, blocks, tags = [], isPublic = false, folderId = null }) {
       const data = await load()
       const stamp = now()
-      const created = { id: randomUUID(), userId, title, blocks, tags, isPublic, createdAt: stamp, updatedAt: stamp }
+      const created = { id: randomUUID(), userId, title, blocks, tags, isPublic, folderId, createdAt: stamp, updatedAt: stamp }
       notesOf(data).push(created)
       await save()
       return toNote(created)
@@ -279,10 +280,16 @@ export function createLocalStore({ file }) {
       return found ? toNote(found) : null
     },
 
-    async updateNote(userId, id, { title, blocks, tags, isPublic }) {
+    // Moving a note to a folder (folderId alone) isn't an edit: it keeps its place and its time.
+    async updateNote(userId, id, { title, blocks, tags, isPublic, folderId }) {
       const notes = notesOf(await load())
       const index = notes.findIndex((note) => note.id === id && note.userId === userId)
       if (index === -1) return null
+      if (folderId !== undefined) notes[index].folderId = folderId
+      if ([title, blocks, tags, isPublic].every((value) => value === undefined)) {
+        await save()
+        return toNote(notes[index])
+      }
       const [found] = notes.splice(index, 1)
       if (title !== undefined) found.title = title
       if (blocks !== undefined) found.blocks = blocks
@@ -426,5 +433,7 @@ export function createLocalStore({ file }) {
     ...createLocalCommunities({ load, save }),
     // The study log (timer runs and sessions logged by hand): see study.js.
     ...createLocalStudy({ load, save }),
+    // Note folders: see note-folders.js.
+    ...createLocalNoteFolders({ load, save }),
   }
 }

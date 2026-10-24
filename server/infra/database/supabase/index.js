@@ -8,6 +8,7 @@ import { createSupabaseReview } from './review.js'
 import { createSupabaseInterrogations } from './interrogation.js'
 import { createSupabaseCommunities } from './communities.js'
 import { createSupabaseMessaging } from './messaging.js'
+import { createSupabaseNoteFolders } from './note-folders.js'
 import { createSupabaseStudy } from './study.js'
 
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
@@ -96,6 +97,7 @@ const toNote = (row) =>
     blocks: row.blocks,
     tags: row.tags ?? [],
     isPublic: row.is_public ?? false,
+    folderId: row.folder_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -347,8 +349,10 @@ export function createSupabaseStore({ url, serviceKey }) {
       return (rows ?? []).map((row) => ({ userId: row.user_id, mode: row.mode, guessCount: row.guess_count, solved: row.solved }))
     },
 
-    async createNote(userId, { title, blocks, tags = [], isPublic = false }) {
-      return toNote(unwrap(await db.from('notes').insert({ user_id: userId, title, blocks, tags, is_public: isPublic }).select().single()))
+    // folder_id only when given, so a note outside every folder writes the same row as before folders.
+    async createNote(userId, { title, blocks, tags = [], isPublic = false, folderId }) {
+      const row = defined({ user_id: userId, title, blocks, tags, is_public: isPublic, folder_id: folderId ?? undefined })
+      return toNote(unwrap(await db.from('notes').insert(row).select().single()))
     },
 
     // tags: only the notes carrying all of them (array containment, served by the notes_tags GIN index).
@@ -363,8 +367,10 @@ export function createSupabaseStore({ url, serviceKey }) {
       return toNote(unwrap(await db.from('notes').select('*').eq('id', id).eq('user_id', userId).maybeSingle()))
     },
 
-    async updateNote(userId, id, { title, blocks, tags, isPublic }) {
-      const patch = defined({ title, blocks, tags, is_public: isPublic, updated_at: new Date().toISOString() })
+    // Moving a note to a folder (folderId alone) isn't an edit: updated_at stays.
+    async updateNote(userId, id, { title, blocks, tags, isPublic, folderId }) {
+      const edited = [title, blocks, tags, isPublic].some((value) => value !== undefined)
+      const patch = defined({ title, blocks, tags, is_public: isPublic, folder_id: folderId, updated_at: edited ? new Date().toISOString() : undefined })
       return toNote(unwrap(await db.from('notes').update(patch).eq('id', id).eq('user_id', userId).select().maybeSingle()))
     },
 
@@ -486,5 +492,7 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabaseCommunities(db),
     // The study log (timer runs and sessions logged by hand): see study.js.
     ...createSupabaseStudy(db),
+    // Note folders: see note-folders.js.
+    ...createSupabaseNoteFolders(db),
   }
 }
