@@ -123,6 +123,65 @@ as $$
 $$;
 revoke execute on function public.add_study_time(uuid, date, int, int) from public, anon, authenticated;
 
+-- The study log: one row per run of the timer (start to pause, stop, reset or the tab closing) or
+-- per past session logged by hand. study_time stays the only thing that counts for XP, streaks and
+-- badges: a timer row only gets seconds the timer reported (and never more, in a day, than that
+-- day's study_time; see attach_study_seconds), and a manual row never touches study_time.
+-- `day` is the student's own date when the session started. ended_at is null while a timer run is
+-- open, and on a manual row logged without a start time.
+create table if not exists public.study_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  day date not null,
+  started_at timestamptz not null,
+  ended_at timestamptz,
+  seconds int not null default 0 check (seconds between 0 and 86400),
+  topic text not null default '' check (char_length(topic) <= 120),
+  case_id uuid references public.cases (id) on delete set null,
+  note_id uuid references public.notes (id) on delete set null,
+  source text not null check (source in ('timer', 'manual')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (ended_at is null or ended_at >= started_at)
+);
+create index if not exists study_sessions_user_started on public.study_sessions (user_id, started_at desc);
+alter table public.study_sessions enable row level security;
+
+-- Adds a timer report to its open session, under the day's study_time row lock, so two reports
+-- landing together can't both use the same room. Returns { status, session }: 'attached', or
+-- 'other-day' when the run started on another day (the API rolls it over). null: no such open run.
+create or replace function public.attach_study_seconds(p_user uuid, p_id uuid, p_day date, p_seconds int)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_total int;
+  v_used int;
+  v_session public.study_sessions;
+begin
+  select seconds into v_total from public.study_time where user_id = p_user and day = p_day for update;
+  select * into v_session from public.study_sessions
+    where id = p_id and user_id = p_user and source = 'timer' and ended_at is null
+    for update;
+  if not found then
+    return null;
+  end if;
+  if v_session.day <> p_day then
+    return jsonb_build_object('status', 'other-day', 'session', to_jsonb(v_session));
+  end if;
+  select coalesce(sum(seconds), 0) into v_used from public.study_sessions
+    where user_id = p_user and day = p_day and source = 'timer';
+  update public.study_sessions
+    set seconds = seconds + least(p_seconds, greatest(coalesce(v_total, 0) - v_used, 0)), updated_at = now()
+    where id = p_id
+    returning * into v_session;
+  return jsonb_build_object('status', 'attached', 'session', to_jsonb(v_session));
+end;
+$$;
+revoke execute on function public.attach_study_seconds(uuid, uuid, date, int) from public, anon, authenticated;
+
 -- Profiles: a handle, name, bio, pixel avatar and featured badges, all on the account row.
 -- "add column if not exists" so this block also upgrades a database made before profiles existed.
 -- Handles are saved lowercase; the index on lower(handle) keeps them unique whatever the case.

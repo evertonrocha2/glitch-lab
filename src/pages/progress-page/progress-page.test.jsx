@@ -33,6 +33,12 @@ it('links to the people search', async () => {
   expect(await screen.findByRole('link', { name: 'Find people' })).toHaveAttribute('href', '/people')
 })
 
+it('links to the study log', async () => {
+  vi.mocked(getProgress).mockResolvedValue(progressWith([]))
+  renderAt('/progress', { user: 'alice' })
+  expect(await screen.findByRole('link', { name: 'Study log' })).toHaveAttribute('href', '/study')
+})
+
 it('shows the level, xp, streak and study time', async () => {
   vi.mocked(getProgress).mockResolvedValue(progressWith(['first-clue']))
   renderAt('/progress', { user: 'alice' })

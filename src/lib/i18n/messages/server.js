@@ -209,6 +209,16 @@ const en = {
   'server.commentsPerDay': 'You can post {max} comments a day. Come back tomorrow.',
   'server.caseNotOnBoard': 'That case is not on your board.',
 
+  // Study log (server/modules/study/study.model.js).
+  'server.studyTopicLong': 'Keep the topic up to {max} characters.',
+  'server.studyTopicMissing': 'Write what you studied.',
+  'server.studyManualDay': 'Pick a day within the last {days} days.',
+  'server.studyManualLength': 'Log from {min} minutes to {max} hours.',
+  'server.studyManualStart': 'Pick a start time on that day that has already passed.',
+  'server.studyNoteNotYours': 'That note is not in your notes.',
+  'server.studyNotFound': 'Study session not found.',
+  'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
+
   // Community events.
   'server.eventNotFound': 'Event not found.',
   'server.entryNotFound': 'Entry not found.',
@@ -449,6 +459,15 @@ const ptBR = {
   'server.articlesPerDay': 'Você pode publicar {max} artigos por dia. Volte amanhã.',
   'server.commentsPerDay': 'Você pode fazer {max} comentários por dia. Volte amanhã.',
   'server.caseNotOnBoard': 'Esse caso não está no seu board.',
+
+  'server.studyTopicLong': 'Escreva o tema com até {max} caracteres.',
+  'server.studyTopicMissing': 'Escreva o que você estudou.',
+  'server.studyManualDay': 'Escolha um dia dentro dos últimos {days} dias.',
+  'server.studyManualLength': 'Registre de {min} minutos a {max} horas.',
+  'server.studyManualStart': 'Escolha um horário de início nesse dia que já tenha passado.',
+  'server.studyNoteNotYours': 'Essa nota não está nas suas notas.',
+  'server.studyNotFound': 'Sessão de estudo não encontrada.',
+  'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',
   'server.entryNotFound': 'Participação não encontrada.',

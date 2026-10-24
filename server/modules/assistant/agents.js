@@ -14,8 +14,8 @@ export const AGENTS = {
     needs: ['note_list', 'current_note'],
   },
   study: {
-    about: 'XP, level, streak, study time, badges, and planning the next study session',
-    needs: ['progress', 'study_plan'],
+    about: 'XP, level, streak, study time, the study log (what the student studied and when), badges, and planning the next study session',
+    needs: ['progress', 'study_plan', 'study_log'],
   },
   guide: {
     about: 'how to use Glitch Lab: features, pages, buttons, shortcuts, export',

@@ -85,9 +85,14 @@ export default function ProgressPage() {
         title={t('app.progress.title')}
         lead={t('app.progress.lead')}
         actions={
-          <PixelButton as={Link} to="/people" variant="ghost" className="px-4 py-3">
-            {t('app.progress.findPeople')}
-          </PixelButton>
+          <>
+            <PixelButton as={Link} to="/study" variant="ghost" className="px-4 py-3">
+              {t('study.fromProgress')}
+            </PixelButton>
+            <PixelButton as={Link} to="/people" variant="ghost" className="px-4 py-3">
+              {t('app.progress.findPeople')}
+            </PixelButton>
+          </>
         }
       />
 
