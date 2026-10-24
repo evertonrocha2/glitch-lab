@@ -42,7 +42,7 @@ function PublicNotes({ handle, notes }) {
               >
                 <strong className="font-pixel text-lg leading-tight wrap-break-word text-ink">{note.title || t('landing.profile.untitled')}</strong>
                 {note.excerpt && <span className="mt-2 line-clamp-3 text-sm wrap-break-word text-muted">{note.excerpt}</span>}
-                <NoteTags tags={note.tags} max={3} className="mt-3" />
+                <NoteTags tags={note.tags} max={3} inLink className="mt-3" />
                 <span className="mt-auto pt-3 font-label text-[10px] text-secondary">
                   {t('landing.profile.blocks', { count: note.blockCount })} · {format.date(note.updatedAt)}
                 </span>

@@ -55,7 +55,7 @@ function NoteList({ notes, showPublic, search, empty }) {
                 {t('notes.edited', { time: timeAgo(note.updatedAt) })}
                 {showPublic && note.isPublic && <span className="ml-1.5 bg-secondary px-1 py-0.5 font-label text-[10px] leading-none text-white">{t('notes.public')}</span>}
               </span>
-              <NoteTags tags={note.tags} max={3} className="mt-1.5" />
+              <NoteTags tags={note.tags} max={3} inLink className="mt-1.5" />
             </NavLink>
           </li>
         )

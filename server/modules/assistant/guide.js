@@ -79,7 +79,7 @@ export const GUIDE_SECTIONS = [
     id: 'notes',
     name: 'Notes',
     match: /^\/notes(\/[^/]+)?$/,
-    text: `A notebook like Notion. "New note", then add blocks: text, heading, to-do, or a case from your board. Type @ to drop in a case and / to turn a block into another kind. Notes save on their own. Export as Markdown, image or PDF. "Public on my profile" shares a note on /u/<handle>/notes/<id> (needs a public profile). 5 XP per note, for up to 20 notes; a note that mentions a case gives the Note taker badge.`,
+    text: `Like Notion. "New note": text, headings, lists, to-dos, code, quotes, callouts, cases. @ adds a case, / a block, :word an emoji; Markdown and IDE keys work. Tags filter the list. Notes save on their own. Export as Markdown, image or PDF. "Public on my profile" shares a note on /u/<handle>/notes/<id> (needs a public profile). 5 XP per note, for up to 20 notes; a note that mentions a case gives the Note taker badge.`,
   },
   {
     id: 'trail',

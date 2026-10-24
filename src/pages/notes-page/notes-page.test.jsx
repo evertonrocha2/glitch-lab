@@ -339,7 +339,7 @@ describe('tags', () => {
   it('shows the first 3 chips of each note and how many more', async () => {
     renderAt('/notes', { user: 'alice' })
     const link = await screen.findByRole('link', { name: /Loops in JS/ })
-    const tags = within(link).getByRole('list', { name: 'Note tags' })
+    const tags = within(link).getByRole('list')
     expect(within(tags).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['#loops', '#javascript', '#arrays', '+22 more tags'])
   })
 

@@ -84,7 +84,7 @@ it('lists their public notes, each linking to its own page', async () => {
   expect(links[0]).toHaveTextContent('Check the object first.')
   expect(links[1]).toHaveTextContent('Untitled')
   // Tags show as plain chips (first 3, then how many more), nothing to click for a visitor.
-  const tags = within(links[0]).getByRole('list', { name: 'Note tags' })
+  const tags = within(links[0]).getByRole('list')
   expect(within(tags).getAllByRole('listitem').map((item) => item.firstChild.textContent)).toEqual(['#javascript', '#undefined', '#objects', '+1'])
   expect(within(tags).queryByRole('button')).toBeNull()
   expect(within(links[1]).queryByRole('list')).toBeNull()
