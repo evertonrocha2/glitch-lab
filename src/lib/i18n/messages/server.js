@@ -129,6 +129,12 @@ const en = {
   'server.folderNameLong': 'Keep the folder name up to {max} characters.',
   'server.folderNameTaken': 'You already have a folder with that name.',
   'server.tooManyFolders': 'You have {max} folders. Delete one to make another.',
+  // The AI in the note editor (server/modules/notes/note-ai.service.js, shared/note-ai.js).
+  'server.noteAiTooLong': 'Too long for the AI. Select up to {max} characters and try again.',
+  'server.noteAiCode': "Couldn't improve this without touching your code. Nothing was changed.",
+  'server.noteAiNothing': 'Nothing to work on here. Write a few words first.',
+  'server.noteAiNotSaved': 'Some of these blocks are not saved yet. Try again in a moment.',
+  'server.noteAiUnusable': "The AI's answer didn't fit your note. Try again.",
 
   // Profiles.
   'server.noPublicProfile': 'No public profile here.',
@@ -389,6 +395,11 @@ const ptBR = {
   'server.folderNameLong': 'Deixe o nome da pasta com até {max} caracteres.',
   'server.folderNameTaken': 'Você já tem uma pasta com esse nome.',
   'server.tooManyFolders': 'Você tem {max} pastas. Apague uma para criar outra.',
+  'server.noteAiTooLong': 'Muito longo para a IA. Selecione até {max} caracteres e tente de novo.',
+  'server.noteAiCode': 'Não deu para melhorar sem mexer no seu código. Nada foi alterado.',
+  'server.noteAiNothing': 'Nada para trabalhar aqui. Escreva algumas palavras antes.',
+  'server.noteAiNotSaved': 'Alguns desses blocos ainda não foram salvos. Tente de novo em instantes.',
+  'server.noteAiUnusable': 'A resposta da IA não coube na sua nota. Tente de novo.',
 
   'server.noPublicProfile': 'Não tem perfil público aqui.',
   'server.dm.demo': 'Crie uma conta para mandar mensagens.',

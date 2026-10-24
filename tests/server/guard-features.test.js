@@ -256,6 +256,7 @@ describe('the daily lockout', () => {
     const challenge = await store.createChallenge('alice', challengeFor(kase.id), SECRET)
     // A case with no challenge yet: starting one needs the AI (resuming an open one doesn't).
     const fresh = await store.createCase('alice', CASE)
+    const note = await store.createNote('alice', { title: 'Loops', blocks: [{ id: 'b1', type: 'text', text: 'A for loop runs while the condition holds.' }] })
     const calls = [
       askPlain('Why does map return undefined?'),
       api('/api/assistant/stream', { body: assistantBody('Why does map return undefined?') }),
@@ -265,6 +266,7 @@ describe('the daily lockout', () => {
       api(`/api/cases/${kase.id}/interrogation/answers`, { body: { answer: 'it breaks on empty input' } }),
       api('/api/challenges', { body: { caseId: fresh.id } }),
       api('/api/trails', { body: { today: today() } }),
+      api(`/api/notes/${note.id}/ai`, { body: { action: 'improve' } }),
     ]
     for (const res of await Promise.all(calls)) {
       expect(res.status).toBe(429)

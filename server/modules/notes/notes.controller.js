@@ -1,3 +1,4 @@
+import { noteAi } from './note-ai.service.js'
 import * as notes from './notes.service.js'
 
 // Short, so a note taken back down disappears quickly.
@@ -18,6 +19,12 @@ export async function update(req, res) {
 export async function remove(req, res) {
   await notes.deleteNote(req.deps.store, req.user, req.params.id)
   res.json({ deleted: true })
+}
+
+// The AI's take on the note, to preview. It runs to the end even when the writer presses Stop: the
+// call is already paid for, and the answer waits in the repeat cache for their next try.
+export async function ai(req, res) {
+  res.json(await noteAi(req.deps, req.user, req.params.id, req.body, req.locale))
 }
 
 export async function listPublic(req, res) {

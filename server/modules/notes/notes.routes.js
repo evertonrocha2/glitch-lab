@@ -8,6 +8,8 @@ export const notesRoutes = Router()
   .post('/notes', requireAuth, controller.create)
   .patch('/notes/:id', requireAuth, controller.update)
   .delete('/notes/:id', requireAuth, controller.remove)
+  // Improve, organize or summarize a note with the AI: answers the new blocks, saves nothing.
+  .post('/notes/:id/ai', requireAuth, controller.ai)
   // Folders for the notes list: private, never on a public page.
   .get('/note-folders', requireAuth, folders.list)
   .post('/note-folders', requireAuth, folders.create)

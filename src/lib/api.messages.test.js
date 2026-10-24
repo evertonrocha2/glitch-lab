@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GUARD_TEXT, LOCKED_MESSAGE } from '../../server/infra/ai/guard/messages.js'
+import { NOTE_AI_TOO_LONG } from '../../shared/note-ai.js'
 import { FOLDER_NAME_EMPTY, FOLDER_NAME_LONG, FOLDER_NAME_TAKEN, TOO_MANY_FOLDERS } from '../../shared/note-folders.js'
 import { credentialsProblem } from '../../server/modules/auth/credentials.js'
 import { validateInput } from '../../server/modules/cases/analysis.js'
@@ -53,6 +54,9 @@ it('translates messages with numbers in them', () => {
   expect(pt('Keep the folder name up to 40 characters.')).toBe('Deixe o nome da pasta com até 40 caracteres.')
   expect(pt('You have 30 folders. Delete one to make another.')).toBe('Você tem 30 pastas. Apague uma para criar outra.')
   expect(pt('Folder not found.')).toBe('Pasta não encontrada.')
+  // The AI in the note editor.
+  expect(pt('Too long for the AI. Select up to 8000 characters and try again.')).toBe('Muito longo para a IA. Selecione até 8000 caracteres e tente de novo.')
+  expect(pt("Couldn't improve this without touching your code. Nothing was changed.")).toBe('Não deu para melhorar sem mexer no seu código. Nada foi alterado.')
 })
 
 it('translates the words and the inner problem of a composed message', () => {
@@ -112,6 +116,7 @@ it('knows the messages the API builds from limits and checks', () => {
     FOLDER_NAME_LONG,
     FOLDER_NAME_TAKEN,
     TOO_MANY_FOLDERS,
+    NOTE_AI_TOO_LONG,
     parseProfile({ handle: 'a' }).message,
     parseProfile({ handle: 'a'.repeat(40) }).message,
     parseProfile({ handle: 'Bad Handle!' }).message,
