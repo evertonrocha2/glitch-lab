@@ -123,6 +123,12 @@ const en = {
   'server.tooLongBlock': 'Too long. Keep each block under {max} characters.',
   'server.tooLongCodeBlock': 'Too long. Keep each code block under {max} characters.',
   'server.invalidBlock': 'Invalid block.',
+  // Note folders (shared/note-folders.js).
+  'server.folderNotFound': 'Folder not found.',
+  'server.folderNameEmpty': 'Give the folder a name.',
+  'server.folderNameLong': 'Keep the folder name up to {max} characters.',
+  'server.folderNameTaken': 'You already have a folder with that name.',
+  'server.tooManyFolders': 'You have {max} folders. Delete one to make another.',
 
   // Profiles.
   'server.noPublicProfile': 'No public profile here.',
@@ -378,6 +384,11 @@ const ptBR = {
   'server.tooLongBlock': 'Muito longo. Deixe cada bloco com menos de {max} caracteres.',
   'server.tooLongCodeBlock': 'Muito longo. Deixe cada bloco de código com menos de {max} caracteres.',
   'server.invalidBlock': 'Bloco inválido.',
+  'server.folderNotFound': 'Pasta não encontrada.',
+  'server.folderNameEmpty': 'Dê um nome para a pasta.',
+  'server.folderNameLong': 'Deixe o nome da pasta com até {max} caracteres.',
+  'server.folderNameTaken': 'Você já tem uma pasta com esse nome.',
+  'server.tooManyFolders': 'Você tem {max} pastas. Apague uma para criar outra.',
 
   'server.noPublicProfile': 'Não tem perfil público aqui.',
   'server.dm.demo': 'Crie uma conta para mandar mensagens.',

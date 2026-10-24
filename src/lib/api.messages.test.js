@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { GUARD_TEXT, LOCKED_MESSAGE } from '../../server/infra/ai/guard/messages.js'
+import { FOLDER_NAME_EMPTY, FOLDER_NAME_LONG, FOLDER_NAME_TAKEN, TOO_MANY_FOLDERS } from '../../shared/note-folders.js'
 import { credentialsProblem } from '../../server/modules/auth/credentials.js'
 import { validateInput } from '../../server/modules/cases/analysis.js'
 import { parseAssistantRequest } from '../../server/modules/assistant/request.js'
@@ -48,6 +49,10 @@ it('translates messages with numbers in them', () => {
   expect(pt('Use up to 8 tags.')).toBe('Use até 8 tags.')
   expect(pt('Keep each tag up to 24 characters.')).toBe('Deixe cada tag com até 24 caracteres.')
   expect(pt('Note tags use letters, numbers, spaces and - . # +.')).toBe('Tags de nota usam letras, números, espaços e - . # +.')
+  // Note folders (shared/note-folders.js).
+  expect(pt('Keep the folder name up to 40 characters.')).toBe('Deixe o nome da pasta com até 40 caracteres.')
+  expect(pt('You have 30 folders. Delete one to make another.')).toBe('Você tem 30 pastas. Apague uma para criar outra.')
+  expect(pt('Folder not found.')).toBe('Pasta não encontrada.')
 })
 
 it('translates the words and the inner problem of a composed message', () => {
@@ -103,6 +108,10 @@ it('knows the messages the API builds from limits and checks', () => {
     parseNote({ tags: Array.from({ length: 9 }, (_, i) => `tag${i}`) }).message,
     parseNote({ tags: ['x'.repeat(25)] }).message,
     parseNote({ tags: ['a/b'] }).message,
+    FOLDER_NAME_EMPTY,
+    FOLDER_NAME_LONG,
+    FOLDER_NAME_TAKEN,
+    TOO_MANY_FOLDERS,
     parseProfile({ handle: 'a' }).message,
     parseProfile({ handle: 'a'.repeat(40) }).message,
     parseProfile({ handle: 'Bad Handle!' }).message,

@@ -3,6 +3,7 @@ import { normalizeTag, NOTE_TAG_LIMITS, noteTagProblem } from '../../../shared/n
 import { handleProblem, normalizeHandle } from '../../../shared/profile.js'
 import { badRequest, conflict, forbidden, notFound, valueOrThrow } from '../../core/errors.js'
 import { profileCard } from '../profile/profile.model.js'
+import { assertOwnFolder } from './note-folders.service.js'
 import { parseNote, publicNote, publicNoteSummary } from './notes.model.js'
 
 const NOT_SHARED = 'No public note here.'
@@ -30,14 +31,16 @@ export async function createNote(store, user, body) {
   if ((await store.listNotes(user.id)).length >= NOTE_LIMITS.notes) {
     throw conflict(`You have ${NOTE_LIMITS.notes} notes. Delete one to write another.`)
   }
+  await assertOwnFolder(store, user, value.folderId)
   return store.createNote(user.id, { title: '', blocks: [], tags: [], ...value })
 }
 
-// Title, blocks, tags and isPublic: only the fields sent change.
+// Title, blocks, tags, isPublic and folderId: only the fields sent change.
 export async function updateNote(store, user, id, body) {
   if (!body) throw badRequest()
   const value = valueOrThrow(parseNote(body))
   if (user.isDemo && value.isPublic) throw forbidden(DEMO_SHARE)
+  await assertOwnFolder(store, user, value.folderId)
   const note = await store.updateNote(user.id, id, value)
   if (!note) throw notFound(NOTE_NOT_FOUND)
   return note

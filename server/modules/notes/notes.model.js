@@ -51,7 +51,8 @@ export function cleanBlock(block) {
   }
 }
 
-// { value: { title?, blocks?, tags?, isPublic? } } or { status, message }. Missing fields stay undefined.
+// { value: { title?, blocks?, tags?, isPublic?, folderId? } } or { status, message }. Missing fields
+// stay undefined; folderId null takes the note out of every folder.
 export function parseNote(body) {
   const value = {}
   if (body.title !== undefined) {
@@ -77,6 +78,10 @@ export function parseNote(body) {
   if (body.isPublic !== undefined) {
     if (typeof body.isPublic !== 'boolean') return { status: 400, message: 'Invalid request.' }
     value.isPublic = body.isPublic
+  }
+  if (body.folderId !== undefined) {
+    if (body.folderId !== null && !(isText(body.folderId) && body.folderId !== '' && body.folderId.length <= 64)) return { status: 400, message: 'Invalid request.' }
+    value.folderId = body.folderId
   }
   return { value }
 }
