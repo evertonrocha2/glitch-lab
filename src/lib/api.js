@@ -11,7 +11,7 @@ const serverMessage = (data, fallback) => (data?.message ? translateServerMessag
 // Thrown on 401 so pages can send the person back to the login screen.
 export class AuthError extends Error {}
 
-async function request(path, { method = 'GET', body, token, keepalive } = {}) {
+async function request(path, { method = 'GET', body, token, keepalive, signal } = {}) {
   // The server answers (and asks the AI to write) in the reader's language.
   const headers = { 'Accept-Language': currentLocale() }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -19,8 +19,10 @@ async function request(path, { method = 'GET', body, token, keepalive } = {}) {
 
   let res
   try {
-    res = await fetch(path, { method, headers, keepalive, body: body === undefined ? undefined : JSON.stringify(body) })
-  } catch {
+    res = await fetch(path, { method, headers, keepalive, signal, body: body === undefined ? undefined : JSON.stringify(body) })
+  } catch (err) {
+    // Stopped on purpose (an AbortController): the caller tells that apart from being offline.
+    if (signal?.aborted) throw err
     throw new Error(offlineMessage())
   }
 
@@ -159,8 +161,38 @@ export async function listNotes(token) {
   return (await request('/api/notes', { token })).notes
 }
 
-export async function createNote({ title, blocks, tags }, token) {
-  return (await request('/api/notes', { method: 'POST', body: { title, blocks, tags }, token })).note
+// folderId: start the note inside that folder.
+export async function createNote({ title, blocks, tags, folderId }, token) {
+  return (await request('/api/notes', { method: 'POST', body: { title, blocks, tags, ...(folderId ? { folderId } : {}) }, token })).note
+}
+
+// Into one of my folders, or out of every folder with null. Not an edit: the note keeps its place.
+export async function moveNoteToFolder(id, folderId, token) {
+  return (await request(`/api/notes/${encodeURIComponent(id)}`, { method: 'PATCH', body: { folderId }, token })).note
+}
+
+// The AI's take on a note: { action, blockIds, blocks, language, cached }. Saves nothing.
+// action: 'improve' | 'organize' | 'summarize'; blockIds: only those blocks (none: the whole note).
+// signal: Stop aborts the request.
+export function noteAi(id, { action, blockIds }, token, { signal } = {}) {
+  return request(`/api/notes/${encodeURIComponent(id)}/ai`, { method: 'POST', body: blockIds ? { action, blockIds } : { action }, token, signal })
+}
+
+export async function listNoteFolders(token) {
+  return (await request('/api/note-folders', { token })).folders
+}
+
+export async function createNoteFolder(name, token) {
+  return (await request('/api/note-folders', { method: 'POST', body: { name }, token })).folder
+}
+
+// { name } renames, { position } moves it (0 is the top).
+export async function updateNoteFolder(id, fields, token) {
+  return (await request(`/api/note-folders/${encodeURIComponent(id)}`, { method: 'PATCH', body: fields, token })).folder
+}
+
+export async function deleteNoteFolder(id, token) {
+  await request(`/api/note-folders/${encodeURIComponent(id)}`, { method: 'DELETE', token })
 }
 
 export async function updateNote(id, { title, blocks, tags }, token, { keepalive = false } = {}) {

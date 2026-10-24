@@ -3,9 +3,10 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 
 // The handle beside a block: a menu to move, duplicate or delete it. Deleting takes two steps (open
 // the menu, pick "Delete block") and can be undone, so no single click ever wipes what was written.
-// actions: [{ key, label, onSelect, disabled }].
-export default function BlockHandle({ actions }) {
+// actions: [{ key, label, onSelect, disabled }]. label names the menu (a block's by default).
+export default function BlockHandle({ actions, label }) {
   const t = useT()
+  const name = label ?? t('notes.editor.blockMenu')
   const id = useId()
   const [open, setOpen] = useState(false)
   const button = useRef(null)
@@ -49,7 +50,7 @@ export default function BlockHandle({ actions }) {
       <button
         ref={button}
         type="button"
-        aria-label={t('notes.editor.blockMenu')}
+        aria-label={name}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? `${id}-menu` : undefined}
@@ -69,7 +70,7 @@ export default function BlockHandle({ actions }) {
         <div
           id={`${id}-menu`}
           role="menu"
-          aria-label={t('notes.editor.blockMenu')}
+          aria-label={name}
           className="absolute top-full right-0 z-30 mt-1 w-48 border-2 border-ink bg-white py-1 shadow-pixel"
         >
           {actions.map((action, index) => (
