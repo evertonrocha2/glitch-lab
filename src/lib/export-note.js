@@ -90,9 +90,9 @@ export async function withSheet(sheetElement, use) {
   }
 }
 
-// The web fonts come from Google Fonts. index.html loads that stylesheet with crossorigin, so the
-// library can read its @font-face rules and inline the font files. If that ever fails the picture
-// still comes out, just in the fallback fonts.
+// The web fonts are served by the site itself (src/fonts.css), so the library can read their
+// @font-face rules and inline the files. If that ever fails the picture still comes out, just in
+// the fallback fonts.
 // { canvas, scale }: the scale drops below 2x only for sheets too tall for one canvas.
 async function drawSheet(sheet) {
   const { domToCanvas } = await import('modern-screenshot')

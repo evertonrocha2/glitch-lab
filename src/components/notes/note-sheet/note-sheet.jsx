@@ -96,11 +96,11 @@ export default function NoteSheet({ note, cases, date }) {
       <header className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-14 py-6">
-          <span className="flex items-center gap-3 font-pixel text-2xl font-bold">
+          <span className="flex shrink-0 items-center gap-3 font-pixel text-2xl font-bold whitespace-nowrap">
             <PixelLogo className="size-9" />
             <span>Glitch Lab</span>
           </span>
-          <span className="border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] text-ink shadow-pixel">{t('notes.sheet.exported', { date })}</span>
+          <span className="shrink-0 border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] whitespace-nowrap text-ink shadow-pixel">{t('notes.sheet.exported', { date })}</span>
         </div>
       </header>
 

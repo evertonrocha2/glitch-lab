@@ -155,3 +155,8 @@ it('writes a question card with its question, recap, summary and exercise, and n
   expect(pt).toContain('**Dúvida.** Why does my loop skip the last item?')
   expect(pt).toContain('*Dúvida · range end ·')
 })
+
+it('keeps accented letters in file names without their accents', () => {
+  expect(slug('Ordenação com cartas.')).toBe('ordenacao-com-cartas')
+  expect(slug('Revisão: laços & repetição')).toBe('revisao-lacos-repeticao')
+})

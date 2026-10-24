@@ -136,6 +136,9 @@ export function boardToMarkdown({ cases, notes, progress, email, date, t = ENGLI
 export function slug(text) {
   return (
     text
+      // "Ordenação" -> "ordenacao": accents come off the letters instead of turning into dashes.
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
