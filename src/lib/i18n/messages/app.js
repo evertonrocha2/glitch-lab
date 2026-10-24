@@ -365,7 +365,7 @@ export default {
     'app.glitchdle.avgShort': 'Avg',
     'app.glitchdle.sidebar': 'Stats and community',
     'app.glitchdle.you': 'You',
-    'app.glitchdle.communityHint': "Solved out of everyone who guessed today. Demo accounts don't count.",
+    'app.glitchdle.communityHint': 'Solved out of everyone who guessed today.',
   },
   'pt-BR': {
     'app.nav.main': 'Principal',
@@ -725,6 +725,6 @@ export default {
     'app.glitchdle.avgShort': 'Média',
     'app.glitchdle.sidebar': 'Estatísticas e comunidade',
     'app.glitchdle.you': 'Você',
-    'app.glitchdle.communityHint': 'Acertos entre todos que jogaram hoje. Contas demo não contam.',
+    'app.glitchdle.communityHint': 'Acertos entre todos que jogaram hoje.',
   },
 }
