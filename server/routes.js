@@ -16,6 +16,7 @@ import { profileRoutes } from './modules/profile/profile.routes.js'
 import { progressRoutes } from './modules/progress/progress.routes.js'
 import { questionsRoutes } from './modules/questions/questions.routes.js'
 import { reviewRoutes } from './modules/review/review.routes.js'
+import { studyRoutes } from './modules/study/study.routes.js'
 import { trailsRoutes } from './modules/trails/trails.routes.js'
 import { communitiesRoutes } from './modules/communities/communities.routes.js'
 import { messagesRoutes } from './modules/messages/messages.routes.js'
@@ -35,6 +36,7 @@ export function apiRouter() {
     notesRoutes,
     progressRoutes,
     reviewRoutes,
+    studyRoutes,
     trailsRoutes,
     articlesRoutes,
     eventsRoutes,
