@@ -118,3 +118,24 @@ it('refuses an unknown provider in the chain', async () => {
   expect(err.status).toBe(500)
   expect(fetch).not.toHaveBeenCalled()
 })
+
+it('asks for no thinking, which used to eat max_tokens and cut or empty the JSON', async () => {
+  fetch.mockResolvedValue(openrouter('{}'))
+  await generateJson(ARGS)
+  expect(JSON.parse(fetch.mock.calls[0][1].body).reasoning).toEqual({ effort: 'none' })
+})
+
+it('says when an answer was cut at max_tokens, so the logs tell it from a bad model', async () => {
+  fetch.mockResolvedValue(new Response(JSON.stringify({ choices: [{ finish_reason: 'length', message: { content: '{"title":"hal' } }] })))
+  const err = await failure(generateJson(ARGS))
+  expect(err.status).toBe(502)
+  expect(err.message).toContain('cut at max_tokens')
+})
+
+it('gives a backup provider a shorter time limit than the first one', async () => {
+  vi.stubEnv('AI_PROVIDER', 'openrouter,gemini')
+  vi.stubEnv('AI_FALLBACK_TIMEOUT_MS', '20')
+  fetch.mockResolvedValueOnce(status(500)).mockImplementationOnce((_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason))))
+  const err = await failure(generateJson(ARGS))
+  expect(err.status).toBe(504)
+})

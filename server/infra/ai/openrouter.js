@@ -4,7 +4,8 @@ import { readEventStream } from './event-stream.js'
 const URL = 'https://openrouter.ai/api/v1/chat/completions'
 // Fast, cheap and good at following a JSON schema. OPENROUTER_MODEL picks any other model.
 export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-haiku-5.5'
-export const DEFAULT_MAX_TOKENS = 3000
+// Organizing a long note rewrites every block, which alone can pass 3000 tokens.
+export const DEFAULT_MAX_TOKENS = 8000
 const maxTokens = () => {
   const value = Number(process.env.AI_MAX_OUTPUT_TOKENS)
   return Number.isInteger(value) && value > 0 ? value : DEFAULT_MAX_TOKENS
@@ -53,6 +54,9 @@ async function post({ system, prompt, apiKey, model, signal }, extra) {
         // Output is what costs most, so a runaway answer stops here (the biggest real one, a
         // bilingual daily puzzle, is well under it). A cut answer fails JSON parsing and falls back.
         max_tokens: maxTokens(),
+        // Haiku sometimes thinks before answering, and the thinking eats max_tokens: the JSON then came
+        // back cut or empty. These are short, schema-shaped tasks, so it answers straight away.
+        reasoning: { effort: 'none' },
         ...extra,
       }),
       signal,
@@ -72,8 +76,10 @@ export async function openrouterGenerate({ schema, ...args }) {
     response_format: { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: toJsonSchema(schema) } },
   })
   const data = await res.json().catch(() => null)
-  const text = data?.choices?.[0]?.message?.content
-  if (typeof text !== 'string' || !text) throw new AiError(502, 'OpenRouter answered without text')
+  const choice = data?.choices?.[0]
+  const text = choice?.message?.content
+  if (choice?.finish_reason === 'length') throw new AiError(502, `OpenRouter answer was cut at max_tokens (${JSON.stringify(data?.usage ?? null)})`)
+  if (typeof text !== 'string' || !text) throw new AiError(502, `OpenRouter answered without text (finish: ${choice?.finish_reason ?? 'none'})`)
   // Some models wrap JSON in a code fence even in JSON mode.
   return text.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, '')
 }

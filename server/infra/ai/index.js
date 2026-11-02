@@ -61,9 +61,12 @@ async function withRetry(run, canRetry) {
 export async function generateJson({ system, prompt, schema, timeoutMs, retry = true, signal }) {
   const names = providerNames()
   let lastError
-  for (const name of names) {
+  for (const [index, name] of names.entries()) {
+    // A backup gets a shorter leash: the student already waited on the first one, and a backup that
+    // is busy too should say so in seconds, not after two more minutes.
+    const limit = index === 0 ? timeoutMs : Math.min(timeoutMs ?? Infinity, msFromEnv('AI_FALLBACK_TIMEOUT_MS', 30_000))
     try {
-      const text = await withRetry(() => PROVIDERS[name].generate({ system, prompt, schema, signal: limitSignal(signal, timeoutMs) }), () => retry)
+      const text = await withRetry(() => PROVIDERS[name].generate({ system, prompt, schema, signal: limitSignal(signal, limit) }), () => retry)
       try {
         return JSON.parse(text)
       } catch {
