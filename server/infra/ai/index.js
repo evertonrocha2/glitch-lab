@@ -72,7 +72,7 @@ export async function generateJson({ system, prompt, schema, timeoutMs, retry = 
     } catch (err) {
       if (!(err instanceof AiError) || signal?.aborted) throw err
       lastError = err
-      if (names.length > 1) console.warn(`AI provider ${name} failed (${err.status}), trying the next one`)
+      if (names.length > 1) console.warn(`AI provider ${name} failed (${err.status}: ${err.message}), trying the next one`)
     }
   }
   throw lastError
@@ -101,7 +101,7 @@ export async function streamText({ system, prompt, onDelta, timeoutMs, retry = t
     } catch (err) {
       if (!(err instanceof AiError) || streamed || signal?.aborted) throw err
       lastError = err
-      if (names.length > 1) console.warn(`AI provider ${name} failed to stream (${err.status}), trying the next one`)
+      if (names.length > 1) console.warn(`AI provider ${name} failed to stream (${err.status}: ${err.message}), trying the next one`)
     }
   }
   throw lastError

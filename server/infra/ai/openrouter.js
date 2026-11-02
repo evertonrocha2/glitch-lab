@@ -62,7 +62,8 @@ async function post({ system, prompt, apiKey, model, signal }, extra) {
   }
   // 401/402 (bad key, no credits) are a setup problem, not a busy model.
   if (res.status === 401 || res.status === 402) throw new AiError(500, `OpenRouter refused the key (${res.status})`)
-  if (!res.ok) throw new AiError(res.status)
+  // The body says why (model unavailable, bad schema, provider down): keep a short piece for the logs.
+  if (!res.ok) throw new AiError(res.status, `OpenRouter answered ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`)
   return res
 }
 
