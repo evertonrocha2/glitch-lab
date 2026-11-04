@@ -41,12 +41,54 @@ const toRow = (question) => ({
   source_key: question.sourceKey,
 })
 
-// Exam questions on Supabase (exam_questions). Spread into createSupabaseStore.
+const iso = (value) => (value == null ? null : new Date(value).toISOString())
+
+const toAttempt = (row) => ({ id: row.id, questionId: row.question_id, choice: row.choice, correct: row.correct, createdAt: iso(row.created_at) })
+
+const toTrack = (row) => row && { id: row.track, examDate: row.exam_date ?? null, createdAt: iso(row.created_at) }
+
+// Exam questions, answers and tracks on Supabase (exam_questions, question_attempts, user_tracks).
+// Spread into createSupabaseStore.
 export function createSupabaseExams(db) {
   const questions = () => db.from('exam_questions')
+  const attempts = () => db.from('question_attempts')
+  const tracks = () => db.from('user_tracks')
   const visible = (query) => query.not('topic', 'is', null).eq('needs_review', false)
 
   return {
+    async createQuestionAttempt(userId, { questionId, choice, correct }) {
+      return toAttempt(unwrap(await attempts().insert({ user_id: userId, question_id: questionId, choice, correct }).select().single()))
+    },
+
+    async listFirstAttempts(userId, questionIds) {
+      if (!questionIds.length) return []
+      const rows =
+        unwrap(await attempts().select('*').eq('user_id', userId).in('question_id', questionIds).order('created_at', { ascending: true })) ?? []
+      const first = new Map()
+      for (const row of rows) if (!first.has(row.question_id)) first.set(row.question_id, toAttempt(row))
+      return questionIds.filter((id) => first.has(id)).map((id) => first.get(id))
+    },
+
+    async summarizeExamAttempts(userId, exam) {
+      const rows = unwrap(await db.rpc('exam_attempt_summary', { p_user: userId, p_exam: exam })) ?? []
+      return rows.map((row) => ({ topic: row.topic, answered: Number(row.answered), correct: Number(row.correct) }))
+    },
+
+    async listUserTracks(userId) {
+      const rows = unwrap(await tracks().select('*').eq('user_id', userId).order('created_at', { ascending: true })) ?? []
+      return rows.map(toTrack)
+    },
+
+    // The primary key (user_id, track) makes this one upsert; created_at keeps its first value.
+    async upsertUserTrack(userId, trackId, { examDate }) {
+      return toTrack(unwrap(await tracks().upsert({ user_id: userId, track: trackId, exam_date: examDate }, { onConflict: 'user_id,track' }).select().single()))
+    },
+
+    async deleteUserTrack(userId, trackId) {
+      const rows = unwrap(await tracks().delete().eq('user_id', userId).eq('track', trackId).select('track'))
+      return (rows ?? []).length > 0
+    },
+
     // An upsert on source_key would write topic: null over a saved topic, so new rows are inserted
     // and known ones updated without their topic when the import sent none.
     async upsertExamQuestions(rows) {

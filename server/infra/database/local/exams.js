@@ -16,7 +16,82 @@ export function createLocalExams({ load, save }) {
     return structuredClone(rest)
   }
 
+  const attemptsOf = (data) => (data.questionAttempts ??= [])
+  const tracksOf = (data) => (data.userTracks ??= [])
+  const toAttempt = ({ userId, ...rest }) => ({ ...rest })
+  const toTrack = ({ userId, ...rest }) => ({ ...rest })
+
+  // Each question's earliest attempt by this student, in the order they were made.
+  function firstAttempts(data, userId) {
+    const first = new Map()
+    for (const item of attemptsOf(data)) {
+      if (item.userId !== userId) continue
+      const seen = first.get(item.questionId)
+      if (!seen || item.createdAt < seen.createdAt) first.set(item.questionId, item)
+    }
+    return first
+  }
+
   return {
+    async createQuestionAttempt(userId, { questionId, choice, correct }) {
+      const data = await load()
+      const row = { id: randomUUID(), userId, questionId, choice, correct, createdAt: now() }
+      attemptsOf(data).push(row)
+      await save()
+      return toAttempt(row)
+    },
+
+    async listFirstAttempts(userId, questionIds) {
+      const first = firstAttempts(await load(), userId)
+      return questionIds.filter((id) => first.has(id)).map((id) => toAttempt(first.get(id)))
+    },
+
+    // [{ topic, answered, correct }] from each question's first attempt, for one exam.
+    async summarizeExamAttempts(userId, exam) {
+      const data = await load()
+      const questions = new Map(questionsOf(data).map((item) => [item.id, item]))
+      const byTopic = new Map()
+      for (const attempt of firstAttempts(data, userId).values()) {
+        const question = questions.get(attempt.questionId)
+        if (!question || question.exam !== exam || question.topic === null) continue
+        const sum = byTopic.get(question.topic) ?? { topic: question.topic, answered: 0, correct: 0 }
+        sum.answered++
+        if (attempt.correct) sum.correct++
+        byTopic.set(question.topic, sum)
+      }
+      return [...byTopic.values()]
+    },
+
+    async listUserTracks(userId) {
+      const data = await load()
+      return tracksOf(data)
+        .filter((item) => item.userId === userId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .map(toTrack)
+    },
+
+    // Adds the track, or changes its exam date when it's already there.
+    async upsertUserTrack(userId, trackId, { examDate }) {
+      const data = await load()
+      let found = tracksOf(data).find((item) => item.userId === userId && item.id === trackId)
+      if (found) found.examDate = examDate
+      else {
+        found = { userId, id: trackId, examDate, createdAt: now() }
+        tracksOf(data).push(found)
+      }
+      await save()
+      return toTrack(found)
+    },
+
+    async deleteUserTrack(userId, trackId) {
+      const tracks = tracksOf(await load())
+      const index = tracks.findIndex((item) => item.userId === userId && item.id === trackId)
+      if (index === -1) return false
+      tracks.splice(index, 1)
+      await save()
+      return true
+    },
+
     // { inserted, updated }. A row whose topic is null keeps the topic already saved.
     async upsertExamQuestions(rows) {
       const data = await load()

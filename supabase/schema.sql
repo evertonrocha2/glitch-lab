@@ -867,3 +867,42 @@ create table if not exists public.exam_questions (
 );
 create index if not exists exam_questions_topic on public.exam_questions (exam, topic, year desc, number);
 alter table public.exam_questions enable row level security;
+
+-- Every answer a student gives to an exam question. Only the first one per question counts for
+-- stats; the API refuses to record a second.
+create table if not exists public.question_attempts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users (id) on delete cascade,
+  question_id uuid not null references public.exam_questions (id) on delete cascade,
+  choice text not null check (choice in ('A', 'B', 'C', 'D', 'E')),
+  correct boolean not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists question_attempts_user on public.question_attempts (user_id, question_id, created_at);
+alter table public.question_attempts enable row level security;
+
+-- The tracks a student picked (enem, programming, later esa...), each with its own exam date.
+create table if not exists public.user_tracks (
+  user_id uuid not null references public.users (id) on delete cascade,
+  track text not null,
+  exam_date date,
+  created_at timestamptz not null default now(),
+  primary key (user_id, track)
+);
+alter table public.user_tracks enable row level security;
+
+-- Per topic: how many questions the student answered and how many they got right the first time.
+create or replace function public.exam_attempt_summary(p_user uuid, p_exam text)
+returns table (topic text, answered bigint, correct bigint)
+language sql stable security definer set search_path = public
+as $$
+  select q.topic, count(*), count(*) filter (where f.correct)
+  from (
+    select distinct on (question_id) question_id, correct
+    from public.question_attempts where user_id = p_user
+    order by question_id, created_at
+  ) f
+  join public.exam_questions q on q.id = f.question_id
+  where q.exam = p_exam and q.topic is not null
+  group by q.topic;
+$$;

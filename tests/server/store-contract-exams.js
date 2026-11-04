@@ -21,8 +21,61 @@ export const examQuestion = (exam, overrides = {}) => ({
 
 const newExam = () => `exam-${randomUUID()}`
 
-// Exam questions: every store must pass these. storeContract calls this inside its describe.
-export function examsStoreContract(getStore) {
+// Exam questions, answers and tracks: every store must pass these. storeContract calls this inside
+// its describe, with a getter for the store and the test users' ids (fresh accounts on Supabase).
+export function examsStoreContract(getStore, ids) {
+  it('keeps the first attempt of each question and sums them by topic', async () => {
+    const store = getStore()
+    const exam = newExam()
+    await store.upsertExamQuestions([
+      examQuestion(exam, { number: 1, topic: 'funcoes' }),
+      examQuestion(exam, { number: 2, topic: 'funcoes' }),
+      examQuestion(exam, { number: 3, topic: 'estatistica' }),
+    ])
+    const [q1, q2] = await store.listExamQuestions(exam, 'funcoes', { offset: 0, limit: 10 })
+    const [q3] = await store.listExamQuestions(exam, 'estatistica', { offset: 0, limit: 10 })
+
+    const wrong = await store.createQuestionAttempt(ids.alice, { questionId: q1.id, choice: 'C', correct: false })
+    expect(wrong).toMatchObject({ questionId: q1.id, choice: 'C', correct: false, id: expect.any(String), createdAt: expect.any(String) })
+    // Later answers to the same question never count.
+    await new Promise((done) => setTimeout(done, 5))
+    await store.createQuestionAttempt(ids.alice, { questionId: q1.id, choice: 'B', correct: true })
+    await store.createQuestionAttempt(ids.alice, { questionId: q2.id, choice: 'B', correct: true })
+    await store.createQuestionAttempt(ids.alice, { questionId: q3.id, choice: 'A', correct: false })
+    await store.createQuestionAttempt(ids.bob, { questionId: q1.id, choice: 'B', correct: true })
+
+    const first = await store.listFirstAttempts(ids.alice, [q1.id, q2.id])
+    expect(first.map((item) => [item.questionId, item.choice, item.correct]).sort()).toEqual([
+      [q1.id, 'C', false],
+      [q2.id, 'B', true],
+    ].sort())
+    expect(await store.listFirstAttempts(ids.alice, [])).toEqual([])
+
+    const summary = (await store.summarizeExamAttempts(ids.alice, exam)).sort((a, b) => a.topic.localeCompare(b.topic))
+    expect(summary).toEqual([
+      { topic: 'estatistica', answered: 1, correct: 0 },
+      { topic: 'funcoes', answered: 2, correct: 1 },
+    ])
+    expect(await store.summarizeExamAttempts(ids.bob, exam)).toEqual([{ topic: 'funcoes', answered: 1, correct: 1 }])
+    expect(await store.summarizeExamAttempts(ids.alice, newExam())).toEqual([])
+  })
+
+  it('adds, updates and removes tracks, only my own', async () => {
+    const store = getStore()
+    expect(await store.listUserTracks(ids.alice)).toEqual([])
+    const added = await store.upsertUserTrack(ids.alice, 'enem', { examDate: '2027-11-07' })
+    expect(added).toEqual({ id: 'enem', examDate: '2027-11-07', createdAt: expect.any(String) })
+    const cleared = await store.upsertUserTrack(ids.alice, 'enem', { examDate: null })
+    expect(cleared).toEqual({ ...added, examDate: null })
+    await new Promise((done) => setTimeout(done, 5))
+    await store.upsertUserTrack(ids.alice, 'programming', { examDate: null })
+    expect((await store.listUserTracks(ids.alice)).map((track) => track.id)).toEqual(['enem', 'programming'])
+    expect(await store.listUserTracks(ids.bob)).toEqual([])
+    expect(await store.deleteUserTrack(ids.bob, 'enem')).toBe(false)
+    expect(await store.deleteUserTrack(ids.alice, 'enem')).toBe(true)
+    expect((await store.listUserTracks(ids.alice)).map((track) => track.id)).toEqual(['programming'])
+  })
+
   it('upserts questions by sourceKey and never clears a topic', async () => {
     const store = getStore()
     const exam = newExam()
