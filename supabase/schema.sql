@@ -907,3 +907,6 @@ as $$
   group by q.topic;
 $$;
 revoke execute on function public.exam_attempt_summary(uuid, text) from public, anon, authenticated;
+
+-- One answer per student and question: the first one. Two answers sent at once can't both land.
+create unique index if not exists question_attempts_one on public.question_attempts (user_id, question_id);

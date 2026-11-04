@@ -36,12 +36,16 @@ export function createLocalExams({ load, save }) {
   }
 
   return {
-    async createQuestionAttempt(userId, { questionId, choice, correct }) {
+    // Saves the student's answer unless they already answered that question: { attempt, first }.
+    // The check and the push happen with no await in between, so two answers at once save one.
+    async recordFirstAttempt(userId, { questionId, choice, correct }) {
       const data = await load()
+      const earlier = firstAttempts(data, userId).get(questionId)
+      if (earlier) return { attempt: toAttempt(earlier), first: false }
       const row = { id: randomUUID(), userId, questionId, choice, correct, createdAt: now() }
       attemptsOf(data).push(row)
       await save()
-      return toAttempt(row)
+      return { attempt: toAttempt(row), first: true }
     },
 
     async listFirstAttempts(userId, questionIds) {

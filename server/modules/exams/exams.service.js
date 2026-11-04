@@ -58,14 +58,12 @@ export async function listTopicQuestions(store, user, examId, topicId, pageValue
   }
 }
 
-// { choice }. The first answer is the one that counts: answering again gives it back (first: false)
-// and records nothing.
+// { choice }. The first answer is the one that counts: answering again (or twice at once) gives it
+// back (first: false) and records nothing.
 export async function answerQuestion(store, user, id, body) {
   if (!CHOICES.includes(body.choice)) throw badRequest(MESSAGES.badChoice)
   const question = await store.getExamQuestion(id)
   if (!question || question.needsReview || question.topic === null || !examById(question.exam)) throw notFound(MESSAGES.questionNotFound)
-  const [earlier] = await store.listFirstAttempts(user.id, [question.id])
-  if (earlier) return { attempt: toPublicQuestion(question, earlier).attempt, first: false }
-  const attempt = await store.createQuestionAttempt(user.id, { questionId: question.id, choice: body.choice, correct: body.choice === question.answer })
-  return { attempt: toPublicQuestion(question, attempt).attempt, first: true }
+  const { attempt, first } = await store.recordFirstAttempt(user.id, { questionId: question.id, choice: body.choice, correct: body.choice === question.answer })
+  return { attempt: toPublicQuestion(question, attempt).attempt, first }
 }

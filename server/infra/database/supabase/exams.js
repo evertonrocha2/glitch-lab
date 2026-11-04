@@ -1,5 +1,7 @@
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
+// Postgres "unique_violation".
+const UNIQUE_VIOLATION = '23505'
 // PostgREST caps an .in() list by URL length: look sourceKeys up a slice at a time.
 const LOOKUP_SLICE = 100
 
@@ -56,8 +58,14 @@ export function createSupabaseExams(db) {
   const visible = (query) => query.not('topic', 'is', null).eq('needs_review', false)
 
   return {
-    async createQuestionAttempt(userId, { questionId, choice, correct }) {
-      return toAttempt(unwrap(await attempts().insert({ user_id: userId, question_id: questionId, choice, correct }).select().single()))
+    // The unique index on (user_id, question_id) settles a race: the losing insert gets 23505 and
+    // reads the answer that won.
+    async recordFirstAttempt(userId, { questionId, choice, correct }) {
+      const { data, error } = await attempts().insert({ user_id: userId, question_id: questionId, choice, correct }).select().single()
+      if (!error) return { attempt: toAttempt(data), first: true }
+      if (error.code !== UNIQUE_VIOLATION) throw new Error(`Supabase: ${error.message}`)
+      const earlier = unwrap(await attempts().select('*').eq('user_id', userId).eq('question_id', questionId).single())
+      return { attempt: toAttempt(earlier), first: false }
     },
 
     async listFirstAttempts(userId, questionIds) {

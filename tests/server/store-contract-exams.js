@@ -35,14 +35,16 @@ export function examsStoreContract(getStore, ids) {
     const [q1, q2] = await store.listExamQuestions(exam, 'funcoes', { offset: 0, limit: 10 })
     const [q3] = await store.listExamQuestions(exam, 'estatistica', { offset: 0, limit: 10 })
 
-    const wrong = await store.createQuestionAttempt(ids.alice, { questionId: q1.id, choice: 'C', correct: false })
-    expect(wrong).toMatchObject({ questionId: q1.id, choice: 'C', correct: false, id: expect.any(String), createdAt: expect.any(String) })
-    // Later answers to the same question never count.
-    await new Promise((done) => setTimeout(done, 5))
-    await store.createQuestionAttempt(ids.alice, { questionId: q1.id, choice: 'B', correct: true })
-    await store.createQuestionAttempt(ids.alice, { questionId: q2.id, choice: 'B', correct: true })
-    await store.createQuestionAttempt(ids.alice, { questionId: q3.id, choice: 'A', correct: false })
-    await store.createQuestionAttempt(ids.bob, { questionId: q1.id, choice: 'B', correct: true })
+    const wrong = await store.recordFirstAttempt(ids.alice, { questionId: q1.id, choice: 'C', correct: false })
+    expect(wrong).toEqual({
+      first: true,
+      attempt: { questionId: q1.id, choice: 'C', correct: false, id: expect.any(String), createdAt: expect.any(String) },
+    })
+    // A later answer to the same question is not saved: the first one comes back.
+    expect(await store.recordFirstAttempt(ids.alice, { questionId: q1.id, choice: 'B', correct: true })).toEqual({ first: false, attempt: wrong.attempt })
+    await store.recordFirstAttempt(ids.alice, { questionId: q2.id, choice: 'B', correct: true })
+    await store.recordFirstAttempt(ids.alice, { questionId: q3.id, choice: 'A', correct: false })
+    expect((await store.recordFirstAttempt(ids.bob, { questionId: q1.id, choice: 'B', correct: true })).first).toBe(true)
 
     const first = await store.listFirstAttempts(ids.alice, [q1.id, q2.id])
     expect(first.map((item) => [item.questionId, item.choice, item.correct]).sort()).toEqual([
@@ -58,6 +60,22 @@ export function examsStoreContract(getStore, ids) {
     ])
     expect(await store.summarizeExamAttempts(ids.bob, exam)).toEqual([{ topic: 'funcoes', answered: 1, correct: 1 }])
     expect(await store.summarizeExamAttempts(ids.alice, newExam())).toEqual([])
+  })
+
+  it('saves only one first answer when two arrive at once', async () => {
+    const store = getStore()
+    const exam = newExam()
+    await store.upsertExamQuestions([examQuestion(exam, { topic: 'funcoes' })])
+    const [question] = await store.listExamQuestions(exam, 'funcoes', { offset: 0, limit: 1 })
+    const results = await Promise.all([
+      store.recordFirstAttempt(ids.alice, { questionId: question.id, choice: 'C', correct: false }),
+      store.recordFirstAttempt(ids.alice, { questionId: question.id, choice: 'B', correct: true }),
+    ])
+    expect(results.filter((item) => item.first)).toHaveLength(1)
+    expect(results[0].attempt).toEqual(results[1].attempt)
+    const [saved] = await store.listFirstAttempts(ids.alice, [question.id])
+    expect(saved).toEqual(results[0].attempt)
+    expect(await store.summarizeExamAttempts(ids.alice, exam)).toEqual([{ topic: 'funcoes', answered: 1, correct: saved.correct ? 1 : 0 }])
   })
 
   it('adds, updates and removes tracks, only my own', async () => {

@@ -83,6 +83,13 @@ it('keeps the first answer', async () => {
   expect(topicOf(exam, 'funcoes')).toMatchObject({ answered: 1, correct: 0 })
 })
 
+it('counts one first answer when two arrive at once', async () => {
+  const [wrong, right] = await Promise.all([answer(funcoes[0].id, 'C'), answer(funcoes[0].id, 'B')])
+  const bodies = [await wrong.json(), await right.json()]
+  expect(bodies.filter((body) => body.first)).toHaveLength(1)
+  expect(bodies[0].attempt).toEqual(bodies[1].attempt)
+})
+
 it('pages a topic', async () => {
   await store.upsertExamQuestions(Array.from({ length: 12 }, (_, index) => examQuestion('enem', { year: 2020, number: index + 1, topic: 'trigonometria' })))
   const first = await (await get('/api/exams/enem/topics/trigonometria/questions')).json()
