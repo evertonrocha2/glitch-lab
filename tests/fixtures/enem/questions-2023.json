@@ -1,0 +1,184 @@
+{
+  "metadata": {
+    "limit": 50,
+    "offset": 0,
+    "total": 4,
+    "hasMore": false
+  },
+  "questions": [
+    {
+      "title": "Questão 1 - ENEM 2023",
+      "index": 1,
+      "discipline": "linguagens",
+      "language": "espanhol",
+      "year": 2023,
+      "context": "**TEXTO I**\n\n¿QUÉ ME PASA?:  \n¿PorQUE ME CUESTA TANTO ESTUDIAR?  \n¿PORQUE ME CUESTA TANTO CONCENTRARME?  \n¿PoRQUE……  \n¿PORQUÉ…..  \n¿PORQUÉ NO CONSIGO APRENDER COMO LOS DEMÁS?\n\n![](https://enem.dev/broken-image.svg)\n\nDisponível em: www.otrasvoceseneducacion.org. Acesso em: 8 nov. 2022.\n\n**ТЕХТО II**\n\nIshaan Awashi es un niño de 8 años cuyo mundo está plagado de maravillas que nadie más parece apreciar: colores, peces, perros y cometas, que simplemente no son importantes en la vida de los adultos, que parecen más interesados en cosas como los deberes, las notas o la limpieza. E Ishaan parece no poder hacer nada bien en clase. Cuando los problemas que ocasiona superan a sus padres, es internado en un colegio para que le disciplinen. Las cosas no mejoran en el nuevo colegio, donde Ishaan tiene además que aceptar estar lejos de sus padres. Hasta que un dia, el nuevo profesor de arte, Ram Shankar Nikumbh, entra en escena, se interesa por el pequeño Ishaan y todo cambia.\n\nDisponível em: https://elfinalde.com. Acesso em: 26 out. 2021 (adaptado)",
+      "files": [],
+      "correctAlternative": "A",
+      "alternativesIntroduction": "O filme Como estrellas en la tierra aborda o tema da dislexia. Relacionando o cartaz do filme com a sinopse, constata-se que o(a)",
+      "alternatives": [
+        {
+          "letter": "A",
+          "text": "Olhar diferenciado para com o outro gera mudanças.",
+          "file": null,
+          "isCorrect": true
+        },
+        {
+          "letter": "B",
+          "text": "Estudante com dislexia apresenta um tom questionador.",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "C",
+          "text": "Abordagem para lidar com a dislexia é pautada na disciplina.",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "D",
+          "text": "Contato com os pais prejudica o acompanhamento da dislexia.",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "E",
+          "text": "Mudança de interesses ocorre na transição da infância para a vida adulta.",
+          "file": null,
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "title": "Questão 2 - ENEM 2023",
+      "index": 2,
+      "discipline": "linguagens",
+      "language": "espanhol",
+      "year": 2023,
+      "context": null,
+      "files": [],
+      "correctAlternative": "A",
+      "alternativesIntroduction": "Me niego rotundamente\nA negar mi voz,\nMi sangre y mi piel.\nY me niego rotundamente\nA dejar de ser yo,\nA dejar de sentirme bien\nCuando miro mi rostro en el es\nCon mi boca\nRotundamente grande\nY mi nariz\nRotundamente hermosa,\nY mis dientes\nRotundamente blancos,\nY mi piel valientemente negra.\nY me niego categóricamente\nA dejar de hablar\nMi lengua, mi acento y mi historia\nY me niego absolutamente\nA ser parte de los que callan,\nDe los que temen,\nDe los que lloran\nPorque me acepto\nRotundamente libre,\nRotundamente negra,\nRotundamente hermosa.\nCAMPELL BARR, S. Disponível em:\nhttps.negracubanateniaqueser.com\nAcesso em 25 out. 2021.\nPara enfatizar caracteristicas e atitudes que reforçam a identidade da mulher negra, o poema da escritora costarriquenha apresenta:",
+      "alternatives": [
+        {
+          "letter": "A",
+          "text": "Advérbios como \"rotundamente\" e \"categóricamente\".",
+          "file": null,
+          "isCorrect": true
+        },
+        {
+          "letter": "B",
+          "text": "Verbos reflexivos como \"me niego\" e \"me acepto\".",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "C",
+          "text": "Adjetivos como \"grande\" e \"hermosa\".",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "D",
+          "text": "Substantivos como \"sangre\" e \"piel\".",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "E",
+          "text": "Adjetivos possessivos como \"mi\" e \"mis\".",
+          "file": null,
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "title": "Questão 136 - ENEM 2023",
+      "index": 136,
+      "discipline": "matematica",
+      "language": null,
+      "year": 2023,
+      "context": "Um artista plástico esculpe uma escultura a partir de um bloco de madeira de lei, em etapas. Inicialmente, esculpe um cone reto com 36 cm de altura e diâmetro da base medindo 18 cm. Em seguida, remove desse cone um cone menor, cujo diâmetro da base mede 6 cm, obtendo, assim, um tronco de cone, conforme ilustrado na figura.\n\n![](https://enem.dev/2023/questions/136/565c2d5a-96a0-4468-9bb1-2710707a40fd.png)\n\nEm seguida, perfura esse tronco de cone, removendo um cilindro reto, de diâmetro 6 cm, cujo eixo de simetria é o mesmo do cone original. Dessa forma, ao final, a escultura tem a forma de um tronco de cone com uma perfuração cilíndrica de base a base.  \nO tipo de madeira utilizada para produzir essa escultura tem massa igual a 0,6 g por centímetro cúbico de volume. Utilize 3 como aproximação para π.",
+      "files": [
+        "https://enem.dev/2023/questions/136/565c2d5a-96a0-4468-9bb1-2710707a40fd.png"
+      ],
+      "correctAlternative": "B",
+      "alternativesIntroduction": "Qual é a massa, em grama, dessa escultura?",
+      "alternatives": [
+        {
+          "letter": "A",
+          "text": "1.198,8",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "B",
+          "text": "1.296,0",
+          "file": null,
+          "isCorrect": true
+        },
+        {
+          "letter": "C",
+          "text": "1.360,8",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "D",
+          "text": "4.665,6",
+          "file": null,
+          "isCorrect": false
+        },
+        {
+          "letter": "E",
+          "text": "4.860,0",
+          "file": null,
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "title": "Questão 141 - ENEM 2023",
+      "index": 141,
+      "discipline": "matematica",
+      "language": null,
+      "year": 2023,
+      "context": null,
+      "files": [],
+      "correctAlternative": "E",
+      "alternativesIntroduction": "Qual a probabilidade de o vencedor do sorteio ser um estudante do terceiro ano?",
+      "alternatives": [
+        {
+          "letter": "A",
+          "text": null,
+          "file": "https://enem.dev/2023/questions/141/e698edb1-adc0-416b-9370-c20a7e878259.jpg",
+          "isCorrect": false
+        },
+        {
+          "letter": "B",
+          "text": null,
+          "file": "https://enem.dev/2023/questions/141/b5f5bdf5-2251-4326-9877-ce9c2d831600.jpg",
+          "isCorrect": false
+        },
+        {
+          "letter": "C",
+          "text": null,
+          "file": "https://enem.dev/2023/questions/141/d241fadb-6516-4ca8-aa9b-e72fff314881.jpg",
+          "isCorrect": false
+        },
+        {
+          "letter": "D",
+          "text": null,
+          "file": "https://enem.dev/2023/questions/141/1dcce683-4ef7-4862-b554-3e3c66de54c3.jpg",
+          "isCorrect": false
+        },
+        {
+          "letter": "E",
+          "text": null,
+          "file": "https://enem.dev/2023/questions/141/7b4de18d-92ca-488f-8419-ec95d852a135.jpg",
+          "isCorrect": true
+        }
+      ]
+    }
+  ]
+}
