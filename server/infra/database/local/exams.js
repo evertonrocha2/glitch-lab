@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto'
 
 const now = () => new Date().toISOString()
 
+// The source repeats a few questions inside a year: one row per sourceKey, the last copy winning.
+const uniqueBySource = (rows) => [...new Map(rows.map((row) => [row.sourceKey, row])).values()]
+
 // Newest exam first, then question order: the order a topic's questions are practiced in.
 const byYearThenNumber = (a, b) => b.year - a.year || a.number - b.number
 
@@ -92,7 +95,9 @@ export function createLocalExams({ load, save }) {
       return true
     },
 
-    // { inserted, updated }. A row whose topic is null keeps the topic already saved.
+    // { inserted, updated }. A row whose topic is null keeps the topic already saved, and an import
+    // can raise a review flag but never clear one set by hand. A sourceKey repeated in the batch is
+    // saved once, the last copy winning.
     async upsertExamQuestions(rows) {
       const data = await load()
       const questions = questionsOf(data)
@@ -100,10 +105,15 @@ export function createLocalExams({ load, save }) {
       let inserted = 0
       let updated = 0
       const stamp = now()
-      for (const row of rows) {
+      for (const row of uniqueBySource(rows)) {
         const found = bySource.get(row.sourceKey)
         if (found) {
-          Object.assign(found, { ...structuredClone(row), topic: row.topic ?? found.topic, updatedAt: stamp })
+          Object.assign(found, {
+            ...structuredClone(row),
+            topic: row.topic ?? found.topic,
+            needsReview: row.needsReview || found.needsReview,
+            updatedAt: stamp,
+          })
           updated++
         } else {
           const created = { id: randomUUID(), ...structuredClone(row), createdAt: stamp, updatedAt: stamp }

@@ -90,8 +90,11 @@ export function createSupabaseExams(db) {
     },
 
     // An upsert on source_key would write topic: null over a saved topic, so new rows are inserted
-    // and known ones updated without their topic when the import sent none.
-    async upsertExamQuestions(rows) {
+    // and known ones updated without their topic when the import sent none, and without lowering a
+    // review flag set by hand. A sourceKey repeated in the batch is saved once, the last copy winning
+    // (inserting both would break the unique key).
+    async upsertExamQuestions(batch) {
+      const rows = [...new Map(batch.map((row) => [row.sourceKey, row])).values()]
       const known = new Set()
       for (let start = 0; start < rows.length; start += LOOKUP_SLICE) {
         const keys = rows.slice(start, start + LOOKUP_SLICE).map((row) => row.sourceKey)
@@ -101,8 +104,9 @@ export function createSupabaseExams(db) {
       if (fresh.length) unwrap(await questions().insert(fresh.map(toRow)))
       const stamp = new Date().toISOString()
       for (const row of rows.filter((item) => known.has(item.sourceKey))) {
-        const { topic, ...patch } = toRow(row)
-        unwrap(await questions().update({ ...patch, ...(topic ? { topic } : {}), updated_at: stamp }).eq('source_key', row.sourceKey))
+        const { topic, needs_review: needsReview, ...patch } = toRow(row)
+        const raised = { ...(topic ? { topic } : {}), ...(needsReview ? { needs_review: true } : {}) }
+        unwrap(await questions().update({ ...patch, ...raised, updated_at: stamp }).eq('source_key', row.sourceKey))
       }
       return { inserted: fresh.length, updated: rows.length - fresh.length }
     },

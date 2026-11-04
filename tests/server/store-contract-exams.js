@@ -93,6 +93,29 @@ export function examsStoreContract(getStore, ids) {
     expect(await store.countExamQuestionsByTopic(exam)).toEqual({ funcoes: 1, estatistica: 1 })
   })
 
+  it('keeps one row for a sourceKey repeated in the same batch, the last one winning', async () => {
+    const store = getStore()
+    const exam = newExam()
+    const row = examQuestion(exam)
+    expect(await store.upsertExamQuestions([row, { ...row, statement: 'Segunda cópia' }])).toEqual({ inserted: 1, updated: 0 })
+    const saved = await store.listUntaggedExamQuestions(exam, 10)
+    expect(saved).toHaveLength(1)
+    expect(saved[0].statement).toBe('Segunda cópia')
+  })
+
+  it('lets an import raise a review flag but never clear one', async () => {
+    const store = getStore()
+    const exam = newExam()
+    const row = examQuestion(exam, { topic: 'funcoes' })
+    await store.upsertExamQuestions([{ ...row, needsReview: true }])
+    await store.upsertExamQuestions([{ ...row, needsReview: false }])
+    expect(await store.countExamQuestionsByTopic(exam)).toEqual({})
+    const other = examQuestion(exam, { topic: 'funcoes' })
+    await store.upsertExamQuestions([other])
+    await store.upsertExamQuestions([{ ...other, needsReview: true }])
+    expect(await store.countExamQuestionsByTopic(exam)).toEqual({})
+  })
+
   it("lists only a topic's visible questions, newest year first", async () => {
     const store = getStore()
     const exam = newExam()
