@@ -88,6 +88,30 @@ describe('fetchYear', () => {
     ])
   })
 
+  it('waits and tries again when the source is rate limited', async () => {
+    vi.useFakeTimers()
+    const a = question(2)
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('slow down', { status: 429, headers: { 'Retry-After': '2' } }))
+      .mockResolvedValueOnce(new Response('slow down', { status: 429 }))
+      .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [a] }))
+    const result = fetchYear(2023, { fetch })
+    await vi.runAllTimersAsync()
+    expect(await result).toEqual([a])
+    expect(fetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('gives up after a few rate limited tries', async () => {
+    vi.useFakeTimers()
+    const fetch = vi.fn().mockImplementation(async () => new Response('slow down', { status: 429 }))
+    const result = fetchYear(2023, { fetch })
+    const settled = expect(result).rejects.toThrow(/429/)
+    await vi.runAllTimersAsync()
+    await settled
+    expect(fetch).toHaveBeenCalledTimes(5)
+  })
+
   it('fails loudly on an HTTP error', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response('nope', { status: 500 }))
     await expect(fetchYear(2023, { fetch })).rejects.toThrow(/2023.*500|500.*2023/)

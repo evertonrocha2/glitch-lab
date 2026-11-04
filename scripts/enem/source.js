@@ -12,7 +12,21 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E']
 
 const AREAS = { linguagens: 'linguagens', 'ciencias-humanas': 'humanas', 'ciencias-natureza': 'natureza', matematica: 'matematica' }
 
-const pause = () => new Promise((done) => setTimeout(done, PAUSE_MS))
+// A rate limited page (429) is asked again up to this many times, waiting Retry-After seconds or a
+// little longer each time.
+const TRIES = 5
+const RETRY_MS = 5_000
+
+const pause = (ms = PAUSE_MS) => new Promise((done) => setTimeout(done, ms))
+
+async function fetchPage(fetch, url) {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(url)
+    if (res.status !== 429 || attempt === TRIES) return res
+    const after = Number(res.headers.get('Retry-After'))
+    await pause(Number.isFinite(after) && after > 0 ? after * 1000 : RETRY_MS * attempt)
+  }
+}
 
 // Every question of one year, a page at a time, with a short pause between pages to go easy on a
 // free service.
@@ -20,7 +34,7 @@ export async function fetchYear(year, { fetch = globalThis.fetch } = {}) {
   const questions = []
   for (let offset = 0; ; offset += PAGE) {
     if (offset > 0) await pause()
-    const res = await fetch(`${API_BASE}/exams/${year}/questions?limit=${PAGE}&offset=${offset}`)
+    const res = await fetchPage(fetch, `${API_BASE}/exams/${year}/questions?limit=${PAGE}&offset=${offset}`)
     if (!res.ok) throw new Error(`api.enem.dev answered ${res.status} for ${year} (offset ${offset})`)
     const page = await res.json()
     questions.push(...(page.questions ?? []))
