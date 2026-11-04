@@ -265,6 +265,36 @@ export async function setTrailMission({ trailId, missionId, done }, token) {
   return (await request(`/api/trails/${encodeURIComponent(trailId)}/missions/${encodeURIComponent(missionId)}`, { method: 'PATCH', body: { done }, token })).trail
 }
 
+// Study tracks (ENEM, programming...): [{ id, examDate, createdAt }].
+export async function listTracks(token) {
+  return (await request('/api/tracks', { token })).tracks
+}
+
+// Picks a track, or changes its exam date (null: no date). Returns the track.
+export async function joinTrack(trackId, { examDate = null } = {}, token) {
+  return (await request(`/api/tracks/${encodeURIComponent(trackId)}`, { method: 'PUT', body: { examDate }, token })).track
+}
+
+export async function leaveTrack(trackId, token) {
+  await request(`/api/tracks/${encodeURIComponent(trackId)}`, { method: 'DELETE', token })
+}
+
+// An exam's areas and topics with my stats: { id, name, joined, examDate, areas }.
+export async function getExam(examId, token) {
+  return (await request(`/api/exams/${encodeURIComponent(examId)}`, { token })).exam
+}
+
+// One page of a topic's real questions: { topic, questions, page, hasMore }. The official answer
+// only comes inside a question's attempt, once I answered it.
+export function listTopicQuestions({ examId, topicId, page = 1 }, token) {
+  return request(`/api/exams/${encodeURIComponent(examId)}/topics/${encodeURIComponent(topicId)}/questions?page=${page}`, { token })
+}
+
+// { attempt: { choice, correct, answer }, first }. Answering again gives back the first answer.
+export function answerExamQuestion(questionId, choice, token) {
+  return request(`/api/exam-questions/${encodeURIComponent(questionId)}/answer`, { method: 'POST', body: { choice }, token })
+}
+
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
