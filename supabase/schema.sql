@@ -906,3 +906,4 @@ as $$
   where q.exam = p_exam and q.topic is not null
   group by q.topic;
 $$;
+revoke execute on function public.exam_attempt_summary(uuid, text) from public, anon, authenticated;
