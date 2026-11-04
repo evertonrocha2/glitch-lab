@@ -101,6 +101,32 @@ it('says when the topic is done', async () => {
   expect(screen.getByRole('link', { name: 'Voltar para ENEM' })).toHaveAttribute('href', '/exams/enem')
 })
 
+it('clears an error once answering works again', async () => {
+  vi.mocked(listTopicQuestions).mockResolvedValue(page([question(2), question(3)]))
+  vi.mocked(answerExamQuestion)
+    .mockRejectedValueOnce(new Error('Sem conexão.'))
+    .mockResolvedValueOnce({ attempt: answered, first: true })
+  open()
+  await screen.findByText('Questão oficial · ENEM 2023 · Q2')
+  await userEvent.click(option('A'))
+  await userEvent.click(screen.getByRole('button', { name: 'Responder' }))
+  expect(await screen.findByText('Sem conexão.')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Responder' }))
+  expect(await screen.findByText('Acertou!')).toBeInTheDocument()
+  expect(screen.queryByText('Sem conexão.')).not.toBeInTheDocument()
+})
+
+it('says the question is gone when answering finds nothing', async () => {
+  vi.mocked(listTopicQuestions).mockResolvedValue(page([question(2)]))
+  vi.mocked(answerExamQuestion).mockRejectedValue(Object.assign(new Error('Questão não encontrada.'), { status: 404 }))
+  open()
+  await screen.findByText('Questão oficial · ENEM 2023 · Q2')
+  await userEvent.click(option('A'))
+  await userEvent.click(screen.getByRole('button', { name: 'Responder' }))
+  expect(await screen.findByText('Questão não encontrada.')).toBeInTheDocument()
+  expect(screen.queryByText('Assunto não encontrado.')).not.toBeInTheDocument()
+})
+
 it('handles an unknown topic', async () => {
   vi.mocked(listTopicQuestions).mockRejectedValue(Object.assign(new Error('Assunto não encontrado.'), { status: 404 }))
   renderAt('/exams/enem/nope', { user: 'ana', locale: 'pt-BR' })

@@ -27,12 +27,14 @@ export default function ExamTopicPage() {
   const [notFound, setNotFound] = useState(false)
   const examName = examId.toUpperCase()
 
+  // loading: the error came from loading the topic's questions, where a 404 means the topic itself
+  // isn't there (an answer's 404 is about that one question, and says so).
   const handleError = useCallback(
-    async (err) => {
+    async (err, { loading = false } = {}) => {
       if (err instanceof AuthError) await signOut()
       else {
         setMessage(err.message)
-        if (err.status === 404) setNotFound(true)
+        if (loading && err.status === 404) setNotFound(true)
       }
     },
     [signOut],
@@ -60,13 +62,14 @@ export default function ExamTopicPage() {
 
   useEffect(() => {
     let live = true
-    loadFrom(1).catch((err) => live && handleError(err))
+    loadFrom(1).catch((err) => live && handleError(err, { loading: true }))
     return () => {
       live = false
     }
   }, [loadFrom, handleError])
 
   async function answer(choice) {
+    setMessage('')
     try {
       const { attempt } = await answerExamQuestion(currentId, choice, await getToken())
       setState((current) => ({ ...current, questions: current.questions.map((item) => (item.id === currentId ? { ...item, attempt } : item)) }))
@@ -76,6 +79,7 @@ export default function ExamTopicPage() {
   }
 
   async function next() {
+    setMessage('')
     const at = state.questions.findIndex((item) => item.id === currentId)
     const following = state.questions.slice(at + 1).find(unanswered)
     if (following) return setCurrentId(following.id)
@@ -86,7 +90,7 @@ export default function ExamTopicPage() {
     try {
       await loadFrom(state.page + 1, state.questions)
     } catch (err) {
-      await handleError(err)
+      await handleError(err, { loading: true })
     }
   }
 
