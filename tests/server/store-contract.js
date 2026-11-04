@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { examsStoreContract } from './store-contract-exams.js'
 import { eventsStoreContract } from './store-contract-events.js'
 import { huntStoreContract } from './store-contract-hunt.js'
 import { reviewStoreContract } from './store-contract-review.js'
@@ -812,6 +813,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
     noteFoldersStoreContract(() => store, ids)
     // Daily puzzle ports and language switches: see store-contract-variants.js.
     variantsStoreContract(() => store, ids)
+    // Exam questions, answers and tracks: see store-contract-exams.js.
+    examsStoreContract(() => store, ids)
   })
 }
 

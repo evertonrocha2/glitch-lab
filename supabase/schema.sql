@@ -845,3 +845,25 @@ create index if not exists note_folders_user_position on public.note_folders (us
 alter table public.note_folders enable row level security;
 alter table public.notes add column if not exists folder_id uuid references public.note_folders (id) on delete set null;
 create index if not exists notes_user_folder on public.notes (user_id, folder_id);
+
+-- ENEM (and later other exams) questions, imported by scripts/import-enem.mjs. topic is set by the
+-- import's AI pass; needs_review hides a question from students (a broken image, a bad import).
+create table if not exists public.exam_questions (
+  id uuid primary key default gen_random_uuid(),
+  exam text not null,
+  year int not null,
+  number int not null,
+  area text not null,
+  language text check (language in ('ingles', 'espanhol')),
+  topic text,
+  context text not null default '',
+  statement text not null default '',
+  alternatives jsonb not null,
+  answer text not null check (answer in ('A', 'B', 'C', 'D', 'E')),
+  needs_review boolean not null default false,
+  source_key text not null unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists exam_questions_topic on public.exam_questions (exam, topic, year desc, number);
+alter table public.exam_questions enable row level security;

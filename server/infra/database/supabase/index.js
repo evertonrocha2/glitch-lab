@@ -3,6 +3,7 @@ import { PROFILE_COLUMNS as SHARED_PROFILE_COLUMNS, profileFromRow } from '../pr
 import { createSupabaseCommunity } from './community.js'
 import { createSupabaseDuels } from './duel.js'
 import { createSupabaseEvents } from './events.js'
+import { createSupabaseExams } from './exams.js'
 import { createSupabaseHunt } from './hunt.js'
 import { createSupabaseReview } from './review.js'
 import { createSupabaseInterrogations } from './interrogation.js'
@@ -498,5 +499,6 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabaseNoteFolders(db),
     // Daily puzzle ports and language switches: see puzzle-variants.js.
     ...createSupabasePuzzleVariants(db, { toChallenge }),
+    ...createSupabaseExams(db),
   }
 }
