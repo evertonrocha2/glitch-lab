@@ -88,6 +88,9 @@ const AppHeader = memo(function AppHeader() {
             <NavLink to="/board" className={navClass}>
               {t('app.nav.board')}
             </NavLink>
+            <NavLink to="/exams/enem" className={navClass}>
+              {t('app.nav.enem')}
+            </NavLink>
             <NavLink to="/daily" className={navClass}>
               {t('app.nav.daily')}
             </NavLink>

@@ -21,6 +21,7 @@ const {
   EventEditorPage,
   EventPage,
   EventsPage,
+  ExamPage,
   GlitchdlePage,
   GymPage,
   HuntPage,
@@ -70,6 +71,15 @@ export function AppRoutes() {
           element={
             <RequireAuth>
               <BoardPage />
+            </RequireAuth>
+          }
+        />
+        {/* Exam practice: the exam's topics, and a topic's real questions one at a time. */}
+        <Route
+          path="/exams/:exam"
+          element={
+            <RequireAuth>
+              <ExamPage />
             </RequireAuth>
           }
         />
