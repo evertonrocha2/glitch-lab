@@ -7,15 +7,17 @@ export const API_BASE = 'https://api.enem.dev/v1'
 export const ENEM_YEARS = [2019, 2020, 2021, 2022, 2023]
 
 const PAGE = 50
-const PAUSE_MS = 300
+// The source allows 10 requests per 10 seconds: one page a little over a second apart stays under.
+const PAUSE_MS = 1_100
 const LETTERS = ['A', 'B', 'C', 'D', 'E']
 
 const AREAS = { linguagens: 'linguagens', 'ciencias-humanas': 'humanas', 'ciencias-natureza': 'natureza', matematica: 'matematica' }
 
 // A rate limited page (429) is asked again up to this many times, waiting Retry-After seconds or a
-// little longer each time.
+// little longer each time, but never more than a minute (the source has sent Retry-After: 10000).
 const TRIES = 5
 const RETRY_MS = 5_000
+const MAX_WAIT_MS = 60_000
 
 const pause = (ms = PAUSE_MS) => new Promise((done) => setTimeout(done, ms))
 
@@ -24,22 +26,31 @@ async function fetchPage(fetch, url) {
     const res = await fetch(url)
     if (res.status !== 429 || attempt === TRIES) return res
     const after = Number(res.headers.get('Retry-After'))
-    await pause(Number.isFinite(after) && after > 0 ? after * 1000 : RETRY_MS * attempt)
+    await pause(Math.min(Number.isFinite(after) && after > 0 ? after * 1000 : RETRY_MS * attempt, MAX_WAIT_MS))
   }
 }
 
+async function readPage(fetch, year, query) {
+  const res = await fetchPage(fetch, `${API_BASE}/exams/${year}/questions?${query}`)
+  if (!res.ok) throw new Error(`api.enem.dev answered ${res.status} for ${year} (${query})`)
+  return res.json()
+}
+
 // Every question of one year, a page at a time, with a short pause between pages to go easy on a
-// free service.
+// free service. The source lists the Spanish version of Linguagens 1-5 unless English is asked for,
+// so one more request brings the English ones.
 export async function fetchYear(year, { fetch = globalThis.fetch } = {}) {
   const questions = []
   for (let offset = 0; ; offset += PAGE) {
     if (offset > 0) await pause()
-    const res = await fetchPage(fetch, `${API_BASE}/exams/${year}/questions?limit=${PAGE}&offset=${offset}`)
-    if (!res.ok) throw new Error(`api.enem.dev answered ${res.status} for ${year} (offset ${offset})`)
-    const page = await res.json()
+    const page = await readPage(fetch, year, `limit=${PAGE}&offset=${offset}`)
     questions.push(...(page.questions ?? []))
-    if (!page.metadata?.hasMore) return questions
+    if (!page.metadata?.hasMore) break
   }
+  await pause()
+  const english = await readPage(fetch, year, 'limit=10&offset=0&language=ingles')
+  questions.push(...(english.questions ?? []).filter((item) => item.language === 'ingles'))
+  return questions
 }
 
 // A question as the store saves it, or null when it can't be used (no official answer, an area the

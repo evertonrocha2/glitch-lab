@@ -71,7 +71,11 @@ describe('fetchYear', () => {
     expect(API_BASE).toBe('https://api.enem.dev/v1')
   })
 
-  it('pages through a year', async () => {
+  // The source answers with the Spanish version of Linguagens 1-5 unless English is asked for.
+  const english = (index) => ({ ...question(2), index, language: 'ingles' })
+  const englishPage = () => Response.json({ metadata: { hasMore: true }, questions: [english(1), english(2), question(136)] })
+
+  it('pages through a year, then adds the English questions', async () => {
     vi.useFakeTimers()
     const a = question(2)
     const b = question(136)
@@ -79,12 +83,14 @@ describe('fetchYear', () => {
       .fn()
       .mockResolvedValueOnce(Response.json({ metadata: { hasMore: true }, questions: [a] }))
       .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [b] }))
+      .mockResolvedValueOnce(englishPage())
     const result = fetchYear(2023, { fetch })
     await vi.runAllTimersAsync()
-    expect(await result).toEqual([a, b])
+    expect(await result).toEqual([a, b, english(1), english(2)])
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
       'https://api.enem.dev/v1/exams/2023/questions?limit=50&offset=0',
       'https://api.enem.dev/v1/exams/2023/questions?limit=50&offset=50',
+      'https://api.enem.dev/v1/exams/2023/questions?limit=10&offset=0&language=ingles',
     ])
   })
 
@@ -96,10 +102,27 @@ describe('fetchYear', () => {
       .mockResolvedValueOnce(new Response('slow down', { status: 429, headers: { 'Retry-After': '2' } }))
       .mockResolvedValueOnce(new Response('slow down', { status: 429 }))
       .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [a] }))
+      .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [] }))
     const result = fetchYear(2023, { fetch })
     await vi.runAllTimersAsync()
     expect(await result).toEqual([a])
-    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(4)
+  })
+
+  it('never waits more than a minute, whatever Retry-After asks', async () => {
+    vi.useFakeTimers()
+    const a = question(2)
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('slow down', { status: 429, headers: { 'Retry-After': '10000' } }))
+      .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [a] }))
+      .mockResolvedValueOnce(Response.json({ metadata: { hasMore: false }, questions: [] }))
+    const started = Date.now()
+    const result = fetchYear(2023, { fetch })
+    await vi.runAllTimersAsync()
+    expect(await result).toEqual([a])
+    // The capped wait, plus the short pause before the English page: far from Retry-After's 10000 s.
+    expect(Date.now() - started).toBeLessThanOrEqual(62_000)
   })
 
   it('gives up after a few rate limited tries', async () => {

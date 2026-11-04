@@ -58,7 +58,8 @@ export default function QuestionCard({ question, onAnswer, examName = 'ENEM' }) 
     <PixelCard className="p-4 sm:p-6">
       <p className="font-label text-[10px] text-secondary">{t('exams.badge.official', { exam: examName, year: question.year, number: question.number })}</p>
       <QuestionText text={question.context} className="mt-4" />
-      <QuestionText text={question.statement} className="mt-4 font-semibold" />
+      {/* Regular weight: the source sometimes puts a whole poem or text here, not only the command. */}
+      <QuestionText text={question.statement} className="mt-4" />
       <div className="mt-5 space-y-2">
         {question.alternatives.map((item) => (
           <Alternative key={item.letter} item={item} picked={picked} attempt={attempt} onPick={setPicked} />
