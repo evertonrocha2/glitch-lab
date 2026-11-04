@@ -235,6 +235,13 @@ const en = {
   'server.studyManualStart': 'Pick a start time on that day that has already passed.',
   'server.studyNoteNotYours': 'That note is not in your notes.',
   'server.studyNotFound': 'Study session not found.',
+  'server.examNotFound': 'Exam not found.',
+  'server.examTopicNotFound': 'Topic not found.',
+  'server.examQuestionNotFound': 'Question not found.',
+  'server.examBadChoice': 'Pick one of the alternatives.',
+  'server.trackNotFound': 'Track not found.',
+  'server.trackBadExamDate': 'Pick an exam date from today up to 3 years ahead.',
+  'server.trackNoExamDate': 'This track has no exam date.',
   'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
 
   // Community events.
@@ -500,6 +507,13 @@ const ptBR = {
   'server.studyManualStart': 'Escolha um horário de início nesse dia que já tenha passado.',
   'server.studyNoteNotYours': 'Essa nota não está nas suas notas.',
   'server.studyNotFound': 'Sessão de estudo não encontrada.',
+  'server.examNotFound': 'Prova não encontrada.',
+  'server.examTopicNotFound': 'Assunto não encontrado.',
+  'server.examQuestionNotFound': 'Questão não encontrada.',
+  'server.examBadChoice': 'Escolha uma das alternativas.',
+  'server.trackNotFound': 'Trilha não encontrada.',
+  'server.trackBadExamDate': 'Escolha uma data de prova de hoje até daqui a 3 anos.',
+  'server.trackNoExamDate': 'Esta trilha não tem data de prova.',
   'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',

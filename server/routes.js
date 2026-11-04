@@ -8,6 +8,7 @@ import { cronRoutes } from './modules/cron/cron.routes.js'
 import { dailyRoutes } from './modules/daily/daily.routes.js'
 import { duelsRoutes } from './modules/duels/duels.routes.js'
 import { eventsRoutes } from './modules/events/events.routes.js'
+import { examsRoutes } from './modules/exams/exams.routes.js'
 import { glitchdleRoutes } from './modules/glitchdle/glitchdle.routes.js'
 import { huntRoutes } from './modules/hunt/hunt.routes.js'
 import { interrogationRoutes } from './modules/interrogation/interrogation.routes.js'
@@ -38,6 +39,7 @@ export function apiRouter() {
     reviewRoutes,
     studyRoutes,
     trailsRoutes,
+    examsRoutes,
     articlesRoutes,
     eventsRoutes,
     assistantRoutes,
