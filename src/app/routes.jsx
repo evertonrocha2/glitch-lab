@@ -36,6 +36,7 @@ const {
   PublicProfilePage,
   StudyPage,
   TrailPage,
+  WorldPage,
 } = pages
 
 export function RequireAuth({ children }) {
@@ -129,6 +130,14 @@ export function AppRoutes() {
           element={
             <RequireAuth>
               <HuntPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/mundo"
+          element={
+            <RequireAuth>
+              <WorldPage />
             </RequireAuth>
           }
         />

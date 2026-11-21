@@ -24,6 +24,17 @@ const en = {
   'world.locked': 'Locked: {progress}.',
   'world.locked.study': 'Study to open it',
   'world.announce.travel': 'You entered {world}',
+
+  'world.nav': 'Glitch World',
+  'world.page.kicker': 'Glitch World',
+  'world.page.loading': 'Loading the world',
+  'world.panel.goal': 'Closest to opening',
+  'world.panel.title': 'Worlds',
+  'world.status.open': 'Open',
+  'world.zone': '{world}, area {n}',
+  'world.goal': '{target}: {left}',
+  'world.left.enemCorrect': { one: '{count} more right answer in {area}', other: '{count} more right answers in {area}' },
+  'world.left.codeSolved': { one: '{count} more programming challenge', other: '{count} more programming challenges' },
 }
 
 const pt = {
@@ -51,6 +62,17 @@ const pt = {
   'world.locked': 'Trancado: {progress}.',
   'world.locked.study': 'Estudar para abrir',
   'world.announce.travel': 'Você entrou em {world}',
+
+  'world.nav': 'Glitch World',
+  'world.page.kicker': 'Glitch World',
+  'world.page.loading': 'Carregando o mundo',
+  'world.panel.goal': 'Mais perto de abrir',
+  'world.panel.title': 'Mundos',
+  'world.status.open': 'Aberto',
+  'world.zone': '{world}, área {n}',
+  'world.goal': '{target}: {left}',
+  'world.left.enemCorrect': { one: 'falta {count} acerto em {area}', other: 'faltam {count} acertos em {area}' },
+  'world.left.codeSolved': { one: 'falta {count} desafio de programação', other: 'faltam {count} desafios de programação' },
 }
 
 export default { en, 'pt-BR': pt }

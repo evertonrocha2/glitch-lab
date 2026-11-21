@@ -97,6 +97,9 @@ const AppHeader = memo(function AppHeader() {
             <NavLink to="/glitchdle" className={navClass}>
               {t('app.nav.glitchdle')}
             </NavLink>
+            <NavLink to="/mundo" className={navClass}>
+              {t('world.nav')}
+            </NavLink>
             <NavLink to="/duel" className={navClass}>
               {t('duel.nav')}
             </NavLink>

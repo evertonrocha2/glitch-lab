@@ -3,7 +3,7 @@ import { zoneAt } from '../../../../shared/world/map.js'
 import { TILE_PX, TILES } from '../../../../shared/world/tiles.js'
 import { AVATAR_STYLES } from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import { cameraFor, TILE_SCREEN_PX } from '../camera.js'
-import { HERO_FRAMES, LOCK } from '../hero-sprite.js'
+import { HERO_FRAMES, LOCK, LOCK_COLORS } from '../hero-sprite.js'
 
 // Each sprite line as runs of one color: [{ x, y, w, pixel }], skipping see-through pixels.
 function runsOf(sprite) {
@@ -25,8 +25,6 @@ function Pixels({ sprite, paint }) {
 }
 
 const TILE_ENTRIES = Object.entries(TILES)
-// Plain colors: a CSS variable doesn't work in a fill attribute.
-const LOCK_COLORS = { k: '#1c1d26', y: '#e0a030' }
 const HERO_CLASSES = { k: 'fill-ink', w: 'fill-white' }
 const slide = 'motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-linear'
 const translate = (x, y) => ({ transform: `translate(${x * TILE_PX}px, ${y * TILE_PX}px)` })

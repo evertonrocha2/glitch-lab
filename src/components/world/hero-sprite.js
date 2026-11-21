@@ -15,3 +15,5 @@ export const HERO_FRAMES = { down: frames(DOWN), up: frames(UP), left: frames(LE
 
 // A padlock, drawn small on the door of a zone that's still locked (y is gold).
 export const LOCK = ['..kkkk..', '.k....k.', '.k....k.', 'kkkkkkkk', 'kyyyyyyk', 'kyyykyyk', 'kyyyyyyk', 'kkkkkkkk']
+// Plain colors: a CSS variable doesn't work in a fill attribute.
+export const LOCK_COLORS = { k: '#1c1d26', y: '#e0a030' }

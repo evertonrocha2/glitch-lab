@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { topicById } from '../../../../shared/exams/catalog.js'
-import { ENEM } from '../../../../shared/exams/enem.js'
 import { canEnter, pathTo, portalAt, terminalNear, tileAt, zoneAt } from '../../../../shared/world/map.js'
 import { isSolid } from '../../../../shared/world/tiles.js'
 import { openZones } from '../../../../shared/world/unlocks.js'
@@ -10,6 +9,7 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import { viewportFor } from '../camera.js'
 import DPad from '../d-pad/d-pad.jsx'
+import { progressText, studyHref } from '../requirement-text.js'
 import TileMap from '../tile-map/tile-map.jsx'
 
 // About 8 steps a second while a key, a pad button or a click path keeps the hero walking.
@@ -22,15 +22,10 @@ const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 
 const directionOf = (key) => KEYS[key] ?? KEYS[key.toLowerCase()] ?? null
 const directionBetween = (from, to) => Object.keys(DIRECTIONS).find((dir) => from.x + DIRECTIONS[dir].x === to.x && from.y + DIRECTIONS[dir].y === to.y) ?? null
 
-const areaName = (id) => ENEM.areas.find((area) => area.id === id)?.shortName ?? id
-
 // Where a terminal takes the student.
 const PAGES = { daily: '/daily', glitchdle: '/glitchdle', hunt: '/hunt' }
 const terminalHref = (terminal) => (terminal.kind === 'topic' ? `/exams/enem/${terminal.topicId}` : PAGES[terminal.kind])
 const PAGE_NAMES = { daily: 'app.nav.daily', glitchdle: 'app.nav.glitchdle', hunt: 'hunt.title' }
-
-// Where to go to open a lock: ENEM practice for right answers, the daily puzzle for programming.
-const studyHref = (requirement) => (requirement.signal === 'enemCorrect' ? '/exams/enem' : '/daily')
 
 // The hero walking a Glitch World map. state is GET /api/world ({ worlds, zones, position }): what's open
 // comes from the server, the walking happens here. onSave(position, { keepalive }) keeps the place to
@@ -231,8 +226,6 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   const world = worldById(hero.world)
   const worldName = t(`world.name.${hero.world}`)
   const lockedZones = new Set(world.zones.map((zone) => zone.id).filter((id) => !openZones(state, hero.world).has(id)))
-  const progressOf = ({ requirement, have, need }) =>
-    t(`world.need.${requirement.signal}`, { have, need, area: requirement.area ? areaName(requirement.area) : '' })
   const terminalLabel =
     terminal &&
     (terminal.kind === 'topic'
@@ -273,7 +266,7 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
         <div role="status" className="min-h-10 min-w-0 flex-1">
           {notice?.kind === 'locked' && notice.lock && (
             <p>
-              {t('world.locked', { progress: progressOf(notice.lock) })}{' '}
+              {t('world.locked', { progress: progressText(t, notice.lock) })}{' '}
               <Link to={studyHref(notice.lock.requirement)} className="font-label text-secondary underline underline-offset-4">
                 {t('world.locked.study')}
               </Link>
