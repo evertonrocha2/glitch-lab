@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { canEnter, reachableFrom, tileAt } from '../../shared/world/map.js'
 import { TILES } from '../../shared/world/tiles.js'
+import { topicById, topicsOfArea } from '../../shared/exams/catalog.js'
 import { HUB_ID, WORLDS, worldById } from '../../shared/world/worlds.js'
 
 const NONE = new Set()
@@ -23,12 +24,12 @@ describe.each(WORLDS.map((world) => [world.id, world]))('%s', (_, world) => {
     expect(canEnter(world, world.spawn.x, world.spawn.y, NONE)).toBe(true)
   })
 
-  it('has a portal entry on every portal tile, landing on a walkable tile outside any zone', () => {
+  it('has a portal entry on every portal tile, landing on a walkable tile of another world', () => {
     const tiles = tilesOf(world, 'O')
     expect(world.portals.map(({ x, y }) => `${x},${y}`).sort()).toEqual(tiles.map(({ x, y }) => `${x},${y}`).sort())
     for (const portal of world.portals) {
       const target = worldById(portal.to)
-      if (!target) continue // a world still to be drawn (see the hub test below)
+      expect(target, portal.to).not.toBeNull()
       expect(portal.to).not.toBe(world.id)
       expect(canEnter(target, portal.at.x, portal.at.y, NONE)).toBe(true)
     }
@@ -79,7 +80,14 @@ it('sizes the hub at 20x14 and each world at 32x20', () => {
   }
 })
 
+const WORLD_IDS = ['floresta-js', 'caverna-sql', 'biblioteca-linguagens', 'cidade-humanas', 'jardim-natureza', 'torre-matematica']
+
+it('lists the hub and the six worlds, in order', () => {
+  expect(WORLDS.map((world) => world.id)).toEqual([HUB_ID, ...WORLD_IDS])
+})
+
 it('has one portal from the hub to each world, and one back from each world', () => {
+  expect(hub().portals.map((portal) => portal.to).sort()).toEqual([...WORLD_IDS].sort())
   for (const world of WORLDS.filter((item) => item.id !== HUB_ID)) {
     expect(hub().portals.filter((portal) => portal.to === world.id), world.id).toHaveLength(1)
     expect(world.portals.filter((portal) => portal.to === HUB_ID), world.id).toHaveLength(1)
@@ -97,6 +105,44 @@ it('opens the JavaScript Forest from the start, asking 8 and 20 solved challenge
     ['z2', { signal: 'codeSolved', count: 8 }],
     ['z3', { signal: 'codeSolved', count: 20 }],
   ])
+})
+
+it('opens the forest from the start and asks for study everywhere else', () => {
+  expect(worldById('caverna-sql').requirement).toEqual({ signal: 'codeSolved', count: 3 })
+  expect(worldById('biblioteca-linguagens').requirement).toEqual({ signal: 'enemCorrect', area: 'linguagens', count: 5 })
+  expect(worldById('cidade-humanas').requirement).toEqual({ signal: 'enemCorrect', area: 'humanas', count: 5 })
+  expect(worldById('jardim-natureza').requirement).toEqual({ signal: 'enemCorrect', area: 'natureza', count: 5 })
+  expect(worldById('torre-matematica').requirement).toEqual({ signal: 'enemCorrect', area: 'matematica', count: 5 })
+})
+
+it('asks 15 and 40 right answers in the area for the inner zones of an ENEM world, and 8 and 20 solved in the cave', () => {
+  for (const world of WORLDS.filter((item) => item.kind === 'enem')) {
+    expect(world.zones.map((zone) => [zone.id, zone.requirement]), world.id).toEqual([
+      ['z2', { signal: 'enemCorrect', area: world.area, count: 15 }],
+      ['z3', { signal: 'enemCorrect', area: world.area, count: 40 }],
+    ])
+  }
+  expect(worldById('caverna-sql').zones.map((zone) => zone.requirement)).toEqual([
+    { signal: 'codeSolved', count: 8 },
+    { signal: 'codeSolved', count: 20 },
+  ])
+})
+
+it('has one terminal for each topic of the area in each ENEM world', () => {
+  for (const world of WORLDS.filter((item) => item.kind === 'enem')) {
+    const ids = world.terminals.map((terminal) => terminal.topicId).sort()
+    expect(world.terminals.every((terminal) => terminal.kind === 'topic'), world.id).toBe(true)
+    expect(ids, world.id).toEqual(topicsOfArea('enem', world.area).map((topic) => topic.id).sort())
+    for (const id of ids) expect(topicById('enem', id).area).toBe(world.area)
+  }
+})
+
+it('gives tech worlds only daily, glitchdle and hunt terminals, all three in zone 1', () => {
+  for (const world of WORLDS.filter((item) => item.kind === 'tech')) {
+    expect(new Set(world.terminals.map((terminal) => terminal.kind)), world.id).toEqual(new Set(['daily', 'glitchdle', 'hunt']))
+    const zoneOne = world.terminals.filter((terminal) => !world.zones.some((zone) => inRect(zone.rect, terminal)))
+    expect(new Set(zoneOne.map((terminal) => terminal.kind)), world.id).toEqual(new Set(['daily', 'glitchdle', 'hunt']))
+  }
 })
 
 it('finds worlds by id only', () => {
