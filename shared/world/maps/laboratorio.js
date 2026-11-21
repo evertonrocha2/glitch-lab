@@ -1,0 +1,35 @@
+// O Laboratório: the hub every player starts in. No zones and no terminals, just a portal to each
+// world: the tech worlds on top, the ENEM worlds below. A portal lands on its world's spawn.
+export const LABORATORIO = {
+  id: 'laboratorio',
+  kind: 'hub',
+  area: null,
+  requirement: null,
+  rows: [
+    '####################',
+    '#__O_____O_____O___#',
+    '#__:_____:_____:___#',
+    '#__:_____:_____:___#',
+    '#__:::::::::::::___#',
+    '#________:_________#',
+    '#__B_____:_____B___#',
+    '#__B_____:_____B___#',
+    '#________:_________#',
+    '#__:::::::::::::___#',
+    '#__:_____:_____:___#',
+    '#__:_____:_____:___#',
+    '#__O_____O_____O___#',
+    '####################',
+  ],
+  spawn: { x: 9, y: 7 },
+  portals: [
+    { x: 3, y: 1, to: 'floresta-js', at: { x: 3, y: 10 } },
+    { x: 9, y: 1, to: 'caverna-sql', at: { x: 3, y: 10 } },
+    { x: 15, y: 1, to: 'biblioteca-linguagens', at: { x: 3, y: 10 } },
+    { x: 3, y: 12, to: 'cidade-humanas', at: { x: 3, y: 10 } },
+    { x: 9, y: 12, to: 'jardim-natureza', at: { x: 3, y: 10 } },
+    { x: 15, y: 12, to: 'torre-matematica', at: { x: 3, y: 10 } },
+  ],
+  zones: [],
+  terminals: [],
+}
