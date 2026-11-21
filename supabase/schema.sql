@@ -910,3 +910,14 @@ revoke execute on function public.exam_attempt_summary(uuid, text) from public, 
 
 -- One answer per student and question: the first one. Two answers sent at once can't both land.
 create unique index if not exists question_attempts_one on public.question_attempts (user_id, question_id);
+
+-- Where each player left their hero in Glitch World. Only a place to come back to: unlocks are
+-- worked out from study on every read and never stored.
+create table if not exists public.world_positions (
+  user_id uuid primary key references public.users (id) on delete cascade,
+  world text not null,
+  x int not null,
+  y int not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.world_positions enable row level security;

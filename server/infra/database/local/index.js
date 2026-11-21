@@ -6,6 +6,7 @@ import { createLocalCommunity } from './community.js'
 import { createLocalDuels } from './duel.js'
 import { createLocalEvents } from './events.js'
 import { createLocalExams } from './exams.js'
+import { createLocalWorld } from './world.js'
 import { createLocalHunt } from './hunt.js'
 import { createLocalReview } from './review.js'
 import { createLocalInterrogations } from './interrogation.js'
@@ -441,5 +442,6 @@ export function createLocalStore({ file }) {
     // Daily puzzle ports and language switches: see puzzle-variants.js.
     ...createLocalPuzzleVariants({ load, save }),
     ...createLocalExams({ load, save }),
+    ...createLocalWorld({ load, save }),
   }
 }

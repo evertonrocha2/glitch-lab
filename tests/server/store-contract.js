@@ -9,6 +9,7 @@ import { messagesStoreContract } from './store-contract-messages.js'
 import { noteFoldersStoreContract } from './store-contract-note-folders.js'
 import { studyStoreContract } from './store-contract-study.js'
 import { variantsStoreContract } from './store-contract-variants.js'
+import { worldStoreContract } from './store-contract-world.js'
 
 // Every store (local file, Supabase) must pass these. Not a test file itself: suites import it.
 export const CASE = {
@@ -815,6 +816,8 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
     variantsStoreContract(() => store, ids)
     // Exam questions, answers and tracks: see store-contract-exams.js.
     examsStoreContract(() => store, ids)
+    // Glitch World positions: see store-contract-world.js.
+    worldStoreContract(() => store, ids)
   })
 }
 
