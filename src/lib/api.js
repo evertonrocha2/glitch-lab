@@ -295,6 +295,16 @@ export function answerExamQuestion(questionId, choice, token) {
   return request(`/api/exam-questions/${encodeURIComponent(questionId)}/answer`, { method: 'POST', body: { choice }, token })
 }
 
+// Glitch World: { worlds, zones, signals, position }. What's open is worked out by the server.
+export function getWorld(token) {
+  return request('/api/world', { token })
+}
+
+// Saves where the hero stands: { world, x, y }. keepalive lets the save finish after the page goes away.
+export async function saveWorldPosition({ world, x, y }, token, { keepalive = false } = {}) {
+  return (await request('/api/world/position', { method: 'PUT', body: { world, x, y }, token, keepalive })).position
+}
+
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
   return request('/api/assistant', { method: 'POST', body: { messages, page }, token })
