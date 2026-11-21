@@ -242,6 +242,9 @@ const en = {
   'server.trackNotFound': 'Track not found.',
   'server.trackBadExamDate': 'Pick an exam date from today up to 3 years ahead.',
   'server.trackNoExamDate': 'This track has no exam date.',
+  'server.worldNotFound': 'World not found.',
+  'server.worldLocked': 'This world is still locked.',
+  'server.worldBadPosition': "Your hero can't stand there.",
   'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
 
   // Community events.
@@ -514,6 +517,9 @@ const ptBR = {
   'server.trackNotFound': 'Trilha não encontrada.',
   'server.trackBadExamDate': 'Escolha uma data de prova de hoje até daqui a 3 anos.',
   'server.trackNoExamDate': 'Esta trilha não tem data de prova.',
+  'server.worldNotFound': 'Mundo não encontrado.',
+  'server.worldLocked': 'Esse mundo ainda está trancado.',
+  'server.worldBadPosition': 'Seu personagem não pode ficar aí.',
   'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',
