@@ -10,6 +10,8 @@ const STEPS = [
   { x: -1, y: 0 },
 ]
 
+const FACING = { up: 0, right: 1, down: 2, left: 3 }
+
 const keyOf = (x, y) => `${x},${y}`
 const neighbors = ({ x, y }) => STEPS.map((step) => ({ x: x + step.x, y: y + step.y }))
 const inside = (rect, x, y) => x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h
@@ -34,13 +36,16 @@ export function canEnter(world, x, y, openZones) {
 
 export const portalAt = (world, x, y) => world.portals.find((portal) => portal.x === x && portal.y === y) ?? null
 
-// The terminal right next to the tile (up, down, left or right), if there is one.
-export function terminalNear(world, x, y) {
-  return world.terminals.find((terminal) => Math.abs(terminal.x - x) + Math.abs(terminal.y - y) === 1) ?? null
+// The terminal right next to the tile (up, down, left or right), if there is one. Terminals sit two
+// tiles apart, so a tile can touch two: the one the hero faces wins.
+export function terminalNear(world, x, y, facing) {
+  const ahead = facing && STEPS[FACING[facing]]
+  const faced = ahead && world.terminals.find((terminal) => terminal.x === x + ahead.x && terminal.y === y + ahead.y)
+  return faced ?? world.terminals.find((terminal) => Math.abs(terminal.x - x) + Math.abs(terminal.y - y) === 1) ?? null
 }
 
 // Breadth-first search from `from`. Stops at the first tile `isGoal` accepts; returns the steps to it
-// (without `from`), or null.
+// (without `from`), or null. A portal is only ever the end of a walk: walking over one would travel.
 function search(world, from, openZones, isGoal) {
   if (isGoal(from)) return []
   const cameFrom = new Map([[keyOf(from.x, from.y), null]])
@@ -56,6 +61,7 @@ function search(world, from, openZones, isGoal) {
         for (let back = current; back !== from; back = cameFrom.get(keyOf(back.x, back.y))) path.unshift(back)
         return path
       }
+      if (portalAt(world, next.x, next.y)) continue
       queue.push(next)
     }
   }

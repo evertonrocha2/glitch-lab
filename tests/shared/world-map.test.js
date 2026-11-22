@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { canEnter, findPath, pathTo, portalAt, reachableFrom, terminalNear, tileAt, zoneAt } from '../../shared/world/map.js'
 import { TILES } from '../../shared/world/tiles.js'
+import { worldById } from '../../shared/world/worlds.js'
 
 // 5x4: water at (2,1), a closed zone z2 in the bottom right corner behind a door at (3,2),
 // a terminal at (0,3) and a portal at (4,0).
@@ -94,4 +95,20 @@ it('lists every tile reachable from a start', () => {
   expect(closed.has('4,3')).toBe(false)
   expect(closed.has('2,1')).toBe(false)
   expect(reachableFrom(TINY, { x: 0, y: 0 }, new Set(['z2'])).has('4,3')).toBe(true)
+})
+
+it('never walks through a portal on the way somewhere else, but can walk onto one', () => {
+  const hub = worldById('laboratorio')
+  const path = findPath(hub, { x: 5, y: 1 }, { x: 9, y: 1 }, NONE)
+  expect(path.at(-1)).toEqual({ x: 9, y: 1 })
+  expect(path.some((step) => portalAt(hub, step.x, step.y))).toBe(false)
+  expect(findPath(hub, { x: 5, y: 1 }, { x: 7, y: 1 }, NONE).at(-1)).toEqual({ x: 7, y: 1 })
+})
+
+it('prefers the terminal the hero faces when two are next to it', () => {
+  const two = { ...TINY, rows: ['.....', '.....', 'C.C..'], zones: [], portals: [], terminals: [{ x: 0, y: 2, kind: 'daily' }, { x: 2, y: 2, kind: 'hunt' }] }
+  expect(terminalNear(two, 1, 2, 'right').kind).toBe('hunt')
+  expect(terminalNear(two, 1, 2, 'left').kind).toBe('daily')
+  expect(terminalNear(two, 1, 2, 'up').kind).toBe('daily')
+  expect(terminalNear(two, 1, 2).kind).toBe('daily')
 })

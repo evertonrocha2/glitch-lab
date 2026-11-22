@@ -50,15 +50,30 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   const timers = useRef({ repeat: null, walk: null, save: null })
   const held = useRef(null)
   const path = useRef([])
+  // Saves go out one after another, so an older one can never land after a newer one.
+  const saving = useRef(Promise.resolve())
+  const inFlight = useRef(0)
+  // A terminal opens once, and only while the game is still on screen.
+  const opening = useRef(false)
+  const mounted = useRef(true)
   useEffect(() => {
     stateRef.current = state
     saveRef.current = onSave
     worldChangeRef.current = onWorldChange
   })
 
+  // keepalive saves are the page going away: they go out right now instead of waiting their turn.
   const persist = useCallback((keepalive) => {
     const { world, x, y } = heroRef.current
-    return Promise.resolve(saveRef.current({ world, x, y }, { keepalive })).catch(() => {})
+    const send = () => Promise.resolve(saveRef.current({ world, x, y }, { keepalive })).catch(() => {})
+    if (keepalive) return send()
+    const run = () => {
+      inFlight.current++
+      return send().finally(() => inFlight.current--)
+    }
+    // Nothing out: go now. Otherwise wait for the saves still out.
+    saving.current = inFlight.current === 0 ? run() : saving.current.then(run)
+    return saving.current
   }, [])
 
   const saveNow = useCallback(() => {
@@ -154,42 +169,64 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
       stopPath()
       const current = heroRef.current
       const found = pathTo(worldById(current.world), current, { x, y }, openZones(stateRef.current, current.world))
-      if (!found?.length) return
+      if (!found) return
+      // Next to a tile it can't stand on (a terminal, a locked door), the hero turns to it, bumping
+      // into it: that picks the clicked terminal and says what a locked door asks for.
+      const arrive = () => {
+        const here = heroRef.current
+        const dir = here.world === current.world && directionBetween(here, { x, y })
+        if (dir) step(dir)
+      }
       path.current = found
       const next = () => {
         const target = path.current.shift()
         const dir = target && directionBetween(heroRef.current, target)
-        if (!dir || !step(dir) || path.current.length === 0) stopPath()
+        if (!dir || !step(dir)) return stopPath()
+        if (path.current.length === 0) {
+          stopPath()
+          arrive()
+        }
       }
+      if (found.length === 0) return arrive()
       next()
       if (path.current.length > 0) timers.current.walk = setInterval(next, STEP_MS)
     },
     [release, step, stopPath],
   )
 
-  const terminal = terminalNear(worldById(hero.world), hero.x, hero.y)
+  const terminal = terminalNear(worldById(hero.world), hero.x, hero.y, hero.facing)
 
   const openTerminal = useCallback(async () => {
     const current = heroRef.current
-    const found = terminalNear(worldById(current.world), current.x, current.y)
-    if (!found) return
+    const found = terminalNear(worldById(current.world), current.x, current.y, current.facing)
+    if (!found || opening.current) return
+    opening.current = true
     release()
     stopPath()
     await saveNow()
-    navigate(terminalHref(found))
+    opening.current = false
+    // The player may have gone somewhere else while the save was out.
+    if (mounted.current) navigate(terminalHref(found))
   }, [navigate, release, saveNow, stopPath])
 
   // Stop every timer when the game goes away, and keep the last tile if a save was still waiting.
+  // Closing the tab or the app doesn't unmount anything: pagehide is the last word the page gets.
   useEffect(() => {
     const pending = timers.current
+    const flush = () => {
+      if (!pending.save) return
+      clearTimeout(pending.save)
+      pending.save = null
+      persist(true)
+    }
+    mounted.current = true
+    window.addEventListener('pagehide', flush)
     return () => {
+      mounted.current = false
+      window.removeEventListener('pagehide', flush)
       clearInterval(pending.repeat)
       clearInterval(pending.walk)
-      if (pending.save) {
-        clearTimeout(pending.save)
-        pending.save = null
-        persist(true)
-      }
+      flush()
     }
   }, [persist])
 
@@ -208,7 +245,7 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   function onKeyDown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return
     if (event.key === 'Enter') {
-      if (terminal) {
+      if (terminal && !event.repeat) {
         event.preventDefault()
         openTerminal()
       }

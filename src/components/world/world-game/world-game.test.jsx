@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
+import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { unlocks } from '../../../../shared/world/unlocks.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
@@ -213,4 +213,90 @@ it('tells screen readers how to play', () => {
   expect(map()).toHaveAccessibleName(/Floresta do JavaScript/)
   expect(map()).toHaveAccessibleDescription(/setas/i)
   expect(map()).toHaveAttribute('tabindex', '0')
+})
+
+it('opens a terminal once, even when Enter is pressed again while saving', async () => {
+  let finishSave
+  onSave.mockReturnValue(new Promise((resolve) => (finishSave = resolve)))
+  play({ world: 'torre-matematica', x: 2, y: 5 }, { matematica: 5 })
+  press('Enter')
+  press('Enter')
+  fireEvent.keyDown(map(), { key: 'Enter', repeat: true })
+  expect(onSave).toHaveBeenCalledTimes(1)
+  await act(async () => finishSave())
+  expect(location()).toBe('/exams/enem/aritmetica')
+})
+
+it('stays where the player went when they leave before the save ends', async () => {
+  let finishSave
+  onSave.mockReturnValue(new Promise((resolve) => (finishSave = resolve)))
+  render(
+    <I18nProvider locale="pt-BR">
+      <MemoryRouter initialEntries={['/mundo']}>
+        <Routes>
+          <Route path="/mundo" element={<WorldGame state={stateAt({ world: 'torre-matematica', x: 2, y: 5 }, { matematica: 5 })} heroColor="cobalt" onSave={onSave} onWorldChange={onWorldChange} />} />
+          <Route path="*" element={null} />
+        </Routes>
+        <Location />
+        <Link to="/progress">progresso</Link>
+      </MemoryRouter>
+    </I18nProvider>,
+  )
+  press('Enter')
+  fireEvent.click(screen.getByRole('link', { name: 'progresso' }))
+  expect(location()).toBe('/progress')
+  await act(async () => finishSave())
+  expect(location()).toBe('/progress')
+})
+
+it('walks past a portal on a click path instead of going through it', () => {
+  const { container } = play({ world: 'laboratorio', x: 5, y: 1 }, { codeSolved: 3 })
+  fireEvent.click(tile(container, 9, 1))
+  wait(STEP_MS * 10)
+  expect(place()).toBe('laboratorio 9 1')
+  expect(onWorldChange).not.toHaveBeenCalled()
+})
+
+it('offers the terminal that was clicked, not its neighbor', () => {
+  const { container } = play({ world: 'torre-matematica', x: 4, y: 7 }, { matematica: 5 })
+  fireEvent.click(tile(container, 6, 6))
+  wait(STEP_MS * 6)
+  expect(screen.getByRole('button', { name: /Grandezas, medidas e escalas/ })).toBeVisible()
+})
+
+it('says what a locked door asks for when it is tapped, every time', () => {
+  const { container } = play({ world: 'floresta-js', x: 5, y: 10 })
+  fireEvent.click(tile(container, 11, 10))
+  wait(STEP_MS * 8)
+  expect(place()).toBe('floresta-js 10 10')
+  expect(screen.getByRole('status')).toHaveTextContent(/0 de 8 desafios de programação/)
+  tap('ArrowLeft')
+  expect(screen.getByRole('status')).not.toHaveTextContent(/desafios/)
+  tap('ArrowRight')
+  fireEvent.click(tile(container, 11, 10))
+  expect(screen.getByRole('status')).toHaveTextContent(/0 de 8 desafios de programação/)
+})
+
+it('saves the last tile with keepalive when the tab closes mid-walk', () => {
+  const { unmount } = play({ world: 'floresta-js', x: 3, y: 10 })
+  tap('ArrowRight')
+  window.dispatchEvent(new Event('pagehide'))
+  expect(onSave).toHaveBeenCalledWith({ world: 'floresta-js', x: 4, y: 10 }, { keepalive: true })
+  unmount()
+  expect(onSave).toHaveBeenCalledTimes(1)
+})
+
+it('sends saves one after another, so an older one never lands last', async () => {
+  let finishFirst
+  onSave.mockReturnValueOnce(new Promise((resolve) => (finishFirst = resolve)))
+  play({ world: 'torre-matematica', x: 3, y: 5 }, { matematica: 5 })
+  tap('ArrowLeft') // next to Aritmética
+  wait(SAVE_DELAY_MS) // the walk's save starts and hangs
+  expect(onSave).toHaveBeenCalledTimes(1)
+  press('Enter')
+  await act(async () => {})
+  expect(onSave).toHaveBeenCalledTimes(1)
+  await act(async () => finishFirst())
+  expect(onSave).toHaveBeenCalledTimes(2)
+  expect(location()).toBe('/exams/enem/aritmetica')
 })
