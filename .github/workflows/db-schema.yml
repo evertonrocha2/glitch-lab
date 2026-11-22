@@ -1,0 +1,25 @@
+# Applies supabase/schema.sql to the production database whenever it changes on main.
+# The file is idempotent (if not exists everywhere), and it runs in one transaction,
+# so a failure rolls back and leaves the database as it was.
+name: Apply database schema
+
+on:
+  push:
+    branches: [main]
+    paths: [supabase/schema.sql]
+  workflow_dispatch:
+
+concurrency:
+  group: db-schema
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply schema
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: psql "$SUPABASE_DB_URL" --single-transaction -v ON_ERROR_STOP=1 -q -f supabase/schema.sql
