@@ -3,7 +3,7 @@ import { worldById } from '../../../shared/world/worlds.js'
 import { cameraFor, viewportFor } from './camera.js'
 
 const forest = worldById('floresta-js') // 32x20
-const hub = worldById('laboratorio') // 20x14
+const hub = worldById('laboratorio') // 15x10
 
 it('fits 15x10 tiles on a wide screen and 7x7 on a phone', () => {
   expect(viewportFor(1200)).toEqual({ cols: 15, rows: 10 })
@@ -21,6 +21,7 @@ it('centers the hero and stops at the edges of the map', () => {
 })
 
 it('keeps the camera at 0 when the map is smaller than the screen', () => {
-  expect(cameraFor({ ...hub, rows: hub.rows.slice(0, 6) }, { x: 9, y: 3 }, { cols: 15, rows: 10 })).toEqual({ x: 2, y: 0 })
+  expect(cameraFor(hub, { x: 7, y: 5 }, { cols: 15, rows: 10 })).toEqual({ x: 0, y: 0 })
+  expect(cameraFor({ rows: Array(6).fill('.'.repeat(20)) }, { x: 9, y: 3 }, { cols: 15, rows: 10 })).toEqual({ x: 2, y: 0 })
   expect(cameraFor({ rows: ['....'] }, { x: 3, y: 0 }, { cols: 7, rows: 7 })).toEqual({ x: 0, y: 0 })
 })

@@ -73,9 +73,9 @@ describe.each(WORLDS.map((world) => [world.id, world]))('%s', (_, world) => {
   })
 })
 
-it('sizes the hub at 20x14 and each world at 32x20', () => {
+it('sizes the hub at 15x10, to fit a desktop screen whole, and each world at 32x20', () => {
   for (const world of WORLDS) {
-    const [width, height] = world.id === HUB_ID ? [20, 14] : [32, 20]
+    const [width, height] = world.id === HUB_ID ? [15, 10] : [32, 20]
     expect([world.rows[0].length, world.rows.length], world.id).toEqual([width, height])
   }
 })

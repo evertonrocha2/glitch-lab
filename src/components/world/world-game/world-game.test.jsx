@@ -104,9 +104,9 @@ it('refuses a locked door and says what to study', () => {
 })
 
 it('refuses the portal of a locked world and points to programming for the tech ones', () => {
-  play({ world: 'laboratorio', x: 9, y: 2 })
+  play({ world: 'laboratorio', x: 7, y: 2 })
   tap('ArrowUp')
-  expect(place()).toBe('laboratorio 9 1')
+  expect(place()).toBe('laboratorio 7 1')
   expect(screen.getByText(/0 de 3 desafios de programação/)).toBeVisible()
   expect(screen.getByRole('link', { name: /estudar/i })).toHaveAttribute('href', '/daily')
   expect(onWorldChange).not.toHaveBeenCalled()
@@ -115,9 +115,9 @@ it('refuses the portal of a locked world and points to programming for the tech 
 it('travels through a portal and saves right away', () => {
   play({ world: 'floresta-js', x: 2, y: 10 })
   tap('ArrowLeft')
-  expect(place()).toBe('laboratorio 3 2')
+  expect(place()).toBe('laboratorio 2 2')
   expect(onWorldChange).toHaveBeenCalledWith('laboratorio')
-  expect(onSave).toHaveBeenCalledWith({ world: 'laboratorio', x: 3, y: 2 }, { keepalive: false })
+  expect(onSave).toHaveBeenCalledWith({ world: 'laboratorio', x: 2, y: 2 }, { keepalive: false })
   expect(screen.getByRole('status')).toHaveTextContent('Você entrou em Laboratório')
 })
 
@@ -132,11 +132,11 @@ it('walks to a clicked tile and ignores a tile it cannot reach', () => {
 })
 
 it('walks next to a terminal when the terminal is clicked', () => {
-  const { container } = play({ world: 'floresta-js', x: 3, y: 6 })
+  const { container } = play({ world: 'floresta-js', x: 3, y: 9 })
   expect(screen.queryByRole('button', { name: /glitchdle|daily|diários/i })).toBeNull()
-  fireEvent.click(tile(container, 4, 4))
+  fireEvent.click(tile(container, 4, 6)) // the Glitchdle terminal; (3,8) is a tree, so the way is round it
   wait(STEP_MS * 4)
-  expect(['floresta-js 3 4', 'floresta-js 4 5', 'floresta-js 5 4']).toContain(place())
+  expect(place()).toBe('floresta-js 4 7')
   expect(screen.getByRole('button', { name: /abrir/i })).toBeVisible()
 })
 

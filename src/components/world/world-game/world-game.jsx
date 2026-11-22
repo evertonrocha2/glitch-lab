@@ -34,7 +34,9 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   const t = useT()
   const navigate = useNavigate()
   const helpId = useId()
+  // frameRef measures the room the map has; mapRef is the focusable map itself, as wide as its tiles.
   const frameRef = useRef(null)
+  const mapRef = useRef(null)
   const [hero, setHero] = useState(() => ({ ...state.position, facing: 'down', frame: 0 }))
   // What the hero just ran into: { kind: 'locked', lock } or { kind: 'travel', world }.
   const [notice, setNotice] = useState(null)
@@ -234,30 +236,34 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        ref={frameRef}
-        role="application"
-        tabIndex={0}
-        aria-label={t('world.map.label', { world: worldName })}
-        aria-describedby={helpId}
-        data-place={`${hero.world} ${hero.x} ${hero.y}`}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-        onBlur={() => release()}
-        className="w-full overflow-hidden border-2 border-ink bg-ink shadow-pixel"
-      >
-        <TileMap
-          world={world}
-          hero={hero}
-          heroColor={heroColor}
-          lockedZones={lockedZones}
-          viewport={viewport}
-          onTileClick={(x, y) => {
-            frameRef.current?.focus({ preventScroll: true })
-            walkTo(x, y)
-          }}
-        />
+      <div ref={frameRef} className="w-full">
+        <div
+          ref={mapRef}
+          role="application"
+          tabIndex={0}
+          aria-label={t('world.map.label', { world: worldName })}
+          aria-describedby={helpId}
+          data-place={`${hero.world} ${hero.x} ${hero.y}`}
+          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
+          onBlur={() => release()}
+          className="w-fit max-w-full overflow-hidden border-2 border-ink shadow-pixel"
+        >
+          <TileMap
+            world={world}
+            hero={hero}
+            heroColor={heroColor}
+            lockedZones={lockedZones}
+            viewport={viewport}
+            onTileClick={(x, y) => {
+              mapRef.current?.focus({ preventScroll: true })
+              walkTo(x, y)
+            }}
+          />
+        </div>
       </div>
+      {/* Right under the map on phones, above the study timer that sits at the bottom of the screen. */}
+      <DPad className="mx-auto sm:hidden" onPress={press} onRelease={() => release()} onStep={step} />
       <p id={helpId} className="text-sm text-muted">
         {t('world.map.help')}
       </p>
@@ -281,7 +287,6 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
           </PixelButton>
         )}
       </div>
-      <DPad className="mx-auto sm:hidden" onPress={press} onRelease={() => release()} onStep={step} />
     </div>
   )
 }

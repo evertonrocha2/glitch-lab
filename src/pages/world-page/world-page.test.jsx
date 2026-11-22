@@ -24,11 +24,11 @@ const title = () => screen.findByRole('heading', { level: 1 })
 
 beforeEach(() => {
   vi.mocked(getWorld).mockReset()
-  vi.mocked(saveWorldPosition).mockReset().mockResolvedValue({ world: 'laboratorio', x: 3, y: 2 })
+  vi.mocked(saveWorldPosition).mockReset().mockResolvedValue({ world: 'laboratorio', x: 2, y: 2 })
 })
 
 it('shows the hub and the closest goal for a new player', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 9, y: 7 }))
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
   open()
   expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
   const worlds = screen.getByRole('list', { name: 'Mundos' })
@@ -58,7 +58,7 @@ it('follows the hero through a portal and saves it through the API', async () =>
   fireEvent.keyDown(screen.getByRole('application'), { key: 'ArrowLeft' })
   fireEvent.keyUp(screen.getByRole('application'), { key: 'ArrowLeft' })
   expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
-  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'laboratorio', x: 3, y: 2 }, 'token-ana', { keepalive: false }))
+  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'laboratorio', x: 2, y: 2 }, 'token-ana', { keepalive: false }))
 })
 
 it('shows an error when the world cannot load', async () => {

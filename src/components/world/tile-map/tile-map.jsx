@@ -57,8 +57,8 @@ export default function TileMap({ world, hero, heroColor, lockedZones, viewport,
       viewBox={`0 0 ${cols * TILE_PX} ${rows * TILE_PX}`}
       shapeRendering="crispEdges"
       aria-hidden="true"
-      className="block h-auto w-full touch-manipulation select-none"
-      style={{ maxWidth: cols * TILE_SCREEN_PX }}
+      width={cols * TILE_SCREEN_PX}
+      className="block h-auto max-w-full touch-manipulation select-none"
     >
       <defs>
         {TILE_ENTRIES.map(([char, tile]) => (
