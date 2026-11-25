@@ -27,7 +27,7 @@ const en = {
   'server.dailyLimit': 'Daily limit reached. Come back tomorrow.',
   // The AI guard (server/infra/ai/guard/messages.js): refusals, shown like a normal answer, and the lockout.
   'server.guardInjection': "I can't follow instructions that try to change my rules. Tell me your programming question.",
-  'server.guardOffTopic': 'I only help with programming and Glitch Lab. Want to ask a coding question?',
+  'server.guardOffTopic': 'I only help with programming and StudyQuest. Want to ask a coding question?',
   'server.guardGibberish': "I couldn't understand that. Tell me your programming question in a sentence or two.",
   'server.guardLeak': "I can't share that. Let's get back to your code: what are you stuck on?",
   'server.guardGymInjection': "I only grade the code itself and can't follow instructions written inside it. Fix the bug and submit again.",
@@ -321,7 +321,7 @@ const ptBR = {
   'server.aiFailed': 'Algo deu errado ao falar com a IA. Tente de novo.',
   'server.dailyLimit': 'Limite diário atingido. Volte amanhã.',
   'server.guardInjection': 'Não posso seguir instruções que tentam mudar minhas regras. Me conta sua dúvida de programação.',
-  'server.guardOffTopic': 'Eu só ajudo com programação e com o Glitch Lab. Quer tirar uma dúvida de código?',
+  'server.guardOffTopic': 'Eu só ajudo com programação e com o StudyQuest. Quer tirar uma dúvida de código?',
   'server.guardGibberish': 'Não consegui entender. Me conta sua dúvida de programação em uma ou duas frases.',
   'server.guardLeak': 'Não posso compartilhar isso. Vamos voltar ao seu código: onde você travou?',
   'server.guardGymInjection': 'Eu só avalio o código e não sigo instruções escritas nele. Corrija o bug e envie de novo.',

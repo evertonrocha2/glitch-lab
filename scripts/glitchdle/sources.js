@@ -9,7 +9,7 @@ import { join } from 'node:path'
 // One request per category and source, and every answer is cached on disk, so running the sync
 // again the same day asks nothing (and a rerun after a fix to the normalizer is free).
 
-export const USER_AGENT = 'GlitchLab-Glitchdle-sync/1.0 (https://github.com/evertonrocha2/glitch-detective; study project)'
+export const USER_AGENT = 'StudyQuest-Glitchdle-sync/1.0 (https://github.com/evertonrocha2/glitch-lab; study project)'
 const WIKIDATA = 'https://query.wikidata.org/sparql'
 const STACK_EXCHANGE = 'https://api.stackexchange.com/2.3/tags'
 // The API takes up to 100 tags per request.

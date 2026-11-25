@@ -10,7 +10,7 @@ if (errors.length) {
   process.exit(1)
 }
 
-const server = createApp().listen(env.port, () => console.log(`Glitch Lab API on :${env.port}`))
+const server = createApp().listen(env.port, () => console.log(`StudyQuest API on :${env.port}`))
 
 // Render sends SIGTERM before a deploy swaps instances: finish the requests in flight first.
 process.on('SIGTERM', () => server.close(() => process.exit(0)))

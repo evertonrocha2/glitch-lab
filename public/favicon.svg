@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <!-- Glitch Lab: a smaller cut of the pixel flask with the glitched liquid, so it breathes inside the bordered tile with the hard purple shadow. -->
+  <!-- StudyQuest: a smaller cut of the pixel flask with the glitched liquid, so it breathes inside the bordered tile with the hard purple shadow. -->
   <rect x="1" y="1" width="15" height="15" fill="#6a3df0"/>
   <rect x="0" y="0" width="15" height="15" fill="#1c1d26"/>
   <rect x="1" y="1" width="13" height="13" fill="#ffffff"/>

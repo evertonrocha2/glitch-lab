@@ -8,8 +8,8 @@ export const GUARD_TEXT = {
     'pt-BR': 'Não posso seguir instruções que tentam mudar minhas regras. Me conta sua dúvida de programação.',
   },
   off_topic: {
-    en: 'I only help with programming and Glitch Lab. Want to ask a coding question?',
-    'pt-BR': 'Eu só ajudo com programação e com o Glitch Lab. Quer tirar uma dúvida de código?',
+    en: 'I only help with programming and StudyQuest. Want to ask a coding question?',
+    'pt-BR': 'Eu só ajudo com programação e com o StudyQuest. Quer tirar uma dúvida de código?',
   },
   gibberish: {
     en: "I couldn't understand that. Tell me your programming question in a sentence or two.",

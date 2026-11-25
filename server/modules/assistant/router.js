@@ -6,7 +6,7 @@ import { clip, conversationBlock, describePage } from './text.js'
 const MAX_SPECIALISTS = 2
 
 // boundary: the request's data fence token (the same one the prompt's fences carry).
-export const routerSystem = (boundary) => `You route a programming student's question inside Glitch Lab, a debugging study app.
+export const routerSystem = (boundary) => `You route a programming student's question inside StudyQuest, a debugging study app.
 Pick 1 or 2 specialists who can answer it, and the data each one needs. Prefer 1. Pick 2 only when the question really spans both.
 
 Specialists:

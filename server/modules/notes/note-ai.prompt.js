@@ -16,7 +16,7 @@ const LANGUAGE = {
 // The system prompt. language: the note's own language ('pt-BR' or 'en'), so the answer never
 // switches language on the writer. boundary: the request's data fence token.
 export function noteAiSystem(action, language = 'en', { boundary = createBoundary() } = {}) {
-  return `You edit a student's study notes in Glitch Lab, an app for learning programming.
+  return `You edit a student's study notes in StudyQuest, an app for learning programming.
 The note comes as a JSON list of blocks inside a data block. Each block has a ref (k1, k2...), a type and its text.
 Block types: text (a paragraph), heading (level 1 to 3), bullet and numbered (list items, indent 0 or 1), todo (a check item, done true or false), quote, callout (a highlighted box, tone info, tip or warning), code, case (a card for one of the student's cases), divider.
 Inside text you may use only these marks: **bold**, *italic*, \`inline code\`, ~~strike~~ and [label](https://link). No other Markdown, no HTML, no code fences.
@@ -66,7 +66,7 @@ NOTE BLOCKS (JSON):
 ${fenceData('note_blocks', JSON.stringify(items, null, 1), boundary)}
 
 Fill every field:
-- off_topic: true only when the note is not about programming, studying code or Glitch Lab at all (see the scope rules).
+- off_topic: true only when the note is not about programming, studying code or StudyQuest at all (see the scope rules).
 - blocks: the new blocks, in order (empty for a summary).
 - summary: the summary when the task asks for one, otherwise "".`
 }

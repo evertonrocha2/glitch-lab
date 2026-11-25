@@ -208,7 +208,7 @@ export default function BoardSheet({ cases, notes, progress, date }) {
         <div className="relative flex items-center justify-between gap-6 px-12 py-6">
           <span className="flex shrink-0 items-center gap-3 font-pixel text-2xl font-bold whitespace-nowrap">
             <PixelLogo className="size-9" />
-            <span>Glitch Lab</span>
+            <span>StudyQuest</span>
           </span>
           <span className="shrink-0 border-2 border-ink bg-white px-2.5 py-1.5 font-label text-[10px] whitespace-nowrap text-ink shadow-pixel">{t('board.sheet.exported', { date })}</span>
         </div>

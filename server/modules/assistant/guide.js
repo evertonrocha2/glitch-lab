@@ -13,7 +13,7 @@ export const GUIDE_SECTIONS = [
     id: 'landing',
     name: 'Landing page',
     match: /^\/$/,
-    text: `What Glitch Lab is: a debugging gym. Paste an error, understand why it broke, then practice so it never happens again. The form here saves your error and opens the board (sign in first if needed). Top links: How it works, Features, FAQ, Articles, Sign in, Create account. The hero buttons "Create a free account" and "Sign in" open the sign in page.`,
+    text: `What StudyQuest is: a debugging gym. Paste an error, understand why it broke, then practice so it never happens again. The form here saves your error and opens the board (sign in first if needed). Top links: How it works, Features, FAQ, Articles, Sign in, Create account. The hero buttons "Create a free account" and "Sign in" open the sign in page.`,
   },
   {
     id: 'login',
@@ -147,7 +147,7 @@ const ALWAYS = `Everywhere when signed in:
 
 const sectionText = (section) => `${section.name}: ${section.text}`
 
-export const APP_GUIDE = `Glitch Lab is a debugging gym for programming students. It trains you to find bugs instead of handing over fixes.
+export const APP_GUIDE = `StudyQuest is a debugging gym for programming students. It trains you to find bugs instead of handing over fixes.
 
 ${ALWAYS}
 

@@ -106,7 +106,7 @@ export default function LoginPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
           <Link to="/" className="flex items-center gap-2.5 font-pixel text-xl font-bold text-ink">
             <PixelLogo className="size-7" />
-            <span>Glitch Lab</span>
+            <span>StudyQuest</span>
           </Link>
           <LanguageSelect compact />
         </div>

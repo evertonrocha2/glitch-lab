@@ -27,7 +27,7 @@ export function previewText(body, max = PREVIEW_CHARS) {
   return text.length > max ? `${text.slice(0, max - 3).trimEnd()}...` : text
 }
 
-// "Glitch Lab" -> "(2) Glitch Lab", and back once nothing is unread.
+// "StudyQuest" -> "(2) StudyQuest", and back once nothing is unread.
 const COUNT_PREFIX = /^\(\d+\+?\)\s+/
 export function titleWithCount(title, count) {
   const base = title.replace(COUNT_PREFIX, '')
@@ -187,7 +187,7 @@ export function MessageAlertsProvider({ children }) {
     }
   }, [active, live, check])
 
-  // "(2) Glitch Lab" in the tab while something is unread.
+  // "(2) StudyQuest" in the tab while something is unread.
   useEffect(() => {
     document.title = titleWithCount(document.title, active ? unread : 0)
   }, [active, unread])

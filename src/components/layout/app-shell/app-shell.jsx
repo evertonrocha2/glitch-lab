@@ -60,7 +60,7 @@ const AppHeader = memo(function AppHeader() {
         <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
           <PixelLogo className="size-5 shrink-0 sm:size-7" />
           {/* On narrow phones the right side fills the row, so only the logo shows; the name stays for screen readers. */}
-          <span className="sr-only min-[440px]:not-sr-only min-[440px]:truncate">Glitch Lab</span>
+          <span className="sr-only min-[440px]:not-sr-only min-[440px]:truncate">StudyQuest</span>
         </Link>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <LanguageSelect compact className="shrink-0" />

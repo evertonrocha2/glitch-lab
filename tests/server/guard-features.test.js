@@ -78,7 +78,7 @@ describe('the Lab assistant', () => {
 
   it('turns away an obvious off-topic request locally, without a strike', async () => {
     const body = await (await askPlain('Me conta uma piada', undefined, { locale: 'pt-BR' })).json()
-    expect(body).toMatchObject({ reply: 'Eu só ajudo com programação e com o Glitch Lab. Quer tirar uma dúvida de código?', guard: 'off_topic', actions: [] })
+    expect(body).toMatchObject({ reply: 'Eu só ajudo com programação e com o StudyQuest. Quer tirar uma dúvida de código?', guard: 'off_topic', actions: [] })
     expect(fetch).not.toHaveBeenCalled()
     expect(await strikes()).toBe(0)
     expect(await quota()).toBe(0)

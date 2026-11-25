@@ -21,13 +21,13 @@ export default {
     'landing.hero.line2.after': '.',
     'landing.hero.line3': 'Practice so it never happens again.',
     'landing.hero.body':
-      'AI chatbots hand you the fix. Glitch Lab explains why it broke, saves it to your board, and trains you with fresh bugs of the same kind until you stop writing them.',
+      'AI chatbots hand you the fix. StudyQuest explains why it broke, saves it to your board, and trains you with fresh bugs of the same kind until you stop writing them.',
     'landing.hero.signUp': 'Create a free account',
     'landing.hero.signIn': 'Sign in',
     'landing.hero.found': 'Bug found: line 2',
     'landing.hero.why': 'Why it broke',
     'landing.hero.answer': 'user.name was never set. It is undefined, and undefined has no .length to read.',
-    'landing.hero.caption': 'Example of Glitch Lab explaining a JavaScript TypeError',
+    'landing.hero.caption': 'Example of StudyQuest explaining a JavaScript TypeError',
 
     // Marquee
     'landing.marquee.label': "What's inside",
@@ -45,7 +45,7 @@ export default {
     'landing.how.kicker': 'How it works',
     'landing.how.title': "Fixes are easy to copy. Understanding isn't.",
     'landing.how.body':
-      'Most tools hand you the fix. You paste it, it works, and next week the same error is back. Glitch Lab starts with why, then makes you practice.',
+      'Most tools hand you the fix. You paste it, it works, and next week the same error is back. StudyQuest starts with why, then makes you practice.',
     'landing.how.list': 'How it works',
     'landing.how.step': 'Step {n}',
     'landing.how.investigate.title': 'Investigate an error',
@@ -62,7 +62,7 @@ export default {
     'landing.why.body':
       "Pasting errors into a chat works at 2 a.m. before a deadline. It doesn't help in an exam, an interview, or the next time the same bug shows up.",
     'landing.why.chatbot': 'A chatbot',
-    'landing.why.list': 'A chatbot compared with Glitch Lab',
+    'landing.why.list': 'A chatbot compared with StudyQuest',
     'landing.why.chatbotSr': 'A chatbot: ',
     'landing.why.1.bot': 'Hands you the fixed code right away',
     'landing.why.1.us': 'Explains why first. The fix stays hidden until you ask',
@@ -166,7 +166,7 @@ export default {
       "It compares your code with a reference solution it wrote but never shows you. Any fix that removes the bug passes, even if it's not the same as the reference.",
     'landing.faq.upload.q': 'Can I upload my project?',
     'landing.faq.upload.a':
-      'Yes. Attach files or a whole folder. Glitch Lab reads the error, finds the files it mentions, and sends only the lines around the problem.',
+      'Yes. Attach files or a whole folder. StudyQuest reads the error, finds the files it mentions, and sends only the lines around the problem.',
     'landing.faq.safe.q': 'Is my code safe?',
     'landing.faq.safe.a':
       "Your cases and notes are only visible to you. Don't paste passwords or API keys: the error and code are sent to the AI to be explained.",
@@ -225,7 +225,7 @@ export default {
       'Your board keeps every error you investigate, with the why and the fix, so you can study it and train on it in the gym.',
 
     // Public header
-    'landing.public.try': 'Try Glitch Lab',
+    'landing.public.try': 'Try StudyQuest',
     'landing.public.people': 'People',
     'landing.public.back': 'Back to your board',
 
@@ -313,13 +313,13 @@ export default {
     'landing.hero.line2.after': '.',
     'landing.hero.line3': 'Pratique para nunca mais errar igual.',
     'landing.hero.body':
-      'Chatbots de IA te entregam a correção. O Glitch Lab explica por que quebrou, salva no seu board e te treina com bugs novos do mesmo tipo até você parar de cometê-los.',
+      'Chatbots de IA te entregam a correção. O StudyQuest explica por que quebrou, salva no seu board e te treina com bugs novos do mesmo tipo até você parar de cometê-los.',
     'landing.hero.signUp': 'Criar conta grátis',
     'landing.hero.signIn': 'Entrar',
     'landing.hero.found': 'Bug encontrado: linha 2',
     'landing.hero.why': 'Por que quebrou',
     'landing.hero.answer': 'user.name nunca foi definido. Ele é undefined, e undefined não tem .length para ler.',
-    'landing.hero.caption': 'Exemplo do Glitch Lab explicando um TypeError de JavaScript',
+    'landing.hero.caption': 'Exemplo do StudyQuest explicando um TypeError de JavaScript',
 
     'landing.marquee.label': 'O que tem dentro',
     'landing.marquee.bugTypes': '{count} tipos de bug rastreados',
@@ -335,7 +335,7 @@ export default {
     'landing.how.kicker': 'Como funciona',
     'landing.how.title': 'Copiar a correção é fácil. Entender, não.',
     'landing.how.body':
-      'A maioria das ferramentas te entrega a correção. Você cola, funciona, e na semana seguinte o mesmo erro volta. O Glitch Lab começa pelo porquê e depois te faz praticar.',
+      'A maioria das ferramentas te entrega a correção. Você cola, funciona, e na semana seguinte o mesmo erro volta. O StudyQuest começa pelo porquê e depois te faz praticar.',
     'landing.how.list': 'Como funciona',
     'landing.how.step': 'Passo {n}',
     'landing.how.investigate.title': 'Investigue um erro',
@@ -351,7 +351,7 @@ export default {
     'landing.why.body':
       'Colar erros num chat resolve às 2 da manhã antes do prazo. Não ajuda numa prova, numa entrevista, nem na próxima vez que o mesmo bug aparecer.',
     'landing.why.chatbot': 'Um chatbot',
-    'landing.why.list': 'Um chatbot comparado com o Glitch Lab',
+    'landing.why.list': 'Um chatbot comparado com o StudyQuest',
     'landing.why.chatbotSr': 'Um chatbot: ',
     'landing.why.1.bot': 'Te entrega o código corrigido na hora',
     'landing.why.1.us': 'Explica o porquê primeiro. A correção fica escondida até você pedir',
@@ -451,7 +451,7 @@ export default {
       'Ela compara seu código com uma solução de referência que ela escreveu, mas nunca te mostra. Qualquer correção que tire o bug passa, mesmo que seja diferente da referência.',
     'landing.faq.upload.q': 'Posso enviar meu projeto?',
     'landing.faq.upload.a':
-      'Pode. Anexe arquivos ou uma pasta inteira. O Glitch Lab lê o erro, acha os arquivos que ele cita e envia só as linhas em volta do problema.',
+      'Pode. Anexe arquivos ou uma pasta inteira. O StudyQuest lê o erro, acha os arquivos que ele cita e envia só as linhas em volta do problema.',
     'landing.faq.safe.q': 'Meu código está seguro?',
     'landing.faq.safe.a':
       'Seus casos e notas só aparecem para você. Não cole senhas nem chaves de API: o erro e o código vão para a IA explicar.',

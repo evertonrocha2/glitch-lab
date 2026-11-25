@@ -1,6 +1,6 @@
 {
-  "name": "Glitch Lab",
-  "short_name": "Glitch Lab",
+  "name": "StudyQuest",
+  "short_name": "StudyQuest",
   "description": "A debugging gym for programming students.",
   "start_url": "/",
   "display": "standalone",

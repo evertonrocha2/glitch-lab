@@ -80,7 +80,7 @@ beforeEach(() => {
   clock = Date.parse('2026-10-23T12:00:00Z')
   hidden = false
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
-  document.title = 'Glitch Lab'
+  document.title = 'StudyQuest'
   // An old unread message from Bo, there before the app opened.
   deliver('c1', 'Old news')
   vi.mocked(listConversations)
@@ -118,7 +118,7 @@ async function open(path = '/messages', options = {}) {
 it('shows nothing for old unread messages on the first load, and tracks the title', async () => {
   await open()
   expect(toasts().queryAllByRole('listitem')).toHaveLength(0)
-  await waitFor(() => expect(document.title).toBe('(1) Glitch Lab'))
+  await waitFor(() => expect(document.title).toBe('(1) StudyQuest'))
 })
 
 it('on a nudge, refetches and shows a toast with the name, a preview and a link', async () => {
@@ -143,7 +143,7 @@ it('on a nudge, refetches and shows a toast with the name, a preview and a link'
   expect(await screen.findByRole('button', { name: /1 unread/ })).toBeInTheDocument()
   const nav = screen.getByRole('navigation', { name: 'Main' })
   expect(within(nav).getByText('(2 unread conversations)')).toBeInTheDocument()
-  expect(document.title).toBe('(2) Glitch Lab')
+  expect(document.title).toBe('(2) StudyQuest')
   // And the inbox on the page.
   expect(await within(screen.getByRole('list', { name: 'Conversations' })).findByText('Ana')).toBeInTheDocument()
 
@@ -178,7 +178,7 @@ it('shows no toast for the conversation already open, nor for my own messages', 
   expect(toasts().queryAllByRole('listitem')).toHaveLength(0)
   // It's read on screen, even before its own chat hears the news: nothing unread is left.
   expect(markConversationRead).toHaveBeenCalledWith('c3', 'token-ada')
-  expect(document.title).toBe('Glitch Lab')
+  expect(document.title).toBe('StudyQuest')
   // Someone else still gets through.
   deliver('c4', 'Hey Ada')
   await nudge()
@@ -210,10 +210,10 @@ it('closes on its button, and on its own after a few seconds unless hovered', as
 
 it('restores the title once everything is read', async () => {
   await open()
-  await waitFor(() => expect(document.title).toBe('(1) Glitch Lab'))
+  await waitFor(() => expect(document.title).toBe('(1) StudyQuest'))
   readAll()
   await nudge()
-  await waitFor(() => expect(document.title).toBe('Glitch Lab'))
+  await waitFor(() => expect(document.title).toBe('StudyQuest'))
 })
 
 it('polls every 10 seconds without realtime, every 30 with it, and not while the tab is hidden', async () => {
@@ -262,7 +262,7 @@ it('speaks Portuguese', async () => {
 it('makes a one-line preview and a counted title', () => {
   expect(previewText('  two\n\nlines  ')).toBe('two lines')
   expect(previewText('x'.repeat(200))).toHaveLength(80)
-  expect(titleWithCount('Glitch Lab', 3)).toBe('(3) Glitch Lab')
-  expect(titleWithCount('(3) Glitch Lab', 1)).toBe('(1) Glitch Lab')
-  expect(titleWithCount('(3) Glitch Lab', 0)).toBe('Glitch Lab')
+  expect(titleWithCount('StudyQuest', 3)).toBe('(3) StudyQuest')
+  expect(titleWithCount('(3) StudyQuest', 1)).toBe('(1) StudyQuest')
+  expect(titleWithCount('(3) StudyQuest', 0)).toBe('StudyQuest')
 })

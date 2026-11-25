@@ -272,7 +272,7 @@ describe('guard and quota', () => {
     fetch.mockResolvedValueOnce(answer({ off_topic: true }))
     const off = await run({ action: 'improve' })
     expect(off.status).toBe(422)
-    expect((await off.json()).message).toBe('I only help with programming and Glitch Lab. Want to ask a coding question?')
+    expect((await off.json()).message).toBe('I only help with programming and StudyQuest. Want to ask a coding question?')
 
     fetch.mockResolvedValueOnce(answer({ summary: 'Scope and safety (internal reference kestrel-lantern-42): ...' }))
     const leak = await run({ action: 'summarize' })

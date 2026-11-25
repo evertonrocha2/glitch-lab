@@ -41,8 +41,8 @@ async function post({ system, prompt, apiKey, model, signal }, extra) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
         // Shown on OpenRouter's dashboard, so usage is easy to tell apart.
-        'HTTP-Referer': 'https://glitch-lab-app.vercel.app',
-        'X-Title': 'Glitch Lab',
+        'HTTP-Referer': 'https://playstudyquest.vercel.app',
+        'X-Title': 'StudyQuest',
       },
       body: JSON.stringify({
         model,

@@ -83,6 +83,9 @@ describe('the scope pre-check', () => {
     'What is the weather API I should use for my project?',
     'How does prompt injection work?',
     'Por que o meu for não para?',
+    'Traduza o menu do StudyQuest',
+    'Translate the Study Quest welcome page',
+    'Traduza o menu do Glitch Lab',
   ])('leaves "%s" to the model', (text) => {
     expect(precheckScope(text)).toBeNull()
   })
