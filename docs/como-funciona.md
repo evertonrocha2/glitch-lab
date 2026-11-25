@@ -1,10 +1,10 @@
-# Como o Glitch Lab funciona
+# Como o StudyQuest funciona
 
-Este guia explica onde cada parte do Glitch Lab roda, como elas conversam, como o deploy e o cron funcionam e como o código está organizado. Se você só quer rodar o projeto, pule para [Rodar na sua máquina](#rodar-na-sua-máquina).
+Este guia explica onde cada parte do StudyQuest roda, como elas conversam, como o deploy e o cron funcionam e como o código está organizado. Se você só quer rodar o projeto, pule para [Rodar na sua máquina](#rodar-na-sua-máquina).
 
 ## Sumário
 
-1. [O que é o Glitch Lab](#o-que-é-o-glitch-lab)
+1. [O que é o StudyQuest](#o-que-é-o-studyquest)
 2. [Onde cada coisa roda](#onde-cada-coisa-roda)
 3. [O caminho de uma requisição](#o-caminho-de-uma-requisição)
 4. [Vercel: o site](#vercel-o-site)
@@ -23,11 +23,11 @@ Este guia explica onde cada parte do Glitch Lab roda, como elas conversam, como 
 
 ---
 
-## O que é o Glitch Lab
+## O que é o StudyQuest
 
 Um laboratório de debug para quem está aprendendo a programar. Em vez de entregar a correção, ele explica por que o código quebrou, guarda o erro como um caso e treina a pessoa com bugs parecidos até ela parar de errar.
 
-O nome do hackathon (GLITCHATHON 2026) é a trilha "Glitch Detective". O produto cresceu além de investigar bugs, então virou Glitch Lab.
+O nome do hackathon (GLITCHATHON 2026) é a trilha "Glitch Detective". O produto cresceu além de investigar bugs, então virou Glitch Lab, e depois StudyQuest, quando ganhou ENEM, comunidade e o jogo Glitch World. O repositório e a API no Render continuam com o nome `glitch-lab`.
 
 ## Onde cada coisa roda
 
@@ -36,7 +36,7 @@ São quatro serviços. Cada um faz uma coisa só.
 ```
                  ┌────────────────────────────┐
   Navegador ───► │ VERCEL                     │  o site (HTML, JS, CSS)
-                 │ glitch-lab-app.vercel.app  │
+                 │ playstudyquest.vercel.app  │
                  └──────────┬─────────────────┘
                             │ /api/*  (a Vercel repassa)
                             ▼
@@ -252,7 +252,8 @@ Onde a IA é usada: análise de erros, criação de desafios, dicas, correção 
 | `VITE_SUPABASE_URL` | Vercel | x1 ao vivo (lido pelo navegador) |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Vercel | x1 ao vivo (chave pública) |
 | `APP_URL` | GitHub | Endereço da API para o cron |
-| `SUPABASE_DB_PASSWORD` | só no seu `.env` | Senha direta do Postgres, para aplicar o schema. Não vai para nenhum serviço |
+| `SUPABASE_DB_PASSWORD` | só no seu `.env` | Senha direta do Postgres, para aplicar o schema na mão |
+| `SUPABASE_DB_URL` | GitHub | Conexão do Postgres (pooler) para o workflow `db-schema` aplicar o `schema.sql` quando ele muda no `main` |
 
 O arquivo `.env` fica só na sua máquina e está no `.gitignore`. O [.env.example](../.env.example) mostra os nomes sem valores.
 
