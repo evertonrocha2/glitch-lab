@@ -3,7 +3,7 @@ import { simulateFight } from '../../../shared/game/combat.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
 import { GEM_SALVAGE_SCRAP, settleHunt } from '../../../shared/game/hunt.js'
-import { BAG_SIZE, rollGem, rollItem, salvageValue } from '../../../shared/game/items.js'
+import { BAG_SIZE, rollGem, rollItem, rollSupport, salvageValue } from '../../../shared/game/items.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { bossXp, correctToday, levelsGained, startingXp, studyMultiplier } from '../../../shared/game/xp.js'
 import { HUNT_WORLDS, ZONES, enemyFor } from '../../../shared/game/zones.js'
@@ -105,7 +105,7 @@ export function settle(hero, now, { keep, multiplier = 1 }) {
   const paidAt = hero.hunt.xpMultiplier ?? 1
   hero.xp += result.xp
   hero.gold += result.gold
-  hero.items.push(...result.items, ...result.gems)
+  hero.items.push(...result.items, ...result.gems, ...result.supports)
   hero.scrap += result.scrapFromOverflow
   hero.potions.hp = Math.max(0, hero.potions.hp - result.potionsUsed.hp)
   hero.potions.mp = Math.max(0, hero.potions.mp - result.potionsUsed.mp)
@@ -119,6 +119,7 @@ export function settle(hero, now, { keep, multiplier = 1 }) {
     gold: result.gold,
     items: result.items.length,
     gems: result.gems.length,
+    supports: result.supports.length,
     scrap: result.scrapFromOverflow,
     xp: result.xp,
     xpMultiplier: paidAt,
@@ -258,7 +259,7 @@ export function stash(hero, drop) {
 }
 
 // One boss fight, simulated here (an instant replay: the client plays its log, format in combat.js). The first win per world, difficulty and zone marks the zone beaten,
-// drops 1 item (rarity boost +1) and 1 gem and pays bossXp at today's multiplier; later wins pay
+// drops 1 item (rarity boost +1), 1 gem and 1 support gem and pays bossXp at today's multiplier; later wins pay
 // nothing, so a script can't farm the boss. An Inferno loss costs 10% of the gold; potions drunk are
 // gone either way.
 export async function fightBoss(store, user, today, body) {
@@ -273,7 +274,7 @@ export async function fightBoss(store, user, today, body) {
     const result = simulateFight({ hero: fighterOf(draft, level), enemies: [enemy], seed })
     draft.potions.hp = Math.max(0, draft.potions.hp - result.potionsUsed.hp)
     draft.potions.mp = Math.max(0, draft.potions.mp - result.potionsUsed.mp)
-    const loot = { items: 0, gems: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
+    const loot = { items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
     if (result.won) {
       const worldProgress = (draft.progress[target.world] ??= {})
       const beaten = (worldProgress[target.difficulty] ??= [])
@@ -284,6 +285,8 @@ export async function fightBoss(store, user, today, body) {
         const scrapBefore = draft.scrap
         if (stash(draft, rollItem(rng, { ilvl: target.def.ilvl + diff.ilvl, rarityBoost: diff.rarityBoost + 1 }))) loot.items++
         if (stash(draft, rollGem(rng))) loot.gems++
+        // A support gem for sure (fase 2c), from its own stream so the item and gem stay as they were.
+        if (stash(draft, rollSupport(root.fork('support')))) loot.supports++
         loot.scrap = draft.scrap - scrapBefore
         loot.xp = bossXp(target.def, target.difficulty, ctx.multiplier)
         draft.xp += loot.xp
