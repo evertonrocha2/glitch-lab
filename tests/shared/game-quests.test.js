@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { refGold, refXp } from '../../shared/game/economy.js'
 import {
   ACERTO_TARGETS, ALL_DONE_CHESTS, HUNT_KILLS, MAX_QUESTS, MIN_QUESTS, QUEST_REWARDS, countBoss, countKills, dailyQuests,
-  huntTargets, questDay, questState, questsView, questXp,
+  huntTargets, questDay, questState, questZones, questsView, questXp,
 } from '../../shared/game/quests.js'
+import { worldById } from '../../shared/world/worlds.js'
 import { ZONES } from '../../shared/game/zones.js'
 
 const DAY = '2026-11-26'
@@ -27,12 +28,22 @@ describe('daily quests', () => {
     expect([...counts].sort()).toEqual([3, 4, 5])
   })
 
-  it('hunts HUNT_KILLS foes in the zone that fits the hero level, and asks for 5 to 15 acertos', () => {
+  it('hunts HUNT_KILLS foes in a zone that fits the hero level best, and asks for 5 to 15 acertos', () => {
     const forest = ZONES['floresta-js']
-    expect(quests({ level: 3 }).find((quest) => quest.kind === 'hunt')).toMatchObject({ target: HUNT_KILLS, where: { world: 'floresta-js', zone: 'z1' } })
+    for (const level of [1, 3, forest.z2.minLevel, forest.z3.minLevel, 40, 60]) {
+      const hunt = quests({ level }).find((quest) => quest.kind === 'hunt')
+      expect(hunt.target).toBe(HUNT_KILLS)
+      const fits = questZones().filter((zone) => zone.minLevel <= level)
+      const best = Math.max(...fits.map((zone) => zone.minLevel))
+      expect(ZONES[hunt.where.world][hunt.where.zone].minLevel, `level ${level}`).toBe(best)
+    }
     expect(quests({ level: forest.z2.minLevel }).find((quest) => quest.kind === 'hunt').where.zone).toBe('z2')
-    expect(quests({ level: 40 }).find((quest) => quest.kind === 'hunt').where.zone).toBe('z3')
     expect(ACERTO_TARGETS).toContain(quests().find((quest) => quest.kind === 'acertos').target)
+  })
+
+  it('never sends a hunt quest to an ENEM region, which only pt-BR readers have', () => {
+    expect(questZones().length).toBeGreaterThan(0)
+    for (const zone of questZones()) expect(worldById(zone.world).kind).not.toBe('enem')
   })
 
   it('takes the hunt zones from the caller, so a region can pass its own', () => {

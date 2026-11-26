@@ -7,6 +7,7 @@
 // The hero stores { day, level, kills: { 'world/zone': n }, bosses, taken: [quest id] }; the list itself
 // is rolled again from the seed and the level frozen when the day began, so it never changes mid-day.
 import { refGold, refXp } from './economy.js'
+import { worldById } from '../world/worlds.js'
 import { createRng } from './rng.js'
 import { HUNT_WORLDS, ZONES } from './zones.js'
 
@@ -32,14 +33,17 @@ export const ALL_DONE_CHESTS = 1
 // Quest xp at the study multiplier that holds when it is collected, rounded down once like hunt xp.
 export const questXp = (base, multiplier) => Math.floor(base * multiplier + 1e-9)
 
-// Every hunt zone the game has, as { world, zone, minLevel }.
-const defaultZones = () =>
-  HUNT_WORLDS.flatMap((world) => Object.values(ZONES[world] ?? {}).map((zone) => ({ world, zone: zone.id, minLevel: zone.minLevel })))
+// Every hunt zone every reader can walk to, as { world, zone, minLevel }: the ENEM regions exist only in
+// pt-BR, so a default quest never sends anyone there.
+export const questZones = () =>
+  HUNT_WORLDS.filter((world) => worldById(world)?.kind !== 'enem').flatMap((world) =>
+    Object.values(ZONES[world] ?? {}).map((zone) => ({ world, zone: zone.id, minLevel: zone.minLevel })),
+  )
 
 // The zones that fit a level best: the highest suggested level at or under it (the lowest ones when
 // the hero is under them all). zones: [{ world, zone, minLevel, region? }], all the game's by default;
 // a town or region may pass its own.
-export function huntTargets(level, zones = defaultZones()) {
+export function huntTargets(level, zones = questZones()) {
   if (zones.length === 0) return []
   const open = zones.filter((zone) => zone.minLevel <= level)
   const pool = open.length > 0 ? open : zones
