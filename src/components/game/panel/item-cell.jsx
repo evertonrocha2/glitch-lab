@@ -1,8 +1,7 @@
 import GameIcon from '../icons/game-icon.jsx'
-import { iconOf } from '../item-tooltip/item-text.js'
+import { gemColors, iconOf } from '../item-tooltip/item-text.js'
 import { RARITY_TRIM, UI } from '../ui/tokens.js'
 
-const GEM_TRIM = '#4fd1c5'
 const CELL = 'relative grid aspect-square w-full min-h-11 min-w-11 place-items-center border-2'
 // A sunk square: dark bevel top-left, light bottom-right, the same as an inset Frame.
 const SUNK = `inset 2px 2px 0 ${UI.bevelDark}, inset -2px -2px 0 #2a2250`
@@ -21,7 +20,7 @@ function glowOf(trim, rarity) {
 // hover tooltip; a touch never peeks (it has no hover, and its tap opens the popover).
 // describedBy: the tooltip's id while it shows. popup: a click opens the item's popover; expanded: it is open.
 export default function ItemCell({ item, label, selected = false, pressed, onClick, disabled = false, badge, onPeek, describedBy, popup = false, expanded = false }) {
-  const trim = item.kind === 'gem' ? GEM_TRIM : (RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common)
+  const trim = gemColors(item)?.border ?? RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common
   const ring = selected || pressed ? ' outline-2 outline-white' : ''
   const peek = onPeek && {
     onPointerEnter: (event) => event.pointerType !== 'touch' && onPeek(true),

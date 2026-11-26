@@ -12,6 +12,10 @@ import { RARITY_TRIM } from '../ui/tokens.js'
 
 // The bar fills: flat pixel colors, the Bar adds its own light and dark rows.
 const FILL = { hp: '#d8364c', mp: '#3a78e0', xp: '#8f62f0', boss: '#3fb867' }
+// The name of a combat effect that is not a skill: a tree passive, a support gem or an item effect.
+const EFFECT_NAMES = { critBlast: 'game.passive.critBlast', rethrow: 'game.passive.rethrow', vampiro: 'game.support.vampiro', bugSplash: 'game.logName.bugSplash' }
+const effectName = (t, id) => (Object.hasOwn(EFFECT_NAMES, id) ? t(EFFECT_NAMES[id]) : id)
+
 // What a log line reads as: damage the hero takes is red, dealt light, crits gold, healing green,
 // shields and potions green too, loot in its rarity's trim (set inline), the rest (dodge, phases) muted.
 const LOG_TONE_CLASS = {
@@ -22,7 +26,7 @@ const LOG_TONE_CLASS = {
   loot: '',
   info: 'text-[#a89fd0]',
 }
-const KIND_TONE = { hurt: 'bad', heal: 'good', shield: 'good', potion: 'good', buff: 'good', hit: 'dealt', skill: 'dealt', cast: 'dealt', dot: 'dealt', crit: 'crit' }
+const KIND_TONE = { hurt: 'bad', heal: 'good', leech: 'good', shield: 'good', potion: 'good', buff: 'good', hit: 'dealt', skill: 'dealt', cast: 'dealt', dot: 'dealt', crit: 'crit' }
 // The newest line (last) is fully lit, each older one dimmer.
 const LOG_FADE = [1, 0.78, 0.6, 0.46, 0.34]
 // The log's fill lets the scene show through; outline and bevel stay solid.
@@ -157,9 +161,9 @@ export default function GameHud({
   const cooldowns = live.cooldowns ?? {}
 
   const lineOf = (ev) => {
-    const kind = ev.who === 'enemy' && (ev.type === 'hit' || ev.type === 'skill') ? 'hurt' : ev.type
+    const kind = ev.who === 'enemy' && (ev.type === 'hit' || ev.type === 'skill') ? 'hurt' : ev.type === 'heal' && ev.skill === 'vampiro' ? 'leech' : ev.type
     const key = `game.log.${kind}`
-    const skill = ev.skill && SKILL_BY_ID[ev.skill] ? t(`game.skill.${ev.skill}`) : (ev.skill ?? '')
+    const skill = ev.skill && SKILL_BY_ID[ev.skill] ? t(`game.skill.${ev.skill}`) : ev.skill ? effectName(t, ev.skill) : ''
     const text = t(key, { amount: fmt.format(Math.round(ev.amount ?? 0)), skill })
     const rarity = ev.rarity && Object.hasOwn(RARITY_TRIM, ev.rarity) ? ev.rarity : undefined
     const tone = rarity ? 'loot' : kind !== 'hurt' && ev.crit ? 'crit' : (KIND_TONE[kind] ?? 'info')

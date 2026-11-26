@@ -43,6 +43,10 @@ const en = {
   'game.supportDesc.frio': 'Damage skills slow their targets by {pct}% for {seconds}s',
   'game.supportDesc.persistencia': 'Damage over time and buffs last {pct}% longer',
   'game.item.support': 'Support gem. Socket it in the talent tree.',
+  'game.item.supportKind': 'Support gem',
+  'game.item.supportHint': 'Socket it in the Tree',
+  'game.logName.bugSplash': 'Bug Splash',
+  'game.log.leech': '{skill} healed {amount}',
 
   'game.tree.kind.passive': '{branch} skill passive',
   'game.tree.kind.socket': '{branch} socket',
@@ -111,6 +115,10 @@ const pt = {
   'game.supportDesc.frio': 'Skills de dano deixam os alvos {pct}% mais lentos por {seconds}s',
   'game.supportDesc.persistencia': 'Dano contínuo e bônus duram {pct}% a mais',
   'game.item.support': 'Gema de suporte. Encaixe na árvore de talentos.',
+  'game.item.supportKind': 'Gema de suporte',
+  'game.item.supportHint': 'Encaixe num soquete da Árvore',
+  'game.logName.bugSplash': 'Respingo de Bugs',
+  'game.log.leech': '{skill} curou {amount}',
 
   'game.tree.kind.passive': 'Passiva de skill de {branch}',
   'game.tree.kind.socket': 'Engaste de {branch}',
