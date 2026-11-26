@@ -39,9 +39,9 @@ it('shows the hub and the closest goal for a new player', async () => {
 })
 
 it('names a zone and counts one left in the singular', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'floresta-js', x: 3, y: 10 }, { codeSolved: 7, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 7, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
   open()
-  expect(await screen.findByText('Floresta do JavaScript, área 2: falta 1 desafio de programação')).toBeInTheDocument()
+  expect(await screen.findByText('Caverna do SQL, área 2: falta 1 desafio de programação')).toBeInTheDocument()
 })
 
 it('puts the hero back where it was saved', async () => {

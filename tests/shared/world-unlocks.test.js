@@ -60,14 +60,14 @@ it('reads how much of a requirement is done', () => {
   expect(haveFor({ signal: 'enemCorrect', area: 'matematica', count: 5 }, signals({ matematica: 7, humanas: 1 }))).toBe(7)
 })
 
-it('opens only the hub, the forest and zone 1 for a new player', () => {
+it('opens the hub, the forest and its zones for a new player', () => {
   const state = unlocks(signals())
   expect(state.worlds.filter((world) => world.unlocked).map((world) => world.id)).toEqual(['laboratorio', 'floresta-js'])
   expect(worldOf(state, 'floresta-js')).toEqual({ id: 'floresta-js', unlocked: true, requirement: null, have: null, need: null })
   expect(worldOf(state, 'torre-matematica')).toMatchObject({ unlocked: false, have: 0, need: 5 })
-  expect(zoneOf(state, 'floresta-js', 'z2')).toMatchObject({ unlocked: false, have: 0, need: 8 })
+  expect(zoneOf(state, 'floresta-js', 'z2')).toMatchObject({ unlocked: true, have: null, need: null })
   expect(state.zones.laboratorio).toEqual([])
-  expect(openZones(state, 'floresta-js')).toEqual(new Set())
+  expect(openZones(state, 'floresta-js')).toEqual(new Set(['z2', 'z3']))
 })
 
 it('opens the SQL cave at exactly 3 solved', () => {
@@ -92,9 +92,9 @@ it('picks the locked goal with the least left, in world order on a tie', () => {
     have: 2,
     need: 3,
   })
-  // The forest's and the cave's z3 both have 1 left: the forest comes first.
+  // The forest's zones are open now: the cave's z3 is the next goal.
   expect(nextGoal(unlocks(signals({ codeSolved: 19, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 })))).toMatchObject({
-    worldId: 'floresta-js',
+    worldId: 'caverna-sql',
     zoneId: 'z3',
     have: 19,
     need: 20,

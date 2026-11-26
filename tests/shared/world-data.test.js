@@ -98,12 +98,12 @@ it('keeps the hub free of zones, terminals and requirements', () => {
   expect(hub()).toMatchObject({ kind: 'hub', area: null, requirement: null, zones: [], terminals: [] })
 })
 
-it('opens the JavaScript Forest from the start, asking 8 and 20 solved challenges for its inner zones', () => {
+it('opens the JavaScript Forest from the start, with its zones free (they open by boss kills)', () => {
   const forest = worldById('floresta-js')
   expect(forest).toMatchObject({ kind: 'tech', area: null, requirement: null })
   expect(forest.zones.map((zone) => [zone.id, zone.requirement])).toEqual([
-    ['z2', { signal: 'codeSolved', count: 8 }],
-    ['z3', { signal: 'codeSolved', count: 20 }],
+    ['z2', null],
+    ['z3', null],
   ])
 })
 

@@ -38,7 +38,7 @@ it('starts a new player in the hub with only the forest open', async () => {
   expect(worldOf(body, 'floresta-js')).toMatchObject({ unlocked: true, have: null, need: null })
   expect(worldOf(body, 'caverna-sql')).toMatchObject({ unlocked: false, have: 0, need: 3 })
   expect(worldOf(body, 'torre-matematica')).toMatchObject({ unlocked: false, have: 0, need: 5 })
-  expect(body.zones['floresta-js'].map((zone) => zone.unlocked)).toEqual([false, false])
+  expect(body.zones['floresta-js'].map((zone) => zone.unlocked)).toEqual([true, true])
   expect(body.signals).toEqual({ enemCorrect: { linguagens: 0, humanas: 0, natureza: 0, matematica: 0 }, codeSolved: 0 })
 })
 
@@ -71,16 +71,13 @@ it('saves a walkable position in an open world and gives it back', async () => {
   expect((await world()).position).toEqual({ world: 'floresta-js', x: 3, y: 10 })
 })
 
-it('refuses a locked world, a solid tile and a closed zone with 400', async () => {
+it('refuses a locked world and a solid tile with 400', async () => {
   const locked = await put({ world: 'torre-matematica', x: 3, y: 10 })
   expect(locked.status).toBe(400)
   expect((await locked.json()).message).toBe('This world is still locked.')
   const solid = await put({ world: 'floresta-js', x: 0, y: 0 })
   expect(solid.status).toBe(400)
   expect((await solid.json()).message).toBe("Your hero can't stand there.")
-  expect((await put({ world: 'floresta-js', x: 12, y: 1 })).status).toBe(400)
-  await gymPasses(8)
-  expect((await put({ world: 'floresta-js', x: 12, y: 1 })).status).toBe(200)
 })
 
 it('refuses broken positions with 400', async () => {
@@ -110,7 +107,7 @@ it('sends a hero standing somewhere no longer valid back to a spawn', async () =
   await store.saveWorldPosition('alice', { world: 'floresta-js', x: 0, y: 0 })
   expect((await world()).position).toEqual(spawnOf('floresta-js'))
   await store.saveWorldPosition('alice', { world: 'floresta-js', x: 12, y: 1 })
-  expect((await world()).position).toEqual(spawnOf('floresta-js'))
+  expect((await world()).position).toEqual({ world: 'floresta-js', x: 12, y: 1 })
   await store.saveWorldPosition('alice', { world: 'apagado', x: 1, y: 1 })
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
 })

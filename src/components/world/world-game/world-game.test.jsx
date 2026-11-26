@@ -122,13 +122,13 @@ it('travels through a portal and saves right away', () => {
 })
 
 it('walks to a clicked tile and ignores a tile it cannot reach', () => {
-  const { container } = play({ world: 'floresta-js', x: 3, y: 10 })
+  const { container } = play({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 })
   fireEvent.click(tile(container, 5, 9))
   wait(STEP_MS * 4)
-  expect(place()).toBe('floresta-js 5 9')
+  expect(place()).toBe('caverna-sql 5 9')
   fireEvent.click(tile(container, 13, 9)) // inside the locked zone 2
   wait(STEP_MS * 10)
-  expect(place()).toBe('floresta-js 5 9')
+  expect(place()).toBe('caverna-sql 5 9')
 })
 
 it('walks next to a terminal when the terminal is clicked', () => {
@@ -265,16 +265,16 @@ it('offers the terminal that was clicked, not its neighbor', () => {
 })
 
 it('says what a locked door asks for when it is tapped, every time', () => {
-  const { container } = play({ world: 'floresta-js', x: 5, y: 10 })
+  const { container } = play({ world: 'caverna-sql', x: 5, y: 10 }, { codeSolved: 3 })
   fireEvent.click(tile(container, 11, 10))
   wait(STEP_MS * 8)
-  expect(place()).toBe('floresta-js 10 10')
-  expect(screen.getByRole('status')).toHaveTextContent(/0 de 8 desafios de programação/)
+  expect(place()).toBe('caverna-sql 10 10')
+  expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
   tap('ArrowLeft')
   expect(screen.getByRole('status')).not.toHaveTextContent(/desafios/)
   tap('ArrowRight')
   fireEvent.click(tile(container, 11, 10))
-  expect(screen.getByRole('status')).toHaveTextContent(/0 de 8 desafios de programação/)
+  expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
 })
 
 it('saves the last tile with keepalive when the tab closes mid-walk', () => {
