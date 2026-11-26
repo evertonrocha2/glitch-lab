@@ -158,6 +158,13 @@ export function stageOffset(world, pos, crop) {
   return { left: (-snap(camera.x) / crop.w) * 100, top: (-snap(camera.y) / crop.h) * 100 }
 }
 
+// The tiles the camera shows for the hero at pos: { x, y, w, h }, the window stageOffset slides to.
+// The scene brings idle monsters back only outside it.
+export function viewRect(world, pos, crop) {
+  const camera = cameraOn(world, { x: pos.x, y: pos.y + crop.h * LIFT }, crop)
+  return { x: camera.x, y: camera.y, w: crop.w, h: crop.h }
+}
+
 const isTyping = (target) => {
   const tag = target?.tagName
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable === true
@@ -600,6 +607,7 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
     },
     [world],
   )
+  const cameraView = useCallback((pos) => (cropRef.current && world ? viewRect(world, pos, cropRef.current) : null), [world])
   // Under lg the panel is a drawer docked at the bottom. While it shows, the page learns its closed
   // height (--dock-h), so the study timer sits above it instead of under it.
   const dock = useRef(null)
@@ -752,6 +760,7 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
                 playback={playback}
                 walker={walker}
                 onCamera={onCamera}
+                viewOf={cameraView}
                 level={view.level?.level}
                 zoneName={`${regionName}, ${zoneLabel}`}
               />

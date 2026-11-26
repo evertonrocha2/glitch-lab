@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { FLORESTA_JS } from '../../../shared/world/maps/floresta-js.js'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
-import GameView, { stageOffset } from './game-view.jsx'
+import GameView, { stageOffset, viewRect } from './game-view.jsx'
 import { makeView } from './panel/fixtures.js'
 
 beforeAll(() => {
@@ -27,6 +27,20 @@ describe('stageOffset: the camera follows the hero', () => {
     const at = stageOffset(FLORESTA_JS, { x: 10.013, y: 8.5 }, crop)
     const tiles = (-at.left / 100) * 16
     expect(Math.round(tiles * 16)).toBeCloseTo(tiles * 16, 6)
+  })
+})
+
+describe('viewRect: the tiles the camera shows', () => {
+  const crop = { w: 16, h: 10 }
+  it('is the window stageOffset slides the map to, in tiles', () => {
+    for (const pos of [{ x: 15.5, y: 9.5 }, { x: 0, y: 0 }, { x: 47, y: 31 }, { x: 20, y: 12 }]) {
+      const view = viewRect(FLORESTA_JS, pos, crop)
+      const at = stageOffset(FLORESTA_JS, pos, crop)
+      expect(view.w).toBe(16)
+      expect(view.h).toBe(10)
+      expect(view.x).toBeCloseTo((-at.left / 100) * 16, 1)
+      expect(view.y).toBeCloseTo((-at.top / 100) * 10, 1)
+    }
   })
 })
 
