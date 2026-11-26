@@ -253,6 +253,13 @@ describe('createWalker strolls toward idle monsters', () => {
     w.update(0, { roam: true, lures })
     idle(w, lures, IDLE_MS, IDLE_MS * 6)
     expect(w.tile.x).toBeLessThan(9)
+    // One just over the zone's edge belongs to the next zone (a pack never claims it): ignored too.
+    const edge = make()
+    edge.roamIn = { x: 1, y: 1, w: 8, h: 10 }
+    const over = [{ x: 10, y: 5 }]
+    edge.update(0, { roam: true, lures: over })
+    edge.update(IDLE_MS, { roam: true, lures: over })
+    if (edge.path.length) expect(chebyshev(edge.path.at(-1), over[0])).toBeGreaterThan(LURE_SHORT)
     const plain = make()
     plain.update(0, { roam: true, lures: [] })
     idle(plain, [], IDLE_MS, IDLE_MS + ROAM_STEP_MS * 3)

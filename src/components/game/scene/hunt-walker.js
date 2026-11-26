@@ -200,11 +200,14 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     onFace?.(w.facing)
   }
 
-  // The lures inside the rect strolls stay in, give or take LURE_SHORT (a monster on the zone's edge).
+  // The lures standing inside the rect strolls stay in (the hunted zone): one in the next zone is
+  // never part of this zone's packs.
   const luresIn = (area, lures) =>
-    lures?.filter(
-      (l) => l.x >= area.x - LURE_SHORT && l.x < area.x + area.w + LURE_SHORT && l.y >= area.y - LURE_SHORT && l.y < area.y + area.h + LURE_SHORT,
-    )
+    lures?.filter((l) => {
+      const x = Math.round(l.x)
+      const y = Math.round(l.y)
+      return x >= area.x && x < area.x + area.w && y >= area.y && y < area.y + area.h
+    })
 
   // Advances to `now` (ms, the frame clock). roam: whether a stroll may start. lures: the idle
   // monsters a stroll heads for (read only when a stroll starts).
