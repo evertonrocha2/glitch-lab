@@ -97,10 +97,16 @@ it('shows the hub and the closest goal for a new player', async () => {
   expect(getWorld).toHaveBeenCalledWith('token-ana')
 })
 
-it('names a zone and counts one left in the singular', async () => {
+it('never names a zone as the goal, and counts one left in the singular', async () => {
+  // The cave's zone 2 used to wait for 8 challenges; with every world open there is no goal left.
   vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 7, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
+  const { unmount } = open()
+  expect(await title()).toHaveTextContent('Caverna do SQL')
+  expect(screen.queryByText(/área 2/)).toBeNull()
+  unmount()
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }, { codeSolved: 2, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
   open()
-  expect(await screen.findByText('Caverna do SQL, área 2: falta 1 desafio de programação')).toBeInTheDocument()
+  expect(await screen.findByText('Caverna do SQL: falta 1 desafio de programação')).toBeInTheDocument()
 })
 
 it('puts the hero back where it was saved', async () => {

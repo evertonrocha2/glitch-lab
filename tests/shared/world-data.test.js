@@ -98,10 +98,10 @@ it('keeps the hub free of zones, terminals and requirements', () => {
   expect(hub()).toMatchObject({ kind: 'hub', area: null, requirement: null, zones: [], terminals: [] })
 })
 
-it('opens the JavaScript Forest from the start, with its zones free (they open by boss kills)', () => {
+it('opens the JavaScript Forest from the start, with its zones free', () => {
   const forest = worldById('floresta-js')
   expect(forest).toMatchObject({ kind: 'tech', area: null, requirement: null })
-  expect(forest.zones.map((zone) => [zone.id, zone.requirement])).toEqual([
+  expect(forest.zones.map((zone) => [zone.id, zone.requirement ?? null])).toEqual([
     ['z2', null],
     ['z3', null],
   ])
@@ -115,17 +115,13 @@ it('opens the forest from the start and asks for study everywhere else', () => {
   expect(worldById('torre-matematica').requirement).toEqual({ signal: 'enemCorrect', area: 'matematica', count: 5 })
 })
 
-it('asks 15 and 40 right answers in the area for the inner zones of an ENEM world, and 8 and 20 solved in the cave', () => {
-  for (const world of WORLDS.filter((item) => item.kind === 'enem')) {
-    expect(world.zones.map((zone) => [zone.id, zone.requirement]), world.id).toEqual([
-      ['z2', { signal: 'enemCorrect', area: world.area, count: 15 }],
-      ['z3', { signal: 'enemCorrect', area: world.area, count: 40 }],
+it('asks no study for the inner zones of any world: they open with the world', () => {
+  for (const world of WORLDS.filter((item) => item.zones.length)) {
+    expect(world.zones.map((zone) => [zone.id, zone.requirement ?? null]), world.id).toEqual([
+      ['z2', null],
+      ['z3', null],
     ])
   }
-  expect(worldById('caverna-sql').zones.map((zone) => zone.requirement)).toEqual([
-    { signal: 'codeSolved', count: 8 },
-    { signal: 'codeSolved', count: 20 },
-  ])
 })
 
 it('has one terminal for each topic of the area in each ENEM world', () => {
