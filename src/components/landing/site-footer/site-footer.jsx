@@ -9,7 +9,7 @@ const link = 'font-mono text-xs uppercase tracking-[0.06em] text-(--lp-muted) tr
 export default function SiteFooter() {
   const t = useT()
   return (
-    <footer className="border-t-2 border-(--lp-void) bg-[#221950] shadow-[inset_0_2px_0_#3b3072]">
+    <footer className="border-t-2 border-(--lp-void) bg-[#1d222b] shadow-[inset_0_2px_0_#333b49]">
       <div className={`${WRAP} flex flex-col gap-6 py-12 sm:py-14 md:flex-row md:items-center md:justify-between`}>
         <div className="flex flex-col gap-3">
           <a href="#top" aria-label={t('landing.nav.home')} className="flex w-fit items-center gap-2.5">
@@ -30,7 +30,7 @@ export default function SiteFooter() {
               {t('landing.nav.signIn')}
             </Link>
           </nav>
-          <p className="font-mono text-xs text-[#aaa1d8]">{t('landing.v2.footer.made')}</p>
+          <p className="font-mono text-xs text-[#aab1bd]">{t('landing.v2.footer.made')}</p>
         </div>
       </div>
     </footer>

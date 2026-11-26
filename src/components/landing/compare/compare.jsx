@@ -41,7 +41,7 @@ export default function Compare() {
                     {t(`landing.why.${row}.bot`)}
                   </span>
                 </p>
-                <p className="flex gap-3 bg-[rgb(138_92_255/0.14)] px-5 py-4">
+                <p className="flex gap-3 bg-[rgb(111_155_198/0.1)] px-5 py-4">
                   <Mark good />
                   <span>
                     <span className="sr-only">StudyQuest: </span>

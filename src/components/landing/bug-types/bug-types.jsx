@@ -20,7 +20,7 @@ export default function BugTypes() {
           {CONCEPTS.map((concept, index) => {
             const example = t(`landing.bugs.example.${concept.id}`)
             return (
-              <li key={concept.id} className="lp-frame flex items-stretch shadow-[inset_2px_2px_0_var(--lp-line),inset_-2px_-2px_0_var(--lp-void),4px_4px_0_0_rgb(8_5_24/0.5)]">
+              <li key={concept.id} className="lp-frame flex items-stretch shadow-[inset_2px_2px_0_var(--lp-line),inset_-2px_-2px_0_var(--lp-void),4px_4px_0_0_rgb(6_8_11/0.5)]">
                 <span
                   aria-hidden="true"
                   className="grid w-12 shrink-0 place-items-center border-r-2 border-(--lp-void) bg-(--lp-inset) font-pixel text-sm text-(--lp-danger)"

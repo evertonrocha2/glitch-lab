@@ -22,7 +22,7 @@ export default function SiteHeader() {
   const { user } = useAuth()
   const t = useT()
   return (
-    <header className="sticky top-0 z-50 border-b border-[rgb(195_166_255/0.12)] bg-[rgb(30_22_66/0.72)] backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[rgb(169_195_221/0.1)] bg-[rgb(24_28_36/0.78)] backdrop-blur-md">
       <div className={`${WRAP} flex h-[60px] items-center gap-3 sm:h-[68px] sm:gap-7`}>
         <a href="#top" aria-label={t('landing.nav.home')} className="flex shrink-0 items-center gap-2.5">
           <PixelLogo className="size-7 sm:size-8" />
