@@ -2,28 +2,32 @@ import { BADGES } from '../../../../shared/badges.js'
 import { TRAIL_BONUS_XP } from '../../../../shared/trails.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { conceptName, levelTitle, statusName, trailKindName } from '../../../lib/i18n/labels.js'
-import BadgeIcon from '../../ui/badge-icon/badge-icon.jsx'
 import KindIcon from '../../trail/kind-icon/kind-icon.jsx'
+import BadgeIcon from '../../ui/badge-icon/badge-icon.jsx'
+import SectionHead, { WRAP } from '../section-head/section-head.jsx'
 
-// Small drawings of the real screens. They're decoration: each card's heading and text say the same thing.
+// Small drawings of the real screens, in the game's dark kit. They're decoration: each card's
+// heading and text say the same thing.
+
+const chip = 'border-2 border-(--lp-void) bg-(--lp-raised) shadow-[inset_1px_1px_0_var(--lp-line-hi)]'
 
 function MiniBoard() {
   const t = useT()
   const columns = [
-    { status: 'new', stripe: 'bg-muted', cards: ['TypeError', 'IndentationError'] },
-    { status: 'training', stripe: 'bg-secondary', cards: ['IndexError'] },
-    { status: 'solved', stripe: 'bg-primary', cards: ['ReferenceError', 'KeyError'] },
+    { status: 'new', stripe: 'bg-(--lp-muted)', cards: ['TypeError', 'IndentationError'] },
+    { status: 'training', stripe: 'bg-(--lp-mana)', cards: ['IndexError'] },
+    { status: 'solved', stripe: 'bg-(--lp-ok)', cards: ['ReferenceError', 'KeyError'] },
   ]
   return (
     <div className="grid grid-cols-3 gap-2">
       {columns.map((column) => (
-        <div key={column.status} className="min-w-0 border-2 border-ink bg-mist p-1.5">
-          <p className="mb-1.5 truncate font-label text-[10px] text-ink">{statusName(t, column.status)}</p>
+        <div key={column.status} className="lp-inset min-w-0 p-1.5">
+          <p className="mb-1.5 truncate font-mono text-[10px] uppercase tracking-[0.06em] text-(--lp-muted)">{statusName(t, column.status)}</p>
           <div className="space-y-1.5">
             {column.cards.map((card) => (
-              <div key={card} className="flex overflow-hidden border-2 border-ink bg-white">
+              <div key={card} className={`flex overflow-hidden ${chip}`}>
                 <span className={`w-1 shrink-0 ${column.stripe}`} />
-                <span className="truncate px-1.5 py-1 font-pixel text-xs font-bold text-ink">{card}</span>
+                <span className="truncate px-1.5 py-1 font-pixel text-xs">{card}</span>
               </div>
             ))}
           </div>
@@ -37,14 +41,14 @@ function MiniGym() {
   const t = useT()
   return (
     <div className="space-y-2">
-      <div className="border-2 border-ink bg-white font-mono text-xs leading-relaxed">
-        <p className="px-2 text-muted">1 scores = [7, 9, 4]</p>
-        <p className="bg-primary-soft px-2 text-ink">2 for i in range(1, len(scores) + 1):</p>
-        <p className="px-2 text-muted">3 &nbsp;&nbsp;&nbsp;print(scores[i])</p>
+      <div className="lp-inset font-mono text-xs leading-relaxed">
+        <p className="px-2 text-(--lp-muted)">1 scores = [7, 9, 4]</p>
+        <p className="bg-[rgb(255_90_110/0.14)] px-2 text-(--lp-text)">2 for i in range(1, len(scores) + 1):</p>
+        <p className="px-2 text-(--lp-muted)">3 &nbsp;&nbsp;&nbsp;print(scores[i])</p>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        <span className="border-2 border-ink bg-secondary-soft px-1.5 py-0.5 font-label text-[10px] text-secondary">{t('landing.mini.hint')}</span>
-        <span className="border-2 border-ink bg-primary px-1.5 py-0.5 font-label text-[10px] text-white">{t('landing.mini.passed')}</span>
+      <div className="flex flex-wrap gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em]">
+        <span className={`${chip} px-1.5 py-0.5 text-(--lp-mana)`}>{t('landing.mini.hint')}</span>
+        <span className="border-2 border-(--lp-void) bg-[#1c4a30] px-1.5 py-0.5 text-(--lp-ok)">{t('landing.mini.passed')}</span>
       </div>
     </div>
   )
@@ -53,17 +57,17 @@ function MiniGym() {
 function MiniNote() {
   const t = useT()
   return (
-    <div className="space-y-1.5 border-2 border-ink bg-white p-2.5">
-      <p className="font-pixel text-sm font-bold text-ink">{t('landing.mini.noteTitle')}</p>
-      <p className="text-xs text-ink/80">
-        {t('landing.mini.noteText')} <span className="bg-primary-soft px-1 font-semibold text-primary">@TypeError</span>
+    <div className="lp-inset space-y-1.5 p-2.5">
+      <p className="font-pixel text-sm">{t('landing.mini.noteTitle')}</p>
+      <p className="text-xs text-(--lp-muted)">
+        {t('landing.mini.noteText')} <span className="bg-[rgb(138_92_255/0.25)] px-1 font-semibold text-(--lp-arcane-hi)">@TypeError</span>
       </p>
-      <div className="flex overflow-hidden border-2 border-ink">
-        <span className="w-1 bg-secondary" />
-        <span className="px-1.5 py-1 font-pixel text-xs font-bold text-ink">TypeError</span>
+      <div className={`flex overflow-hidden ${chip}`}>
+        <span className="w-1 bg-(--lp-mana)" />
+        <span className="px-1.5 py-1 font-pixel text-xs">TypeError</span>
       </div>
-      <p className="flex items-center gap-1.5 text-xs text-muted line-through">
-        <span className="grid size-3 place-items-center bg-primary text-[10px] text-white no-underline">✓</span>
+      <p className="flex items-center gap-1.5 text-xs text-(--lp-muted) line-through">
+        <span className="grid size-3 place-items-center bg-(--lp-ok) text-[9px] text-(--lp-void) no-underline">✓</span>
         {t('landing.mini.noteTodo')}
       </p>
     </div>
@@ -73,15 +77,15 @@ function MiniNote() {
 function MiniTimer() {
   const t = useT()
   return (
-    <div className="flex items-center justify-between gap-3 border-2 border-ink bg-white p-3 shadow-pixel-secondary">
+    <div className="lp-inset flex items-center justify-between gap-3 p-3">
       <span className="flex items-center gap-2">
-        <span className="size-2.5 border border-ink bg-primary motion-safe:animate-blink" />
-        <span className="font-pixel font-bold text-2xl leading-none text-ink">25:00</span>
+        <span className="size-2.5 bg-(--lp-ember) shadow-[0_0_8px_var(--lp-ember)] motion-safe:animate-blink" />
+        <span className="font-pixel text-2xl leading-none text-(--lp-gold)">25:00</span>
       </span>
-      <span className="text-right text-xs text-muted">
+      <span className="text-right text-xs text-(--lp-muted)">
         {t('landing.mini.streak')}
         <br />
-        <strong className="text-ink">{t('landing.mini.today')}</strong>
+        <strong className="text-(--lp-text)">{t('landing.mini.today')}</strong>
       </span>
     </div>
   )
@@ -92,21 +96,19 @@ function MiniBadges() {
   const ids = ['first-clue', 'fixed-it', 'case-closed', 'sharp-eye', 'note-taker', 'on-a-roll']
   return (
     <div>
-      <div className="flex flex-wrap gap-2">
+      <div className="lp-glyphs flex flex-wrap gap-2">
         {ids.map((id, index) => (
-          <span key={id} className="grid size-11 place-items-center border-2 border-ink bg-white">
+          <span key={id} className="lp-inset grid size-11 place-items-center">
             <BadgeIcon id={id} accent={index % 2 ? 'secondary' : 'primary'} className="size-7" />
           </span>
         ))}
       </div>
-      <p className="mt-3 flex items-center justify-between font-label text-[10px] text-ink">
+      <p className="mt-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.06em]">
         <span>{t('landing.mini.level', { title: levelTitle(t, 3) })}</span>
-        <span className="text-muted">420 / 600 XP</span>
+        <span className="text-(--lp-muted)">420 / 600 XP</span>
       </p>
-      <div className="mt-1.5 flex gap-[2px] border-2 border-ink bg-white p-[2px]">
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
-          <span key={step} className={`h-2.5 flex-1 ${step < 7 ? (step % 2 ? 'bg-secondary' : 'bg-primary') : 'bg-mist'}`} />
-        ))}
+      <div className="lp-xptrack mt-1.5 h-3.5" style={{ '--v': '70%' }}>
+        <i />
       </div>
     </div>
   )
@@ -115,14 +117,14 @@ function MiniBadges() {
 function MiniExport() {
   return (
     <div className="flex items-center gap-3">
-      <span className="relative grid h-16 w-13 shrink-0 place-items-end border-2 border-ink bg-white p-1 shadow-pixel-ink">
-        <span className="absolute top-0 right-0 size-3 border-b-2 border-l-2 border-ink bg-mist" />
-        <span className="font-label text-[10px] text-primary">.md</span>
+      <span className={`relative grid h-16 w-13 shrink-0 place-items-end p-1 ${chip}`}>
+        <span className="absolute top-0 right-0 size-3 border-b-2 border-l-2 border-(--lp-void) bg-(--lp-inset)" />
+        <span className="font-mono text-[10px] text-(--lp-gold)">.md</span>
       </span>
-      <span className="font-pixel font-bold text-lg text-ink">→</span>
-      <span className="flex flex-col gap-1">
+      <span className="font-pixel text-lg text-(--lp-gold)">→</span>
+      <span className="flex flex-col gap-1 font-mono text-[10px] uppercase tracking-[0.06em]">
         {['Notion', 'Obsidian', 'GitHub'].map((app) => (
-          <span key={app} className="border-2 border-ink bg-white px-1.5 py-0.5 font-label text-[10px] text-ink">
+          <span key={app} className={`${chip} px-1.5 py-0.5`}>
             {app}
           </span>
         ))}
@@ -134,10 +136,10 @@ function MiniExport() {
 function MiniWeakSpot() {
   const t = useT()
   return (
-    <div className="border-2 border-ink bg-primary-soft p-3">
-      <p className="font-label text-[10px] text-primary">{t('landing.mini.weakSpot')}</p>
-      <p className="mt-1 text-lg font-semibold text-ink">{conceptName(t, 'undefined-access')}</p>
-      <p className="text-xs text-muted">{t('landing.mini.openCases')}</p>
+    <div className="lp-inset p-3 shadow-[inset_2px_2px_0_rgb(255_90_110/0.5)]">
+      <p className="font-mono text-[10px] uppercase tracking-[0.06em] text-(--lp-danger)">{t('landing.mini.weakSpot')}</p>
+      <p className="mt-1 text-lg font-semibold">{conceptName(t, 'undefined-access')}</p>
+      <p className="text-xs text-(--lp-muted)">{t('landing.mini.openCases')}</p>
     </div>
   )
 }
@@ -152,21 +154,21 @@ function MiniTrail() {
     { kind: 'reflect' },
   ]
   return (
-    <ol className="flex items-start">
+    <ol className="lp-glyphs flex items-start">
       {steps.map((step, index) => (
         <li key={step.kind} className="flex min-w-0 flex-1 items-start">
           <span className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
             <span
-              className={`grid size-10 place-items-center border-2 border-ink ${step.done ? 'bg-primary-soft' : step.next ? 'bg-secondary-soft shadow-pixel-secondary' : 'bg-white'}`}
+              className={`grid size-10 place-items-center border-2 border-(--lp-void) ${step.done ? 'bg-[#1c4a30]' : step.next ? 'bg-(--lp-raised) shadow-[0_0_0_2px_var(--lp-gold)]' : 'bg-(--lp-inset)'}`}
             >
               <KindIcon kind={step.kind} accent={step.next ? 'secondary' : 'primary'} className="size-6" />
             </span>
-            <span className={`max-w-full truncate font-label text-[10px] ${step.next ? 'text-secondary' : 'text-ink'}`}>
+            <span className={`max-w-full truncate font-mono text-[10px] uppercase tracking-[0.04em] ${step.next ? 'text-(--lp-gold)' : 'text-(--lp-muted)'}`}>
               {trailKindName(t, step.kind)}
             </span>
           </span>
           {index < steps.length - 1 && (
-            <span className="mt-5 h-1 w-3 shrink-0 bg-[repeating-linear-gradient(to_right,var(--color-ink)_0_4px,transparent_4px_7px)] sm:w-8" />
+            <span className="mt-5 h-1 w-3 shrink-0 bg-[repeating-linear-gradient(to_right,var(--lp-line-hi)_0_4px,transparent_4px_7px)] sm:w-8" />
           )}
         </li>
       ))}
@@ -190,26 +192,17 @@ export default function Features() {
   const t = useT()
   const vars = { count: BADGES.length, xp: TRAIL_BONUS_XP }
   return (
-    <section id="features" aria-labelledby="features-title" className="scroll-mt-4 border-b-2 border-ink bg-mist">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-24">
-        <div className="max-w-2xl">
-          <p className="font-label text-xs text-primary">{t('landing.features.kicker')}</p>
-          <h2 id="features-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
-            {t('landing.features.title')}
-          </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">{t('landing.features.body')}</p>
-        </div>
-        <ul aria-label={t('landing.features.list')} className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(({ id, visual: Visual, span = '' }, index) => (
-            <li
-              key={id}
-              className={`flex flex-col border-2 border-ink bg-white p-6 ${index % 3 === 1 ? 'shadow-pixel-secondary' : 'shadow-pixel'} ${span}`}
-            >
-              <div aria-hidden="true" className="relative mb-6 overflow-hidden border-2 border-dashed border-line bg-mist/60 p-4">
+    <section id="features" aria-labelledby="features-title" className="scroll-mt-16 py-20 sm:py-28">
+      <div className={WRAP}>
+        <SectionHead id="features-title" kicker={t('landing.features.kicker')} title={t('landing.features.title')} body={t('landing.features.body')} />
+        <ul aria-label={t('landing.features.list')} className="mt-12 grid gap-6 sm:mt-14 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map(({ id, visual: Visual, span = '' }) => (
+            <li key={id} className={`lp-frame flex flex-col p-6 ${span}`}>
+              <div aria-hidden="true" className="relative mb-6 overflow-hidden border border-dashed border-(--lp-line) bg-[rgb(10_8_24/0.35)] p-4">
                 <Visual />
               </div>
-              <h3 className="font-pixel text-xl font-bold text-ink">{t(`landing.features.${id}.title`)}</h3>
-              <p className="mt-2 leading-relaxed text-ink/75">{t(`landing.features.${id}.body`, vars)}</p>
+              <h3 className="font-pixel text-xl leading-tight">{t(`landing.features.${id}.title`)}</h3>
+              <p className="mt-2 leading-relaxed text-(--lp-muted)">{t(`landing.features.${id}.body`, vars)}</p>
             </li>
           ))}
         </ul>

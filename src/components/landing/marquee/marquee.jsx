@@ -20,21 +20,22 @@ function Row({ hidden = false }) {
   return (
     <ul aria-hidden={hidden || undefined} className="flex shrink-0 items-center">
       {ITEMS.map(([id, count]) => (
-        <li key={id} className="flex items-center gap-6 pr-6 font-label text-xs whitespace-nowrap text-white">
+        <li key={id} className="flex items-center gap-7 pr-7 font-mono text-[13px] uppercase tracking-[0.08em] whitespace-nowrap text-(--lp-muted)">
           {t(`landing.marquee.${id}`, { count })}
-          <span aria-hidden="true" className="size-2 bg-white/70" />
+          <span aria-hidden="true" className="size-2 rotate-45 bg-(--lp-gold) shadow-[0_0_10px_rgb(242_193_78/0.6)]" />
         </li>
       ))}
     </ul>
   )
 }
 
-// A pixel ticker of what's inside. The second copy makes the loop seamless; reduced motion keeps it still.
+// A ticker of what's inside, on an inset strip under the hero. The second copy makes the loop
+// seamless; reduced motion keeps it still.
 export default function Marquee() {
   const t = useT()
   return (
-    <section aria-label={t('landing.marquee.label')} className="overflow-hidden border-b-2 border-ink bg-primary py-3">
-      <div className="flex w-max motion-safe:animate-marquee">
+    <section aria-label={t('landing.marquee.label')} className="overflow-hidden border-y-2 border-(--lp-void) bg-(--lp-inset) py-3.5 shadow-[inset_0_2px_0_#1b1433]">
+      <div className="lp-marquee flex w-max">
         <Row />
         <Row hidden />
       </div>

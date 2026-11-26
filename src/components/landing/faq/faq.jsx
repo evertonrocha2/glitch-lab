@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import SectionHead, { WRAP } from '../section-head/section-head.jsx'
 
 // Each question is landing.faq.<id>.q, with its answer in landing.faq.<id>.a.
 const QUESTIONS = ['free', 'languages', 'answer', 'judge', 'upload', 'safe', 'export', 'account']
@@ -7,9 +8,7 @@ const QUESTIONS = ['free', 'languages', 'answer', 'judge', 'upload', 'safe', 'ex
 function Question({ q, a, open, onToggle }) {
   const id = useId()
   return (
-    <div
-      className={`border-2 border-ink bg-white transition-[translate,box-shadow] duration-200 ${open ? '-translate-x-0.5 -translate-y-0.5 shadow-pixel' : 'shadow-none'}`}
-    >
+    <div className={`border-2 border-(--lp-void) transition-colors duration-200 ${open ? 'bg-(--lp-raised) shadow-[inset_2px_2px_0_var(--lp-gold-dark),4px_4px_0_0_rgb(5_3_14/0.9)]' : 'bg-(--lp-panel) shadow-[inset_2px_2px_0_var(--lp-line),4px_4px_0_0_rgb(5_3_14/0.9)]'}`}>
       <h3>
         <button
           type="button"
@@ -17,14 +16,14 @@ function Question({ q, a, open, onToggle }) {
           aria-expanded={open}
           aria-controls={`${id}-a`}
           onClick={onToggle}
-          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-ink transition-colors hover:bg-mist"
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold transition-colors hover:text-(--lp-gold-hi)"
         >
           {q}
           <span
             aria-hidden="true"
-            className={`grid size-7 shrink-0 place-items-center border-2 border-ink transition-[background-color,color] duration-200 ${open ? 'bg-primary text-white' : 'bg-white text-ink'}`}
+            className={`grid size-7 shrink-0 place-items-center border-2 border-(--lp-void) transition-[background-color,color] duration-200 ${open ? 'bg-(--lp-gold) text-[#2a1606]' : 'bg-(--lp-inset) text-(--lp-arcane-hi)'}`}
           >
-            <span className={`block font-label text-sm leading-none transition-transform duration-300 ${open ? 'rotate-45' : 'rotate-0'}`}>+</span>
+            <span className={`block font-pixel text-base leading-none transition-transform duration-300 ${open ? 'rotate-45' : 'rotate-0'}`}>+</span>
           </span>
         </button>
       </h3>
@@ -37,7 +36,7 @@ function Question({ q, a, open, onToggle }) {
       >
         <div className="overflow-hidden">
           <p
-            className={`border-t-2 border-dashed border-line px-5 py-4 leading-relaxed text-ink/80 transition-[opacity,translate] duration-300 motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
+            className={`border-t border-dashed border-(--lp-line) px-5 py-4 leading-relaxed text-[#d6cff3] transition-[opacity,translate] duration-300 motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
           >
             {a}
           </p>
@@ -59,18 +58,14 @@ export default function Faq() {
     })
 
   return (
-    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 border-b-2 border-ink bg-white">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1.6fr] lg:py-24">
+    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 py-20 sm:py-28">
+      <div className={`${WRAP} grid gap-10 lg:grid-cols-[1fr_1.6fr]`}>
         <div>
-          <p className="font-label text-xs text-secondary">{t('landing.faq.kicker')}</p>
-          <h2 id="faq-title" className="mt-4 font-pixel text-3xl font-bold leading-tight text-ink sm:text-[2.6rem]">
-            {t('landing.faq.title')}
-          </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">{t('landing.faq.body')}</p>
+          <SectionHead id="faq-title" kicker={t('landing.faq.kicker')} title={t('landing.faq.title')} body={t('landing.faq.body')} />
           <button
             type="button"
             onClick={() => setOpen((current) => (current.size === QUESTIONS.length ? new Set() : new Set(QUESTIONS.keys())))}
-            className="mt-6 font-label text-xs text-primary underline underline-offset-4 hover:text-ink"
+            className="mt-6 font-mono text-xs uppercase tracking-[0.08em] text-(--lp-gold) underline underline-offset-4 hover:text-(--lp-gold-hi)"
           >
             {t(open.size === QUESTIONS.length ? 'landing.faq.closeAll' : 'landing.faq.openAll')}
           </button>

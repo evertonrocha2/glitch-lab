@@ -69,3 +69,41 @@ describe.each([
     expect(document.body).not.toHaveTextContent(/demo/i)
   })
 })
+
+it('lays the modes out as item cards, with ENEM only in Portuguese', () => {
+  const { unmount } = renderAt('/', { locale: 'pt-BR' })
+  const modes = () => within(screen.getByRole('list', { name: /modos do studyquest|studyquest modes/i }))
+  expect(modes().getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Diários', 'Duelos 1v1', 'ENEM', 'Glitch World'])
+  expect(modes().getByRole('link', { name: /Treinar pro ENEM/ })).toHaveAttribute('href', '/exams/enem')
+  unmount()
+
+  renderAt('/')
+  expect(modes().getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Dailies', 'Duels 1v1', 'Glitch World'])
+  expect(document.body).not.toHaveTextContent('ENEM')
+  expect(modes().getByRole('link', { name: /Enter the world/ })).toHaveAttribute('href', '/mundo')
+})
+
+it('moves the XP bar when a quest is ticked', async () => {
+  renderAt('/')
+  const bar = screen.getByRole('progressbar', { name: 'Experience' })
+  const before = Number(bar.getAttribute('aria-valuenow'))
+  await userEvent.click(screen.getByRole('checkbox', { name: /Pass a gym challenge/ }))
+  expect(Number(bar.getAttribute('aria-valuenow'))).toBeGreaterThan(before)
+  await userEvent.click(screen.getByRole('checkbox', { name: /Pass a gym challenge/ }))
+  expect(Number(bar.getAttribute('aria-valuenow'))).toBe(before)
+})
+
+it('paints the hero and the CTA band with their gradients when there is no WebGL', () => {
+  renderAt('/')
+  for (const kind of ['arcana', 'embers']) {
+    const backdrop = document.querySelector(`[data-shader="${kind}"]`)
+    expect(backdrop).toHaveAttribute('data-gl', 'off')
+    expect(backdrop.style.background).toContain('gradient')
+  }
+})
+
+it('sends the CTA band into the game once signed in', () => {
+  renderAt('/', { user: 'alice' })
+  const band = screen.getByRole('heading', { name: /Your hero is waiting/ }).closest('section')
+  expect(within(band).getByRole('link', { name: 'Open the Glitch World' })).toHaveAttribute('href', '/mundo')
+})
