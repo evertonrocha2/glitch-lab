@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { GEM_SALVAGE_SCRAP } from '../../../shared/game/hunt.js'
-import { AFFIXES, BAG_SIZE, GEMS, MAX_POTION_BUY, POTION_PRICE, rerollCost, rollItem, salvageValue, upgradeCost } from '../../../shared/game/items.js'
+import {
+  AFFIXES, BAG_SIZE, GEMS, MAX_POTION_BUY, POTION_PRICE, rerollCost, rollItem, salvageValue, socketValue, upgradeCost,
+} from '../../../shared/game/items.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { HUNT_WORLDS, ZONES } from '../../../shared/game/zones.js'
 import { badRequest } from '../../core/errors.js'
@@ -74,7 +76,8 @@ export const rerollAffix = (store, user, today, body) =>
     return {}
   })
 
-// The gem leaves the bag and its name goes into an empty socket (itemStats reads it from there).
+// The gem leaves the bag and its name (with its tier above 1, socketValue) goes into an empty socket
+// (itemStats reads it from there).
 // Unsocketing isn't in phase 1, so a filled socket is refused.
 export const socketGem = (store, user, today, body) =>
   act(store, user, today, (hero) => {
@@ -84,7 +87,7 @@ export const socketGem = (store, user, today, body) =>
     if (gem.kind !== 'gem' || !Object.hasOwn(GEMS, gem.gem) || item.sockets[body.socket] !== null) {
       throw badRequest(MESSAGES.badItem)
     }
-    item.sockets[body.socket] = gem.gem
+    item.sockets[body.socket] = socketValue(gem)
     hero.items = hero.items.filter((each) => each !== gem)
     return {}
   })
