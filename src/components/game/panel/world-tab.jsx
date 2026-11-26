@@ -5,7 +5,8 @@ import { HUB_ID, WORLDS } from '../../../../shared/world/worlds.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { isEnemWorld, showsEnem } from '../../world/enem-worlds.js'
 import GameIcon from '../icons/game-icon.jsx'
-import { ActionButton, BlockTitle } from './panel-ui.jsx'
+import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
+import { ActionButton } from './panel-ui.jsx'
 
 const ORDER = Object.keys(DIFFICULTIES)
 const FINAL = 'z3'
@@ -55,28 +56,31 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
 
   return (
     <>
-      <BlockTitle id={mapsId}>{t('game.world.maps')}</BlockTitle>
-      <ul aria-labelledby={mapsId} className="grid grid-cols-2 gap-1">
+      <SectionTitle id={mapsId}>{t('game.world.maps')}</SectionTitle>
+      <ul aria-labelledby={mapsId} className="m-0 grid list-none grid-cols-2 gap-1.5 p-0">
         {worlds.map((each) => {
           const here = each.id === world
+          const note = here ? t('game.world.here') : HUNT_WORLDS.includes(each.id) ? '' : t('game.world.soon')
           return (
-            <li
+            <Frame
+              as="li"
               key={each.id}
+              tone={here ? 'gold' : 'inset'}
               aria-current={here ? 'location' : undefined}
-              className={`flex flex-col border-2 px-1.5 py-1 ${here ? 'border-[#f2c14e] bg-[#2a1f5a]' : 'border-[#2e2650] bg-[#1e1838] text-[#9a93b8]'}`}
+              className="flex min-h-12 flex-col items-start justify-center gap-1 px-2.5 py-2"
             >
-              <span className={here ? 'font-bold text-white' : ''}>{t(`world.name.${each.id}`)}</span>
-              <small className="text-[10px]">{here ? t('game.world.here') : HUNT_WORLDS.includes(each.id) ? '' : t('game.world.soon')}</small>
-            </li>
+              <span className={`font-pixel text-[10px] leading-tight ${here ? 'text-[#f2c14e]' : 'text-[#a89fd0]'}`}>{t(`world.name.${each.id}`)}</span>
+              {note && <Chip tone={here ? 'gold' : 'muted'}>{note}</Chip>}
+            </Frame>
           )
         })}
       </ul>
 
-      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
-        <legend className="mb-1 p-0">
-          <BlockTitle>{t('game.world.difficulty')}</BlockTitle>
+      <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
+        <legend className="mb-1.5 w-full p-0">
+          <SectionTitle>{t('game.world.difficulty')}</SectionTitle>
         </legend>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1.5">
           {ORDER.map((id) => {
             const open = (view.zones?.[world]?.[id] ?? []).some((zone) => zone.unlocked)
             const needs = DIFFICULTIES[id].minLevel
@@ -96,7 +100,7 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
         </div>
       </fieldset>
 
-      <BlockTitle>{t('game.world.zones')}</BlockTitle>
+      <SectionTitle>{t('game.world.zones')}</SectionTitle>
       {list.map((state, at) => {
         const def = ZONES[world][state.id]
         const locked = lockReason(t, list, at, level, difficulty, world)
@@ -105,18 +109,18 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
         const huntWhy = replaying ? t('game.why.fighting') : locked
         return (
           <ZoneCard key={state.id} title={t('game.world.zoneTitle', { n: at + 1, name: zoneName(state.id) })} locked={Boolean(locked)}>
-            <p className="m-0 text-[#b9b0de]">
+            <p className="m-0 text-[11px] text-[#a89fd0]">
               {t('game.world.minLevel', { level: state.minLevel })}
               {locked && <span className="text-[#ff9aa6]">{`. ${locked}`}</span>}
             </p>
-            <p className="m-0 flex items-center gap-1">
+            <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px]">
               <GameIcon name="skull" size={1} />
               {t('game.world.boss', { boss: t(`game.boss.${def.boss}`) })}
-              {state.beaten && <b className="ml-1 border border-[#6fe39a] px-1 text-[10px] text-[#6fe39a]">{t('game.world.beaten')}</b>}
+              {state.beaten && <Chip tone="ok">{t('game.world.beaten')}</Chip>}
             </p>
-            <p className="m-0 text-[#b9b0de]">
+            <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px] text-[#a89fd0]">
               {t('game.world.power', { power: fmt.format(suggestedPower(def, difficulty)) })}
-              {here && <b className="ml-2 text-[#ffd76a]">{t('game.world.hunting')}</b>}
+              {here && <Chip tone="gold">{t('game.world.hunting')}</Chip>}
             </p>
             <div className="flex flex-wrap items-start gap-1.5">
               {here ? (
@@ -136,21 +140,24 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
         )
       })}
 
-      <ActionButton busy={busy} onClick={leave}>
-        {t('game.world.leave')}
-      </ActionButton>
+      <span>
+        <ActionButton busy={busy} onClick={leave}>
+          {t('game.world.leave')}
+        </ActionButton>
+      </span>
     </>
   )
 }
 
+// A zone: a raised box when open, sunk and dimmed while locked.
 function ZoneCard({ title, locked, children }) {
   const titleId = useId()
   return (
-    <section aria-labelledby={titleId} className={`flex flex-col gap-1 border-2 bg-[#120e26] p-2 ${locked ? 'border-[#2e2650] opacity-80' : 'border-[#4a3b8f]'}`}>
-      <h4 id={titleId} className="m-0 text-[12px] font-bold text-white">
+    <Frame as="section" tone={locked ? 'inset' : 'panel'} aria-labelledby={titleId} className={`flex flex-col gap-1.5 p-2.5 ${locked ? 'opacity-80' : ''}`}>
+      <h4 id={titleId} className={`m-0 font-pixel text-[11px] font-normal leading-tight ${locked ? 'text-[#a89fd0]' : 'text-white'}`}>
         {title}
       </h4>
       {children}
-    </section>
+    </Frame>
   )
 }
