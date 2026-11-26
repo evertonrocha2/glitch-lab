@@ -245,6 +245,11 @@ it('refuses a boss above the hero level, and records a win with its loot', async
   const body = await bodyOf(res)
   expect(body.fight.won).toBe(true)
   expect(body.fight.log.length).toBeGreaterThan(0)
+  // The boss spawns first; its phases call adds (summoner 0), and the fight ends with the boss.
+  const spawns = body.fight.log.filter((ev) => ev.type === 'spawn')
+  expect(spawns[0]).toMatchObject({ src: 0, boss: true, id: 'rei-slime' })
+  expect(spawns.slice(1).every((ev) => ev.summoner === 0)).toBe(true)
+  expect(body.fight.log.at(-1)).toMatchObject({ type: 'death', who: 'enemy', src: 0 })
   expect(body.hero.progress[FOREST].normal).toEqual(['z1'])
   expect(body.zones[FOREST].normal.find((zone) => zone.id === 'z1').beaten).toBe(true)
   const loot = body.hero.items.filter((item) => !item.equipped)

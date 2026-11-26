@@ -262,7 +262,7 @@ export function stash(hero, drop) {
   return false
 }
 
-// One boss fight, simulated here. The first win per world, difficulty and zone marks the zone beaten,
+// One boss fight, simulated here (an instant replay: the client plays its log, format in combat.js). The first win per world, difficulty and zone marks the zone beaten,
 // drops 1 item (rarity boost +1) and 1 gem and pays bossXp at today's multiplier; later wins pay
 // nothing, so a script can't farm the boss. An Inferno loss costs 10% of the gold; potions drunk are
 // gone either way.
@@ -276,7 +276,8 @@ export async function fightBoss(store, user, today, body) {
     const seed = `${user.id}:${target.zone}:${target.difficulty}:${randomUUID()}`
     const root = createRng(seed)
     const enemy = enemyFor(target.def, target.difficulty, root.fork('enemy'), { boss: true })
-    const result = simulateFight({ hero: fighterOf(draft, level), enemy, seed })
+    // The boss alone at first; its phases call its adds (rolled with it by enemyFor).
+    const result = simulateFight({ hero: fighterOf(draft, level), enemies: [enemy], seed })
     draft.potions.hp = Math.max(0, draft.potions.hp - result.potionsUsed.hp)
     draft.potions.mp = Math.max(0, draft.potions.mp - result.potionsUsed.mp)
     const loot = { items: 0, gems: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
