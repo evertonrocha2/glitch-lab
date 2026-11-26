@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ZONES } from '../../../shared/game/zones.js'
 import { worldById } from '../../../shared/world/worlds.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
+import DPad from '../world/d-pad/d-pad.jsx'
 import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
@@ -13,10 +14,13 @@ import TreeTab from './panel/tree-tab.jsx'
 import WorldTab from './panel/world-tab.jsx'
 import { replayAt } from './replay.js'
 import GameScene, { fightSpot } from './scene/game-scene.jsx'
+import { createWalker } from './scene/hunt-walker.js'
 import { duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
+import { cameraOn, directionOf } from './scene/walk.js'
 import Frame from './ui/frame.jsx'
 import { StudyWindowProvider, useStudyWindow } from './study-window/study-window-provider.jsx'
 import { useFullscreen } from './use-fullscreen.js'
+import { useReducedMotion } from './use-reduced-motion.js'
 
 export const SYNC_MS = 60_000
 // While the study window is open the View syncs this often, so new acertos show in the HUD and the
@@ -124,6 +128,20 @@ function cropFor(world, rect, { w, h }) {
   }
 }
 
+// Where the map sits in the stage for a camera on the hero at pos (tiles): the map's left and top as
+// percents of the crop, snapped to whole art pixels so the pixels stay crisp.
+export function stageOffset(world, pos, crop) {
+  const camera = cameraOn(world, pos, crop)
+  const snap = (n) => Math.round(n * 16) / 16
+  return { left: (-snap(camera.x) / crop.w) * 100, top: (-snap(camera.y) / crop.h) * 100 }
+}
+
+const isTyping = (target) => {
+  const tag = target?.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable === true
+}
+const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+
 // The zone the scene shows: the boss being fought, the hunt, else the first open zone not yet beaten.
 function shownZone(view, worldId, replay) {
   if (replay) return replay.target.zone
@@ -164,6 +182,7 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   const [lookOpen, setLookOpen] = useState(false)
   const wide = useMediaQuery(WIDE)
   const [zoom, changeZoom] = useZoom()
+  const reduced = useReducedMotion()
 
   const apiRef = useRef(api)
   apiRef.current = api
@@ -321,6 +340,65 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   const samplesKey = view?.huntPreview?.samples ? JSON.stringify(view.huntPreview.samples) : ''
   const samples = useMemo(() => (samplesKey ? JSON.parse(samplesKey) : null), [samplesKey])
 
+  // The hero walks the shown zone (presentation only: nothing goes to the server). A new zone, or the
+  // reduced motion setting changing, starts a new walker at the zone's middle.
+  const walkZone = view ? shownZone(view, worldId, replay) : null
+  const walker = useMemo(() => {
+    if (!walkZone) return null
+    const rect = ZONES[worldId][walkZone].rect
+    return createWalker({ world, rect, start: fightSpot(world, rect).hero, reduced })
+  }, [world, worldId, walkZone, reduced])
+  const walkerRef = useRef(walker)
+  walkerRef.current = walker
+
+  // Arrows and WASD walk the hero while the page itself (or the stage) has the keyboard: a focused
+  // tab list, input or open dialog keeps its keys.
+  useEffect(() => {
+    const ours = (event) => {
+      const target = event.target
+      if (event.ctrlKey || event.metaKey || event.altKey || isTyping(target)) return false
+      if (document.querySelector('[aria-modal="true"]')) return false
+      return target === document.body || target === document.documentElement || Boolean(stageRef.current?.contains(target))
+    }
+    const onDown = (event) => {
+      const dir = directionOf(event.key)
+      if (!dir || !walkerRef.current || !ours(event)) return
+      event.preventDefault()
+      if (!event.repeat) walkerRef.current.press(dir, clock())
+    }
+    const onUp = (event) => {
+      const dir = directionOf(event.key)
+      if (dir) walkerRef.current?.release(dir)
+    }
+    const onBlur = () => walkerRef.current?.release()
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [])
+
+  // The camera follows the hero: the scene reports where it draws the hero and the map slides under
+  // the stage without a React render. The last spot is kept so a render puts the map back there.
+  const mapRef = useRef(null)
+  const cameraRef = useRef(null)
+  const cropRef = useRef(null)
+  const onCamera = useCallback(
+    (pos) => {
+      cameraRef.current = { x: pos.x, y: pos.y }
+      const node = mapRef.current
+      const crop = cropRef.current
+      if (!node || !crop) return
+      const at = stageOffset(world, pos, crop)
+      node.style.left = `${at.left}%`
+      node.style.top = `${at.top}%`
+    },
+    [world],
+  )
+
   // Under lg the panel is a drawer docked at the bottom. While it shows, the page learns its closed
   // height (--dock-h), so the study timer sits above it instead of under it.
   const dock = useRef(null)
@@ -388,6 +466,8 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   const difficulty = replay?.target.difficulty ?? view.hero.hunt?.difficulty ?? 'normal'
   const locked = (view.zones?.[worldId]?.[difficulty] ?? []).filter((zone) => !zone.unlocked && zone.id !== 'z1').map((zone) => zones[zone.id].rect)
   const crop = cropFor(world, zoneRect, wide ? CROP[zoom].wide : CROP[zoom].narrow)
+  cropRef.current = crop
+  const mapAt = cameraRef.current ? stageOffset(world, cameraRef.current, crop) : { left: (-crop.x / crop.w) * 100, top: (-crop.y / crop.h) * 100 }
   // The fog is soft and the padlocked door may sit outside the crop, so a small sign says it too.
   const lockedAhead = locked.length > 0
   const zoneLabel = t(`game.zone.${zones[zoneId].name}`)
@@ -423,11 +503,12 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
             }}
           >
             <div
+              ref={mapRef}
               className="absolute"
               style={{
                 width: `${(crop.cols / crop.w) * 100}%`,
-                left: `${(-crop.x / crop.w) * 100}%`,
-                top: `${(-crop.y / crop.h) * 100}%`,
+                left: `${mapAt.left}%`,
+                top: `${mapAt.top}%`,
               }}
             >
               <GameScene
@@ -437,6 +518,9 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
                 look={view.hero.look}
                 gear={gear}
                 playback={playback}
+                walker={walker}
+                onCamera={onCamera}
+                level={view.level?.level}
                 zoneName={`${t(`world.name.${worldId}`)}, ${zoneLabel}`}
               />
             </div>
@@ -463,6 +547,14 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
           </section>
         )}
       </StageFrame>
+      <p className="sr-only">{t('game.walk.label')}</p>
+      {/* On phones a pad under the scene walks the hero (desktop has the arrows, WASD and clicks). */}
+      <DPad
+        className="mx-auto sm:hidden"
+        onPress={(dir) => walker?.press(dir, clock())}
+        onRelease={() => walker?.release()}
+        onStep={(dir) => walker?.tap(dir, clock())}
+      />
       <StatusLine
         t={t}
         counts={counts}
