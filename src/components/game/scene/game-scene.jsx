@@ -4,12 +4,14 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { SPRITE } from '../hero/draw-hero.js'
 import { heroSprite } from '../hero/hero-cache.js'
 import { useReducedMotion } from '../use-reduced-motion.js'
-import { drawEnemy, enemyLight, heroLight, isBossSprite } from './actors.js'
-import { floaterAnchor, paintFloaters } from './floaters.js'
+import { drawFoe, drawHealthBar, enemyLight, foeColors, foeHeight, heroLight } from './actors.js'
+import { activeFloaters, buildPack, packAt, shakeAt, stackFloaters } from './pack.js'
 import { paintLight } from './light.js'
-import { BOSS_SPEED, duration, HUNT_SPEED, sample, timeline, WALK_MS } from './playback.js'
+import { nudge, orient, rotate } from './placement.js'
+import { BOSS_SPEED, duration, HUNT_SPEED, WALK_MS } from './playback.js'
 import { ellipse, SHADOW } from './pixels.js'
 import { mapLights, paintAnimated, paintBase, paintFog, readMap, TS } from './tiles.js'
+import { drawAilment, drawFx, fxLight, fxProgress } from './vfx.js'
 
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
 
@@ -19,7 +21,7 @@ function zoneNumber(world, rect) {
   return at < 0 ? 1 : at + 2
 }
 
-// Where the fight happens: the walkable tile nearest the zone's middle with room for the foe two tiles right.
+// Where the hero starts in a zone: the walkable tile nearest the zone's middle with room two tiles right.
 export function fightSpot(world, rect) {
   const rows = world.rows ?? []
   const r = rect ?? { x: 0, y: 0, w: rows[0]?.length ?? 0, h: rows.length }
@@ -38,24 +40,39 @@ export function fightSpot(world, rect) {
   return { hero: { x: hero.x, y: hero.y }, enemy: { x: hero.x + 2, y: hero.y } }
 }
 
-// Lays the playback's fights end to end: [walk, fight], [walk, fight], ... Built once per `fights` array.
-function schedule(playback) {
+// Lays the playback's fights end to end: [walk, fight], [walk, fight], ... Built once per `fights`
+// array; each fight's pack is read from its log the first time it plays.
+function schedule(playback, fallback) {
   const speed = playback.speed ?? (playback.loop ? HUNT_SPEED : BOSS_SPEED)
   let at = 0
   const runs = playback.fights.map((fight) => {
-    const run = { start: at + (playback.walk === false ? 0 : WALK_MS), frames: timeline(fight, { speed }), len: duration(fight, { speed }), foe: fight.enemy?.sprite ? fight.enemy : null }
+    const walk = playback.walk === false ? 0 : WALK_MS
+    const run = { start: at + walk, len: duration(fight, { speed }), fight, speed, pack: null, fallback: fight.enemy?.sprite ? fight.enemy : fallback }
     at = run.start + run.len
     return run
   })
   return { runs, total: at }
 }
 
-// The scene `ms` into the playback: the hero walking in, or a fight sampled at its local time.
-function stateAt(plan, ms, loop) {
+// Where the playback is `ms` in: { walking, index, cycle, run, local (ms into the fight) }.
+function stateAt(plan, ms, loop, out) {
+  const cycle = loop ? Math.floor(ms / plan.total) : 0
   const t = loop ? ms % plan.total : Math.min(ms, plan.total)
-  const run = plan.runs.find((r, i) => t < r.start + r.len || i === plan.runs.length - 1)
-  if (t < run.start) return { walking: true, p: (t - (run.start - WALK_MS)) / WALK_MS, foe: run.foe }
-  return { walking: false, foe: run.foe, ...sample(run.frames, t - run.start) }
+  let index = plan.runs.length - 1
+  for (let i = 0; i < plan.runs.length; i++) {
+    if (t < plan.runs[i].start + plan.runs[i].len) {
+      index = i
+      break
+    }
+  }
+  const run = plan.runs[index]
+  if (!run.pack) run.pack = buildPack(run.fight, { speed: run.speed, fallback: run.fallback })
+  out.walking = t < run.start
+  out.index = index
+  out.cycle = cycle
+  out.run = run
+  out.local = t - run.start
+  return out
 }
 
 // The hero doll's pose for an anim: idle swaps frames every 500 ms, walking steps faster with a 1px bob,
@@ -90,13 +107,25 @@ function layer(width, height, paint) {
   return canvas
 }
 
+// How fast the pack trails a hero walking away mid fight, and how fast an enemy slides when the
+// ground pushes it to another tile, in tiles a second.
+const FOLLOW = 3
+const SLIDE = 10
+const LEVEL_UP_MS = 1800
+
 // The hunting map in lit 16px pixel art, one canvas pixel per art pixel, scaled up by CSS to fit the width.
-// Static art goes to an offscreen layer once (as the mockup's makePixel); water, portals, actors and the
-// light pass are drawn each frame. With prefers-reduced-motion: one still frame, no fireflies, still water.
+// Static art goes to an offscreen layer once; water, portals, actors, effects and the light pass are
+// drawn each frame. With prefers-reduced-motion: still water, no fireflies, no shake, effects as short
+// still flashes.
 //   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (actors stand in it).
-//   lockedRects: rects to cover in fog. look: the hero's six field look. gear: { slot: { b, r } } from gearOf. enemy: { sprite, elite } for the foe
-//   on stage (optional); a fight in the playback carrying its own `enemy` ({ sprite, elite }) wins over it. playback: { fights, loop, speed? } plays fight logs (see playback.js); a loop walks 1.5 s between fights. zoneName: overrides the label.
-export default function GameScene({ world, zoneRect, lockedRects = [], look, gear, playback, enemy, zoneName, onReady }) {
+//   lockedRects: rects to cover in fog. look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
+//   playback: { fights, loop, speed? } plays pack fight logs (pack.js): a loop walks 1.5 s between fights,
+//   and each pack spawns around wherever the hero stands. enemy: { sprite, elite } for a log without spawns.
+//   walker: a hunt-walker.js walker (the player walks the hero; it strolls on its own between packs).
+//   onCamera(pos): the hero's drawn spot in tiles, each time it moves, for a camera to follow.
+//   level: the hero's level; when it goes up a golden column and "Level X!" play over the hero.
+//   zoneName: overrides the label.
+export default function GameScene({ world, zoneRect, lockedRects = [], look, gear, playback, enemy, walker, onCamera, level, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
   const reduced = useReducedMotion()
@@ -107,12 +136,13 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
   const live = useRef({})
   const tr = useRef(t)
   tr.current = t
-  live.current = { look, gear, enemy, playback, onReady }
+  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level }
   const ready = useRef(false)
 
   const lockedKey = JSON.stringify(lockedRects ?? [])
   const zoneKey = JSON.stringify(zoneRect ?? null)
   const playing = Boolean(playback?.fights?.length)
+  const walking = Boolean(walker)
 
   useEffect(() => {
     const canvas = ref.current
@@ -133,91 +163,343 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
       return undefined
     }
     const locked = JSON.parse(lockedKey)
-    const spot = fightSpot(world, JSON.parse(zoneKey))
+    const rect = JSON.parse(zoneKey)
+    const spot = fightSpot(world, rect)
     const base = layer(canvas.width, canvas.height, (c) => paintBase(c, world))
     const fog = locked.length ? layer(canvas.width, canvas.height, (c) => paintFog(c, world, locked)) : null
     const map = readMap(world)
     const motes = map.outdoor ? 'fireflies' : 'dust'
     const tint = world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
-    const hx = spot.hero.x * TS
-    const hy = spot.hero.y * TS
-    const ex = spot.enemy.x * TS
-    const ey = spot.enemy.y * TS
 
     // Playback keeps its own clock, so it still runs with reduced motion (the environment stays frozen).
     let plan = null
     let planKey = null
     let startedAt = 0
+    const now = { walking: true, index: 0, cycle: 0, run: null, local: 0 }
     const play = (time) => {
       const pb = live.current.playback
       if (!pb?.fights?.length) return null
       if (planKey !== pb.fights) {
         planKey = pb.fights
-        plan = schedule(pb)
+        plan = schedule(pb, live.current.enemy)
         startedAt = time
       }
-      return stateAt(plan, (time - startedAt) * 1000, Boolean(pb.loop))
+      return stateAt(plan, (time - startedAt) * 1000, Boolean(pb.loop), now)
     }
 
-    const draw = (time) => {
+    // The fight on screen: where its pack is anchored and how it is turned, each enemy's drawn spot.
+    const fight = { key: null, anchor: { x: 0, y: 0 }, rot: null, spots: [], state: undefined }
+    const rel = { x: 0, y: 0 }
+    const target = { x: 0, y: 0 }
+    const heroPx = { x: 0, y: 0 }
+    const floaterList = []
+    const lightOut = []
+    const order = []
+    const levelUp = { from: null, at: -1, n: 0 }
+    let lastTime = 0
+    let cameraX = Number.NaN
+    let cameraY = Number.NaN
+
+    // Ground px of a hero relative tile offset in this fight (turned, anchored, kept on floor).
+    const spotPx = (at, out) => {
+      rotate(fight.rot, at, rel)
+      nudge(world, rect, fight.anchor.x + rel.x, fight.anchor.y + rel.y, target)
+      out.x = Math.round(target.x * TS + 8)
+      out.y = Math.round(target.y * TS + 15)
+      return out
+    }
+    const env = {
+      hero: heroPx,
+      reduced,
+      t: 0,
+      ms: 0,
+      foe: (i, out) => {
+        const s = fight.spots[i]
+        if (!s) return null
+        out.x = Math.round(s.x * TS + 8)
+        out.y = Math.round(s.y * TS + 15)
+        return out
+      },
+      spot: spotPx,
+      colors: (i) => foeColors(fight.state?.foes[i]?.sprite),
+      elite: (i) => Boolean(fight.state?.foes[i]?.elite),
+    }
+
+    // time: seconds since the scene started; clock: the same moment in performance.now() ms, the
+    // walker's clock (input handlers stamp with performance.now()).
+    const draw = (time, clock) => {
       const te = reduced ? 0 : time
-      const { look: heroLook, gear: heroGear } = live.current
-      const now = play(time)
-      // A fight that names its own foe ({ sprite, elite }) draws it; otherwise the enemy prop.
-      const foe = now?.foe ?? live.current.enemy
-      const heroAnim = now ? (now.walking ? { anim: 'walk', p: now.p } : now.hero) : { anim: 'idle', p: 0 }
-      const foeAnim = now && !now.walking ? now.enemy : { anim: 'idle', p: 0 }
-      const showFoe = foe?.sprite && !(now?.walking)
-      // enrage and phase are a flash over the foe: the foe itself keeps idling.
-      const flash = foeAnim.anim === 'enrage' || foeAnim.anim === 'phase' ? foeAnim : null
+      const dt = Math.max(0, Math.min(0.1, time - lastTime))
+      lastTime = time
+      const { look: heroLook, gear: heroGear, walker: w, onCamera: report } = live.current
+      const state = play(time)
+      const inFight = state && !state.walking
+      w?.update(clock, { roam: Boolean(live.current.playback?.loop) && (!state || state.walking) })
+      const pos = w ? w.pos : spot.hero
+      heroPx.x = Math.round(pos.x * TS + 8)
+      heroPx.y = Math.round(pos.y * TS + 15)
+      if (report && (pos.x !== cameraX || pos.y !== cameraY)) {
+        cameraX = pos.x
+        cameraY = pos.y
+        report(pos)
+      }
+
+      // A new fight: the pack comes in around the hero's tile, turned to fit the ground there.
+      let pack = null
+      if (inFight) {
+        pack = state.run.pack
+        const key = `${state.cycle}:${state.index}`
+        if (fight.key !== key) {
+          const tile = w ? w.tile : spot.hero
+          fight.key = key
+          fight.anchor.x = tile.x
+          fight.anchor.y = tile.y
+          fight.rot = orient(world, rect, tile, pack.foes)
+          fight.spots = pack.foes.map(() => null)
+        }
+        // The pack trails a hero who walks away, and settles around the new spot.
+        const step = reduced ? Infinity : FOLLOW * dt
+        fight.anchor.x += Math.sign(pos.x - fight.anchor.x) * Math.min(step, Math.abs(pos.x - fight.anchor.x))
+        fight.anchor.y += Math.sign(pos.y - fight.anchor.y) * Math.min(step, Math.abs(pos.y - fight.anchor.y))
+        fight.state = packAt(pack, state.local, fight.state)
+        for (let i = 0; i < pack.foes.length; i++) {
+          const f = fight.state.foes[i]
+          rotate(fight.rot, f, rel)
+          nudge(world, rect, fight.anchor.x + rel.x, fight.anchor.y + rel.y, target)
+          const s = fight.spots[i]
+          if (!s || reduced) fight.spots[i] = { x: target.x, y: target.y }
+          else {
+            const max = SLIDE * dt
+            const gap = Math.hypot(target.x - s.x, target.y - s.y)
+            // Walking in from -> to moves faster than SLIDE: follow it exactly; only jumps slide.
+            const k = gap <= 0.6 || gap <= max ? 1 : max / gap
+            s.x += (target.x - s.x) * k
+            s.y += (target.y - s.y) * k
+          }
+        }
+      } else fight.key = null
+      const ms = inFight ? state.local : 0
+      const shake = pack ? shakeAt(pack, ms, reduced) : null
+
       ctx.imageSmoothingEnabled = false
+      ctx.setTransform?.(1, 0, 0, 1, shake?.x ?? 0, shake?.y ?? 0)
       if (base) ctx.drawImage(base, 0, 0)
       else paintBase(ctx, world)
       paintAnimated(ctx, world, te)
-      const { pose, bob, dx } = heroFrame(heroAnim.anim, heroAnim.p, te, reduced)
-      // The lunge goes the way the hero faces (toward the foe), the knockback the other way.
-      const shift = dx * (heroAnim.facing === -1 ? -1 : 1)
-      const doll = dollAt(hx, hy)
-      ellipse(ctx, hx + 8 + shift, hy + 15, 8, 2, SHADOW)
-      const img = heroSprite(heroLook, heroGear, pose)
-      if (heroAnim.facing === -1) {
-        ctx.save()
-        ctx.translate(hx + 8 + shift, 0)
-        ctx.scale(-1, 1)
-        ctx.drawImage(img, doll.x - (hx + 8), doll.y + bob)
-        ctx.restore()
-      } else ctx.drawImage(img, doll.x + shift, doll.y + bob)
-      if (showFoe) drawEnemy(ctx, ex, ey, { sprite: foe.sprite, elite: foe.elite, anim: flash ? 'idle' : foeAnim.anim, p: foeAnim.p, t: te })
+
+      // Actors back to front: the hero and every enemy standing, sorted by their feet.
+      order.length = 0
+      order.push(-1)
+      if (pack) {
+        for (let i = 0; i < pack.foes.length; i++) if (fight.state.foes[i].visible && fight.spots[i]) order.push(i)
+      }
+      order.sort(byFeet)
+
+      const heroAnim = pack ? fight.state.hero : null
+      for (const who of order) {
+        if (who < 0) drawHero(heroAnim)
+        else drawEnemyAt(who)
+      }
       if (fog) ctx.drawImage(fog, 0, 0)
       else if (locked.length) paintFog(ctx, world, locked)
-      const lights = [...mapLights(world, te), heroLight(hx, hy)]
-      if (foe?.sprite) lights.push(enemyLight(ex, ey, foe))
-      paintLight(ctx, te, { lights, reduced, motes, tint })
-      if (flash) {
-        // Enrage: a red pulse. Phase: a white flash. Reduced motion: a steady, softer wash that just fades.
-        const pulse = flash.anim === 'enrage' && !reduced ? 0.5 + 0.5 * Math.sin(flash.p * Math.PI * 4) : 1
-        ctx.globalAlpha = (reduced ? 0.12 : 0.28) * (1 - flash.p) * pulse
-        ctx.fillStyle = flash.anim === 'enrage' ? '#ff2a2a' : '#ffffff'
+
+      // The light pass, then the effects over it so they glow.
+      lightOut.length = 0
+      for (const l of mapLights(world, te)) lightOut.push(l)
+      lightOut.push(heroLight(heroPx.x - 8, heroPx.y - 15))
+      if (pack) {
+        for (const i of order) {
+          if (i < 0) continue
+          const f = fight.state.foes[i]
+          if ((f.elite || f.boss) && f.anim !== 'death') {
+            env.foe(i, rel)
+            lightOut.push(enemyLight(rel.x - 8, rel.y - 22, f))
+          }
+        }
+        env.t = te
+        for (const fx of pack.fx) {
+          if (fx.at > ms) break
+          const p = fxProgress(fx, ms, reduced)
+          if (p === null) continue
+          const light = fxLight(fx, p, env, {})
+          if (light) lightOut.push(light)
+        }
+      }
+      paintLight(ctx, te, { lights: lightOut, reduced, motes, tint })
+
+      let overlay = null
+      if (pack) {
+        for (const fx of pack.fx) {
+          if (fx.at > ms) break
+          drawFx(ctx, fx, ms, env)
+          if (fx.kind === 'roar' || fx.kind === 'enrage' || fx.kind === 'heroDeath') {
+            const p = fxProgress(fx, ms, reduced)
+            if (p !== null) overlay = { kind: fx.kind, p }
+          }
+        }
+        // Hp bars and the floating numbers stay readable over everything.
+        for (const i of order) {
+          if (i < 0) continue
+          const f = fight.state.foes[i]
+          if (f.anim === 'death') continue
+          env.foe(i, rel)
+          const w0 = f.boss ? 40 : f.elite ? 26 : 20
+          drawHealthBar(ctx, rel.x - w0 / 2, rel.y - foeHeight(f.sprite) - 4, w0, f.hp)
+        }
+        paintNumbers(ms)
+      } else if (live.current.enemy?.sprite && !playing) {
+        drawFoe(ctx, heroPx.x + 2 * TS, heroPx.y - 1, { sprite: live.current.enemy.sprite, elite: live.current.enemy.elite, t: te })
+      }
+      paintLevelUp(time * 1000)
+      if (overlay) {
+        // Phase: a white flash. Enrage: a red pulse. The hero falling: the world dims. Softer and steady with reduced motion.
+        const pulse = overlay.kind === 'enrage' && !reduced ? 0.5 + 0.5 * Math.sin(overlay.p * Math.PI * 4) : 1
+        ctx.globalAlpha = (reduced ? 0.12 : 0.26) * (1 - overlay.p) * pulse
+        ctx.fillStyle = overlay.kind === 'enrage' ? '#ff2a2a' : overlay.kind === 'roar' ? '#ffffff' : '#1a0f2a'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.globalAlpha = 1
       }
-      if (now && !now.walking && now.floaters.length) {
-        const boss = foe?.sprite ? isBossSprite(foe.sprite) : false
-        const active = now.floaters.map(({ floater, actor, age }) => {
-          const a = actor === 'hero' ? floaterAnchor(hx, hy, { boss: true }) : floaterAnchor(ex, ey, { boss })
-          return { floater, age, x: a.x, y: a.y }
-        })
-        paintFloaters(ctx, active, { reduced, translate: tr.current })
+      ctx.setTransform?.(1, 0, 0, 1, 0, 0)
+
+      function byFeet(a, b) {
+        return feetY(a) - feetY(b)
+      }
+      function feetY(i) {
+        if (i < 0) return heroPx.y
+        return Math.round(fight.spots[i].y * TS + 15)
+      }
+
+      function drawHero(anim) {
+        const a = anim ?? { anim: 'idle', p: 0 }
+        const moving = w?.moving && a.anim === 'idle'
+        const { pose, bob, dx } = heroFrame(moving ? 'walk' : a.anim, a.p, te, reduced)
+        // Mid fight and standing, the hero faces the nearest enemy; walking, the way it walks.
+        let side = w ? w.side : 1
+        if (pack && !w?.moving) {
+          let best = Infinity
+          for (let i = 0; i < pack.foes.length; i++) {
+            const s = fight.spots[i]
+            const f = fight.state.foes[i]
+            if (!s || !f.visible || f.anim === 'death') continue
+            const d = Math.abs(s.x - pos.x) + Math.abs(s.y - pos.y)
+            if (d < best) {
+              best = d
+              side = s.x < pos.x - 0.05 ? -1 : 1
+            }
+          }
+        }
+        const hx = heroPx.x - 8
+        const hy = heroPx.y - 15
+        const shift = dx * side
+        const doll = dollAt(hx, hy)
+        ellipse(ctx, hx + 8 + shift, hy + 15, 8, 2, SHADOW)
+        const img = heroSprite(heroLook, heroGear, pose)
+        // A dodge leaves a ghost behind.
+        const ghost = pack ? dodgeGhost(ms) : 0
+        if (ghost > 0) {
+          ctx.globalAlpha = 0.35 * ghost
+          paintDoll(img, doll, hx, side, -8 * side, bob)
+          ctx.globalAlpha = 1
+        }
+        paintDoll(img, doll, hx, side, shift, bob)
+      }
+
+      function paintDoll(img, doll, hx, side, shift, bob) {
+        if (side === -1) {
+          ctx.save()
+          ctx.translate(hx + 8 + shift, 0)
+          ctx.scale(-1, 1)
+          ctx.drawImage(img, doll.x - (hx + 8), doll.y + bob)
+          ctx.restore()
+        } else ctx.drawImage(img, doll.x + shift, doll.y + bob)
+      }
+
+      function dodgeGhost(at) {
+        let best = 0
+        for (const fx of pack.fx) {
+          if (fx.at > at) break
+          if (fx.kind !== 'dodge' || reduced) continue
+          const p = (at - fx.at) / fx.ms
+          if (p >= 0 && p < 1) best = Math.max(best, 1 - p)
+        }
+        return best
+      }
+
+      function drawEnemyAt(i) {
+        const f = fight.state.foes[i]
+        env.foe(i, rel)
+        const s = fight.spots[i]
+        // Enemies face the hero.
+        const facing = s.x < pos.x ? 1 : -1
+        // An enemy fades in over its first moments (it steps out of the spawn portal).
+        const fadeIn = reduced ? 1 : Math.min(1, f.age / 200)
+        ctx.globalAlpha = fadeIn
+        drawFoe(ctx, rel.x, rel.y - 1, { sprite: f.sprite, anim: f.anim, p: f.p, t: te + i * 0.37, elite: f.elite, facing, slowed: f.slowed })
+        ctx.globalAlpha = 1
+        if (f.burning && f.anim !== 'death') drawAilment(ctx, rel.x, rel.y, f.burning, te, reduced, i)
+      }
+
+      function paintNumbers(at) {
+        activeFloaters(pack, at, floaterList)
+        const list = stackFloaters(floaterList, { reduced })
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
+        ctx.lineJoin = 'round'
+        for (const entry of list) {
+          const f = entry.floater
+          let x = heroPx.x
+          let y = heroPx.y - 38
+          if (entry.target >= 0) {
+            if (!env.foe(entry.target, rel)) continue
+            x = rel.x
+            y = rel.y - foeHeight(fight.state.foes[entry.target]?.sprite) - 8
+          }
+          const text = f.key ? tr.current(f.key) : (f.text ?? '')
+          ctx.globalAlpha = entry.age < 0.65 ? 1 : Math.max(0, 1 - (entry.age - 0.65) / 0.35)
+          ctx.font = `bold ${f.big ? 15 : 10}px monospace`
+          ctx.lineWidth = 3
+          ctx.strokeStyle = '#1a1030'
+          ctx.strokeText?.(text, x, y + entry.dy)
+          ctx.fillStyle = f.color
+          ctx.fillText(text, x, y + entry.dy)
+        }
+        ctx.globalAlpha = 1
+      }
+
+      function paintLevelUp(nowMs) {
+        const lv = live.current.level
+        if (typeof lv === 'number') {
+          if (levelUp.from !== null && lv > levelUp.from) {
+            levelUp.at = nowMs
+            levelUp.n = lv
+          }
+          levelUp.from = lv
+        }
+        if (levelUp.at < 0) return
+        const fx = { kind: 'levelUp', at: levelUp.at, ms: LEVEL_UP_MS }
+        if (!drawFx(ctx, fx, nowMs, env)) return
+        const p = (nowMs - levelUp.at) / LEVEL_UP_MS
+        ctx.globalAlpha = p > 0.8 ? (1 - p) / 0.2 : 1
+        ctx.font = 'bold 14px monospace'
+        ctx.textAlign = 'center'
+        ctx.lineWidth = 3
+        ctx.strokeStyle = '#3a2a0a'
+        const text = tr.current('game.fx.levelUp', { n: levelUp.n })
+        const y = heroPx.y - 46 - (reduced ? 0 : Math.round(Math.min(1, p * 3) * 6))
+        ctx.strokeText?.(text, heroPx.x, y)
+        ctx.fillStyle = '#ffd23f'
+        ctx.fillText(text, heroPx.x, y)
+        ctx.globalAlpha = 1
       }
     }
 
-    draw(0)
+    const start = typeof performance !== 'undefined' ? performance.now() : 0
+    draw(0, start)
     markReady()
     // Without an offscreen layer every frame would repaint the whole map: keep the still frame instead.
-    if (base && (!reduced || playing)) {
-      const start = typeof performance !== 'undefined' ? performance.now() : 0
+    if (base && (!reduced || playing || walking)) {
       const loop = (ms) => {
-        draw((ms - start) / 1000)
+        draw((ms - start) / 1000, ms)
         frame = requestAnimationFrame(loop)
       }
       frame = requestAnimationFrame(loop)
@@ -225,7 +507,18 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
     return () => {
       if (frame) cancelAnimationFrame(frame)
     }
-  }, [world, lockedKey, zoneKey, reduced, playing])
+  }, [world, lockedKey, zoneKey, reduced, playing, walking])
+
+  // A click on the map walks the hero there (the canvas is the whole map, so no camera math).
+  function onClick(event) {
+    const w = live.current.walker
+    if (!w) return
+    const box = event.currentTarget.getBoundingClientRect()
+    if (!(box.width > 0) || !(box.height > 0)) return
+    const x = Math.floor(((event.clientX - box.left) / box.width) * cols)
+    const y = Math.floor(((event.clientY - box.top) / box.height) * rows)
+    w.walkTo(x, y, typeof performance !== 'undefined' ? performance.now() : 0)
+  }
 
   const worldName = t(`world.name.${world.id}`)
   const zone = zoneName ?? t('world.zone', { world: worldName, n: zoneNumber(world, zoneRect) })
@@ -237,7 +530,8 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
       height={rows * TS}
       role="img"
       aria-label={t('game.scene.label', { zone })}
-      className="block h-auto w-full select-none"
+      onClick={onClick}
+      className={`block h-auto w-full select-none ${walker ? 'cursor-pointer touch-manipulation' : ''}`}
       style={{ imageRendering: 'pixelated' }}
     />
   )

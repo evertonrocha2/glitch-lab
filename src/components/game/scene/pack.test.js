@@ -180,3 +180,23 @@ describe('shakeAt', () => {
     expect(Math.abs(s.x) + Math.abs(s.y)).toBeGreaterThan(0)
   })
 })
+
+describe('floater colors and words', () => {
+  const one = (ev) => buildPack(fight([spawn(0), ev]), { speed: 1 }).floaters[0]
+  it('says dodge with the i18n word on the hero', () => {
+    expect(one({ t: 1, who: 'hero', type: 'dodge', src: 0 })).toMatchObject({ kind: 'dodge', key: 'game.fx.dodge', target: -1 })
+  })
+  it('colors heals green, mana potions blue and burns by element', () => {
+    expect(one({ t: 1, who: 'hero', type: 'heal', skill: 'cura', amount: 9 })).toMatchObject({ kind: 'heal', text: '+9' })
+    expect(one({ t: 1, who: 'hero', type: 'potion', skill: 'mp', amount: 9 }).color).not.toBe(one({ t: 1, who: 'hero', type: 'potion', skill: 'hp', amount: 9 }).color)
+    const fire = one({ t: 1, who: 'hero', type: 'dot', skill: 'chama', element: 'fire', hits: [{ target: 0, amount: 4 }], amount: 4 })
+    const poison = one({ t: 1, who: 'hero', type: 'dot', skill: 'veneno', element: 'poison', hits: [{ target: 0, amount: 4 }], amount: 4 })
+    expect(fire.kind).toBe('dot')
+    expect(fire.color).not.toBe(poison.color)
+  })
+  it('shows damage on the hero over the hero, and boss phase and enrage words over the boss', () => {
+    expect(one({ t: 1, who: 'enemy', src: 0, type: 'hit', amount: 5 })).toMatchObject({ target: -1, text: '5' })
+    expect(one({ t: 1, who: 'enemy', src: 0, type: 'phase', phase: 2 })).toMatchObject({ target: 0, key: 'game.fx.phase', big: true })
+    expect(one({ t: 1, who: 'enemy', src: 0, type: 'enrage' })).toMatchObject({ target: 0, key: 'game.fx.enrage' })
+  })
+})
