@@ -68,12 +68,13 @@ function questBoard(ctx, x, y) {
 }
 
 // A small label over an NPC or a road: dark slate plate, steel edge, light text. (x, y): the plate's
-// bottom middle, in canvas px. tone 'gold' for the shops.
-export function nameTag(ctx, text, x, y, { tone = 'steel' } = {}) {
+// bottom middle, in canvas px, slid back inside the map when it would hang over an edge (width: the
+// map's width in px). tone 'gold' for the shops.
+export function nameTag(ctx, text, x, y, { tone = 'steel', width = Infinity } = {}) {
   if (!text) return
   ctx.font = 'bold 7px monospace'
   const w = Math.ceil((ctx.measureText?.(text)?.width ?? text.length * 4.2) + 6)
-  const left = Math.round(x - w / 2)
+  const left = Math.round(Math.max(2, Math.min(x - w / 2, width - w - 2)))
   const top = Math.round(y - 10)
   ctx.globalAlpha = 0.88
   rect(ctx, left, top, w, 10, TAG.ink)
@@ -82,7 +83,7 @@ export function nameTag(ctx, text, x, y, { tone = 'steel' } = {}) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = tone === 'gold' ? TAG.gold : TAG.text
-  ctx.fillText(text, Math.round(x), top + 7)
+  ctx.fillText(text, Math.round(left + w / 2), top + 7)
 }
 
 // Where a road's sign sits, in canvas px: two tiles in from the edge, at the middle of the road.
@@ -91,8 +92,8 @@ export function roadSign(world, road) {
   const cols = world.rows[0].length
   const rows = world.rows.length
   const mid = (road.start + 1) * TS + 8
-  if (road.side === 'west') return { x: 2 * TS + 8, y: mid - 10, arrow: '<' }
-  if (road.side === 'east') return { x: (cols - 2) * TS - 8, y: mid - 10, arrow: '>' }
+  if (road.side === 'west') return { x: TS, y: mid - 10, arrow: '<' }
+  if (road.side === 'east') return { x: (cols - 1) * TS, y: mid - 10, arrow: '>' }
   if (road.side === 'north') return { x: mid, y: 2 * TS + 14, arrow: '^' }
   return { x: mid, y: (rows - 2) * TS - 2, arrow: 'v' }
 }

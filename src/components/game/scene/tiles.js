@@ -20,7 +20,8 @@ const TREE_PALS = [
   ['#24481f', '#36662a', '#4a8534', '#6aa843', '#a2d46a'],
 ]
 
-// Indoor floors by world: tiles in the lab, planks in the library, cobbles in the city, stone elsewhere.
+// Floors by region: cobbles in the town and the City of Humanities, planks in the library, cave stone
+// under the SQL Cave, stone elsewhere.
 const FLOORS = {
   tile: { base: '#cfd3e4', dark: '#bcc0d3', light: '#e6e9f4', grout: '#9a9eb6' },
   plank: { base: '#9a6a3e', dark: '#85582f', light: '#b07c4a', grout: '#5e3a1e' },
@@ -29,7 +30,7 @@ const FLOORS = {
   cave: { base: '#6e687f', dark: '#5d5870', light: '#857f97', grout: '#45405a' },
 }
 const FLOOR_OF = {
-  laboratorio: ['tile', FLOORS.tile],
+  laboratorio: ['cobble', FLOORS.cobble],
   'biblioteca-linguagens': ['plank', FLOORS.plank],
   'cidade-humanas': ['cobble', FLOORS.cobble],
   'caverna-sql': ['stone', FLOORS.cave],
