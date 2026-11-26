@@ -4,6 +4,7 @@ import { simulateFight } from './combat.js'
 import { DIFFICULTIES, enemyFor } from './enemies.js'
 import { BAG_SIZE, rollGem, rollItem, salvageValue } from './items.js'
 import { createRng } from './rng.js'
+import { huntXp } from './xp.js'
 
 export { BAG_SIZE }
 export const MAX_HUNT_MS = 8 * 3600_000
@@ -49,7 +50,8 @@ const potionFights = (perFight, stock) => {
   return fights
 }
 
-export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFree }) {
+// xpMultiplier: the study multiplier that held for this stretch (1 without study).
+export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFree, xpMultiplier = 1 }) {
   const elapsedMs = Math.min(Math.max(now - startedAt, 0), MAX_HUNT_MS)
   const diff = DIFFICULTIES[difficulty]
   const stock = { hp: hero.potions?.hp ?? 0, mp: hero.potions?.mp ?? 0 }
@@ -101,6 +103,7 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     elites,
     deaths: fights - kills,
     gold,
+    xp: huntXp({ kills, elites, zone, difficulty, multiplier: xpMultiplier }),
     items,
     gems,
     scrapFromOverflow,

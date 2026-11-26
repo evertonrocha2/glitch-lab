@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, SAMPLE_FIGHTS, settleHunt } from '../../shared/game/hunt.js'
 import { salvageValue } from '../../shared/game/items.js'
 import { heroStats } from '../../shared/game/stats.js'
+import { huntXp } from '../../shared/game/xp.js'
 import { ZONES } from '../../shared/game/zones.js'
 
 const FOREST = ZONES['floresta-js']
@@ -80,6 +81,16 @@ describe('settleHunt', () => {
     expect(r.kills).toBe(0)
     expect(r.deaths).toBeGreaterThan(0)
     expect(r.gold).toBe(0)
+  })
+  it('pays xp for its kills, elites worth more, times the multiplier it gets', () => {
+    const r = run()
+    expect(r.xp).toBeGreaterThan(0)
+    expect(r.xp).toBe(huntXp({ kills: r.kills, elites: r.elites, zone: FOREST.z1, difficulty: 'normal' }))
+    const boosted = run({ xpMultiplier: 2.5 })
+    expect(boosted.kills).toBe(r.kills)
+    expect(boosted.gold).toBe(r.gold)
+    expect(boosted.xp).toBe(huntXp({ kills: r.kills, elites: r.elites, zone: FOREST.z1, difficulty: 'normal', multiplier: 2.5 }))
+    expect(run({ startedAt: 5 * HOUR, now: HOUR }).xp).toBe(0)
   })
   it('uses no potions when the stock is 0', () => {
     expect(run().potionsUsed).toEqual({ hp: 0, mp: 0 })
