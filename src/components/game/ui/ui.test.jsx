@@ -7,7 +7,7 @@ import { RARITY_TRIM, TONES, UI } from './tokens.js'
 
 describe('tokens', () => {
   it('holds the spec colors and one tone per frame kind', () => {
-    expect(UI.ink).toBe('#120c22')
+    expect(UI.ink).toBe('#0e1116')
     expect(UI.gold).toBe('#f2c14e')
     expect(Object.keys(TONES)).toEqual(['panel', 'raised', 'inset', 'gold'])
   })
