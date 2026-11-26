@@ -207,3 +207,10 @@ it('shows the tooltip in the forge picker, where a click still picks the item', 
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByRole('region', { name: 'Ring' })).toBeInTheDocument()
 })
+
+it('shows a tiered gem at its tier in the hover tooltip', () => {
+  const view = makeView({ items: [{ id: 'cccccccccc02', kind: 'gem', gem: 'sintaxe', tier: 2 }] })
+  ui({ view })
+  hover(screen.getByRole('button', { name: 'Syntax Gem II' }))
+  expect(within(screen.getByRole('tooltip')).getByText('+11% health')).toBeInTheDocument()
+})

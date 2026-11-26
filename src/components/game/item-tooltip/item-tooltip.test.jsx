@@ -78,3 +78,15 @@ it('describes a gem', () => {
   expect(screen.getByText('Syntax Gem')).toBeInTheDocument()
   expect(screen.getByText('+5% health')).toBeInTheDocument()
 })
+
+it('names a tiered gem with its tier and shows its stats at that tier', () => {
+  ui({ item: { id: 'cccccccccc01', kind: 'gem', gem: 'logica', tier: 3 } })
+  expect(screen.getByText('Logic Gem III')).toBeInTheDocument()
+  expect(screen.getByText('+13.6% attack')).toBeInTheDocument()
+})
+
+it('reads a tiered socket as that gem at its tier', () => {
+  ui({ item: { ...epicRelic, sockets: ['logica:3', 'sintaxe'] } })
+  expect(screen.getByText('Logic Gem III: +13.6% attack')).toBeInTheDocument()
+  expect(screen.getByText('Syntax Gem: +5% health')).toBeInTheDocument()
+})

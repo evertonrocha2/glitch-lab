@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { GEMS, itemStats } from '../../../../shared/game/items.js'
+import { gemStats, gemTierOf, itemStats } from '../../../../shared/game/items.js'
 import { RARITY_COLORS, gemColors, isGear, statDiff, useItemText } from '../item-tooltip/item-text.js'
 import { ActionButton } from '../panel/panel-ui.jsx'
 import Frame, { Chip } from '../ui/frame.jsx'
@@ -210,7 +210,7 @@ export function ItemTip({ id, item, anchor, equipped, worn = false, hint }) {
   const colors = gemColors(item)
   const trim = colors?.border ?? RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common
   const color = colors?.text ?? (RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common).text
-  const stats = gear ? Object.entries(itemStats(item)).filter(([, value]) => value) : Object.entries(isGem ? (GEMS[item.gem] ?? {}) : {}).filter(([, value]) => value)
+  const stats = gear ? Object.entries(itemStats(item)).filter(([, value]) => value) : Object.entries(isGem ? gemStats(item.gem, gemTierOf(item)) : {}).filter(([, value]) => value)
   const diffs = gear && !worn && equipped && equipped.id !== item.id ? statDiff(item, equipped) : null
 
   return createPortal(

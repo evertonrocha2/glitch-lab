@@ -116,3 +116,12 @@ it('keeps worn gear from salvage', () => {
   expect(screen.getByText('Unequip it first')).toBeInTheDocument()
   expect(wornHelm.equipped).toBe('helm')
 })
+
+it('offers each gem kind and tier apart, and sockets the tier picked', async () => {
+  const tiered = { id: 'cccccccccc03', kind: 'gem', gem: 'sintaxe', tier: 2 }
+  const view = rich({ items: [...makeView().hero.items, tiered] })
+  const { actions } = ui({ view })
+  expect(screen.getByRole('button', { name: 'Socket Syntax Gem' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Socket Syntax Gem II' }))
+  await waitFor(() => expect(actions.forgeSocket).toHaveBeenCalledWith(epicRelic.id, tiered.id, 1))
+})

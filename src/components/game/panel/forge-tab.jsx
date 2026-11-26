@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react'
-import { rerollCost, upgradeCost } from '../../../../shared/game/items.js'
+import { gemTierOf, rerollCost, upgradeCost } from '../../../../shared/game/items.js'
 import { ItemTip, cellIn, useItemPeek } from '../item-popover/item-popover.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
@@ -199,8 +199,8 @@ function Socket({ item, view, actions, runner, text }) {
   const empty = item.sockets.indexOf(null)
   const gems = view.hero.items.filter((each) => each.kind === 'gem')
   const why = empty < 0 ? t('game.why.noSocket') : gems.length === 0 ? t('game.why.noGems') : null
-  // One button per kind of gem (the bag can hold many of one).
-  const kinds = [...new Map(gems.map((each) => [each.gem, each])).values()]
+  // One button per kind and tier of gem (the bag can hold many of one).
+  const kinds = [...new Map(gems.map((each) => [`${each.gem}:${gemTierOf(each)}`, each])).values()]
   return (
     <Step titleId={titleId} title={t('game.forge.socket')}>
       {why ? (
@@ -209,11 +209,11 @@ function Socket({ item, view, actions, runner, text }) {
         <div className="flex flex-wrap gap-1.5">
           {kinds.map((each) => (
             <ActionButton
-              key={each.gem}
+              key={`${each.gem}:${gemTierOf(each)}`}
               busy={runner.busy}
-              onClick={() => runner.run(() => actions.forgeSocket(item.id, each.id, empty), () => t('game.forge.socketed', { gem: text.gemName(each.gem) }))}
+              onClick={() => runner.run(() => actions.forgeSocket(item.id, each.id, empty), () => t('game.forge.socketed', { gem: text.name(each) }))}
             >
-              {t('game.forge.socketGo', { gem: text.gemName(each.gem) })}
+              {t('game.forge.socketGo', { gem: text.name(each) })}
             </ActionButton>
           ))}
         </div>

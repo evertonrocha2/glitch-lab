@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { GEMS, SETS, UNIQUES, itemStats } from '../../../../shared/game/items.js'
+import { SETS, UNIQUES, gemStats, gemTierOf, itemStats } from '../../../../shared/game/items.js'
 import GameIcon from '../icons/game-icon.jsx'
 import Frame from '../ui/frame.jsx'
 import { RARITY_COLORS, gemColors, iconOf, statDiff, useItemText } from './item-text.js'
@@ -52,7 +52,7 @@ function SupportBody({ item, text }) {
 function GemBody({ item, text }) {
   return (
     <ul className="m-0 list-none p-0 text-white">
-      {Object.entries(GEMS[item.gem] ?? {}).map(([stat, value]) => (
+      {Object.entries(gemStats(item.gem, gemTierOf(item))).map(([stat, value]) => (
         <li key={stat}>{text.statLine(stat, value)}</li>
       ))}
     </ul>
@@ -88,15 +88,17 @@ function GearBody({ item, equipped, worn, text }) {
 
       {item.sockets.length > 0 && (
         <ul aria-label={t('game.item.sockets')} className="m-0 mb-1.5 flex list-none flex-col gap-1 p-0">
-          {item.sockets.map((gemId, at) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: sockets are positions, the index is their identity.
-            <li key={at} className="flex items-center gap-1.5">
-              {gemId ? (
+          {item.sockets.map((value, at) => {
+            const socketed = text.socketGem(value)
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: sockets are positions, the index is their identity.
+              <li key={at} className="flex items-center gap-1.5">
+                {socketed ? (
                 <>
                   <span className="grid size-[22px] place-items-center border-2 border-[#4fd1c5] bg-[#0b1f2a]">
                     <GameIcon name="gem" size={1} />
                   </span>
-                  {t('game.item.socketGem', { gem: text.gemName(gemId), line: text.gemLine(gemId) })}
+                  {t('game.item.socketGem', { gem: socketed.name, line: socketed.line })}
                 </>
               ) : (
                 <>
@@ -104,8 +106,9 @@ function GearBody({ item, equipped, worn, text }) {
                   {t('game.item.socketEmpty')}
                 </>
               )}
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       )}
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { CHANCE, RATE } from '../../../../shared/game/combat-effects.js'
-import { AFFIXES, BASES, GEMS, STATS_KEYS, itemStats } from '../../../../shared/game/items.js'
+import { AFFIXES, BASES, STATS_KEYS, gemStats, gemTierOf, itemStats, parseSocket } from '../../../../shared/game/items.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { capitalize } from '../../../lib/i18n/format.js'
 import { modText, supportColor, supportIcon } from '../panel/support-gem.js'
@@ -31,6 +31,10 @@ const EFFECT_VARS = {
   selfCall: { chance: pct(CHANCE.selfCall) },
 }
 
+// A gem tier as the game writes it: tier 1 has no mark (every gem before tiers), II to V after the name.
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']
+export const tierMark = (tier) => ROMAN[tier] ?? String(tier)
+
 // Gems and support gems are not gear: no base, no affixes, no slot, nothing to compare.
 export const isGear = (item) => item.kind !== 'gem' && item.kind !== 'support'
 
@@ -60,12 +64,18 @@ export function useItemText() {
         .filter(([key]) => key !== 'effect')
         .map(([stat, value]) => statLine(stat, value))
         .join(', ')
-    const gemName = (gem) => t(`game.gem.${gem}`)
-    const gemLine = (gem) => statsLine(GEMS[gem] ?? {})
+    // A gem by id at a tier (1 by default): "Logic Gem", "Logic Gem III"; its stats scale with the tier.
+    const gemName = (gem, tier = 1) => (tier > 1 ? t('gameNpc.gemTier', { gem: t(`game.gem.${gem}`), tier: tierMark(tier) }) : t(`game.gem.${gem}`))
+    const gemLine = (gem, tier = 1) => statsLine(gemStats(gem, tier))
+    // A gear socket's value ('logica' or 'logica:3') as { name, line }, or null for an empty or unknown one.
+    const socketGem = (value) => {
+      const gem = parseSocket(value)
+      return gem ? { name: gemName(gem.gem, gem.tier), line: gemLine(gem.gem, gem.tier) } : null
+    }
     const rarity = (id) => t(`game.rarity.${id}`)
 
     const plainName = (item) => {
-      if (item.kind === 'gem') return gemName(item.gem)
+      if (item.kind === 'gem') return gemName(item.gem, gemTierOf(item))
       if (item.kind === 'support') return t(`game.support.${item.support}`)
       if (item.unique) return t(`game.unique.${item.unique}`)
       const base = t(`game.base.${item.base}`)
@@ -88,6 +98,6 @@ export function useItemText() {
     const supportDesc = (item) => modText(t, (value) => num.format(value)).desc('support', item.support)
     const cellLabel = (item) => (!isGear(item) ? name(item) : t('game.item.cell', { name: name(item), rarity: rarity(item.rarity) }))
 
-    return { t, locale, num, number: (value) => num.format(value), signed, statName, statLine, statsLine, gemName, gemLine, rarity, name, line, affixLine, affixNamed, effect, supportDesc, cellLabel }
+    return { t, locale, num, number: (value) => num.format(value), signed, statName, statLine, statsLine, gemName, gemLine, socketGem, rarity, name, line, affixLine, affixNamed, effect, supportDesc, cellLabel }
   }, [t, locale])
 }

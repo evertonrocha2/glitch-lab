@@ -1,5 +1,6 @@
 import GameIcon from '../icons/game-icon.jsx'
-import { gemColors, iconOf } from '../item-tooltip/item-text.js'
+import { gemTierOf } from '../../../../shared/game/items.js'
+import { gemColors, iconOf, tierMark } from '../item-tooltip/item-text.js'
 import { RARITY_TRIM, UI } from '../ui/tokens.js'
 
 const CELL = 'relative grid aspect-square w-full min-h-11 min-w-11 place-items-center border-2'
@@ -45,6 +46,11 @@ export default function ItemCell({ item, label, selected = false, pressed, onCli
       style={{ borderColor: trim, backgroundColor: `color-mix(in srgb, ${trim} 10%, ${UI.inset})`, boxShadow: glowOf(trim, item.rarity) }}
     >
       <GameIcon name={iconOf(item)} size={2} />
+      {item.kind === 'gem' && gemTierOf(item) > 1 && (
+        <b data-part="tier" aria-hidden="true" className="absolute bottom-0.5 right-1 font-pixel text-[9px] font-normal leading-none text-[#c4fff1] [text-shadow:1px_1px_0_#0e1116]">
+          {tierMark(gemTierOf(item))}
+        </b>
+      )}
       {item.upgrade > 0 && <b className="absolute bottom-0.5 right-1 font-pixel text-[9px] font-normal leading-none text-white [text-shadow:1px_1px_0_#120c22]">+{item.upgrade}</b>}
       {badge}
     </button>
