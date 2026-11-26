@@ -20,7 +20,7 @@ it('starts a new player in the town, with nothing locked to report', async () =>
 })
 
 it('saves a walkable position in any region from the start and gives it back', async () => {
-  for (const place of [{ world: 'caverna-sql', x: 3, y: 10 }, { world: 'torre-matematica', x: 13, y: 2 }, { world: 'laboratorio', x: 0, y: 12 }]) {
+  for (const place of [{ world: 'caverna-sql', x: 3, y: 10 }, { world: 'torre-matematica', x: 12, y: 2 }, { world: 'laboratorio', x: 0, y: 12 }]) {
     const res = await put(place)
     expect(res.status, JSON.stringify(place)).toBe(200)
     expect(await res.json()).toEqual({ position: place })

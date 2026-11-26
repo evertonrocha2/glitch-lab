@@ -64,10 +64,46 @@ describe.each(WORLDS.map((world) => [world.id, world]))('%s', (_, world) => {
   })
 })
 
-it('makes the town bigger than the old 15x10 Lab, and each region 32x20', () => {
+it('makes the town bigger than the old 15x10 Lab, and each hunt region 48x32 (fase 4)', () => {
   for (const world of WORLDS) {
-    const [width, height] = world.id === HUB_ID ? [36, 24] : [32, 20]
+    const [width, height] = world.id === HUB_ID ? [36, 24] : [48, 32]
     expect([world.rows[0].length, world.rows.length], world.id).toEqual([width, height])
+  }
+})
+
+// The tiles that were there before fase 4: ground, walls, doors, terminals and the old trees, rocks,
+// water and bushes. Everything else is a fase 4 decoration.
+const PLAIN = new Set(['.', ':', '_', 'O', 'D', '~', 'T', '^', '#', 'B', 'C'])
+const decorIn = (world, rect) => tilesOf(world).filter((tile) => !PLAIN.has(tile.tile) && inRect(rect, tile))
+
+it('gives each zone of a region its own decoration, with one kind no other zone there has', () => {
+  for (const world of WORLDS.filter((item) => item.id !== HUB_ID)) {
+    const kinds = world.zones.map((zone) => new Set(decorIn(world, zone.rect).map((tile) => tile.tile)))
+    world.zones.forEach((zone, k) => {
+      expect(decorIn(world, zone.rect).length, `${world.id} ${zone.id}`).toBeGreaterThanOrEqual(12)
+      const others = kinds.filter((_, j) => j !== k)
+      const own = [...kinds[k]].filter((char) => others.every((set) => !set.has(char)))
+      expect(own.length, `${world.id} ${zone.id} has no decoration of its own`).toBeGreaterThan(0)
+    })
+  }
+})
+
+it('splits every hunt region into three zones that cover the whole map without overlapping', () => {
+  for (const world of WORLDS.filter((item) => item.id !== HUB_ID)) {
+    for (const { x, y } of tilesOf(world)) {
+      const hits = world.zones.filter((zone) => inRect(zone.rect, { x, y }))
+      expect(hits.length, `${world.id} ${x},${y}`).toBe(1)
+    }
+  }
+})
+
+it('leaves room for a pack of 9 around the fight spot of every zone', () => {
+  for (const world of WORLDS.filter((item) => item.id !== HUB_ID)) {
+    for (const zone of world.zones) {
+      const open = tilesOf(world).filter((tile) => inRect(zone.rect, tile) && canEnter(world, tile.x, tile.y))
+      // At least 60% of a zone is open ground, so packs and the hero have room to move.
+      expect(open.length / (zone.rect.w * zone.rect.h), `${world.id} ${zone.id}`).toBeGreaterThanOrEqual(0.6)
+    }
   }
 })
 
