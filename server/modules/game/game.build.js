@@ -1,16 +1,14 @@
 import { SLOTS } from '../../../shared/game/items.js'
+import { isLook, normalizeLook } from '../../../shared/game/look.js'
 import { LOADOUT_SIZE, MAX_THRESHOLD, SKILLS, skillUpgradeCost } from '../../../shared/game/skills.js'
 import { RESPEC_GOLD_PER_POINT, TALENTS, canAllocate } from '../../../shared/game/talents.js'
 import { badRequest, detailedBadRequest } from '../../core/errors.js'
 import { isId } from '../../core/validation.js'
 import { MESSAGES } from './game.model.js'
-import { act, bagFree, gearOf, isIntIn, spend } from './game.service.js'
+import { act, bagFree, gearOf, spend } from './game.service.js'
 
 // The hero's build: gear, talents, skills, loadout and look. Every action runs through act, so a
 // running hunt is paid with the old build first and goes on with the new one.
-
-const LOOK_FIELDS = ['hood', 'outfit', 'hair']
-const LOOK_MAX = 7
 
 const spentPoints = (hero) => hero.talents.filter((id) => id !== 'root').length
 
@@ -102,7 +100,8 @@ export const setLoadout = (store, user, today, body) =>
 
 export const setLook = (store, user, today, body) =>
   act(store, user, today, (hero) => {
-    if (!LOOK_FIELDS.every((field) => isIntIn(body[field], 0, LOOK_MAX))) throw badRequest()
-    hero.look = Object.fromEntries(LOOK_FIELDS.map((field) => [field, body[field]]))
+    if (!isLook(body)) throw badRequest()
+    hero.look = normalizeLook(body)
+    hero.lookSet = true
     return {}
   })

@@ -336,14 +336,31 @@ it('buys potions at 40 gold each, 1 to 20 at a time', async () => {
   expect((await stored()).gold).toBe(200)
 })
 
-it('changes the look with integers from 0 to 7', async () => {
+it('sets the look and lookSet, and refuses a bad body', async () => {
   await saveHero({})
-  const body = await bodyOf(await put('/look', { hood: 7, outfit: 0, hair: 3 }))
-  expect(body.hero.look).toEqual({ hood: 7, outfit: 0, hair: 3 })
-  for (const look of [{ hood: 8, outfit: 0, hair: 0 }, { hood: -1, outfit: 0, hair: 0 }, { hood: 1.5, outfit: 0, hair: 0 }, { hood: '1', outfit: 0, hair: 0 }, { hood: 1, outfit: 0 }]) {
-    await refused(await put('/look', look))
-  }
-  expect((await stored()).look).toEqual({ hood: 7, outfit: 0, hair: 3 })
+  const look = { skin: 4, hairStyle: 5, hairColor: 7, eyeStyle: 3, eyeColor: 3, outfit: 7 }
+  const body = await bodyOf(await put('/look', look))
+  expect(body.hero.look).toEqual(look)
+  expect(body.hero.lookSet).toBe(true)
+  const bad = [{ ...look, skin: 5 }, { ...look, outfit: -1 }, { ...look, hairStyle: 1.5 }, { ...look, eyeColor: '1' }, { skin: 0 }, { hood: 1, outfit: 0, hair: 0 }]
+  for (const each of bad) await refused(await put('/look', each))
+  const saved = await stored()
+  expect(saved.look).toEqual(look)
+  expect(saved.lookSet).toBe(true)
+})
+
+it('shows a legacy hero with a normalized look and lookSet false', async () => {
+  const { lookSet: _lookSet, ...legacy } = newHero()
+  await store.saveGameHero('alice', { ...legacy, look: { hood: 3, outfit: 5, hair: 2 } }, 0)
+  const { hero } = await bodyOf(await get())
+  expect(hero.look).toEqual({ skin: 0, hairStyle: 0, hairColor: 2, eyeStyle: 0, eyeColor: 0, outfit: 5 })
+  expect(hero.lookSet).toBe(false)
+})
+
+it('shows a new hero with the default look and lookSet false', async () => {
+  const { hero } = await bodyOf(await get())
+  expect(hero.look).toEqual({ skin: 0, hairStyle: 0, hairColor: 0, eyeStyle: 0, eyeColor: 0, outfit: 0 })
+  expect(hero.lookSet).toBe(false)
 })
 
 // Review Focus 2: a build change pays the hunt so far with the old build, then hunts on from now.

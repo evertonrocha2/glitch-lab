@@ -331,7 +331,8 @@ export const forgeReroll = (itemId, affix, token) => game('/forge/reroll', 'POST
 export const forgeSocket = (itemId, gemId, socket, token) => game('/forge/socket', 'POST', token, { itemId, gemId, socket })
 export const openChest = (token) => game('/chests/open', 'POST', token)
 export const buyPotions = (kind, count, token) => game('/potions/buy', 'POST', token, { kind, count })
-export const saveLook = ({ hood, outfit, hair }, token) => game('/look', 'PUT', token, { hood, outfit, hair })
+export const saveLook = ({ skin, hairStyle, hairColor, eyeStyle, eyeColor, outfit }, token) =>
+  game('/look', 'PUT', token, { skin, hairStyle, hairColor, eyeStyle, eyeColor, outfit })
 
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {

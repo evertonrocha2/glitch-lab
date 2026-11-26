@@ -1,4 +1,5 @@
 import { ACERTO_POINTS_CAP, pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
+import { DEFAULT_LOOK, normalizeLook } from '../../../shared/game/look.js'
 import { heroStats, power } from '../../../shared/game/stats.js'
 import { HUNT_WORLDS, zoneState } from '../../../shared/game/zones.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
@@ -38,13 +39,20 @@ export const newHero = () => ({
   items: [], // gear and gems; equipped gear carries equipped: slot
   hunt: null, // { world, zone, difficulty, startedAt, seed, claims }
   progress: {}, // { [worldId]: { normal: [zoneId], pesadelo: [], inferno: [] } }
-  look: { hood: 0, outfit: 0, hair: 0 },
+  look: { ...DEFAULT_LOOK },
+  lookSet: false, // true once the player has picked a look (PUT /game/look)
   claimed: {}, // per day, as pendingStudy reads it
   lastAway: null,
 })
 
-// A saved hero with any field added after it was saved filled in from newHero.
-export const withDefaults = (data) => ({ ...newHero(), ...data })
+// A saved hero with any field added after it was saved filled in from newHero. The look is always
+// normalized, so an old { hood, outfit, hair } or junk loads as a valid look.
+export const withDefaults = (data) => {
+  const hero = { ...newHero(), ...data }
+  hero.look = normalizeLook(hero.look)
+  hero.lookSet = hero.lookSet === true
+  return hero
+}
 
 export const equippedOf = (hero) => hero.items.filter((item) => item.equipped)
 

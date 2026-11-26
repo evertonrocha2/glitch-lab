@@ -14,7 +14,7 @@ const call = () => {
   return { url, method: init.method ?? 'GET', body: init.body ? JSON.parse(init.body) : undefined, auth: init.headers.Authorization }
 }
 
-const look = { hood: 1, outfit: 2, hair: 3 }
+const look = { skin: 1, hairStyle: 2, hairColor: 3, eyeStyle: 1, eyeColor: 2, outfit: 4 }
 const loadout = { skills: ['a', 'b'], thresholds: { hp: 50, mp: 30 } }
 const cases = [
   ['getGame', (t) => api.getGame(t), '/api/game', 'GET', undefined],
