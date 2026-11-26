@@ -1,21 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DEFAULT_LOOK } from '../../../shared/game/look.js'
-import { HUNT_WORLDS } from '../../../shared/game/zones.js'
-import { besidePortal } from '../../../shared/world/map.js'
-import { HUB_ID, worldById } from '../../../shared/world/worlds.js'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import GameView from '../../components/game/game-view.jsx'
-import { gearOf } from '../../components/game/hero/gear.js'
-import { rememberHero } from '../../components/game/loading/hero-memory.js'
-import LookDialog from '../../components/game/look-dialog.jsx'
 import { StudyWindowProvider } from '../../components/game/study-window/study-window-provider.jsx'
 import { studyHref } from '../../components/game/study-cta.js'
-import Frame from '../../components/game/ui/frame.jsx'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
-import WorldGame from '../../components/world/world-game/world-game.jsx'
-import { isEnemWorld, showsEnem } from '../../components/world/enem-worlds.js'
-import WorldPanel from '../../components/world/world-panel/world-panel.jsx'
+import { placeIn } from '../../components/world/enem-worlds.js'
 import {
   allocateTalents,
   AuthError,
@@ -28,7 +18,6 @@ import {
   forgeSocket,
   forgeUpgrade,
   getDaily,
-  getGame,
   getHunt,
   getWorld,
   openChest,
@@ -122,51 +111,29 @@ function useDoneToday(getToken, enabled) {
   return done
 }
 
-// The game View, or null when it can't be read (the hub then shows as usual, with the default hero).
-async function gameOf(token) {
-  try {
-    return (await getGame(token)) ?? null
-  } catch {
-    return null
-  }
-}
-
-// The running hunt's world, or null.
-function huntWorldOf(view) {
-  const world = view?.hero?.hunt?.world
-  return HUNT_WORLDS.includes(world) ? world : null
-}
-
-// /mundo: Glitch World. The hero walks the worlds the student's study opened; the server says
-// what's open and keeps where the hero stands. A hunt world (the Forest) is the idle RPG instead.
+// /mundo: Glitch World, an open world (fase 3). The hero walks from the town along the roads into
+// every region; standing in a zone hunts there. The server keeps where the hero stands and is the
+// judge of every fight; the game view does the walking.
+// The town keepers (shops, quest board) only answer "opening soon" for now: GameView's onNpc hook is
+// where their panels plug in.
 export default function WorldPage() {
   const { t, locale } = useI18n()
   const { getToken, signOut } = useAuth()
-  const [state, setState] = useState(null)
-  // The game View for the hub's hero (look and gear); null until read, or when it can't be.
-  const [game, setGame] = useState(null)
-  const [lookOpen, setLookOpen] = useState(false)
+  const [start, setStart] = useState(null)
   const [world, setWorld] = useState(null)
   const [message, setMessage] = useState('')
-  const inGame = HUNT_WORLDS.includes(world)
-  const doneToday = useDoneToday(getToken, inGame)
+  const doneToday = useDoneToday(getToken, Boolean(start))
 
   useEffect(() => {
     let live = true
     ;(async () => {
       try {
-        const token = await getToken()
-        // A hero saved in a hunt world comes back in the hub, but a running hunt opens the hunt view
-        // right away, so its away summary shows without stepping into the portal.
-        const [data, view] = await Promise.all([getWorld(token), gameOf(token)])
+        const data = await getWorld(await getToken())
         if (!live) return
-        const hunting = huntWorldOf(view)
-        setGame(view)
-        // Where ENEM is hidden, a hero saved in an ENEM world stands beside its hub portal instead.
-        const stranded = !showsEnem(locale) && isEnemWorld(data.position.world)
-        const position = stranded ? { world: HUB_ID, ...besidePortal(worldById(HUB_ID), data.position.world) } : data.position
-        setState(stranded ? { ...data, position } : data)
-        setWorld(hunting ?? position.world)
+        // Where ENEM is hidden, a hero saved in an ENEM region starts in the town instead.
+        const position = placeIn(data.position, locale)
+        setStart(position)
+        setWorld(position.world)
       } catch (err) {
         if (!live) return
         if (err instanceof AuthError) await signOut()
@@ -196,45 +163,6 @@ export default function WorldPage() {
     return bound
   }, [getToken, signOut])
 
-  // Back from a hunt world: the hero stands beside its portal in the Lab. The hunt may have changed
-  // its gear or look, so the hub reads the game again.
-  const leave = useCallback(() => {
-    const position = { world: HUB_ID, ...besidePortal(worldById(HUB_ID), world) }
-    setState((current) => ({ ...current, position }))
-    setWorld(HUB_ID)
-    save(position).catch(() => {})
-    ;(async () => {
-      const view = await gameOf(await getToken())
-      if (view) setGame(view)
-    })().catch(() => {})
-  }, [world, save, getToken])
-
-  // A hero that never picked a look meets the creator once per visit, in the hub as in the hunt.
-  const lookAsked = useRef(false)
-  useEffect(() => {
-    if (!game || inGame || lookAsked.current) return
-    lookAsked.current = true
-    if (game.hero?.lookSet === false) setLookOpen(true)
-  }, [game, inGame])
-
-  const look = game?.hero?.look ?? DEFAULT_LOOK
-  const gear = useMemo(() => gearOf(game?.hero?.items), [game?.hero?.items])
-  // The loading screen walks this hero next time: on the way into a hunt, or on the next visit.
-  useEffect(() => {
-    if (game?.hero) rememberHero(game.hero.look, gear)
-  }, [game?.hero, gear])
-  const saveHeroLook = useCallback(async (next) => {
-    const view = await gameApi.saveLook(next)
-    if (view?.hero) setGame(view)
-    return view
-  }, [gameApi])
-  // Depois: close now and keep the look the hero has, so the creator does not ask again next visit.
-  // A failed save changes nothing here: the creator stays reachable from the hunt's Hero tab.
-  const lookLater = useCallback(() => {
-    setLookOpen(false)
-    saveHeroLook(look).catch(() => {})
-  }, [look, saveHeroLook])
-
   return (
     <AppShell>
       <PageHeader kicker={t('world.page.kicker')} title={world ? t(`world.name.${world}`) : t('world.nav')} />
@@ -243,20 +171,9 @@ export default function WorldPage() {
           <ErrorNotice message={message} />
         </div>
       )}
-      {!state && !message && <WorldPageSkeleton />}
-      {/* One study window for the hub and the hunt, so it stays open across a portal. */}
+      {!start && !message && <WorldPageSkeleton />}
       <StudyWindowProvider>
-        {state && inGame && <GameView worldId={world} api={gameApi} onLeave={leave} studyHref={studyHref({ locale, doneToday })} />}
-        {/* The console the hunt plays in: the map with its status line, and the panel beside it from lg up. */}
-        {state && !inGame && (
-          <Frame tone="panel" className="mt-6 grid items-start gap-2 p-1.5 shadow-pixel lg:grid-cols-[minmax(0,1fr)_20rem] lg:p-2">
-            <WorldGame state={state} look={look} gear={gear} onSave={save} onWorldChange={setWorld} />
-            <WorldPanel state={state} currentWorld={world} />
-          </Frame>
-        )}
-        {lookOpen && !inGame && (
-          <LookDialog look={look} gear={gear} first onSave={saveHeroLook} onClose={() => setLookOpen(false)} onLater={lookLater} />
-        )}
+        {start && <GameView start={start} api={gameApi} onSave={save} onWorldChange={setWorld} studyHref={studyHref({ locale, doneToday })} />}
       </StudyWindowProvider>
     </AppShell>
   )

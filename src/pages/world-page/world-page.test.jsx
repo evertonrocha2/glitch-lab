@@ -1,14 +1,15 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { DEFAULT_LOOK } from '../../../shared/game/look.js'
-import { unlocks } from '../../../shared/world/unlocks.js'
+import { worldById } from '../../../shared/world/worlds.js'
+import { FADE_MS } from '../../components/game/game-view.jsx'
 import { gearOf } from '../../components/game/hero/gear.js'
 import { heroSprite } from '../../components/game/hero/hero-cache.js'
 import { makeView } from '../../components/game/panel/fixtures.js'
-import { getGame, getWorld, saveLook, saveWorldPosition, stopHunt, syncGame } from '../../lib/api.js'
+import { NPC_LOOKS } from '../../components/game/scene/town.js'
+import { getWorld, saveLook, saveWorldPosition, startHunt, syncGame } from '../../lib/api.js'
 import { renderAt } from '../../test/render.jsx'
 
-// The real sprites, watched: the hub must draw the hero the game View describes.
+// The real sprites, watched: the scene must draw the hero the game View describes, and the keepers.
 vi.mock('../../components/game/hero/hero-cache.js', async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, heroSprite: vi.fn(actual.heroSprite) }
@@ -47,21 +48,19 @@ vi.mock('../../lib/api.js', () => ({
   saveLook: vi.fn(),
 }))
 
-const stateAt = (position, { codeSolved = 0, ...areas } = {}) => {
-  const signals = { enemCorrect: { linguagens: 0, humanas: 0, natureza: 0, matematica: 0, ...areas }, codeSolved }
-  return { ...unlocks(signals), signals, position }
-}
-
-const open = () => renderAt('/mundo', { user: 'ana', locale: 'pt-BR' })
+const at = (position) => ({ position })
+const open = (locale = 'pt-BR') => renderAt('/mundo', { user: 'ana', locale })
 const title = () => screen.findByRole('heading', { level: 1 })
+const scene = () => screen.findByRole('region', { name: /^Glitch World: / })
+const key = (name, type = 'keydown') => act(async () => document.body.dispatchEvent(new KeyboardEvent(type, { key: name, bubbles: true, cancelable: true })))
 
-// A 2D context that takes every call, so the hub draws its hero in jsdom.
+// A 2D context that takes every call, so the scene draws in jsdom.
 function anyContext(canvas) {
-  const store = { canvas, createRadialGradient: () => ({ addColorStop() {} }) }
+  const store = { canvas, createRadialGradient: () => ({ addColorStop() {} }), measureText: (text) => ({ width: text.length * 4 }) }
   return new Proxy(store, {
-    get: (target, key) => (key in target ? target[key] : () => {}),
-    set: (target, key, value) => {
-      target[key] = value
+    get: (target, name) => (name in target ? target[name] : () => {}),
+    set: (target, name, value) => {
+      target[name] = value
       return true
     },
   })
@@ -77,72 +76,76 @@ const viewWith = (hero) => {
   view.hero = { ...view.hero, ...hero }
   return view
 }
+const TOWN = { world: 'laboratorio', x: 16, y: 8 }
 
 beforeEach(() => {
-  // jsdom has no canvas: the hub draws nothing unless a test asks for a context.
+  // jsdom has no canvas: the scene draws nothing unless a test asks for a context.
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   vi.mocked(heroSprite).mockClear()
   vi.mocked(saveLook).mockReset()
   vi.mocked(getWorld).mockReset()
-  vi.mocked(saveWorldPosition).mockReset().mockResolvedValue({ world: 'laboratorio', x: 2, y: 2 })
-  vi.mocked(getGame).mockReset().mockResolvedValue(makeView())
+  vi.mocked(startHunt).mockReset().mockResolvedValue(makeView())
+  vi.mocked(saveWorldPosition).mockReset().mockResolvedValue({ position: TOWN })
+  vi.mocked(syncGame).mockReset().mockResolvedValue(makeView())
 })
 
-it('shows the hub and the closest goal for a new player', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+})
+
+it('starts a new player in the town square, safe, with the game around it', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
   open()
-  expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
-  const worlds = screen.getByRole('list', { name: 'Mundos' })
-  expect(within(worlds).getByText('Floresta do JavaScript').closest('li')).toHaveTextContent('Aberto')
-  expect(within(worlds).getByText('Torre da Matemática').closest('li')).toHaveTextContent('0 de 5 acertos em Matemática')
-  expect(screen.getByText('Caverna do SQL: faltam 3 desafios de programação')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Cidade do Laboratório' })).toBeInTheDocument()
+  expect(await scene()).toHaveAttribute('data-place', 'laboratorio 16 8')
+  expect(screen.getAllByText('Cidade do Laboratório · Zona segura').length).toBeGreaterThan(0)
   expect(getWorld).toHaveBeenCalledWith('token-ana')
+  expect(syncGame).toHaveBeenCalledWith('token-ana')
 })
 
-it('never names a zone as the goal, and counts one left in the singular', async () => {
-  // The cave's zone 2 used to wait for 8 challenges; with every world open there is no goal left.
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 7, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
-  const { unmount } = open()
-  expect(await title()).toHaveTextContent('Caverna do SQL')
-  expect(screen.queryByText(/área 2/)).toBeNull()
-  unmount()
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }, { codeSolved: 2, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 }))
-  open()
-  expect(await screen.findByText('Caverna do SQL: falta 1 desafio de programação')).toBeInTheDocument()
-})
-
-it('puts the hero back where it was saved', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 }))
-  open()
-  expect(await title()).toHaveTextContent('Caverna do SQL')
-  expect(screen.getByRole('application')).toHaveAttribute('data-place', 'caverna-sql 3 10')
-})
-
-it('follows the hero through a portal and saves it through the API', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 2, y: 10 }, { codeSolved: 3 }))
+it('links to the world from the main navigation', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
   open()
   await title()
-  fireEvent.keyDown(screen.getByRole('application'), { key: 'ArrowLeft' })
-  fireEvent.keyUp(screen.getByRole('application'), { key: 'ArrowLeft' })
-  expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
-  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'laboratorio', x: 7, y: 2 }, 'token-ana', { keepalive: false }))
+  expect(screen.getByRole('link', { name: 'Glitch World' })).toHaveAttribute('href', '/mundo')
 })
 
-it('opens the hunt game in the Forest and comes back beside its portal', async () => {
-  HTMLCanvasElement.prototype.getContext = () => null
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 2, y: 2 }))
-  vi.mocked(syncGame).mockResolvedValue(makeView())
-  vi.mocked(stopHunt).mockResolvedValue(makeView())
+it('puts the hero back where it was saved, in any region', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'caverna-sql', x: 3, y: 10 }))
   open()
-  await title()
-  fireEvent.keyDown(screen.getByRole('application'), { key: 'ArrowUp' })
+  expect(await title()).toHaveTextContent('Caverna do SQL')
+  expect(await scene()).toHaveAttribute('data-place', 'caverna-sql 3 10')
+})
+
+it('follows the hero down a road into the next region and saves it through the API', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'laboratorio', x: 1, y: 12 }))
+  open()
+  await scene()
+  await key('ArrowLeft')
+  await key('ArrowLeft', 'keyup')
+  await act(() => vi.advanceTimersByTimeAsync(FADE_MS))
   expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
-  await vi.waitFor(() => expect(syncGame).toHaveBeenCalledWith('token-ana'))
-  fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Voltar ao Laboratório' }))
-  expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
-  expect(screen.getByRole('application')).toHaveAttribute('data-place', 'laboratorio 2 2')
-  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'laboratorio', x: 2, y: 2 }, 'token-ana', undefined))
+  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'floresta-js', x: 30, y: 10 }, 'token-ana', { keepalive: false }))
+})
+
+it('hunts the zone the hero stands in through the API', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'floresta-js', x: 29, y: 10 }))
+  open()
+  await scene()
+  await act(() => vi.advanceTimersByTimeAsync(2000))
+  expect(startHunt).toHaveBeenCalledWith({ world: 'floresta-js', zone: 'z1', difficulty: 'normal' }, 'token-ana')
+})
+
+it('opens on the hunt after a reload when a hunt is running, with the away summary', async () => {
+  const hunting = makeView({ hunt: { world: 'floresta-js', zone: 'z1', difficulty: 'normal', startedAt: 0, claims: 0 } })
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
+  vi.mocked(syncGame).mockResolvedValue({ ...hunting, away: { elapsedMs: 3_600_000, kills: 40, elites: 4, deaths: 0, gold: 300, items: 2, gems: 0, scrap: 0 } })
+  open()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'Bem-vindo de volta' })).toHaveTextContent('Enquanto você estava fora: 40 inimigos, 300 de ouro, 2 itens')
 })
 
 it('shows an error when the world cannot load', async () => {
@@ -151,67 +154,30 @@ it('shows an error when the world cannot load', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível falar com o servidor.')
 })
 
-it('links to the world from the main navigation', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 9, y: 7 }))
-  open()
-  await title()
-  expect(screen.getByRole('link', { name: 'Glitch World' })).toHaveAttribute('href', '/mundo')
+it('starts a hero saved in an ENEM region in the town when the language hides ENEM', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'torre-matematica', x: 3, y: 10 }))
+  open('en')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Lab City' })).toBeInTheDocument()
+  expect(await scene()).toHaveAttribute('data-place', `laboratorio ${worldById('laboratorio').spawn.x} ${worldById('laboratorio').spawn.y}`)
 })
 
-it('opens the hunt straight away after a reload when a hunt is running, with the away summary', async () => {
-  HTMLCanvasElement.prototype.getContext = () => null
-  const hunting = makeView({ hunt: { world: 'floresta-js', zone: 'z1', difficulty: 'normal', startedAt: 0, claims: 0 } })
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 2, y: 2 }))
-  vi.mocked(getGame).mockResolvedValue(hunting)
-  vi.mocked(syncGame).mockResolvedValue({ ...hunting, away: { elapsedMs: 3_600_000, kills: 40, elites: 4, deaths: 0, gold: 300, items: 2, gems: 0, scrap: 0 } })
-  open()
-  expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
-  expect(await screen.findByRole('dialog', { name: 'Bem-vindo de volta' })).toHaveTextContent('Enquanto você estava fora: 40 inimigos, 300 de ouro, 2 itens')
-})
-
-it('stays in the hub when the game cannot be read', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
-  vi.mocked(getGame).mockRejectedValue(new Error('offline'))
-  open()
-  expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
-})
-
-it('puts a hero saved in an ENEM world beside the hub portal when the language hides ENEM', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'torre-matematica', x: 3, y: 10 }, { matematica: 5 }))
-  renderAt('/mundo', { user: 'ana', locale: 'en' })
-  expect(await screen.findByRole('heading', { level: 1, name: 'The Lab' })).toBeInTheDocument()
-  expect(screen.getByRole('application')).toHaveAttribute('data-place', expect.stringMatching(/^laboratorio /))
-})
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
-
-it('draws the hub hero with the look and gear of the game', async () => {
+it('draws the hero with the look and gear of the game, and the town keepers in theirs', async () => {
   drawing()
   const view = viewWith({ look: LOOK })
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
-  vi.mocked(getGame).mockResolvedValue(view)
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
+  vi.mocked(syncGame).mockResolvedValue(view)
   open()
-  await title()
+  await scene()
   await vi.waitFor(() => expect(heroSprite).toHaveBeenCalledWith(LOOK, gearOf(view.hero.items), expect.stringMatching(/^idle[01]$/)))
-  expect(Object.keys(gearOf(view.hero.items)).length).toBeGreaterThan(0)
+  for (const id of ['merchant', 'alchemist', 'smith', 'jeweler']) {
+    expect(heroSprite).toHaveBeenCalledWith(NPC_LOOKS[id].look, NPC_LOOKS[id].gear, expect.stringMatching(/^idle[01]$/))
+  }
 })
 
-it('draws the default hero when the game cannot be read', async () => {
+it('opens the character creator when the hero never picked a look, and wears the saved one', async () => {
   drawing()
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
-  vi.mocked(getGame).mockRejectedValue(new Error('offline'))
-  open()
-  await title()
-  await vi.waitFor(() => expect(heroSprite).toHaveBeenCalledWith(DEFAULT_LOOK, {}, expect.stringMatching(/^idle[01]$/)))
-  expect(screen.queryByRole('dialog')).toBeNull()
-})
-
-it('opens the character creator in the hub when the hero never picked a look, and wears the saved one', async () => {
-  drawing()
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
-  vi.mocked(getGame).mockResolvedValue(viewWith({ lookSet: false }))
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
+  vi.mocked(syncGame).mockResolvedValue(viewWith({ lookSet: false }))
   vi.mocked(saveLook).mockImplementation(async (look) => viewWith({ look, lookSet: true }))
   open()
   const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
@@ -221,13 +187,12 @@ it('opens the character creator in the hub when the hero never picked a look, an
   expect(saveLook).toHaveBeenCalledTimes(1)
   const [saved, token] = vi.mocked(saveLook).mock.calls[0]
   expect(token).toBe('token-ana')
-  expect(saved).not.toEqual(DEFAULT_LOOK)
-  await vi.waitFor(() => expect(heroSprite).toHaveBeenLastCalledWith(saved, expect.anything(), expect.anything()))
+  await vi.waitFor(() => expect(heroSprite).toHaveBeenCalledWith(saved, expect.anything(), expect.anything()))
 })
 
-it('keeps the look it has when the creator is put off for later, and does not ask again', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
-  vi.mocked(getGame).mockResolvedValue(viewWith({ look: LOOK, lookSet: false }))
+it('keeps the look it has when the creator is put off for later', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
+  vi.mocked(syncGame).mockResolvedValue(viewWith({ look: LOOK, lookSet: false }))
   vi.mocked(saveLook).mockImplementation(async (look) => viewWith({ look, lookSet: true }))
   open()
   const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
@@ -237,19 +202,18 @@ it('keeps the look it has when the creator is put off for later, and does not as
 })
 
 it('does not open the creator for a hero that already has a look', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
   open()
-  await title()
-  await vi.waitFor(() => expect(getGame).toHaveBeenCalled())
+  await scene()
   expect(screen.queryByRole('dialog')).toBeNull()
 })
 
-it('opens a hub terminal in the study window and stays in the world', async () => {
-  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 2, y: 5 }, { codeSolved: 3 }))
+it('opens a town terminal in the study window and stays in the world', async () => {
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'laboratorio', x: 12, y: 7 }))
   open()
-  expect(await title()).toHaveTextContent('Caverna do SQL')
-  fireEvent.keyDown(screen.getByRole('application'), { key: 'Enter' })
+  await scene()
+  await key('Enter')
   await vi.waitFor(() => expect(document.querySelector('iframe')?.getAttribute('src')).toContain('/daily'))
   expect(screen.getByTestId('location')).toHaveTextContent('/mundo')
-  expect(screen.getByRole('application')).toHaveAttribute('data-place', 'caverna-sql 2 5')
+  expect(await scene()).toHaveAttribute('data-place', 'laboratorio 12 7')
 })
