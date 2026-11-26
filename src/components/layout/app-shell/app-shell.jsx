@@ -24,11 +24,14 @@ const navClass = ({ isActive }) =>
 // Top bar for the signed-in pages, plus the study timer, message and badge toasts and the assistant.
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
 // content (opening a drawer, typing) doesn't redraw them.
-export default function AppShell({ children }) {
+// wide: the page gets up to 100rem instead of the 6xl column (the hunt game wants the room).
+export default function AppShell({ children, wide = false }) {
   return (
     <div className="min-h-screen bg-mist">
       <AppHeader />
-      <main className="mx-auto max-w-6xl px-5 pt-10 pb-28 sm:px-8 sm:pt-14">{children}</main>
+      <main data-wide={wide} className={`mx-auto ${wide ? 'max-w-[100rem]' : 'max-w-6xl'} px-5 pt-10 pb-28 sm:px-8 sm:pt-14`}>
+        {children}
+      </main>
       <ShellWidgets />
     </div>
   )

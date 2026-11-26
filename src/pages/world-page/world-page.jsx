@@ -185,7 +185,7 @@ export default function WorldPage() {
   }, [world, save])
 
   return (
-    <AppShell>
+    <AppShell wide={Boolean(state && inGame)}>
       <PageHeader kicker={t('world.page.kicker')} title={world ? t(`world.name.${world}`) : t('world.nav')} />
       {message && (
         <div className="mt-6">
