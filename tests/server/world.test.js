@@ -109,6 +109,14 @@ it('refuses broken positions with 400', async () => {
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
 })
 
+it('refuses a tile in a still-locked zone of an open world with 400', async () => {
+  await gymPasses(3)
+  expect((await put({ world: 'caverna-sql', x: 3, y: 10 })).status).toBe(200)
+  const locked = await put({ world: 'caverna-sql', x: 13, y: 2 })
+  expect(locked.status).toBe(400)
+  expect((await world()).position).toEqual({ world: 'caverna-sql', x: 3, y: 10 })
+})
+
 it('sends a hero standing somewhere no longer valid back to a spawn', async () => {
   await store.saveWorldPosition('alice', { world: 'torre-matematica', x: 3, y: 10 })
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
