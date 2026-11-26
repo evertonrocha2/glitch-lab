@@ -1,7 +1,10 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
+import WorldPageSkeleton from '../../../pages/world-page/world-page-skeleton.jsx'
+import GameView from '../game-view.jsx'
 import { heroSprite } from '../hero/hero-cache.js'
 import HeroLoading, { filledAt, SEGMENTS, TIP_COUNT, TIP_MS } from './hero-loading.jsx'
 import { forgetHero, knownHero, rememberHero } from './hero-memory.js'
@@ -157,4 +160,23 @@ it('remembers a hero across reloads and ignores anything that is not a look', ()
   rememberHero(LOOK, { chest: { b: 'armadura', r: 'rare' }, junk: { b: 'x' } })
   forgetHero()
   expect(knownHero()).toEqual({ look: LOOK, gear: { chest: { b: 'armadura', r: 'rare' } } })
+})
+
+it('stands in for the hunt while the game View loads', () => {
+  const api = new Proxy({}, { get: () => vi.fn(() => new Promise(() => {})) })
+  ui(
+    <MemoryRouter>
+      <GameView worldId="floresta-js" api={api} onLeave={vi.fn()} studyHref="/daily" />
+    </MemoryRouter>,
+  )
+  const status = screen.getByRole('status', { name: 'Carregando seu herói' })
+  expect(within(status).getByText('Dica')).toBeInTheDocument()
+})
+
+it('stands in for the map while the world page loads', () => {
+  ui(<WorldPageSkeleton />)
+  const status = screen.getByRole('status', { name: 'Carregando o mundo' })
+  expect(status).toHaveAttribute('aria-busy', 'true')
+  expect(within(status).getByText('Dica')).toBeInTheDocument()
+  expect(screen.getAllByRole('status')).toHaveLength(1)
 })

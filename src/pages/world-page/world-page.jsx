@@ -5,6 +5,7 @@ import { besidePortal } from '../../../shared/world/map.js'
 import { HUB_ID, worldById } from '../../../shared/world/worlds.js'
 import GameView from '../../components/game/game-view.jsx'
 import { gearOf } from '../../components/game/hero/gear.js'
+import { rememberHero } from '../../components/game/loading/hero-memory.js'
 import LookDialog from '../../components/game/look-dialog.jsx'
 import { StudyWindowProvider } from '../../components/game/study-window/study-window-provider.jsx'
 import { studyHref } from '../../components/game/study-cta.js'
@@ -212,6 +213,10 @@ export default function WorldPage() {
 
   const look = game?.hero?.look ?? DEFAULT_LOOK
   const gear = useMemo(() => gearOf(game?.hero?.items), [game?.hero?.items])
+  // The loading screen walks this hero next time: on the way into a hunt, or on the next visit.
+  useEffect(() => {
+    if (game?.hero) rememberHero(game.hero.look, gear)
+  }, [game?.hero, gear])
   const saveHeroLook = useCallback(async (next) => {
     const view = await gameApi.saveLook(next)
     if (view?.hero) setGame(view)
