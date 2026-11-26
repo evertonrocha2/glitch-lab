@@ -1,9 +1,12 @@
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
+import { tuneSkill } from '../../../../shared/game/skill-mods.js'
 import { LOADOUT_SIZE, MAX_SKILL_LEVEL, MAX_THRESHOLD, SKILLS, skillPower, skillUpgradeCost } from '../../../../shared/game/skills.js'
+import { socketedSupports } from '../../../../shared/game/talents.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
 import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
 import { ActionButton } from './panel-ui.jsx'
+import { modText } from './support-gem.js'
 
 const BOX = 'flex flex-col gap-2 p-2.5'
 const SKILL_BY_ID = Object.fromEntries(SKILLS.map((skill) => [skill.id, skill]))
@@ -37,6 +40,13 @@ function SkillsBody({ view, actions, runner }) {
 
   const changed = thresholds.hp !== savedThresholds.hp || thresholds.mp !== savedThresholds.mp
   const free = slots.indexOf(null)
+  // Each skill as the hero fights with it: its skill passives (in the hero's effects) and support gems.
+  const effects = view.stats?.effects
+  const { talents, treeSockets } = view.hero
+  const tuned = useMemo(() => {
+    const tuning = { effects: effects ?? [], supports: socketedSupports(talents ?? [], treeSockets) }
+    return Object.fromEntries(SKILLS.map((def) => [def.id, tuneSkill(def, tuning)]))
+  }, [effects, talents, treeSockets])
 
   const commit = (next) => runner.run(() => actions.saveLoadout({ skills: next, thresholds: savedThresholds }), () => t('game.loadout.saved'))
   const move = (from, to) => {
@@ -55,6 +65,7 @@ function SkillsBody({ view, actions, runner }) {
           <SkillRow
             key={def.id}
             def={def}
+            tuned={tuned[def.id]}
             level={owned[def.id] ?? 0}
             slot={slots.indexOf(def.id)}
             canEquip={free >= 0}
@@ -167,8 +178,11 @@ function describe(t, def, level) {
   })
 }
 
-function SkillRow({ def, level, slot, canEquip, view, actions, runner, text, onEquip }) {
+// tuned: the skill with what changes it (tuneSkill); its mana, cooldown and durations are the ones shown.
+function SkillRow({ def, tuned, level, slot, canEquip, view, actions, runner, text, onEquip }) {
   const { t } = text
+  const modsId = useId()
+  const mods = modText(t, text.number)
   const name = t(`game.skill.${def.id}`)
   const have = level > 0
   const cost = have ? skillUpgradeCost(level) : null
@@ -198,8 +212,22 @@ function SkillRow({ def, level, slot, canEquip, view, actions, runner, text, onE
           <Chip tone={have ? 'gold' : 'muted'}>{have ? t('game.skills.level', { level, max: MAX_SKILL_LEVEL }) : t('game.skills.notOwned')}</Chip>
         </div>
       </div>
-      <small className="text-[11px] text-[#8fb8ff]">{describe(t, def, level)}</small>
-      <small className="text-[11px] text-[#a89fd0]">{t('game.skills.meta', { mana: text.number(def.mana), seconds: text.number(def.cooldownMs / 1000) })}</small>
+      <small className="text-[11px] text-[#8fb8ff]">{describe(t, tuned, level)}</small>
+      <small className="text-[11px] text-[#a89fd0]">{t('game.skills.meta', { mana: text.number(tuned.mana), seconds: text.number(tuned.cooldownMs / 1000) })}</small>
+      {tuned.mods.length > 0 && (
+        <div className="flex flex-col gap-0.5">
+          <small id={modsId} className="font-pixel text-[9px] text-[#7fe9ff]">
+            {t('game.skills.mods')}
+          </small>
+          <ul aria-labelledby={modsId} className="m-0 list-disc pl-3.5 text-[11px] text-[#7fe9ff]">
+            {tuned.mods.map(({ kind, id }) => (
+              <li key={`${kind}:${id}`}>
+                {t(kind === 'passive' ? 'game.skills.modPassive' : 'game.skills.modSupport', { name: mods.name(kind, id), desc: mods.desc(kind, id) })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {!have && <small className="text-[11px] text-[#a89fd0]">{t('game.skills.price', { fragments: text.number(def.price) })}</small>}
       {cost && <small className="text-[11px] text-[#a89fd0]">{t('game.skills.next', { fragments: text.number(cost.fragments) })}</small>}
       <span className="flex flex-wrap items-start gap-1.5">

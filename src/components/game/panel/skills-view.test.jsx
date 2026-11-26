@@ -108,3 +108,19 @@ it('sets the potion thresholds with sliders', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(actions.saveLoadout).toHaveBeenCalledWith({ skills: ['golpe', null, null, null], thresholds: { hp: 0.6, mp: 0.25 } }))
 })
+
+it('says which skill passives and support gems change each skill, with the changed cooldown', () => {
+  const view = makeView({ talents: ['root', 'logica-c0', 'logica-c1', 'logica-f1-1', 'logica-f1-2', 'logica-f0-1'], skills: twoSkills })
+  view.hero.treeSockets = { 'logica-f0-1': { id: 'ccccccccccc1', kind: 'support', support: 'rapido' } }
+  ui({ view })
+  const strike = within(screen.getByRole('list', { name: 'Skills' })).getAllByRole('listitem')[0]
+  const mods = within(strike).getByRole('list', { name: 'Changed by' })
+  expect(within(mods).getByText('Double Strike (passive): Strike hits again right after, at 50% power')).toBeInTheDocument()
+  expect(within(mods).getByText('Quick Cast (support gem): Cooldowns recover 25% faster, skills cost 20% more mana')).toBeInTheDocument()
+  expect(within(strike).getByText('0 mana, 3.2s cooldown')).toBeInTheDocument()
+})
+
+it('lists no changes for a skill nothing touches', () => {
+  ui({ view: makeView({ skills: twoSkills }) })
+  expect(screen.queryByRole('list', { name: 'Changed by' })).toBeNull()
+})
