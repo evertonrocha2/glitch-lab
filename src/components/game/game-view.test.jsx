@@ -177,7 +177,6 @@ it('plays a boss fight back and then shows the result', async () => {
   const before = makeView({ level: 6 })
   const after = makeView({ level: 6 })
   after.zones['floresta-js'].normal[0].beaten = true
-  after.zones['floresta-js'].normal[1].unlocked = true
   const fight = {
     won: true,
     reason: 'killed',
@@ -198,10 +197,20 @@ it('plays a boss fight back and then shows the result', async () => {
   fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
   fireEvent.click(within(screen.getByRole('region', { name: /Clareira/ })).getByRole('button', { name: 'Enfrentar chefe' }))
   expect(await screen.findByText('Lutando contra Rei Slime')).toBeInTheDocument()
-  expect(screen.queryByText('Rei Slime derrotado! Zona 2 aberta')).toBeNull()
+  expect(screen.queryByText('Rei Slime derrotado!')).toBeNull()
   await act(() => vi.advanceTimersByTimeAsync(10_000))
-  expect(await screen.findByText('Rei Slime derrotado! Zona 2 aberta')).toBeInTheDocument()
+  // Every zone is open from the start: a first win opens nothing.
+  expect(await screen.findByText('Rei Slime derrotado!')).toBeInTheDocument()
+  expect(screen.queryByText(/Zona 2 aberta|Zona 2 abre/)).toBeNull()
   expect(screen.getByText('Prêmio: 1 item, 1 gema')).toBeInTheDocument()
+})
+
+it('shows no "zonas à frente bloqueadas" sign, even for an answer that still marks zones locked', async () => {
+  const view = makeView()
+  for (const zone of view.zones['floresta-js'].normal.slice(1)) zone.unlocked = false
+  ui(makeApi(view))
+  expect(await screen.findByRole('region', { name: 'Cena da caça' })).toBeInTheDocument()
+  expect(screen.queryByText('Zonas à frente bloqueadas')).toBeNull()
 })
 
 it('says why a boss fight was lost, and the Inferno gold cost', async () => {

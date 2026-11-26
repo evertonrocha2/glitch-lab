@@ -10,7 +10,7 @@ import { paintLight } from './light.js'
 import { nudge, orient, rotate } from './placement.js'
 import { BOSS_SPEED, duration, HUNT_SPEED, WALK_MS } from './playback.js'
 import { ellipse, SHADOW } from './pixels.js'
-import { mapLights, paintAnimated, paintBase, paintFog, readMap, TS } from './tiles.js'
+import { mapLights, paintAnimated, paintBase, readMap, TS } from './tiles.js'
 import { drawAilment, drawFx, fxLight, fxProgress } from './vfx.js'
 
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
@@ -121,14 +121,14 @@ const LEVEL_UP_MS = 1800
 // drawn each frame. With prefers-reduced-motion: still water, no fireflies, no shake, effects as short
 // still flashes.
 //   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (actors stand in it).
-//   lockedRects: rects to cover in fog. look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
+//   Every zone is open (shared/game/zones.js), so nothing is fogged. look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
 //   playback: { fights, loop, speed? } plays pack fight logs (pack.js): a loop walks 1.5 s between fights,
 //   and each pack spawns around wherever the hero stands. enemy: { sprite, elite } for a log without spawns.
 //   walker: a hunt-walker.js walker (the player walks the hero; it strolls on its own between packs).
 //   onCamera(pos): the hero's drawn spot in tiles, each time it moves, for a camera to follow.
 //   level: the hero's level; when it goes up a golden column and "Level X!" play over the hero.
 //   zoneName: overrides the label.
-export default function GameScene({ world, zoneRect, lockedRects = [], look, gear, playback, enemy, walker, onCamera, level, zoneName, onReady }) {
+export default function GameScene({ world, zoneRect, look, gear, playback, enemy, walker, onCamera, level, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
   const reduced = useReducedMotion()
@@ -143,7 +143,6 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
   const ready = useRef(false)
   const levelRef = useRef({ from: null, at: -1, n: 0 })
 
-  const lockedKey = JSON.stringify(lockedRects ?? [])
   const zoneKey = JSON.stringify(zoneRect ?? null)
   const playing = Boolean(playback?.fights?.length)
   const walking = Boolean(walker)
@@ -166,11 +165,9 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
       markReady()
       return undefined
     }
-    const locked = JSON.parse(lockedKey)
     const rect = JSON.parse(zoneKey)
     const spot = fightSpot(world, rect)
     const base = layer(canvas.width, canvas.height, (c) => paintBase(c, world))
-    const fog = locked.length ? layer(canvas.width, canvas.height, (c) => paintFog(c, world, locked)) : null
     const map = readMap(world)
     const motes = map.outdoor ? 'fireflies' : 'dust'
     const tint = world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
@@ -311,8 +308,6 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
         if (who < 0) drawHero(heroAnim)
         else drawEnemyAt(who)
       }
-      if (fog) ctx.drawImage(fog, 0, 0)
-      else if (locked.length) paintFog(ctx, world, locked)
 
       // The light pass, then the effects over it so they glow.
       lightOut.length = 0
@@ -518,7 +513,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
     return () => {
       if (frame) cancelAnimationFrame(frame)
     }
-  }, [world, lockedKey, zoneKey, reduced, playing, walking])
+  }, [world, zoneKey, reduced, playing, walking])
 
   // A click on the map walks the hero there (the canvas is the whole map, so no camera math).
   function onClick(event) {

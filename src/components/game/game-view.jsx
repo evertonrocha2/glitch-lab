@@ -145,13 +145,13 @@ const isTyping = (target) => {
 }
 const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
-// The zone the scene shows: the boss being fought, the hunt, else the first open zone not yet beaten.
+// The zone the scene shows: the boss being fought, the hunt, else the first zone not yet beaten
+// (every zone is open, shared/game/zones.js).
 function shownZone(view, worldId, replay) {
   if (replay) return replay.target.zone
   if (view.hero.hunt?.world === worldId) return view.hero.hunt.zone
   const list = view.zones?.[worldId]?.normal ?? []
-  const open = list.filter((zone) => zone.unlocked)
-  return (open.find((zone) => !zone.beaten) ?? open.at(-1) ?? list[0])?.id ?? 'z1'
+  return (list.find((zone) => !zone.beaten) ?? list.at(-1))?.id ?? 'z1'
 }
 
 // Layout B on /mundo for a hunt world: the lit scene with the HUD on the left, the panel on the right
@@ -308,7 +308,6 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
         fight: res.fight,
         target,
         next: viewOf(res),
-        before: viewRef.current,
         startedAt: Date.now(),
         done: false,
       })
@@ -465,12 +464,9 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   const zones = ZONES[worldId]
   const zoneRect = zones[zoneId].rect
   const difficulty = replay?.target.difficulty ?? view.hero.hunt?.difficulty ?? 'normal'
-  const locked = (view.zones?.[worldId]?.[difficulty] ?? []).filter((zone) => !zone.unlocked && zone.id !== 'z1').map((zone) => zones[zone.id].rect)
   const crop = cropFor(world, zoneRect, wide ? CROP[zoom].wide : CROP[zoom].narrow)
   cropRef.current = crop
   const mapAt = cameraRef.current ? stageOffset(world, cameraRef.current, crop) : { left: (-crop.x / crop.w) * 100, top: (-crop.y / crop.h) * 100 }
-  // The fog is soft and the padlocked door may sit outside the crop, so a small sign says it too.
-  const lockedAhead = locked.length > 0
   const zoneLabel = t(`game.zone.${zones[zoneId].name}`)
   const bossName = replay ? t(`game.boss.${zones[replay.target.zone].boss}`) : ''
 
@@ -515,7 +511,6 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
               <GameScene
                 world={world}
                 zoneRect={zoneRect}
-                lockedRects={locked}
                 look={view.hero.look}
                 gear={gear}
                 playback={playback}
@@ -538,12 +533,6 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
               zoom={zoom}
               onZoom={changeZoom}
             />
-            {lockedAhead && (
-              <p className="pointer-events-none absolute right-2 top-[126px] m-0 flex items-center sm:top-[100px] gap-1 border-2 border-[#0a0818] bg-[rgba(16,12,36,0.82)] px-1.5 py-1 font-pixel text-[10px] text-[#c3b2ff]">
-                <GameIcon name="key" size={1} />
-                <span className="sr-only sm:not-sr-only">{t('game.view.lockedAhead')}</span>
-              </p>
-            )}
             {replay?.done && <ResultBanner replay={replay} t={t} counts={counts} onClose={() => setReplay(null)} />}
           </section>
         )}
@@ -759,21 +748,14 @@ function StatusLine({ t, counts, view, replay, bossName, zoneLabel, difficulty, 
   )
 }
 
-// The boss fight's outcome over the scene: the win (and what opened, or the loot), or why it was lost.
+// The boss fight's outcome over the scene: the win and the loot (every zone is already open, so a win
+// opens nothing), or why it was lost.
 function ResultBanner({ replay, t, counts, onClose }) {
-  const { fight, target, next, before } = replay
-  const zones = next.zones?.[target.world]?.[target.difficulty] ?? []
-  const at = zones.findIndex((zone) => zone.id === target.zone)
-  const wasBeaten = before?.zones?.[target.world]?.[target.difficulty]?.[at]?.beaten ?? false
-  const following = zones[at + 1]
+  const { fight, target } = replay
   const boss = ZONES[target.world][target.zone].boss
   const lines = []
   if (fight.won) {
-    let headline = t(`game.result.win.${boss}`)
-    if (!wasBeaten && following) {
-      headline += following.unlocked ? ` ${t('game.result.opened', { n: at + 2 })}` : ` ${t('game.result.opensAt', { n: at + 2, level: following.minLevel })}`
-    }
-    lines.push(headline)
+    lines.push(t(`game.result.win.${boss}`))
     const loot = counts.list([
       ['items', fight.loot?.items ?? 0],
       ['gems', fight.loot?.gems ?? 0],
