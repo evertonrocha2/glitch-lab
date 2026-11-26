@@ -347,7 +347,7 @@ src/
 
 O `/mundo` é um RPG idle alimentado pelo estudo. O servidor decide tudo. O navegador só manda intenções (equipar, lutar, forjar), nunca um atributo ou resultado.
 
-- **O nível vem só do estudo.** O XP do herói sai do que você já faz: ENEM, desafios do dia, bugs, Glitchdle, caça, x1 e revisão. A cada 10 acertos (até 30 pontos) você ganha 1 ponto de talento, fora o 1 de cada nível.
+- **Caçar dá XP, estudar multiplica.** O herói guarda o próprio XP e sobe de nível com os monstros que derrota na caça e com a primeira vitória sobre cada chefe. O servidor faz a conta quando paga a caça. Cada acerto de hoje (ENEM, desafios do dia, bugs, Glitchdle, caça à linha, x1 e revisão) soma 0,1 num multiplicador de XP, de x1,0 até x3,0 com 20 acertos. O HUD mostra esse bônus. Cada trecho de caça vale o multiplicador de quando começou, então o estudo no meio da caça conta a partir do próximo trecho. Herói antigo mantém o nível que o estudo já tinha dado. A cada 10 acertos (até 30 pontos) você ainda ganha 1 ponto de talento, fora o 1 de cada nível.
 - **Prêmio diário com teto.** Estudar dá fragmentos (até 150 por dia), poções pela revisão (até 6 por dia) e um baú do desafio do dia. O baú melhora com a sequência, até 7 dias.
 - **Caças, chefes e forja.** Na Floresta, o herói caça sozinho, até offline (no máximo 8 horas). Cada zona acaba num chefe. O equipamento cai, e a forja melhora, sorteia de novo, encaixa gema e desmonta.
 - **A cara do herói.** O herói é desenhado em pixel por código, em 32px, e veste o que você equipa. O visual tem seis campos: tom de pele (5), penteado (6), cor do cabelo (8), olhos (4), cor dos olhos (4) e roupa (8). O servidor só aceita esses seis números dentro da faixa. Herói antigo, com o visual velho, é convertido na leitura.

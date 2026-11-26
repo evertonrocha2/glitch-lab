@@ -105,7 +105,7 @@ Data: [Wikidata](https://www.wikidata.org) (CC0) and [Stack Overflow](https://st
 
 `/mundo` is an idle RPG that study fuels. The hero is yours, and the server decides everything: the browser only sends intents (equip, fight, forge), never a stat, drop or result.
 
-- **Study is the only way to level.** Hero XP comes from what you already do: ENEM answers, dailies, bugs fixed, Glitchdle, hunts, duels and reviews. Each 10 right answers (up to 30 points) turn into a talent point, plus one per level.
+- **Hunting gives XP, study multiplies it.** The hero stores its XP and levels up from kills in a hunt and the first win over each boss, worked out on the server when the hunt is paid. Each right answer today (ENEM, dailies, bugs fixed, Glitchdle, line hunt, duels, reviews) adds 0.1 to an XP multiplier, from x1.0 up to x3.0 at 20; the HUD shows it as a buff. A hunt stretch earns at the multiplier it began with, so study done mid-hunt counts from the next one. Heroes from before keep the level their study gave them. Each 10 right answers (up to 30 points) still turn into a talent point, plus one per level.
 - **Daily rewards have caps.** Study earns fragments (150 a day at most), potions from reviews (6 a day) and a daily chest. The chest gets better with a streak of up to 7 days.
 - **Hunts, bosses and the forge.** Start a hunt in the Forest and the hero fights on its own, even offline (up to 8 hours). Each zone ends in a boss. Gear drops, and the forge upgrades, rerolls, sockets and salvages it.
 - **Data.** The hero lives in the new table `game_heroes` (one row per user, with a version for safe saves). The SQL function `exam_attempt_days` gives the ENEM answers per day.
