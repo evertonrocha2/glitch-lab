@@ -4,7 +4,7 @@
 // Ids only, labels live in i18n (game-tree.js).
 //
 // Passives (one notable each, talents.js places them):
-// - golpeTwice: golpe strikes again right after, at 60% power (one more cleave).
+// - golpeTwice: golpe strikes again right after, at 50% power (one more cleave).
 // - breadthFirst: raio jumps to 2 more foes.
 // - divideConquer: chama throws a second burning patch at the next thickest spot.
 // - fork: veneno spits a second line.
@@ -18,7 +18,8 @@
 // Support gems (each counts once, however many sockets hold it):
 // - projeteis: area and pierce skills throw 1 more area or line, 15% less damage.
 // - encadear: chain skills jump to 2 more foes.
-// - areaAmpla: +30% area. concentrado: -30% area, +35% damage (around, area, pierce).
+// - areaAmpla: +30% area. concentrado: -20% area, +30% damage (around, area, pierce). -20% keeps
+//   golpe (1.44 tiles) reaching the foes that stand and fight at 1.3.
 // - rapido: cooldowns recover 25% faster, skills cost 20% more mana.
 // - fogo: hit skills add 20% of each hit as fire (fire res and immunity apply).
 // - vampiro: hit skills heal the hero for 5% of the damage they deal.
@@ -28,7 +29,7 @@
 import { SKILLS } from './skills.js'
 
 export const PASSIVES = {
-  golpeTwice: { skill: 'golpe', icon: 'sword', echo: 0.6 },
+  golpeTwice: { skill: 'golpe', icon: 'sword', echo: 0.5 },
   breadthFirst: { skill: 'raio', icon: 'bolt', targets: 2 },
   divideConquer: { skill: 'chama', icon: 'flame', extra: 1 },
   fork: { skill: 'veneno', icon: 'poison', extra: 1 },
@@ -46,7 +47,7 @@ export const SUPPORTS = {
   projeteis: { color: '#ff9a1f', extra: 1, more: -0.15 },
   encadear: { color: '#ffd23e', targets: 2 },
   areaAmpla: { color: '#4fa3ff', area: 0.3 },
-  concentrado: { color: '#ff5a6e', area: -0.3, more: 0.35 },
+  concentrado: { color: '#ff5a6e', area: -0.2, more: 0.3 },
   rapido: { color: '#7fffe9', cooldown: 0.25, mana: 0.2 },
   fogo: { color: '#ff6a2a', addedFire: 0.2 },
   vampiro: { color: '#c8324a', leech: 0.05 },

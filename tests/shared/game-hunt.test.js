@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, SAMPLE_FIGHTS, settleHunt } from '../../shared/game/hunt.js'
-import { salvageValue } from '../../shared/game/items.js'
+import { SUPPORT_SALVAGE_SCRAP, salvageValue } from '../../shared/game/items.js'
 import { heroStats } from '../../shared/game/stats.js'
 import { huntXp } from '../../shared/game/xp.js'
 import { ZONES } from '../../shared/game/zones.js'
@@ -64,7 +64,9 @@ describe('settleHunt', () => {
     expect(shut.gems).toEqual([])
     expect(shut.items).toEqual([])
     const itemScrap = open.items.reduce((sum, item) => sum + salvageValue(item).scrap, 0)
-    expect(shut.scrapFromOverflow).toBe(itemScrap + open.gems.length * GEM_SALVAGE_SCRAP)
+    // Support gems (fase 2c) overflow to scrap as well.
+    expect(shut.supports).toEqual([])
+    expect(shut.scrapFromOverflow).toBe(itemScrap + open.gems.length * GEM_SALVAGE_SCRAP + open.supports.length * SUPPORT_SALVAGE_SCRAP)
   })
   it('drops fewer kills once the potion stock runs out', () => {
     const base = { hero: hero(10, { hp: 1, mp: 1 }), zone: FOREST.z3, now: 8 * HOUR }

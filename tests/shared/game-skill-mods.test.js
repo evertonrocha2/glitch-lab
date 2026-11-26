@@ -26,8 +26,8 @@ describe('tuneSkill: no mods', () => {
 })
 
 describe('tuneSkill: passives', () => {
-  it('golpeTwice: golpe strikes again at 60%; other skills untouched', () => {
-    expect(tune('golpe', ['golpeTwice']).echo).toBe(0.6)
+  it('golpeTwice: golpe strikes again at 50%; other skills untouched', () => {
+    expect(tune('golpe', ['golpeTwice']).echo).toBe(0.5)
     expect(tune('nevasca', ['golpeTwice']).echo ?? 0).toBe(0)
   })
 
@@ -95,12 +95,14 @@ describe('tuneSkill: supports', () => {
     expect(tune('raio', ['breadthFirst'], ['encadear']).targets).toBe(7)
   })
 
-  it('areaAmpla +30% area; concentrado -30% area and +35% damage', () => {
+  it('areaAmpla +30% area; concentrado -20% area and +30% damage', () => {
     expect(tune('golpe', [], ['areaAmpla']).radius).toBeCloseTo(2.34)
     const c = tune('nevasca', [], ['concentrado'])
-    expect(c.radius).toBeCloseTo(2.1)
-    expect(c.more).toBeCloseTo(1.35)
-    expect(tune('golpe', [], ['areaAmpla', 'concentrado']).radius).toBeCloseTo(1.8)
+    expect(c.radius).toBeCloseTo(2.4)
+    expect(c.more).toBeCloseTo(1.3)
+    expect(tune('golpe', [], ['areaAmpla', 'concentrado']).radius).toBeCloseTo(1.98)
+    // Still reaches the foes that stand at 1.3 tiles.
+    expect(tune('golpe', [], ['concentrado']).radius).toBeGreaterThan(1.3)
   })
 
   it('rapido: cooldowns recover 25% faster for 20% more mana, stacking with quickCache', () => {

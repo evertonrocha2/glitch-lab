@@ -1,6 +1,9 @@
 // Items for Glitch World: bases, affixes, rarities, the compilador set, uniques and gems, plus the seeded
 // roll and the stat math. Pure: all randomness comes from the rng passed in, so the server can roll drops
 // and the client can show the same tooltips. Ids and stat keys only, labels live in i18n.
+// Support gems (fase 2c) are their own family: { id, kind: 'support', support } (ids in skill-mods.js).
+// They go in the talent tree's sockets, never in gear, share the bag and salvage to a flat scrap.
+import { SUPPORT_IDS } from './skill-mods.js'
 
 export const SLOTS = ['helm', 'amulet', 'ring', 'weapon', 'chest', 'offhand', 'boots', 'relic']
 export const RARITIES = ['common', 'uncommon', 'rare', 'epic', 'legendary']
@@ -184,6 +187,9 @@ export const rollItem = (rng, { ilvl, rarityBoost = 0, slot } = {}) => {
 
 export const rollGem = (rng) => ({ id: hexId(rng), kind: 'gem', gem: rng.pick(Object.keys(GEMS)) })
 
+export const SUPPORT_SALVAGE_SCRAP = 15
+export const rollSupport = (rng) => ({ id: hexId(rng), kind: 'support', support: rng.pick(SUPPORT_IDS) })
+
 const tidy = (stat, value) => (FLAT_STATS.has(stat) ? Math.round(value) : Math.round(value * 10) / 10)
 
 export const itemStats = (item, gems = GEMS, bases = BASES) => {
@@ -226,7 +232,8 @@ export const setBonuses = (equipped) => {
   return { ...total, effects: [...new Set(effects)] }
 }
 
-export const salvageValue = (item) => ({ scrap: SALVAGE[item.rarity] + (item.upgrade ?? 0) * 3 })
+export const salvageValue = (item) =>
+  item.kind === 'support' ? { scrap: SUPPORT_SALVAGE_SCRAP } : { scrap: SALVAGE[item.rarity] + (item.upgrade ?? 0) * 3 }
 
 export const upgradeCost = (item) => {
   const upgrade = item.upgrade ?? 0

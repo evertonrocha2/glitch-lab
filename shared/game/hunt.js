@@ -4,7 +4,7 @@
 // one left (minus the walk between them), so every equipped skill gets its turn.
 import { simulateFight } from './combat.js'
 import { DIFFICULTIES, packFor } from './enemies.js'
-import { BAG_SIZE, rollGem, rollItem, salvageValue } from './items.js'
+import { BAG_SIZE, SUPPORT_SALVAGE_SCRAP, rollGem, rollItem, rollSupport, salvageValue } from './items.js'
 import { createRng } from './rng.js'
 import { huntXp } from './xp.js'
 
@@ -18,6 +18,9 @@ export const SAMPLE_FIGHTS = 12
 export const DROP_CHANCE = 0.12
 export const GEM_CHANCE = 0.01
 export const GEM_SALVAGE_SCRAP = 10
+// Support gems (fase 2c): about one an hour. Rolled from their own stream after the items and gems,
+// so those stay exactly what they were, and they only take the bag room the items and gems left.
+export const SUPPORT_CHANCE = 0.0015
 const ELITE_GOLD = 3
 const SHOWN_SAMPLES = 3
 
@@ -114,6 +117,15 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     }
   }
 
+  const supportRng = createRng(seed).fork('supports')
+  const supports = []
+  for (let k = 0; k < kills; k++) {
+    if (!supportRng.chance(SUPPORT_CHANCE)) continue
+    const gem = rollSupport(supportRng)
+    if (items.length + gems.length + supports.length < bagFree) supports.push(gem)
+    else scrapFromOverflow += SUPPORT_SALVAGE_SCRAP
+  }
+
   return {
     elapsedMs,
     kills,
@@ -124,6 +136,7 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     xp: huntXp({ kills, elites, zone, difficulty, multiplier: xpMultiplier }),
     items,
     gems,
+    supports,
     scrapFromOverflow,
     potionsUsed,
     samples: withPotions.results.slice(0, SHOWN_SAMPLES),
