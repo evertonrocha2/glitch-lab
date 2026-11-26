@@ -74,23 +74,28 @@ it('reorders the loadout and saves the new order', async () => {
     expect.stringContaining('Empty'),
     expect.stringContaining('Empty'),
   ])
+  // A move saves at once: no separate Save to forget.
   fireEvent.click(screen.getByRole('button', { name: 'Move Strike down' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() =>
     expect(actions.saveLoadout).toHaveBeenCalledWith({ skills: ['raio', 'golpe', null, null], thresholds: { hp: 0.4, mp: 0.25 } }),
   )
   expect(await screen.findByText('Loadout saved')).toBeInTheDocument()
 })
 
-it('adds and removes skills from the loadout', async () => {
+it('equipping a skill saves it straight away, and so does removing one', async () => {
   const { actions } = ui({ view: makeView({ skills: { owned: { golpe: 1, raio: 1 }, loadout: ['golpe', null, null, null] } }) })
+  fireEvent.click(screen.getByRole('button', { name: 'Equip Bolt' }))
+  await waitFor(() => expect(actions.saveLoadout).toHaveBeenCalledWith({ skills: ['golpe', 'raio', null, null], thresholds: { hp: 0.4, mp: 0.25 } }))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Remove Strike' })).toBeEnabled())
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Strike' }))
+  await waitFor(() => expect(actions.saveLoadout).toHaveBeenLastCalledWith({ skills: [null, null, null, null], thresholds: { hp: 0.4, mp: 0.25 } }))
+})
+
+it('the Save button is only for the potion thresholds', () => {
+  ui({ view: makeView({ skills: { owned: { golpe: 1, raio: 1 }, loadout: ['golpe', null, null, null] } }) })
   expect(screen.getByRole('button', { name: 'Save' })).toHaveAccessibleDescription('Nothing changed')
   // A plain state, not a problem: muted, not the error red.
   expect(screen.getByText('Nothing changed')).toHaveClass('text-[#9a93b8]')
-  fireEvent.click(screen.getByRole('button', { name: 'Equip Bolt' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Remove Strike' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
-  await waitFor(() => expect(actions.saveLoadout).toHaveBeenCalledWith({ skills: [null, 'raio', null, null], thresholds: { hp: 0.4, mp: 0.25 } }))
 })
 
 it('sets the potion thresholds with sliders', async () => {

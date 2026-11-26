@@ -29,21 +29,22 @@ function SkillsBody({ view, actions, runner }) {
   const owned = view.hero.skills.owned
   const saved = padded(view.hero.skills.loadout)
   const savedThresholds = { hp: view.hero.thresholds?.hp ?? 0, mp: view.hero.thresholds?.mp ?? 0 }
-  const [slots, setSlots] = useState(saved)
+  // The loadout has no draft: each equip, remove or move saves at once, so an equipped skill always
+  // fights. Only the potion thresholds wait for Save.
+  const slots = saved
   const [thresholds, setThresholds] = useState(savedThresholds)
   const skillName = (id) => t(`game.skill.${id}`)
 
-  const changed =
-    slots.some((id, i) => id !== saved[i]) || thresholds.hp !== savedThresholds.hp || thresholds.mp !== savedThresholds.mp
+  const changed = thresholds.hp !== savedThresholds.hp || thresholds.mp !== savedThresholds.mp
   const free = slots.indexOf(null)
 
-  const move = (from, to) =>
-    setSlots((now) => {
-      const next = [...now]
-      ;[next[from], next[to]] = [next[to], next[from]]
-      return next
-    })
-  const put = (at, id) => setSlots((now) => now.map((each, i) => (i === at ? id : each)))
+  const commit = (next) => runner.run(() => actions.saveLoadout({ skills: next, thresholds: savedThresholds }), () => t('game.loadout.saved'))
+  const move = (from, to) => {
+    const next = [...slots]
+    ;[next[from], next[to]] = [next[to], next[from]]
+    commit(next)
+  }
+  const put = (at, id) => commit(slots.map((each, i) => (i === at ? id : each)))
   const save = () => runner.run(() => actions.saveLoadout({ skills: slots, thresholds }), () => t('game.loadout.saved'))
 
   return (
@@ -80,13 +81,13 @@ function SkillsBody({ view, actions, runner }) {
               <span className={`min-w-0 flex-1 ${id ? 'text-white' : 'text-[#7d8196]'}`}>{id ? skillName(id) : t('game.loadout.empty')}</span>
               {id && (
                 <span className="flex gap-1">
-                  <SlotButton label={t('game.loadout.up', { skill: skillName(id) })} hidden={i === 0} onClick={() => move(i, i - 1)}>
+                  <SlotButton label={t('game.loadout.up', { skill: skillName(id) })} busy={runner.busy} hidden={i === 0} onClick={() => move(i, i - 1)}>
                     ↑
                   </SlotButton>
-                  <SlotButton label={t('game.loadout.down', { skill: skillName(id) })} hidden={i === LOADOUT_SIZE - 1} onClick={() => move(i, i + 1)}>
+                  <SlotButton label={t('game.loadout.down', { skill: skillName(id) })} busy={runner.busy} hidden={i === LOADOUT_SIZE - 1} onClick={() => move(i, i + 1)}>
                     ↓
                   </SlotButton>
-                  <SlotButton label={t('game.loadout.remove', { skill: skillName(id) })} onClick={() => put(i, null)}>
+                  <SlotButton label={t('game.loadout.remove', { skill: skillName(id) })} busy={runner.busy} onClick={() => put(i, null)}>
                     ×
                   </SlotButton>
                 </span>
@@ -112,10 +113,18 @@ function SkillsBody({ view, actions, runner }) {
 }
 
 // A loadout move. hidden keeps the row aligned when the move has nowhere to go.
-function SlotButton({ label, hidden = false, onClick, children }) {
+// busy: a save is on its way; the next change waits for it, so two quick clicks never undo each other.
+function SlotButton({ label, hidden = false, busy = false, onClick, children }) {
   if (hidden) return <span className="inline-block size-11" />
   return (
-    <Frame as="button" type="button" tone="raised" onClick={onClick} className="size-11 cursor-pointer text-[13px] leading-none text-[#e9e4ff] hover:text-white">
+    <Frame
+      as="button"
+      type="button"
+      tone="raised"
+      onClick={onClick}
+      disabled={busy}
+      className="size-11 cursor-pointer text-[13px] leading-none text-[#e9e4ff] hover:text-white disabled:cursor-wait disabled:opacity-60"
+    >
       <span aria-hidden="true">{children}</span>
       <span className="sr-only">{label}</span>
     </Frame>
@@ -202,7 +211,7 @@ function SkillRow({ def, level, slot, canEquip, view, actions, runner, text, onE
             {slot >= 0 ? (
               <small className="self-center text-[#6fe39a]">{t('game.skills.inSlot', { slot: slot + 1 })}</small>
             ) : (
-              <ActionButton why={canEquip ? null : t('game.why.loadoutFull', { count: LOADOUT_SIZE })} onClick={onEquip}>
+              <ActionButton busy={runner.busy} why={canEquip ? null : t('game.why.loadoutFull', { count: LOADOUT_SIZE })} onClick={onEquip}>
                 {named(t('game.loadout.add'))}
               </ActionButton>
             )}
