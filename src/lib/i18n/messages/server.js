@@ -260,6 +260,10 @@ const en = {
   'server.gameBadLoadout': 'Pick skills your hero has, each one once.',
   'server.gameMaxLevel': 'This is already at its max level.',
   'server.gameTalent': "You can't take that talent.",
+  'server.gameSoldOut': "That piece isn't in the merchant's stock.",
+  'server.gameQuestNotDone': "This quest isn't done yet.",
+  'server.gameQuestTaken': 'You already collected this quest.',
+  'server.gameCombine': 'Pick 3 gems of the same kind and tier.',
   'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
 
   // Community events.
@@ -550,6 +554,10 @@ const ptBR = {
   'server.gameBadLoadout': 'Escolha habilidades que seu herói tem, cada uma uma vez só.',
   'server.gameMaxLevel': 'Isso já está no nível máximo.',
   'server.gameTalent': 'Você não pode pegar esse talento.',
+  'server.gameSoldOut': 'Essa peça não está no estoque do mercador.',
+  'server.gameQuestNotDone': 'Essa missão ainda não foi cumprida.',
+  'server.gameQuestTaken': 'Você já resgatou a recompensa dessa missão.',
+  'server.gameCombine': 'Escolha 3 gemas do mesmo tipo e nível.',
   'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',

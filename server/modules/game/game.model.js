@@ -5,6 +5,7 @@ import { socketedSupports } from '../../../shared/game/talents.js'
 import { HUNT_WORLDS, zoneState } from '../../../shared/game/zones.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { correctToday, studyMultiplier } from '../../../shared/game/xp.js'
+import { npcView } from './game.npc-view.js'
 
 // The message texts are part of the API: the client translates them by exact text
 // (src/lib/i18n/messages/server.js).
@@ -24,6 +25,10 @@ export const MESSAGES = {
   badLoadout: 'Pick skills your hero has, each one once.',
   maxLevel: 'This is already at its max level.',
   talent: "You can't take that talent.",
+  soldOut: "That piece isn't in the merchant's stock.",
+  questNotDone: "This quest isn't done yet.",
+  questTaken: 'You already collected this quest.',
+  combine: 'Pick 3 gems of the same kind and tier.',
 }
 
 // A new player's hero. Only the server writes it: the client sends intents, never results.
@@ -48,6 +53,11 @@ export const newHero = () => ({
   lookSet: false, // true once the player has picked a look (PUT /game/look)
   claimed: {}, // per day, as pendingStudy reads it
   lastAway: null,
+  // Fase 3, the NPCs: elixirs { [type]: { startedAt, expiresAt } } (shared/game/elixirs.js), the day's
+  // market { day, level, rerolls, bought } (shop.js) and quests { day, level, kills, bosses, taken } (quests.js).
+  elixirs: {},
+  market: null,
+  quests: null,
 })
 
 // A saved hero with any field added after it was saved filled in from newHero. The look is always
@@ -94,8 +104,9 @@ function publicHero(hero) {
   return { ...rest, hunt: publicHunt }
 }
 
-// ctx: { fuel: { ledger }, today, huntPreview }. The hero's xp is already seeded (the service does it).
-export function toView(hero, { fuel, today, huntPreview = null }) {
+// ctx: { fuel: { ledger }, today, huntPreview, userId, multiplier }. The hero's xp is already seeded (the
+// service does it). npc: the merchant, alchemist, jeweler and quest board (game.npc-view.js).
+export function toView(hero, { fuel, today, huntPreview = null, userId, multiplier = 1 }) {
   const levelInfo = levelOf(hero)
   const level = levelInfo.level
   const stats = statsOf(hero, level)
@@ -128,5 +139,6 @@ export function toView(hero, { fuel, today, huntPreview = null }) {
       branch: { ...fuel.ledger.branch },
     },
     huntPreview,
+    npc: npcView(hero, { userId, today, level, ledger: fuel.ledger, multiplier }),
   }
 }
