@@ -35,8 +35,8 @@ describe('tuneSkill: passives', () => {
     expect(tune('raio', ['breadthFirst']).targets).toBe(5)
   })
 
-  it('divideConquer: chama throws a second patch; fork: veneno spits a second line', () => {
-    expect(tune('chama', ['divideConquer']).extra).toBe(1)
+  it('parallelFire: chama throws a second patch; fork: veneno spits a second line', () => {
+    expect(tune('chama', ['parallelFire']).extra).toBe(1)
     expect(tune('veneno', ['fork']).extra).toBe(1)
     expect(tune('golpe', ['fork']).extra).toBe(0)
   })
@@ -70,8 +70,8 @@ describe('tuneSkill: passives', () => {
     expect(tune('chama', ['critBlast']).blast).toBeUndefined()
   })
 
-  it('tryCatch: barreira reflects 40% of what it absorbs; garbageCollector: cura heals 4%/s for 5 s', () => {
-    expect(tune('barreira', ['tryCatch']).reflect).toBe(0.4)
+  it('rethrow: barreira reflects 40% of what it absorbs; garbageCollector: cura heals 4%/s for 5 s', () => {
+    expect(tune('barreira', ['rethrow']).reflect).toBe(0.4)
     expect(tune('cura', ['garbageCollector']).hot).toEqual({ pct: 0.04, ms: 5000 })
   })
 

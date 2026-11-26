@@ -72,10 +72,10 @@ const PASSIVE_AT = {
   'logica-f5-3': 'quickCache',
   'logica-f6-3': 'globalScope',
   'sintaxe-f1-3': 'garbageCollector',
-  'sintaxe-f4-3': 'tryCatch',
+  'sintaxe-f4-3': 'rethrow',
   'sintaxe-f5-3': 'endlessWinter',
   'algoritmos-f1-2': 'breadthFirst',
-  'algoritmos-f3-4': 'divideConquer',
+  'algoritmos-f3-4': 'parallelFire',
   'algoritmos-f5-3': 'fork',
   'algoritmos-f6-3': 'memoryLeak',
 }

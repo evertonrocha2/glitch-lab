@@ -99,3 +99,15 @@ it('says where support gems come from when the bag has none', () => {
   fireEvent.click(nodeButton(/^Socket \(Logic socket, side path, 3 steps past Root\), taken/))
   expect(screen.getByText("You have no support gems yet. They drop from hunts (rarely) and from every boss's first win.")).toBeInTheDocument()
 })
+
+it('gives every skill passive and support gem a name no other talent or skill has, in both languages', async () => {
+  const { MESSAGES } = await import('../../../lib/i18n/catalog.js')
+  for (const locale of ['en', 'pt-BR']) {
+    const all = MESSAGES[locale]
+    const taken = Object.entries(all).filter(([key]) => /^game\.(talent|skill)\./.test(key)).map(([, value]) => value)
+    const mine = Object.entries(all).filter(([key]) => /^game\.(passive|support)\./.test(key)).map(([, value]) => value)
+    expect(mine).toHaveLength(20)
+    for (const name of mine) expect(taken, `${locale}: ${name}`).not.toContain(name)
+    expect(new Set(mine).size).toBe(mine.length)
+  }
+})

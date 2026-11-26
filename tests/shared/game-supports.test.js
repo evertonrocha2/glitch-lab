@@ -77,11 +77,11 @@ describe('balance: skill passives and supports', () => {
     },
     'z2 L12 4 skills, more areas, lines and jumps': {
       zone: 'z2', level: 12, skills: ['golpe', 'raio', 'chama', 'veneno'],
-      effects: ['golpeTwice', 'breadthFirst', 'divideConquer', 'fork', 'globalScope'], supports: ['projeteis', 'encadear', 'areaAmpla', 'fogo'],
+      effects: ['golpeTwice', 'breadthFirst', 'parallelFire', 'fork', 'globalScope'], supports: ['projeteis', 'encadear', 'areaAmpla', 'fogo'],
     },
     'z3 L18 nevasca kit, wider and faster': {
       zone: 'z3', level: 18, skills: ['nevasca', 'raio', 'chama', 'cura'],
-      effects: ['endlessWinter', 'breadthFirst', 'divideConquer', 'quickCache', 'memoryLeak'], supports: ['rapido', 'concentrado', 'fogo', 'encadear'],
+      effects: ['endlessWinter', 'breadthFirst', 'parallelFire', 'quickCache', 'memoryLeak'], supports: ['rapido', 'concentrado', 'fogo', 'encadear'],
     },
   }
   const SEEDS = 8
