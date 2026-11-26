@@ -28,14 +28,15 @@ uniform float u_scroll;
 // One aurora curtain: a bright lower edge that wanders, fading upward in vertical rays.
 vec3 curtain(vec2 uv, float t, float fi, vec3 edgeCol, vec3 topCol){
   float x = uv.x * (1.25 + .35*fi) + fi*2.31 + (u_pointer.x - .5)*.35;
-  float edge = .66 + .085*fi
-    + .055*sin(x*2.2 + t*.55 + fi*1.9)
+  // A diagonal sweep: high over the copy on the left, lower behind the hero card on the right.
+  float edge = .80 + .07*fi - .16*uv.x
+    + .05*sin(x*2.2 + t*.55 + fi*1.9)
     + .09*(fbm3(vec2(x*1.15, t*.11 + fi*4.)) - .5)
     + u_scroll*.12;
   float d = uv.y - edge;
-  float body = smoothstep(-.018, .0, d) * exp(-max(d, 0.) * (6.5 - fi*1.6));
-  float rays = mix(.45, 1., noise(vec2(x*26., t*.35 + fi*7.)));
-  rays *= mix(.7, 1., noise(vec2(x*7., t*.2 - fi)));
+  float body = smoothstep(-.014, .0, d) * exp(-max(d, 0.) * (10. - fi*2.2));
+  float rays = mix(.25, 1., noise(vec2(x*30., t*.35 + fi*7.)));
+  rays *= mix(.55, 1., noise(vec2(x*8., t*.2 - fi)));
   float sway = .55 + .45*sin(x*1.6 - t*.8 + fi*2.4);
   vec3 col = mix(edgeCol, topCol, smoothstep(0., .16, d));
   return col * body * rays * sway;
@@ -73,15 +74,15 @@ void main(){
   col += vec3(.62, .34, .08) * warm * (.35 + .65*smoothstep(.3, .8, f)) * .55;
   col = mix(col, col*1.25 + vec3(.02, .0, .05), smoothstep(.5, .9, f) * pool);
 
-  // Aurora across the top: three curtains, mana into lilac, a teal one deepest.
+  // Aurora across the top: three curtains, teal into mana, lilac into magenta, a faint gold one.
   float ta = u_time * .6;
-  vec3 aur = curtain(uv, ta, 0., vec3(.35, .95, .85), vec3(.30, .45, 1.0)) * .55;
-  aur += curtain(uv, ta*1.13, 1., vec3(.55, .70, 1.0), vec3(.62, .38, 1.0)) * .75;
-  aur += curtain(uv, ta*.87, 2., vec3(.95, .78, 1.0), vec3(.85, .50, .95)) * .55;
-  // Fade the ribbons out toward the sides and keep them off the lower half.
-  aur *= smoothstep(.0, .25, uv.x) * smoothstep(1., .7, uv.x) * .85 + .15;
-  aur *= smoothstep(.45, .7, uv.y);
-  col += aur * (.75 + .25*f);
+  vec3 aur = curtain(uv, ta, 0., vec3(.20, 1.0, .74), vec3(.18, .42, 1.0)) * 1.2;
+  aur += curtain(uv, ta*1.13, 1., vec3(.72, .52, 1.0), vec3(.80, .26, .90)) * 1.35;
+  aur += curtain(uv, ta*.87, 2., vec3(1.0, .78, .40), vec3(.95, .38, .55)) * .7;
+  // Softer at the far edges, and never down in the lower half.
+  aur *= smoothstep(-.1, .3, uv.x) * smoothstep(1.15, .75, uv.x) * .8 + .2;
+  aur *= smoothstep(.42, .66, uv.y);
+  col += aur * (.8 + .4*f);
 
   // Vignette.
   col *= mix(.55, 1., smoothstep(1.25, .35, length((uv-.5)*vec2(1.2, 1.))));
