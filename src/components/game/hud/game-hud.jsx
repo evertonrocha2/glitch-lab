@@ -113,7 +113,9 @@ function ElixirBuffs({ elixirs }) {
           <li key={type} className="flex">
             <Frame role="note" aria-label={label} title={label} tone="raised" className="pointer-events-auto flex items-center gap-1 px-1.5 py-1 font-label text-[10px] normal-case text-[#cfe8c9]">
               <GameIcon name={`elixir-${type}`} size={1} />
-              <span aria-hidden="true">+{pct}%</span>
+              <span aria-hidden="true" className="max-sm:hidden">
+                +{pct}%
+              </span>
             </Frame>
           </li>
         )
@@ -230,7 +232,9 @@ export default function GameHud({
             )}
           </div>
         </Frame>
-        <div className={`flex-wrap items-start gap-1 ${boss ? 'hidden sm:flex' : 'flex'}`}>
+        {/* The buffs keep to the unit frame's width, clear of the difficulty chips on the right; on a
+            phone the elixirs show their icon only. */}
+        <div className={`max-w-[172px] flex-wrap sm:max-w-[214px] items-start gap-1 ${boss ? 'hidden sm:flex' : 'flex'}`}>
           <StudyBuff multiplier={study?.xpMultiplier ?? 1} correct={study?.today?.correct ?? 0} className="flex" />
           <ElixirBuffs elixirs={hero.elixirs} />
         </div>

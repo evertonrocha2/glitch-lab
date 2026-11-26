@@ -87,10 +87,7 @@ export default function QuestsView({ view, actions, runner, text, onTab, studyHr
                   <span className="inline-flex items-center gap-1">
                     <GameIcon name="coins" size={1} label={t('game.cur.gold')} />+{text.number(quest.reward.gold)}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <GameIcon name="xp" size={1} />
-                    {t('gameNpc.quest.xp', { xp: text.number(quest.reward.xp) })}
-                  </span>
+                  <b className="font-pixel text-[10px] font-normal text-[#9ec3ea]">{t('gameNpc.quest.xp', { xp: text.number(quest.reward.xp) })}</b>
                   <span className="inline-flex items-center gap-1">
                     <GameIcon name="fragment" size={1} label={t('game.cur.fragments')} />+{text.number(quest.reward.fragments)}
                   </span>

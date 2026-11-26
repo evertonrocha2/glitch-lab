@@ -101,7 +101,9 @@ function NpcScreen({ id, t, onBack, children }) {
     <section aria-labelledby={headId} className="flex flex-col gap-2.5">
       <span>
         <ActionButton onClick={onBack}>
-          <span aria-hidden="true">‹ </span>
+          <span aria-hidden="true" className="mr-1.5">
+            ‹
+          </span>
           {t('gameNpc.back')}
         </ActionButton>
       </span>
