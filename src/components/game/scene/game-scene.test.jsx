@@ -435,3 +435,15 @@ it('hands the walker the idle monsters as lures, so its strolls between packs he
   expect(last.lures.length).toBeGreaterThan(0)
   for (const m of last.lures) expect(Number.isFinite(m.x) && Number.isFinite(m.y)).toBe(true)
 })
+
+it('skips drawing idle monsters the camera cannot see', () => {
+  const all = dimDraws()
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} />)
+  const everywhere = all.count
+  vi.restoreAllMocks()
+  const some = dimDraws()
+  // A 10x8 window in the map's top left corner: few monsters stand there.
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} viewOf={() => ({ x: 0, y: 0, w: 10, h: 8 })} />)
+  expect(everywhere).toBeGreaterThan(0)
+  expect(some.count).toBeLessThan(everywhere)
+})

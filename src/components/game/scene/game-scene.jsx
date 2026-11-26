@@ -17,6 +17,9 @@ import { mapLights, paintAnimated, paintBase, readMap, TS } from './tiles.js'
 import { drawNpc, nameTag, npcLights, roadSign } from './town.js'
 import { drawAilment, drawFx, fxLight, fxProgress } from './vfx.js'
 
+// Whether a monster on (x, y) tiles shows in the view, sprite overhang included.
+const inView = (v, m) => m.x >= v.x - 2 && m.x < v.x + v.w + 2 && m.y >= v.y - 1 && m.y < v.y + v.h + 3
+
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
 
 // The zone's number from its id (z1, z2, z3), 1 when the rect is no zone of the world.
@@ -277,6 +280,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       const pos = w ? w.pos : spot.hero
       heroPx.x = Math.round(pos.x * TS + 8)
       heroPx.y = Math.round(pos.y * TS + 15)
+      // What the camera shows (null: the whole canvas), for walk-ins, refills and skipping unseen monsters.
+      const view = live.current.viewOf?.(pos) ?? null
       if (report && (pos.x !== cameraX || pos.y !== cameraY)) {
         cameraX = pos.x
         cameraY = pos.y
@@ -294,7 +299,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           fight.key = key
           fight.anchor.x = tile.x
           fight.anchor.y = tile.y
-          const made = claimFight({ ambient, pack: state.run.pack, world, rect, tile, spread: SPREAD, view: live.current.viewOf?.(pos) ?? null })
+          const made = claimFight({ ambient, pack: state.run.pack, world, rect, tile, spread: SPREAD, view })
           fight.pack = made.pack
           fight.rot = made.rot
           fight.spots = made.pack.foes.map(() => null)
@@ -332,7 +337,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           if (s && fight.state.foes[i].visible) keep(avoid.length, s.x, s.y)
         }
       }
-      ambient.update(clock, avoid, live.current.viewOf?.(pos) ?? null)
+      ambient.update(clock, avoid, view)
       const idle = ambient.monsters()
       const ms = inFight ? state.local : 0
       const shake = pack ? shakeAt(pack, ms, reduced) : null
@@ -348,7 +353,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       order.length = 0
       order.push(-1)
       for (let i = 0; i < npcs.length; i++) order.push(-2 - i)
-      for (let i = 0; i < idle.length; i++) order.push(AMBIENT + i)
+      // The canvas is the whole map under a camera crop: idle monsters off the view are not drawn.
+      for (let i = 0; i < idle.length; i++) if (!view || inView(view, idle[i])) order.push(AMBIENT + i)
       if (pack) {
         for (let i = 0; i < pack.foes.length; i++) if (fight.state.foes[i].visible && fight.spots[i]) order.push(i)
       }
