@@ -95,3 +95,46 @@ it('samples the state at a time: anim and progress, active floaters, death held'
   const dead = sample(timeline(fight([{ t: 100, who: 'enemy', type: 'death' }])), 5000)
   expect(dead.enemy).toMatchObject({ anim: 'death', p: 1 })
 })
+
+// Fase 2b packs: one foe on stage, the first still standing.
+const pack = fight([
+  { t: 0, who: 'enemy', src: 0, type: 'spawn', id: 'slime', sprite: 'slime', hp: 30, elite: true, from: { x: 4, y: 0 }, to: { x: 1.3, y: 0 }, speed: 2.5 },
+  { t: 0, who: 'enemy', src: 1, type: 'spawn', id: 'lobo', sprite: 'lobo-syntax', hp: 30, from: { x: 3.3, y: 2.3 }, to: { x: 1.07, y: 0.73 }, speed: 2.5 },
+  { t: 1100, who: 'enemy', src: 0, type: 'arrive' },
+  { t: 1200, who: 'hero', type: 'skill', skill: 'golpe', shape: 'around', element: 'physical', hits: [{ target: 0, amount: 30, crit: true }, { target: 1, amount: 11 }], amount: 41 },
+  { t: 1200, who: 'enemy', src: 0, type: 'death' },
+  { t: 2000, who: 'enemy', src: 1, type: 'hit', amount: 4 },
+  { t: 2500, who: 'hero', type: 'hit', shape: 'single', element: 'physical', target: 1, hits: [{ target: 1, amount: 19 }], amount: 19 },
+  { t: 2500, who: 'enemy', src: 1, type: 'death' },
+])
+
+it('hurts every target of a skill, each with its own number', () => {
+  const frames = timeline(pack)
+  const hurt = frames.filter((f) => f.actor === 'enemy' && f.anim === 'hurt')
+  expect(hurt.slice(0, 2).map((f) => [f.target, f.floater.text, f.floater.kind])).toEqual([[0, '30', 'crit'], [1, '11', 'skill']])
+})
+
+it('draws the first enemy still standing, and the last to fall at the end', () => {
+  const frames = timeline(pack)
+  expect(sample(frames, 500).foe).toEqual({ index: 0, sprite: 'slime', elite: true })
+  // Enemy 0 dies at 1.2 s; its fall plays out before enemy 1 takes the stage.
+  expect(sample(frames, 1400).foe.index).toBe(0)
+  expect(sample(frames, 1400).enemy.anim).toBe('death')
+  const next = sample(frames, 2200)
+  expect(next.foe).toEqual({ index: 1, sprite: 'lobo-syntax', elite: false })
+  expect(next.enemy.anim).not.toBe('death')
+  const end = sample(frames, 5000)
+  expect(end.foe.index).toBe(1)
+  expect(end.enemy).toEqual({ anim: 'death', p: 1 })
+})
+
+it('shows only the numbers of the enemy on stage', () => {
+  const frames = timeline(pack)
+  const texts = sample(frames, 1400).floaters.map((f) => f.floater.text)
+  expect(texts).toContain('30')
+  expect(texts).not.toContain('11')
+})
+
+it('a log without spawns keeps the single foe behavior', () => {
+  expect(sample(timeline(three), 1200).foe).toBeUndefined()
+})
