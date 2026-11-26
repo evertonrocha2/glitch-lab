@@ -8,7 +8,7 @@ export default {
   ideias: [
     'Tipos de direitos: civis (liberdade, propriedade), políticos (votar e ser votado) e sociais (educação, saúde, trabalho). Depois vieram os direitos coletivos, como o meio ambiente equilibrado.',
     'Declaração Universal dos Direitos Humanos (ONU, 1948): direitos para todas as pessoas, em qualquer país, criada depois dos horrores da Segunda Guerra.',
-    'Constituição de 1988, a Constituição Cidadã: ampliou os direitos sociais, criou o SUS, deu voto facultativo a analfabetos e a jovens de 16 e 17 anos e tornou o racismo crime inafiançável.',
+    'Constituição de 1988, a Constituição Cidadã: ampliou os direitos sociais, criou o SUS, garantiu voto facultativo a analfabetos e a jovens de 16 e 17 anos e tornou o racismo crime inafiançável.',
     'Lei Maria da Penha (2006): combate a violência doméstica e familiar contra a mulher em cinco formas: física, psicológica, sexual, patrimonial e moral.',
     'Outras leis de proteção: ECA (1990), Estatuto do Idoso (2003), Estatuto da Igualdade Racial (2010), Lei de Cotas (2012) e Lei Brasileira de Inclusão (2015).',
     'Estado laico: o Estado não tem religião oficial e deve garantir a liberdade de todas as crenças, inclusive as de matriz africana.',
