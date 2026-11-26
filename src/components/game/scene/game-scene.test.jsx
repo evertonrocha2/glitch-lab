@@ -394,3 +394,27 @@ it('draws idle monsters a little dimmer in every hunt region, and none in the to
   render(<GameScene world={WORLDS.find((world) => world.kind === 'town')} zoneRect={null} look={look} />)
   expect(town.count).toBe(0)
 })
+
+it('makes the pack of the idle monsters nearest the hero: they stop being drawn dim when the fight starts', () => {
+  reduce = true
+  const seen = dimDraws()
+  let tick = null
+  vi.stubGlobal('requestAnimationFrame', vi.fn((cb) => {
+    tick = cb
+    return 1
+  }))
+  const spawn = (src, to) => ({ t: 0, who: 'enemy', src, type: 'spawn', id: 'slime', sprite: 'slime', hp: 50, from: { x: 4, y: 0 }, to, speed: 2.5 })
+  const log = [spawn(0, { x: 1.3, y: 0 }), spawn(1, { x: 1.1, y: 0.7 }), { t: 1100, who: 'enemy', src: 0, type: 'arrive' }, { t: 1100, who: 'enemy', src: 1, type: 'arrive' }]
+  const fights = [{ won: true, reason: 'killed', ms: 3000, heroHpLeft: 5, potionsUsed: { hp: 0, mp: 0 }, log }]
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} playback={{ fights, loop: true, speed: 1 }} />)
+  const start = performance.now()
+  seen.count = 0
+  tick(start + 400)
+  const walking = seen.count
+  seen.count = 0
+  tick(start + 900 + 200)
+  const fighting = seen.count
+  expect(walking).toBeGreaterThan(0)
+  // Two monsters left the idle set to become the pack (drawn at full alpha now).
+  expect(fighting).toBeLessThan(walking)
+})

@@ -7,9 +7,10 @@ import { heroSprite } from '../hero/hero-cache.js'
 import { useReducedMotion } from '../use-reduced-motion.js'
 import { drawFoe, drawHealthBar, enemyLight, foeColors, foeHeight, heroLight } from './actors.js'
 import { createAmbient } from './ambient.js'
+import { claimFight } from './claim.js'
 import { activeFloaters, buildPack, packAt, shakeAt, stackFloaters } from './pack.js'
 import { paintLight } from './light.js'
-import { nudge, orient, rotate } from './placement.js'
+import { nudge, rotate } from './placement.js'
 import { BOSS_SPEED, duration, HUNT_SPEED, WALK_MS } from './playback.js'
 import { ellipse, SHADOW } from './pixels.js'
 import { mapLights, paintAnimated, paintBase, readMap, TS } from './tiles.js'
@@ -134,9 +135,11 @@ const AMBIENT = 10000
 //   and each pack spawns around wherever the hero stands. enemy: { sprite, elite } for a log without spawns.
 //   walker: a hunt-walker.js walker (the player walks the hero; it strolls on its own between packs).
 //   onCamera(pos): the hero's drawn spot in tiles, each time it moves, for a camera to follow.
+//   viewOf(pos): the camera's window in tiles { x, y, w, h } for the hero at pos; idle monsters taken by
+//   a pack come back only outside it (without it they fade back in anywhere).
 //   level: the hero's level; when it goes up a golden column and "Level X!" play over the hero.
 //   zoneName: overrides the label.
-export default function GameScene({ world, zoneRect, look, gear, playback, enemy, walker, onCamera, level, zoneName, onReady }) {
+export default function GameScene({ world, zoneRect, look, gear, playback, enemy, walker, onCamera, viewOf, level, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
   const reduced = useReducedMotion()
@@ -147,7 +150,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
   const live = useRef({})
   const tr = useRef(t)
   tr.current = t
-  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level, zoneRect }
+  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, viewOf, level, zoneRect }
   const ready = useRef(false)
   const levelRef = useRef({ from: null, at: -1, n: 0 })
   // Kept across effect runs of the same region, so starting a hunt never snaps them back.
@@ -200,8 +203,9 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       return stateAt(plan, (time - startedAt) * 1000, Boolean(pb.loop), now)
     }
 
-    // The fight on screen: where its pack is anchored and how it is turned, each enemy's drawn spot.
-    const fight = { key: null, anchor: { x: 0, y: 0 }, rot: null, spots: [], state: undefined }
+    // The fight on screen: its pack (walking in from the idle monsters it claimed), where it is
+    // anchored and how it is turned, each enemy's drawn spot.
+    const fight = { key: null, pack: null, anchor: { x: 0, y: 0 }, rot: null, spots: [], state: undefined }
     const rel = { x: 0, y: 0 }
     const target = { x: 0, y: 0 }
     const heroPx = { x: 0, y: 0 }
@@ -278,20 +282,22 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
         report(pos)
       }
 
-      // A new fight: the pack comes in around the hero's tile, turned to fit the ground there.
+      // A new fight: the idle monsters nearest the hero become the pack and walk in from where they
+      // stood (the rest come in as logged), around the hero's tile, turned to fit the ground there.
       let pack = null
       if (inFight) {
-        pack = state.run.pack
         const key = `${state.cycle}:${state.index}`
         if (fight.key !== key) {
           const tile = w ? w.tile : spot.hero
           fight.key = key
           fight.anchor.x = tile.x
           fight.anchor.y = tile.y
-          const wide = (p) => ({ x: p.x * SPREAD, y: p.y * SPREAD })
-          fight.rot = orient(world, rect, tile, pack.foes.map((f) => ({ from: wide(f.from), to: wide(f.to) })))
-          fight.spots = pack.foes.map(() => null)
+          const made = claimFight({ ambient, pack: state.run.pack, world, rect, tile, spread: SPREAD })
+          fight.pack = made.pack
+          fight.rot = made.rot
+          fight.spots = made.pack.foes.map(() => null)
         }
+        pack = fight.pack
         // The pack trails a hero who walks away, and settles around the new spot.
         const step = reduced ? Infinity : FOLLOW * dt
         fight.anchor.x += Math.sign(pos.x - fight.anchor.x) * Math.min(step, Math.abs(pos.x - fight.anchor.x))
@@ -324,7 +330,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           if (s && fight.state.foes[i].visible) keep(avoid.length, s.x, s.y)
         }
       }
-      ambient.update(clock, avoid)
+      ambient.update(clock, avoid, live.current.viewOf?.(pos) ?? null)
       const idle = ambient.monsters()
       const ms = inFight ? state.local : 0
       const shake = pack ? shakeAt(pack, ms, reduced) : null
@@ -428,7 +434,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       function drawIdle(j) {
         const m = idle[j]
         ctx.globalAlpha = AMBIENT_ALPHA * m.fade
-        drawFoe(ctx, Math.round(m.x * TS + 8), Math.round(m.y * TS + 15) - 1, { sprite: m.enemy, anim: m.anim, t: te + j * 0.53, facing: m.facing })
+        drawFoe(ctx, Math.round(m.x * TS + 8), Math.round(m.y * TS + 15) - 1, { sprite: m.sprite, anim: m.anim, t: te + j * 0.53, facing: m.facing })
         ctx.globalAlpha = 1
       }
 
@@ -505,9 +511,10 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
         const s = fight.spots[i]
         // Enemies face the hero.
         const facing = s.x < pos.x ? 1 : -1
-        // An enemy fades in over its first moments (it steps out of the spawn portal).
-        const fadeIn = reduced ? 1 : Math.min(1, f.age / 200)
-        ctx.globalAlpha = fadeIn
+        // An enemy fades in over its first moments (it steps out of the spawn portal); one claimed
+        // from the idle monsters was already there and only brightens from their dimmer alpha.
+        const grow = reduced ? 1 : Math.min(1, f.age / 200)
+        ctx.globalAlpha = pack.foes[i].claimed ? AMBIENT_ALPHA + (1 - AMBIENT_ALPHA) * grow : grow
         drawFoe(ctx, rel.x, rel.y - 1, { sprite: f.sprite, anim: f.anim, p: f.p, t: te + i * 0.37, elite: f.elite, facing, slowed: f.slowed })
         ctx.globalAlpha = 1
         if (f.burning && f.anim !== 'death') drawAilment(ctx, rel.x, rel.y, f.burning, te, reduced, i)
