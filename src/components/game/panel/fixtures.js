@@ -79,7 +79,7 @@ const openZones = () => [
   { id: 'z3', unlocked: true, beaten: false, minLevel: 14, bossLevel: 14 },
 ]
 
-export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, legendarySword, plainRing, gem], gold = 500, scrap = 40, fragments = 30, chests = [], potions = { hp: 3, mp: 1 }, hunt = null, level = 12, free = 2, correct = 14, toNextPoint = 6, talents = ['root'], skills = { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] }, thresholds = { hp: 0.4, mp: 0.25 }, branch = { logica: 0, sintaxe: 0, algoritmos: 0 } } = {}) {
+export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, legendarySword, plainRing, gem], gold = 500, scrap = 40, fragments = 30, chests = [], potions = { hp: 3, mp: 1 }, hunt = null, level = 12, free = 2, correct = 14, toNextPoint = 6, talents = ['root'], skills = { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] }, thresholds = { hp: 0.4, mp: 0.25 }, branch = { logica: 0, sintaxe: 0, algoritmos: 0 }, treeSockets = {} } = {}) {
   const spent = talents.filter((id) => id !== 'root').length
   const stats = heroStats({ level, items: items.filter((item) => item.equipped), talents })
   return {
@@ -93,6 +93,7 @@ export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, l
       potions,
       thresholds,
       talents,
+      treeSockets,
       skills,
       items,
       hunt,
