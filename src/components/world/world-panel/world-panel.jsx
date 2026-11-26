@@ -8,7 +8,7 @@ import Frame, { Chip, SectionTitle } from '../../game/ui/frame.jsx'
 import { isEnemWorld, showsEnem } from '../enem-worlds.js'
 import { leftText, progressText } from '../requirement-text.js'
 
-// Beside the map, in the game kit: the lock closest to opening (with how far along it is), then every
+// Beside the map, in the game kit: the locked world closest to opening (with how far along it is), then every
 // world with what it still asks for. state is GET /api/world; currentWorld is where the hero stands.
 // Outside pt-BR the ENEM worlds are left out, from the list and from the next goal.
 export default function WorldPanel({ state: all, currentWorld }) {
@@ -18,7 +18,8 @@ export default function WorldPanel({ state: all, currentWorld }) {
   const state = showsEnem(locale) ? all : { ...all, worlds: all.worlds.filter((world) => !isEnemWorld(world.id)) }
   const goal = nextGoal(state)
   const nameOf = (id) => t(`world.name.${id}`)
-  const target = goal && (goal.zoneId ? t('world.zone', { world: nameOf(goal.worldId), n: goal.zoneId.slice(1) }) : nameOf(goal.worldId))
+  // Zones open with their world, so the goal is always a world.
+  const target = goal && nameOf(goal.worldId)
 
   return (
     <div className="flex min-w-0 flex-col gap-3 p-1 lg:p-2">

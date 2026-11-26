@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { unlocks } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
-import { approach, cameraOn, cropFor, fitCrop, heroPose, lockedPortals, lockedRects, sideOf, tileAtPoint } from './hub-view.js'
+import * as hubView from './hub-view.js'
+import { approach, cameraOn, cropFor, fitCrop, heroPose, lockedPortals, sideOf, tileAtPoint } from './hub-view.js'
 
 const lab = worldById('laboratorio') // 15x10
 const cave = worldById('caverna-sql') // 32x20
@@ -103,10 +104,8 @@ it('moves a point toward a target by at most a step, landing on it', () => {
   expect(approach({ x: 4, y: 10 }, { x: 4, y: 9 }, 2)).toEqual({ x: 4, y: 9 })
 })
 
-it('finds the rects of the zones still locked', () => {
-  const open = new Set(['z2'])
-  expect(lockedRects(cave, open)).toEqual([{ x: 22, y: 0, w: 10, h: 20 }])
-  expect(lockedRects(lab, new Set())).toEqual([])
+it('has no locked zone rects to fog: zones open with their world', () => {
+  expect(hubView.lockedRects).toBeUndefined()
 })
 
 it('finds the portals that lead to a world still locked', () => {
