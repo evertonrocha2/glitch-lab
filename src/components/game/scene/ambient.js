@@ -41,6 +41,11 @@ const STEP_MS = 700
 const FADE_MS = 400
 // How often an empty slot with no tile to come back on looks again.
 const RETRY_MS = 500
+// With its whole zone in view, a slot comes back from cover instead: the zone tile farthest from the
+// hero next to a solid tile or the zone's edge, at least COVER_MIN tiles (Chebyshev) from the hero,
+// fading in over COVER_FADE_MS as if stepping out from behind the trees.
+export const COVER_MIN = 8
+export const COVER_FADE_MS = 600
 // A slot comes back on one of this many free off-view tiles nearest the hero (just past the edge of
 // the view), so the hero's strolls (hunt-walker.js) reach it soon.
 const REFILL_NEAR = 4
@@ -153,9 +158,30 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
     return null
   }
 
+  // The cover tile a slot steps out from when no tile of its zone is off the view (see COVER_MIN).
+  function coverTile(m, avoid) {
+    const hero = avoid[0]
+    if (!hero) return null
+    let best = null
+    let bestD = -1
+    for (const t of m.area.floor) {
+      if (taken.has(keyOf(t.x, t.y)) || !clear(avoid, t.x, t.y)) continue
+      if (Math.max(Math.abs(t.x - hero.x), Math.abs(t.y - hero.y)) < COVER_MIN) continue
+      if (STEPS.every((s) => m.area.keys.has(keyOf(t.x + s.x, t.y + s.y)))) continue
+      const d = (t.x - hero.x) ** 2 + (t.y - hero.y) ** 2
+      if (d > bestD) {
+        best = t
+        bestD = d
+      }
+    }
+    return best
+  }
+
   // A claimed slot comes back as a new monster of its zone.
   function refill(m, now, avoid, view) {
-    const t = refillTile(m, avoid, view)
+    let t = refillTile(m, avoid, view)
+    const cover = !t && Boolean(view)
+    if (cover) t = coverTile(m, avoid)
     if (!t) {
       m.refillAt = now + RETRY_MS
       return false
@@ -166,8 +192,10 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
     m.ty = m.fy = t.y
     m.moveAt = -1
     m.nextAt = now + wait()
-    // Off screen it simply is there; with no view to hide behind it fades in.
-    m.bornAt = view || reducedMotion ? -Infinity : now
+    // Off screen it simply is there; from cover it fades in (opacity only, so under reduced motion
+    // too); with no view to hide behind it fades in.
+    m.bornAt = cover ? now : view || reducedMotion ? -Infinity : now
+    m.fadeMs = cover ? COVER_FADE_MS : FADE_MS
     const enemy = roll.pick(m.area.enemies)
     Object.assign(m.view, { enemy, sprite: spriteOf(enemy), x: t.x, y: t.y, anim: 'idle', fade: m.bornAt === -Infinity ? 1 : 0 })
     return true
@@ -234,7 +262,7 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
         v.y = m.ty
         v.anim = 'idle'
       }
-      v.fade = m.bornAt === -Infinity ? 1 : Math.min(1, Math.max(0, (now - m.bornAt) / FADE_MS))
+      v.fade = m.bornAt === -Infinity ? 1 : Math.min(1, Math.max(0, (now - m.bornAt) / (m.fadeMs ?? FADE_MS)))
     }
     if (changed) reshow()
   }

@@ -3,7 +3,7 @@ import { ZONES } from '../../../../shared/game/zones.js'
 import { canEnter, zoneAt } from '../../../../shared/world/map.js'
 import { WORLDS } from '../../../../shared/world/worlds.js'
 import { ENEMIES } from '../../../../shared/game/enemies.js'
-import { AMBIENT_CAP, AMBIENT_PER_ZONE, CLAIM_RANGE, createAmbient, KEEP_AWAY, NOTICE, REFILL_MS, VIEW_MARGIN } from './ambient.js'
+import { AMBIENT_CAP, AMBIENT_PER_ZONE, CLAIM_RANGE, COVER_FADE_MS, COVER_MIN, createAmbient, KEEP_AWAY, NOTICE, REFILL_MS, VIEW_MARGIN } from './ambient.js'
 
 const REGIONS = WORLDS.filter((world) => ZONES[world.id])
 const TOWN = WORLDS.find((world) => world.kind === 'town')
@@ -272,18 +272,51 @@ describe('claimPack', () => {
     expect(Math.abs(back.y - HERO.y)).toBeLessThanOrEqual(3)
   })
 
-  it('waits while the whole zone is in view, and refills once the view moves away', () => {
+  it('with the whole zone in view, steps out from cover: the farthest tile from the hero by a wall or the zone edge, fading in', () => {
+    expect(COVER_FADE_MS).toBe(600)
+    expect(COVER_MIN).toBe(8)
     const ambient = field()
     ambient.update(0, [])
     const count = () => ambient.monsters().filter(inZ1).length
     const full = count()
-    expect(ambient.claimPack([member('slime')], HERO)[0]).not.toBeNull()
+    const [claim] = ambient.claimPack([member('slime')], HERO)
     const all = { x: 0, y: 0, w: 15, h: 20 }
-    for (let now = 0; now <= REFILL_MS * 3; now += 100) ambient.update(now, [], all)
+    let now = 0
+    for (; now < REFILL_MS - 50; now += 50) ambient.update(now, [HERO], all)
     expect(count()).toBe(full - 1)
-    const away = { x: 0, y: 0, w: 4, h: 20 }
-    for (let now = REFILL_MS * 3; now <= REFILL_MS * 4; now += 100) ambient.update(now, [], away)
-    expect(count()).toBe(full)
+    let back = null
+    for (; now <= REFILL_MS + 600 && !back; now += 50) {
+      ambient.update(now, [HERO], all)
+      back = ambient.monsters().find((m) => m.id === claim.id) ?? null
+    }
+    expect(back).not.toBeNull()
+    // The zone's farthest corners from (7,10) are (0,0) and (14,0); both sit on the zone's edge.
+    expect(['0,0', '14,0']).toContain(`${back.x},${back.y}`)
+    expect(chebyshev(back, HERO)).toBeGreaterThanOrEqual(COVER_MIN)
+    // Fading in over about 600 ms, from nearly nothing.
+    expect(back.fade).toBeLessThan(0.2)
+    const at = now
+    for (; now <= at + 300; now += 50) ambient.update(now, [HERO], all)
+    const mid = ambient.monsters().find((m) => m.id === claim.id).fade
+    expect(mid).toBeGreaterThan(0.2)
+    expect(mid).toBeLessThan(1)
+    for (; now <= at + 700; now += 50) ambient.update(now, [HERO], all)
+    expect(ambient.monsters().find((m) => m.id === claim.id).fade).toBe(1)
+    // Then it drifts toward the hero like the others.
+    const start = dist(back, HERO)
+    for (; now <= at + 6000; now += 50) ambient.update(now, [HERO], all)
+    expect(dist(ambient.monsters().find((m) => m.id === claim.id), HERO)).toBeLessThan(start - 1)
+  })
+
+  it('never steps out from cover closer than COVER_MIN tiles to the hero: in a small zone it waits', () => {
+    const small = { id: 'small', kind: 'code', rows: Array.from({ length: 11 }, () => '.'.repeat(11)), zones: [{ id: 'z1', rect: { x: 0, y: 0, w: 11, h: 11 } }] }
+    const ambient = createAmbient({ world: small, zones: [{ id: 'z1', rect: small.zones[0].rect, enemies: ['slime'] }], seed: 's' })
+    ambient.update(0, [])
+    const full = ambient.monsters().length
+    const hero = { x: 5, y: 5 }
+    expect(ambient.claimPack([member('slime')], hero)[0]).not.toBeNull()
+    for (let now = 0; now <= REFILL_MS * 3; now += 100) ambient.update(now, [hero], { x: 0, y: 0, w: 11, h: 11 })
+    expect(ambient.monsters()).toHaveLength(full - 1)
   })
 
   it('still claims and refills under reducedMotion, and nothing walks', () => {
