@@ -36,11 +36,11 @@ describe('settleHunt', () => {
     expect(r.kills).toBe(0)
     expect(r.items).toEqual([])
   })
-  it('roughly doubles kills when elapsed doubles', () => {
+  it('roughly doubles kills when elapsed doubles (within one pack)', () => {
     const one = run({ now: HOUR }).kills
     const two = run({ now: 2 * HOUR }).kills
     expect(one).toBeGreaterThan(50)
-    expect(Math.abs(two - 2 * one)).toBeLessThanOrEqual(1)
+    expect(Math.abs(two - 2 * one)).toBeLessThanOrEqual(FOREST.z1.pack[1])
   })
   it('returns the first 3 samples and a gold payout', () => {
     const r = run()
@@ -133,19 +133,19 @@ describe('settleHunt with packs', () => {
   })
 })
 
-// Per hour before packs (the single-foe engine, measured with the same 12-seed sim), and the pin:
-// within 15% of it for the same hero. kills, gold, scrap (bag full), drops (items + gems), xp.
-// Fase 3 moved the Forest's xp per kill onto the region ladder (0.7, 1.1, 1.6 became 0.8, 1.0, 1.25):
-// the xp column is the old one times that change, everything else is as it was.
-describe('balance: the hunt economy per hour stays where it was before packs', () => {
+// Per hour at the end of fase 3 (packs of 3 to 6, measured with the same 12-seed sim), and the pin for
+// fase 4's bigger packs: gold, scrap (bag full) and drops (items + gems) within 15% of it for the same
+// hero, xp 20% to 40% over it (fase 4 made progress about 30% faster). The fase 2b pin (before packs)
+// had drifted up to 11% off by fase 3, so it moved here.
+describe('balance: the hunt economy per hour stays where fase 3 left it, with 30% more xp', () => {
   const BEFORE = {
-    'z1 L3 golpe': { zone: 'z1', level: 3, skills: ['golpe'], gold: 2694, scrap: 520, drops: 124, xp: 538 },
-    'z1 L5 golpe': { zone: 'z1', level: 5, skills: ['golpe'], gold: 3103, scrap: 584, drops: 144, xp: 619 },
-    'z1 L7 4 skills': { zone: 'z1', level: 7, skills: ['golpe', 'raio', 'chama', 'barreira'], gold: 4050, scrap: 753, drops: 187, xp: 809 },
-    'z2 L10 golpe': { zone: 'z2', level: 10, skills: ['golpe'], gold: 6280, scrap: 517, drops: 126, xp: 697 },
-    'z2 L12 4 skills': { zone: 'z2', level: 12, skills: ['golpe', 'raio', 'chama', 'veneno'], gold: 6631, scrap: 528, drops: 130, xp: 736 },
-    'z3 L16 golpe': { zone: 'z3', level: 16, skills: ['golpe'], gold: 10076, scrap: 467, drops: 114, xp: 787 },
-    'z3 L18 4 skills': { zone: 'z3', level: 18, skills: ['nevasca', 'raio', 'chama', 'cura'], gold: 14056, scrap: 671, drops: 155, xp: 1098 },
+    'z1 L3 golpe': { zone: 'z1', level: 3, skills: ['golpe'], gold: 3004, scrap: 584, drops: 135, xp: 600 },
+    'z1 L5 golpe': { zone: 'z1', level: 5, skills: ['golpe'], gold: 3225, scrap: 604, drops: 148, xp: 645 },
+    'z1 L7 4 skills': { zone: 'z1', level: 7, skills: ['golpe', 'raio', 'chama', 'barreira'], gold: 3609, scrap: 691, drops: 165, xp: 722 },
+    'z2 L10 golpe': { zone: 'z2', level: 10, skills: ['golpe'], gold: 6156, scrap: 503, drops: 120, xp: 684 },
+    'z2 L12 4 skills': { zone: 'z2', level: 12, skills: ['golpe', 'raio', 'chama', 'veneno'], gold: 7083, scrap: 566, drops: 138, xp: 787 },
+    'z3 L16 golpe': { zone: 'z3', level: 16, skills: ['golpe'], gold: 11124, scrap: 534, drops: 126, xp: 869 },
+    'z3 L18 4 skills': { zone: 'z3', level: 18, skills: ['nevasca', 'raio', 'chama', 'cura'], gold: 12551, scrap: 597, drops: 140, xp: 980 },
   }
   const SEEDS = 12
   for (const [name, row] of Object.entries(BEFORE)) {
@@ -162,8 +162,9 @@ describe('balance: the hunt economy per hour stays where it was before packs', (
       }
       for (const key of Object.keys(sum)) {
         const ratio = sum[key] / SEEDS / row[key]
-        expect(ratio, `${name} ${key}`).toBeGreaterThan(0.85)
-        expect(ratio, `${name} ${key}`).toBeLessThan(1.15)
+        const [low, high] = key === 'xp' ? [1.2, 1.4] : [0.85, 1.15]
+        expect(ratio, `${name} ${key}`).toBeGreaterThan(low)
+        expect(ratio, `${name} ${key}`).toBeLessThan(high)
       }
     })
   }

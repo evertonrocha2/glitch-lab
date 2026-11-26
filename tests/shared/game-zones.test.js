@@ -62,7 +62,7 @@ describe('zones data', () => {
     for (const world of HUNT_WORLDS) {
       for (const zone of Object.values(ZONES[world])) expect(zone.tier).toBe(worldById(world).tier)
     }
-    expect(ZONES['caverna-sql'].z1).toMatchObject({ tier: 2, minLevel: 20, xp: 1.52 })
+    expect(ZONES['caverna-sql'].z1).toMatchObject({ tier: 2, minLevel: 20, xp: 1.98 })
     expect(ZONES['torre-matematica'].z3).toMatchObject({ tier: 3, minLevel: 50, bossLevel: 52 })
   })
   it('raises level, item level, boss level and suggested power with every zone and tier', () => {

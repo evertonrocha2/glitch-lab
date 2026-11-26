@@ -6,22 +6,27 @@
 // start: danger is the only limit, a weak hero just dies or earns little.
 // suggestedPower is tuned against the combat sim: a hero at it beats the boss, a hero at 70% of it does
 // not (tests/shared/game-combat.test.js). xp is what one plain kill pays (shared/game/xp.js), tuned so a
-// hero with no study goes from level 5 to about 10 in about 2 hours in the Forest.
+// hero with no study goes from level 5 to about 10 in about 1.5 hours in the Forest.
+// Fase 4 (fuller hunts): packs of 5 to 7, 6 to 8 and 7 to 9 (were 3 to 4, 3 to 5, 4 to 6), each member
+// hitting at the zone's packAttack so a hero at the zone's level still clears them. elitePacks went
+// fractional (one elite every 1.75 packs, hunt.js isElitePack) so elites keep their share of the kills,
+// and spawnMs grew so kills, gold and drops an hour stay where fase 3 had them. XP_BASE grew 30% (0.8
+// to 1.04): XP an hour is about 30% higher in every zone (tests/shared/game-hunt-fill.test.js).
 import { WORLDS } from '../world/worlds.js'
 import { DIFFICULTIES } from './enemies.js'
 
 export { enemyFor, packFor } from './enemies.js'
 
-export const XP_BASE = 0.8
+export const XP_BASE = 1.04
 export const ZONE_STEP = 1.25
 export const TIER_STEP = 1.9
 const GOLD_STEP = 1.6
 
 // Per zone index, the tier 1 numbers (the Forest's), shared by every tier.
 const LADDER = [
-  { gold: 4, pack: [3, 4], spawnMs: 13000, elitePacks: 3 },
-  { gold: 9, pack: [3, 5], spawnMs: 16800, elitePacks: 3 },
-  { gold: 16, pack: [4, 6], spawnMs: 21000, elitePacks: 2 },
+  { gold: 4, pack: [5, 7], packAttack: 0.6, spawnMs: 23800, elitePacks: 1.75 },
+  { gold: 9, pack: [6, 8], packAttack: 0.75, spawnMs: 32100, elitePacks: 1.75 },
+  { gold: 16, pack: [7, 9], packAttack: 0.6, spawnMs: 36000, elitePacks: 1.25 },
 ]
 // Per tier: the suggested level of each zone, its item level (enemies scale with it, and drops roll
 // at it), its boss level and suggested power. The deepest tower zone's item level sits four under its
@@ -89,6 +94,7 @@ function zonesOf(world) {
           gold: Math.round(LADDER[k].gold * GOLD_STEP ** (world.tier - 1)),
           xp: zoneXp(world.tier, k),
           pack: LADDER[k].pack,
+          packAttack: LADDER[k].packAttack,
           spawnMs: LADDER[k].spawnMs,
           elitePacks: LADDER[k].elitePacks,
           rect: zone.rect,

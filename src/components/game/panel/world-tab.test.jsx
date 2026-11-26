@@ -87,8 +87,8 @@ it('shows each zone with its suggested level, danger, xp an hour, boss and sugge
   }
   expect(zone('Clareira')).toHaveTextContent('Rei Slime')
   expect(zone('Galerias')).toHaveTextContent('Rei Query')
-  expect(zone('Clareira')).toHaveTextContent('0,8 XP por abate')
-  expect(zone('Galerias')).toHaveTextContent('1,52 XP por abate')
+  expect(zone('Clareira')).toHaveTextContent('1,04 XP por abate')
+  expect(zone('Galerias')).toHaveTextContent('1,98 XP por abate')
 })
 
 it('pays a level 12 hero more xp an hour in the deep forest than in the clearing', () => {

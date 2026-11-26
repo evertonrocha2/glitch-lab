@@ -111,15 +111,15 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
   expect(synced.hero.gold).toBe(synced.away.gold)
   const { samples, ...counts } = preview.huntPreview
   expect(synced.away).toMatchObject(counts)
-  // A few sample pack fights ride along for the client to animate, each with its pack leader; the
-  // third pack in z1 has an elite leading it.
+  // A few sample pack fights ride along for the client to animate, each with its pack leader; in z1
+  // one pack in every 1.75 has an elite leading it, the second one first.
   expect(samples).toHaveLength(3)
   for (const fight of samples) {
     expect(fight.log.length).toBeGreaterThan(0)
     expect(fight.log.filter((ev) => ev.type === 'spawn').length).toBeGreaterThanOrEqual(3)
     expect(fight.enemy).toEqual({ id: expect.any(String), sprite: expect.any(String), elite: expect.any(Boolean) })
   }
-  expect(samples.map((fight) => fight.enemy.elite)).toEqual([false, false, true])
+  expect(samples.map((fight) => fight.enemy.elite)).toEqual([false, true, false])
   expect(synced.hero.lastAway).toEqual(synced.away)
   expect(Object.keys(synced.away).sort()).toEqual([
     'deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'supports', 'xp', 'xpMultiplier',

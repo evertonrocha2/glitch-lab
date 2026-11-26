@@ -104,8 +104,9 @@ describe('balance: skill passives and supports', () => {
         expect(ratio, `${name} ${key}`).toBeGreaterThanOrEqual(1)
         expect(ratio, `${name} ${key}`).toBeLessThanOrEqual(1.6)
       }
-      // Each pack falls faster, but never in less than 40% of the time (2.5x).
-      expect(withMods.ms / without.ms, `${name} fight time`).toBeGreaterThanOrEqual(0.4)
+      // Each pack falls faster, but never in less than a third of the time (3x; fase 4's bigger packs
+      // let area supports hit more foes, so this moved down from 40%).
+      expect(withMods.ms / without.ms, `${name} fight time`).toBeGreaterThanOrEqual(0.33)
       expect(withMods.ms / without.ms, `${name} fight time`).toBeLessThan(1)
     })
   }

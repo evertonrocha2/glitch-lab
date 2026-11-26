@@ -29,6 +29,10 @@ const mean = (list, pick) => list.reduce((sum, item) => sum + pick(item), 0) / l
 // What the leader of a pack looks like, for a client that draws one foe.
 const foeOf = (enemy) => ({ id: enemy.id, sprite: enemy.sprite, elite: Boolean(enemy.elite) })
 
+// One pack in every `every` has an elite leading it (zones.js elitePacks; 3: the 3rd, 6th, 9th...). A
+// fraction spreads them evenly (1.75: 4 in every 7), so bigger packs keep the elites' share of the kills.
+export const isElitePack = (i, every) => Math.floor((i + 1) / every + 1e-9) > Math.floor(i / every + 1e-9)
+
 // Cooldowns after the walk to the next pack.
 const afterWalk = (cooldowns) => Object.fromEntries(Object.entries(cooldowns).map(([id, ms]) => [id, Math.max(0, ms - WALK_MS)]))
 
@@ -39,7 +43,7 @@ function sample({ hero, zone, difficulty, seed, tag, potions }) {
   const results = []
   let cooldowns = {}
   for (let i = 0; i < SAMPLE_FIGHTS; i++) {
-    const elite = i % zone.elitePacks === zone.elitePacks - 1
+    const elite = isElitePack(i, zone.elitePacks)
     const pack = packFor(zone, difficulty, root.fork(`pack:${i}`), { elite })
     const result = simulateFight({ hero: fighter, enemies: pack, seed: `${seed}:${tag}${i}`, cooldowns })
     cooldowns = afterWalk(result.cooldowns)

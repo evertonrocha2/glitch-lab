@@ -34,8 +34,8 @@ it("lists today's quests with progress and rewards", () => {
   expect(hunt.getByRole('meter')).toHaveAttribute('aria-valuemax', '150')
   const acertos = quest('Get 5 right answers studying')
   expect(acertos.getByRole('meter')).toHaveAttribute('aria-valuenow', '5')
-  // XP already at the study multiplier (x1.4): 80 kills of the yardstick become 112.
-  expect(acertos.getByText('+112 XP')).toBeInTheDocument()
+  // XP already at the study multiplier (x1.4): 80 kills of the yardstick (104 xp since fase 4) become 145.
+  expect(acertos.getByText('+145 XP')).toBeInTheDocument()
   expect(screen.getByText('XP already counts your study bonus (x1.4).')).toBeInTheDocument()
 })
 

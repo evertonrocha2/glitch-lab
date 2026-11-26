@@ -245,7 +245,7 @@ describe('elite mods', () => {
 })
 
 describe('balance', () => {
-  it('a bare hero at zone.minLevel + 2 with only golpe clears every pack of every region, in 5 to 11 s on average', () => {
+  it('a bare hero at zone.minLevel + 2 with only golpe clears every pack of every region, in 5 to 13 s on average (fase 4: bigger packs)', () => {
     for (const zone of ALL_ZONES) {
       const stats = heroStats({ level: zone.minLevel + 2 })
       let total = 0
@@ -258,7 +258,7 @@ describe('balance', () => {
       }
       const mean = total / 20
       expect(mean, `${zone.world} ${zone.id}`).toBeGreaterThanOrEqual(5000)
-      expect(mean, `${zone.world} ${zone.id}`).toBeLessThanOrEqual(11000)
+      expect(mean, `${zone.world} ${zone.id}`).toBeLessThanOrEqual(13000)
     }
   })
 

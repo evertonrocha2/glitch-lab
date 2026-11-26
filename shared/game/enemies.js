@@ -142,19 +142,20 @@ const ELITE_HP = 2.5
 const ELITE_ATTACK = 1.4
 const ILVL_GROWTH = 0.15
 
-const scale = (base, zone, mult, elite, pack) => {
+const scale = (base, zone, mult, elite, pack, soften = 1) => {
   const grow = (1 + ILVL_GROWTH * zone.ilvl) * mult
   return {
     ...base,
     hp: Math.round(base.hp * grow * (elite ? ELITE_HP : 1) * (pack ? PACK_HP : 1)),
-    attack: Math.round(base.attack * grow * (elite ? ELITE_ATTACK : 1) * (pack ? PACK_ATTACK : 1)),
+    attack: Math.round(base.attack * grow * (elite ? ELITE_ATTACK : 1) * (pack ? PACK_ATTACK * soften : 1)),
     armor: Math.round(base.armor * grow),
     res: { ...base.res },
   }
 }
 
-// pack: a pack member (PACK_HP, PACK_ATTACK), for packFor and boss adds.
-export function enemyFor(zone, difficulty, rng, { elite = false, boss = false, pack = false } = {}) {
+// pack: a pack member (PACK_HP, PACK_ATTACK), for packFor and boss adds. soften: a hunt pack member's
+// extra attack factor (the zone's packAttack), so a bigger pack doesn't hit much harder in total.
+export function enemyFor(zone, difficulty, rng, { elite = false, boss = false, pack = false, soften = 1 } = {}) {
   const { mult } = DIFFICULTIES[difficulty]
   const id = boss ? zone.boss : rng.pick(zone.enemies)
   const def = ENEMIES.find((enemy) => enemy.id === id)
@@ -165,7 +166,7 @@ export function enemyFor(zone, difficulty, rng, { elite = false, boss = false, p
     const count = 1 + rng.int(2)
     for (let i = 0; i < count; i++) mods.push(pool.splice(rng.int(pool.length), 1)[0].id)
   }
-  const out = { ...def, base: scale(def.base, zone, mult, isElite, pack && !boss), elite: isElite, mods }
+  const out = { ...def, base: scale(def.base, zone, mult, isElite, pack && !boss, soften), elite: isElite, mods }
   // Each phase calls BOSS_ADDS of the zone's commons, rolled now so the fight stays pure.
   if (def.phases) {
     out.phases = def.phases.map((phase, k) => ({
@@ -176,9 +177,11 @@ export function enemyFor(zone, difficulty, rng, { elite = false, boss = false, p
   return out
 }
 
-// A hunt pack: zone.pack [min, max] commons; an elite pack has an elite leading it (index 0).
+// A hunt pack: zone.pack [min, max] commons; an elite pack has an elite leading it (index 0). Its
+// members hit at the zone's packAttack (fase 4: bigger packs, each member a bit softer).
 export function packFor(zone, difficulty, rng, { elite = false } = {}) {
   const [min, max] = zone.pack
   const size = min + rng.int(max - min + 1)
-  return Array.from({ length: size }, (_, k) => enemyFor(zone, difficulty, rng.fork(`m:${k}`), { elite: elite && k === 0, pack: true }))
+  const soften = zone.packAttack ?? 1
+  return Array.from({ length: size }, (_, k) => enemyFor(zone, difficulty, rng.fork(`m:${k}`), { elite: elite && k === 0, pack: true, soften }))
 }

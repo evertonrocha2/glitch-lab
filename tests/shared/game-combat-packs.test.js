@@ -133,8 +133,8 @@ describe('packs', () => {
         for (const e of pack) expect(zone.enemies).toContain(e.id)
       }
     }
-    expect(FOREST.z1.pack[0]).toBeGreaterThanOrEqual(3)
-    expect(FOREST.z3.pack[1]).toBeLessThanOrEqual(6)
+    expect(FOREST.z1.pack[0]).toBeGreaterThanOrEqual(5)
+    expect(FOREST.z3.pack[1]).toBeLessThanOrEqual(9)
   })
 
   it('spawns every member at t 0 with a walk-in path relative to the hero, and kills them all to win', () => {
