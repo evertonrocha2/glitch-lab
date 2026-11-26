@@ -78,9 +78,9 @@ void main(){
 
   // Aurora across the top: three calm curtains, steel blue, silver, and a faint gold one.
   float ta = u_time * .6;
-  vec3 aur = curtain(uv, ta, 0., vec3(.55, .72, .88), vec3(.28, .42, .60)) * .9;
-  aur += curtain(uv, ta*1.13, 1., vec3(.80, .84, .90), vec3(.42, .50, .60)) * .8;
-  aur += curtain(uv, ta*.87, 2., vec3(1.0, .82, .48), vec3(.62, .48, .34)) * .6;
+  vec3 aur = curtain(uv, ta, 0., vec3(.55, .72, .88), vec3(.28, .42, .60)) * 1.2;
+  aur += curtain(uv, ta*1.13, 1., vec3(.80, .84, .90), vec3(.42, .50, .60)) * 1.0;
+  aur += curtain(uv, ta*.87, 2., vec3(1.0, .82, .48), vec3(.62, .48, .34)) * .7;
   // Softer at the far edges, and never down in the lower half.
   aur *= smoothstep(-.1, .3, uv.x) * smoothstep(1.15, .75, uv.x) * .8 + .2;
   aur *= smoothstep(.38, .64, uv.y);
