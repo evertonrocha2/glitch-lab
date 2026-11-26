@@ -357,3 +357,19 @@ describe('on a phone', () => {
     expect(screen.getByRole('button', { name: 'Abrir o painel' })).toHaveAttribute('aria-expanded', 'false')
   })
 })
+
+it('starts the camera far out, zooms in from the HUD and remembers the level', async () => {
+  window.localStorage.removeItem('gd:game-zoom')
+  const first = ui(makeApi())
+  const scene = await screen.findByRole('region', { name: 'Cena da caça' })
+  const farAspect = scene.style.aspectRatio
+  fireEvent.click(screen.getByRole('button', { name: 'Aproximar câmera (+)' }))
+  expect(scene.style.aspectRatio).not.toBe(farAspect)
+  expect(window.localStorage.getItem('gd:game-zoom')).toBe('mid')
+  first.unmount()
+
+  ui(makeApi())
+  const again = await screen.findByRole('region', { name: 'Cena da caça' })
+  expect(again.style.aspectRatio).not.toBe(farAspect)
+  window.localStorage.removeItem('gd:game-zoom')
+})

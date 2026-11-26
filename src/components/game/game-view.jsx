@@ -22,8 +22,39 @@ const TICK_MS = 200
 // The closed drawer's height when it can't be measured (handle 44 + tab row 52 + padding and frame).
 const DOCK_PX = 102
 const WIDE = '(min-width: 1024px)'
-// The part of the map the scene shows, in tiles: actors and numbers stay readable at panel width.
-const CROP = { wide: { w: 16, h: 10 }, narrow: { w: 10, h: 12 } }
+// The part of the map the scene shows, in tiles, per zoom level. Far shows the whole forest on a
+// desktop, near is the old close-up. The HUD's - and + buttons (keys - and +) move between them.
+export const ZOOMS = ['far', 'mid', 'near']
+const CROP = {
+  far: { wide: { w: 32, h: 20 }, narrow: { w: 16, h: 20 } },
+  mid: { wide: { w: 24, h: 15 }, narrow: { w: 13, h: 16 } },
+  near: { wide: { w: 16, h: 10 }, narrow: { w: 10, h: 12 } },
+}
+const ZOOM_KEY = 'gd:game-zoom'
+
+// The zoom level, remembered per browser. Storage can be missing or blocked: then it is just far.
+function useZoom() {
+  const [zoom, setZoom] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(ZOOM_KEY)
+      return ZOOMS.includes(saved) ? saved : 'far'
+    } catch {
+      return 'far'
+    }
+  })
+  const change = useCallback((step) => {
+    setZoom((current) => {
+      const next = ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, ZOOMS.indexOf(current) + step))]
+      try {
+        window.localStorage.setItem(ZOOM_KEY, next)
+      } catch {
+        // Not remembered, still applied.
+      }
+      return next
+    })
+  }, [])
+  return [zoom, change]
+}
 
 // Every panel action: the page binds each to the token; each resolves to the new View plus extras.
 const ACTIONS = [
@@ -117,6 +148,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   const [replay, setReplay] = useState(null)
   const [lookOpen, setLookOpen] = useState(false)
   const wide = useMediaQuery(WIDE)
+  const [zoom, changeZoom] = useZoom()
 
   const apiRef = useRef(api)
   apiRef.current = api
@@ -315,7 +347,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   const zoneRect = zones[zoneId].rect
   const difficulty = replay?.target.difficulty ?? view.hero.hunt?.difficulty ?? 'normal'
   const locked = (view.zones?.[worldId]?.[difficulty] ?? []).filter((zone) => !zone.unlocked && zone.id !== 'z1').map((zone) => zones[zone.id].rect)
-  const crop = cropFor(world, zoneRect, wide ? CROP.wide : CROP.narrow)
+  const crop = cropFor(world, zoneRect, wide ? CROP[zoom].wide : CROP[zoom].narrow)
   // The fog is soft and the padlocked door may sit outside the crop, so a small sign says it too.
   const lockedAhead = locked.length > 0
   const zoneLabel = t(`game.zone.${zones[zoneId].name}`)
@@ -378,6 +410,8 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
               onFullscreen={fullscreen.toggle}
               fullscreenSupported={fullscreen.supported}
               fullscreenActive={fullscreen.active}
+              zoom={zoom}
+              onZoom={changeZoom}
             />
             {lockedAhead && (
               <p className="pointer-events-none absolute right-2 top-[126px] m-0 flex items-center sm:top-[100px] gap-1 border-2 border-[#0a0818] bg-[rgba(16,12,36,0.82)] px-1.5 py-1 font-pixel text-[10px] text-[#c3b2ff]">

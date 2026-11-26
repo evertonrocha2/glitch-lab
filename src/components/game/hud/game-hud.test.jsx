@@ -188,3 +188,27 @@ it('fullscreen button works', () => {
   fireEvent.click(screen.getByRole('button', { name: /fullscreen/i }))
   expect(onFullscreen).toHaveBeenCalledOnce()
 })
+
+it('zoom buttons and the - and + keys step the camera out and in, and stop at the ends', () => {
+  const onZoom = vi.fn()
+  const { rerender } = ui({ onZoom, zoom: 'mid' })
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom out (-)' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Zoom in (+)' }))
+  fireEvent.keyDown(window, { key: '-' })
+  fireEvent.keyDown(window, { key: '=' })
+  fireEvent.keyDown(window, { key: '+' })
+  expect(onZoom.mock.calls.map(([step]) => step)).toEqual([-1, 1, -1, 1, 1])
+
+  rerender(
+    <I18nProvider locale="en">
+      <GameHud view={view()} onZoom={onZoom} zoom="far" />
+    </I18nProvider>,
+  )
+  expect(screen.getByRole('button', { name: 'Zoom out (-)' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Zoom in (+)' })).toBeEnabled()
+})
+
+it('hides the zoom buttons without onZoom', () => {
+  ui({})
+  expect(screen.queryByRole('button', { name: 'Zoom out (-)' })).toBeNull()
+})

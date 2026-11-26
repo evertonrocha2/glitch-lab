@@ -64,21 +64,52 @@ function Slot({ label, icon, keyHint, cooldown, count, className = '' }) {
   )
 }
 
+// One camera zoom step: a raised pixel button with a big - or +.
+function ZoomButton({ label, disabled, onClick, children }) {
+  return (
+    <Frame
+      as="button"
+      tone="raised"
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center font-pixel text-base text-[#e9e4ff] disabled:cursor-default disabled:opacity-40"
+    >
+      <span aria-hidden="true">{children}</span>
+    </Frame>
+  )
+}
+
 // The floating HUD over the scene. view: the server View. live (optional): what only the playback
 // knows, { hp, mana, buffs: [{ id, icon, seconds, bad? }], cooldowns: { [skillId]: seconds } }.
 // boss (optional): { name, phase, phases, hp, maxHp, enrageSec }. log: fight events, the last 5 show.
 // onFullscreen / onKey('world' | 'bag' | 'tree'): shortcuts F, M, I, K. fullscreenSupported hides the button.
-export default function GameHud({ view, live = {}, boss, log = [], onFullscreen, onKey, fullscreenSupported = true, fullscreenActive = false }) {
+// zoom ('far' | 'mid' | 'near') / onZoom(step): -1 moves the camera out, +1 in; keys - and + (or =).
+export default function GameHud({
+  view,
+  live = {},
+  boss,
+  log = [],
+  onFullscreen,
+  onKey,
+  fullscreenSupported = true,
+  fullscreenActive = false,
+  zoom = 'far',
+  onZoom,
+}) {
   const { t, locale } = useI18n()
   const fmt = useMemo(() => new Intl.NumberFormat(locale), [locale])
   const handlers = useRef({})
-  handlers.current = { onFullscreen, onKey }
+  handlers.current = { onFullscreen, onKey, onZoom }
 
   useEffect(() => {
     function onKeyDown(e) {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || typing(e.target)) return
       const key = e.key.toLowerCase()
       if (key === 'f') handlers.current.onFullscreen?.()
+      else if (key === '-') handlers.current.onZoom?.(-1)
+      else if (key === '+' || key === '=') handlers.current.onZoom?.(1)
       else if (KEYS[key]) handlers.current.onKey?.(KEYS[key])
     }
     window.addEventListener('keydown', onKeyDown)
@@ -219,6 +250,17 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         <Slot label={t('game.hud.potionMp', { count: hero.potions.mp })} icon="mppot" keyHint="2" count={fmt.format(hero.potions.mp)} />
       </Frame>
 
+      {onZoom && (
+        // Bottom right, above the skill bar: the one corner the unit frame, chips and log leave free on a phone too.
+        <div className="pointer-events-auto absolute bottom-[70px] right-2 flex flex-col gap-1">
+          <ZoomButton label={t('game.hud.zoomIn')} disabled={zoom === 'near'} onClick={() => onZoom(1)}>
+            +
+          </ZoomButton>
+          <ZoomButton label={t('game.hud.zoomOut')} disabled={zoom === 'far'} onClick={() => onZoom(-1)}>
+            -
+          </ZoomButton>
+        </div>
+      )}
       {onFullscreen && fullscreenSupported && (
         <Frame
           as="button"
