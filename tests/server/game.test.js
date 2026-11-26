@@ -70,6 +70,8 @@ it('starts a new player at level 1 with no gold and only the first Normal zone o
   expect(body.hero.gold).toBe(0)
   expect(body.hero).toMatchObject({ potions: { hp: 3, mp: 0 }, talents: ['root'], hunt: null, lastAway: null })
   expect(body.talentPoints).toEqual({ total: 0, spent: 0, free: 0 })
+  // The tree reads the per-branch correct answers to show keystone progress.
+  expect(body.study.branch).toEqual({ logica: 0, sintaxe: 0, algoritmos: 0 })
   expect(body.power).toBeGreaterThan(0)
   expect(body.huntPreview).toBeNull()
   const zones = body.zones[FOREST]

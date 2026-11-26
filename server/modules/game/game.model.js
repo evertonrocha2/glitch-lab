@@ -99,6 +99,8 @@ export function toView(hero, { fuel, today, huntPreview = null }) {
         toNextPoint: capped ? null : ACERTOS_PER_POINT - (totalCorrect % ACERTOS_PER_POINT),
       },
       pending: pendingTotals(pendingStudy(studyRewards(fuel.ledger), hero.claimed)),
+      // Correct answers per tree branch (the user's own counters): the tree shows keystone progress.
+      branch: { ...fuel.ledger.branch },
     },
     huntPreview,
   }
