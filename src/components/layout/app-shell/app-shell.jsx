@@ -1,6 +1,7 @@
 import { memo } from 'react'
-import { Link, NavLink } from 'react-router'
+import { Link } from 'react-router'
 import { useAuth } from '../../../lib/auth/auth-provider.jsx'
+import { useUnreadMessages } from '../../../lib/chat/unread.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useMyProfile } from '../../../lib/profile/my-profile.js'
 import { useProgressData } from '../../../lib/progress/progress-provider.jsx'
@@ -14,12 +15,7 @@ import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
 import StudyTimer from '../study-timer/study-timer.jsx'
-import MessagesNavLink from '../../chat/messages-nav-link/messages-nav-link.jsx'
-
-const navClass = ({ isActive }) =>
-  `relative flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors before:absolute before:inset-x-0 before:-inset-y-2 sm:text-xs ${
-    isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
-  }`
+import AppNav from '../app-nav/app-nav.jsx'
 
 // Top bar for the signed-in pages, plus the study timer, message and badge toasts and the assistant.
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
@@ -55,6 +51,7 @@ const AppHeader = memo(function AppHeader() {
   const { signOut } = useAuth()
   const progress = useProgressData()
   const avatar = useMyProfile()?.profile.avatar
+  const unread = useUnreadMessages()
   const t = useT()
   return (
     <header className="border-b-2 border-ink bg-white">
@@ -83,65 +80,10 @@ const AppHeader = memo(function AppHeader() {
           </PixelButton>
         </div>
       </div>
-      {/* Second row: the pages, on one line; on narrow phones they scroll sideways. */}
+      {/* Second row: the pages, on one line; the ones that don't fit go in a "More" menu. */}
       <div className="border-t-2 border-dashed border-line">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 sm:px-8">
-          <div className="relative min-w-0 flex-1">
-            <nav aria-label={t('app.nav.main')} className="flex items-center gap-4 overflow-x-auto py-2 pr-6 whitespace-nowrap sm:gap-7 sm:pr-0">
-            <NavLink to="/board" className={navClass}>
-              {t('app.nav.board')}
-            </NavLink>
-            <NavLink to="/exams/enem" className={navClass}>
-              {t('app.nav.enem')}
-            </NavLink>
-            <NavLink to="/daily" className={navClass}>
-              {t('app.nav.daily')}
-            </NavLink>
-            <NavLink to="/glitchdle" className={navClass}>
-              {t('app.nav.glitchdle')}
-            </NavLink>
-            <NavLink to="/mundo" className={navClass}>
-              {t('world.nav')}
-            </NavLink>
-            <NavLink to="/duel" className={navClass}>
-              {t('duel.nav')}
-            </NavLink>
-            <NavLink to="/notes" className={navClass}>
-              {t('app.nav.notes')}
-            </NavLink>
-            <NavLink to="/trail" className={navClass}>
-              {t('app.nav.trail')}
-            </NavLink>
-            <NavLink to="/articles" className={navClass}>
-              {t('app.nav.articles')}
-            </NavLink>
-            <NavLink to="/events" className={navClass}>
-              {t('events.nav')}
-            </NavLink>
-            <NavLink to="/communities" className={navClass}>
-              {t('chat.nav.communities')}
-            </NavLink>
-            <MessagesNavLink className={navClass} />
-            <NavLink to="/progress" className={navClass}>
-              {t('app.nav.progress')}{' '}
-              {progress ? (
-                <>
-                  <span aria-hidden="true" className="bg-secondary px-1 py-0.5 text-[10px] leading-none text-white">
-                    {t('app.nav.levelChip', { level: progress.level })}
-                  </span>
-                  <span className="sr-only">{t('app.nav.levelSr', { level: progress.level })}</span>
-                </>
-              ) : (
-                // Until the level loads, a gray chip of the same size holds its place in the row.
-                <span aria-hidden="true" className="bg-line px-1 py-0.5 text-[10px] leading-none text-transparent motion-safe:animate-skeleton">
-                  {t('app.nav.levelChip', { level: 1 })}
-                </span>
-              )}
-            </NavLink>
-            </nav>
-            {/* A fade at the edge says "there's more" when the row scrolls on a phone. */}
-            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-white to-transparent sm:hidden" />
-          </div>
+        <div className="mx-auto flex max-w-6xl items-center px-5 sm:px-8">
+          <AppNav level={progress?.level ?? null} unread={unread} />
         </div>
       </div>
     </header>

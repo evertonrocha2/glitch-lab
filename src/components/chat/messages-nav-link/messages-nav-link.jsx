@@ -1,13 +1,11 @@
-import { NavLink } from 'react-router'
-import { useUnreadMessages } from '../../../lib/chat/unread.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 
-// "Messages" in the app nav, with how many conversations are unread. className is the nav's own.
-export default function MessagesNavLink({ className }) {
+// "Messages" for the app nav, with how many conversations are unread. The nav reads the count once
+// (useUnreadMessages) and passes it here, so the row and the "More" menu share one subscription.
+export function MessagesNavLabel({ unread }) {
   const t = useT()
-  const unread = useUnreadMessages()
   return (
-    <NavLink to="/messages" className={className}>
+    <>
       {t('chat.nav.messages')}
       {unread > 0 && (
         <>
@@ -17,6 +15,6 @@ export default function MessagesNavLink({ className }) {
           <span className="sr-only">{t('chat.nav.unread', { count: unread })}</span>
         </>
       )}
-    </NavLink>
+    </>
   )
 }
