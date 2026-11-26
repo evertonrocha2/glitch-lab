@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { simulateFight } from '../../../shared/game/combat.js'
+import { buffFighter, elixirEffects } from '../../../shared/game/elixirs.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
-import { GEM_SALVAGE_SCRAP, settleHunt } from '../../../shared/game/hunt.js'
+import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, settleHunt } from '../../../shared/game/hunt.js'
 import { BAG_SIZE, rollGem, rollItem, rollSupport, salvageValue } from '../../../shared/game/items.js'
+import { countBoss, countKills, questState } from '../../../shared/game/quests.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { bossXp, correctToday, levelsGained, startingXp, studyMultiplier } from '../../../shared/game/xp.js'
 import { HUNT_WORLDS, ZONES, enemyFor } from '../../../shared/game/zones.js'
@@ -64,20 +66,23 @@ function parseTarget(body) {
 // The running hunt's result up to now, without changing the hero. null when no hunt runs
 // (or it points at a zone that no longer exists). Each claim has its own seed, so drops never repeat.
 // The stretch fights at the level the hero has when it is paid, and earns XP at the multiplier
-// recorded when it began (a hunt saved before multipliers existed: x1).
+// recorded when it began (a hunt saved before multipliers existed: x1). Elixirs (fase 3) count for the
+// share of the stretch they covered: xp on top of the study multiplier, drop luck, and damage in the fights.
 function huntResult(hero, now) {
   const hunt = hero.hunt
   const zone = hunt && Object.hasOwn(ZONES[hunt.world] ?? {}, hunt.zone) ? ZONES[hunt.world][hunt.zone] : null
   if (!zone || !Object.hasOwn(DIFFICULTIES, hunt.difficulty)) return null
+  const boost = elixirEffects(hero.elixirs, hunt.startedAt, Math.min(now, hunt.startedAt + MAX_HUNT_MS))
   return settleHunt({
-    hero: fighterOf(hero, levelOf(hero).level),
+    hero: buffFighter(fighterOf(hero, levelOf(hero).level), boost.damage),
     zone,
     difficulty: hunt.difficulty,
     startedAt: hunt.startedAt,
     now,
     seed: `${hunt.seed}:${hunt.claims}`,
     bagFree: bagFree(hero),
-    xpMultiplier: hunt.xpMultiplier ?? 1,
+    xpMultiplier: (hunt.xpMultiplier ?? 1) * (1 + boost.xp),
+    dropLuck: boost.luck,
   })
 }
 
@@ -94,13 +99,15 @@ const previewOf = (result) =>
 // keep: the hunt goes on from now (sync), its next stretch at multiplier (today's, as it is now);
 // otherwise it ends (stop, or a new hunt). Each stretch keeps the multiplier it began with, so study
 // done mid-stretch boosts the next one (sync pays a stretch once it ran AWAY_MIN_MS).
-export function settle(hero, now, { keep, multiplier = 1 }) {
+// today: the client's day, whose quests (fase 3) count the stretch's kills in its zone.
+export function settle(hero, now, { keep, multiplier = 1, today }) {
   if (!hero.hunt) return undefined
   const result = huntResult(hero, now)
   if (!result) {
     hero.hunt = null
     return undefined
   }
+  if (today) hero.quests = countKills(questState(hero.quests, today, levelOf(hero).level), hero.hunt, result.kills)
   const xpBefore = hero.xp
   const paidAt = hero.hunt.xpMultiplier ?? 1
   hero.xp += result.xp
@@ -152,7 +159,7 @@ function claimStudy(hero, ledger) {
 // multiplier: what today's acertos multiply hunt XP by, for stretches and boss wins that begin now.
 async function context(store, user, today) {
   const fuel = await loadFuel(store, user.id, today)
-  return { fuel, today, now: Date.now(), multiplier: studyMultiplier(correctToday(fuel.ledger, today)) }
+  return { fuel, today, now: Date.now(), multiplier: studyMultiplier(correctToday(fuel.ledger, today)), userId: user.id }
 }
 
 const viewOf = (hero, ctx) => toView(hero, { ...ctx, huntPreview: previewOf(huntResult(hero, ctx.now)) })
@@ -169,7 +176,7 @@ const withExtra = (view, extra) => ({ ...view, ...extra })
 export async function act(store, user, today, fn) {
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => {
-    const away = settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier })
+    const away = settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier, today: ctx.today })
     const level = levelOf(draft).level
     return { away, ...fn(draft, { ...ctx, level, talentPoints: talentPointsOf(draft, ctx.fuel.ledger) }) }
   })
@@ -214,7 +221,7 @@ export async function sync(store, user, today) {
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => {
     const due = dueForSync(draft.hunt, ctx.now)
-    const away = due ? settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier }) : undefined
+    const away = due ? settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier, today: ctx.today }) : undefined
     const studyClaimed = claimStudy(draft, ctx.fuel.ledger)
     return due || studyClaimed ? { away, studyClaimed } : NO_CHANGE
   })
@@ -226,7 +233,7 @@ export async function startHunt(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => {
-    const away = settle(draft, ctx.now, { keep: false })
+    const away = settle(draft, ctx.now, { keep: false, today: ctx.today })
     draft.hunt = {
       world: target.world,
       zone: target.zone,
@@ -244,7 +251,7 @@ export async function startHunt(store, user, today, body) {
 // Pays the running hunt and ends it.
 export async function stopHunt(store, user, today) {
   const ctx = await context(store, user, today)
-  const { hero, extra } = await change(store, user, ctx, (draft) => ({ away: settle(draft, ctx.now, { keep: false }) }))
+  const { hero, extra } = await change(store, user, ctx, (draft) => ({ away: settle(draft, ctx.now, { keep: false, today: ctx.today }) }))
   return withExtra(viewOf(hero, ctx), extra)
 }
 
@@ -270,12 +277,15 @@ export async function fightBoss(store, user, today, body) {
     const seed = `${user.id}:${target.zone}:${target.difficulty}:${randomUUID()}`
     const root = createRng(seed)
     const enemy = enemyFor(target.def, target.difficulty, root.fork('enemy'), { boss: true })
-    // The boss alone at first; its phases call its adds (rolled with it by enemyFor).
-    const result = simulateFight({ hero: fighterOf(draft, level), enemies: [enemy], seed })
+    // The boss alone at first; its phases call its adds (rolled with it by enemyFor). An active damage
+    // or xp elixir counts in full (the fight is an instant).
+    const boost = elixirEffects(draft.elixirs, ctx.now, ctx.now)
+    const result = simulateFight({ hero: buffFighter(fighterOf(draft, level), boost.damage), enemies: [enemy], seed })
     draft.potions.hp = Math.max(0, draft.potions.hp - result.potionsUsed.hp)
     draft.potions.mp = Math.max(0, draft.potions.mp - result.potionsUsed.mp)
     const loot = { items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
     if (result.won) {
+      draft.quests = countBoss(questState(draft.quests, ctx.today, level))
       const worldProgress = (draft.progress[target.world] ??= {})
       const beaten = (worldProgress[target.difficulty] ??= [])
       if (!beaten.includes(target.zone)) {
@@ -288,7 +298,7 @@ export async function fightBoss(store, user, today, body) {
         // A support gem for sure (fase 2c), from its own stream so the item and gem stay as they were.
         if (stash(draft, rollSupport(root.fork('support')))) loot.supports++
         loot.scrap = draft.scrap - scrapBefore
-        loot.xp = bossXp(target.def, target.difficulty, ctx.multiplier)
+        loot.xp = bossXp(target.def, target.difficulty, ctx.multiplier * (1 + boost.xp))
         draft.xp += loot.xp
         loot.levelsGained = levelsGained(draft.xp - loot.xp, draft.xp)
       }
