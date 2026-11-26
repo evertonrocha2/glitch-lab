@@ -4,7 +4,7 @@
 //
 // Not exploitable: the merchant always buys a piece back for less than he sells it for (a few percent
 // for a plain piece), so buy then sell loses gold. Selling still beats salvage: a sale pays the salvage scrap at
-// SCRAP_GOLD each on top of the item's own value. Upgrades add only their salvage scrap (3 each, 6 gold),
+// SCRAP_GOLD each on top of the item's own value. Upgrades add only their salvage scrap (3 each, 3 gold),
 // far under the 50+ gold a +1 costs at the forge.
 import { maxDropIlvl, refGold } from './economy.js'
 import { SLOTS, rollItem, salvageValue } from './items.js'
@@ -16,11 +16,12 @@ export const MARKET_TIER_LEVELS = 10
 export const MAX_MARKET_TIER = 6
 // The gold a scrap is worth when the merchant buys an item (a +1 at the forge is 50 gold and 5 scrap
 // for a common piece).
-export const SCRAP_GOLD = 2
+export const SCRAP_GOLD = 1
 // Kills of the yardstick an item costs, and what the merchant pays back for one (on top of its scrap).
-// A selling hero adds about 40% to its hunting gold (0.2 drops a kill, about 2.3 kills each).
+// Selling every drop adds 40 to 50% to the hunting gold (0.2 drops a kill, about 2 kills each plus scrap),
+// and the bag (60) caps what a hero away for hours can bring.
 export const BUY_KILLS = { common: 30, uncommon: 80, rare: 200, epic: 600, legendary: 2000 }
-export const SELL_KILLS = { common: 1, uncommon: 2, rare: 5, epic: 12, legendary: 40 }
+export const SELL_KILLS = { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 30 }
 // The merchant leans to better pieces than hunts drop, and never stocks commons.
 const STOCK_RARITY_BOOST = 1
 const STOCK_TRIES = 8
