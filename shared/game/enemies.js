@@ -1,7 +1,7 @@
 // Enemies, elites and difficulties. Pure data plus enemyFor. Combat reads the shape from here.
 // Enemy base stats use the hero's key names (hp, attack, armor, attackSpeed in attacks/s).
 // Resistances live in res: { fire, ice, lightning, poison } (percent), as the brief says.
-// Boss numbers and the phase skills are placeholders: Task 8 tunes them against the combat sim.
+// Numbers are tuned against the combat sim (tests/shared/game-combat.test.js, balance block).
 
 export const DIFFICULTIES = {
   normal: { mult: 1, ilvl: 0, rarityBoost: 0, minLevel: 0 },
@@ -19,7 +19,7 @@ const common = (id, sprite, element, hp, attack, armor, attackSpeed, res = {}) =
   id, sprite, element, base: { hp, attack, armor, attackSpeed, res: { ...NO_RES, ...res } },
 })
 
-// Boss placeholders in one place: hp, attack, armor, attackSpeed and the two phase skills.
+// Bosses are slow heavy hitters with a lot of hp: at zone.suggestedPower a fight lasts about 50 s.
 const BOSS_PHASES = (a, b) => [
   { at: 0.66, attackPct: 25, skill: a },
   { at: 0.33, attackPct: 25, skill: b },
@@ -32,19 +32,19 @@ const boss = (id, sprite, element, hp, attack, armor, attackSpeed, res, skills) 
 })
 
 export const ENEMIES = [
-  common('slime', 'slime', 'poison', 40, 6, 2, 0.8, { poison: 50 }),
-  common('cogumelo-bug', 'cogumelo', 'poison', 55, 7, 4, 0.7, { poison: 30 }),
-  common('morcego-bug', 'morcego-bug', 'physical', 35, 8, 1, 1.3),
-  common('lobo-syntax', 'lobo-syntax', 'physical', 60, 10, 4, 1.1),
-  common('goblin-loop', 'goblin-loop', 'fire', 50, 9, 3, 1, { fire: 30 }),
-  common('mosca-null', 'mosca-null', 'lightning', 30, 7, 0, 1.5, { lightning: 30 }),
-  common('esqueleto-array', 'esqueleto-array', 'ice', 70, 11, 8, 0.9, { ice: 40 }),
-  common('golem-if', 'golem-if', 'physical', 120, 12, 15, 0.6),
-  common('aranha-fio', 'aranha-fio', 'poison', 65, 12, 5, 1.2, { poison: 30 }),
-  common('espectro-callback', 'espectro-callback', 'lightning', 80, 14, 6, 1, { lightning: 40, ice: 20 }),
-  boss('rei-slime', 'rei-slime', 'poison', 900, 18, 10, 0.8, { poison: 60 }, ['golpe-gosma', 'divisao']),
-  boss('aranha-assincrona', 'aranha-assincrona', 'poison', 2600, 34, 20, 1, { poison: 50, ice: 20 }, ['teia-promise', 'enxame']),
-  boss('hidra-undefined', 'hidra-undefined', 'fire', 6500, 60, 35, 1.1, { fire: 40, lightning: 20 }, ['sopro-undefined', 'cabeca-extra']),
+  common('slime', 'slime', 'poison', 72, 16, 2, 0.8, { poison: 50 }),
+  common('cogumelo-bug', 'cogumelo', 'poison', 90, 16, 4, 0.7, { poison: 30 }),
+  common('morcego-bug', 'morcego-bug', 'physical', 55, 16, 1, 1.3),
+  common('lobo-syntax', 'lobo-syntax', 'physical', 72, 13, 4, 1.1),
+  common('goblin-loop', 'goblin-loop', 'fire', 68, 16, 3, 1, { fire: 30 }),
+  common('mosca-null', 'mosca-null', 'lightning', 60, 13, 0, 1.5, { lightning: 30 }),
+  common('esqueleto-array', 'esqueleto-array', 'ice', 75, 14, 8, 0.9, { ice: 40 }),
+  common('golem-if', 'golem-if', 'physical', 72, 30, 15, 0.6),
+  common('aranha-fio', 'aranha-fio', 'poison', 70, 13, 5, 1.2, { poison: 30 }),
+  common('espectro-callback', 'espectro-callback', 'lightning', 68, 20, 6, 1, { lightning: 40, ice: 20 }),
+  boss('rei-slime', 'rei-slime', 'poison', 1300, 21, 10, 0.5, { poison: 60 }, ['golpe-gosma', 'divisao']),
+  boss('aranha-assincrona', 'aranha-assincrona', 'poison', 1000, 23, 20, 0.5, { poison: 50, ice: 20 }, ['teia-promise', 'enxame']),
+  boss('hidra-undefined', 'hidra-undefined', 'fire', 870, 23, 25, 0.5, { fire: 40, lightning: 20 }, ['sopro-undefined', 'cabeca-extra']),
 ]
 
 // effect ids are read by combat (Task 8).
