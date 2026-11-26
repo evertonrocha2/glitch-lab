@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { STATS_KEYS } from '../../shared/game/items.js'
 import { PASSIVES } from '../../shared/game/skill-mods.js'
 import {
-  MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, SOCKET_NODES, TALENTS, canAllocate, talentStats,
+  MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, SOCKET_NODES, TALENTS, canAllocate, socketedSupports, talentStats,
 } from '../../shared/game/talents.js'
 
 // Local copy of the recipe names, replaced by the real export in Task 14.
@@ -178,5 +178,16 @@ describe('skill passives and sockets (fase 2c)', () => {
 
   it('allocates a socket like any node', () => {
     expect(canAllocate(['logica-c0', 'logica-c1'], 'logica-f0-1', ctx)).toEqual({ ok: true })
+  })
+})
+
+describe('socketedSupports', () => {
+  const gem = (support) => ({ id: `x${support}`, kind: 'support', support })
+  it('answers the supports in taken socket nodes, each kind once', () => {
+    const talents = ['root', 'logica-c0', 'logica-c1', 'logica-f0-1', 'algoritmos-c0', 'algoritmos-c1', 'algoritmos-f0-1']
+    expect(socketedSupports(talents, { 'logica-f0-1': gem('fogo'), 'algoritmos-f0-1': gem('fogo') })).toEqual(['fogo'])
+    expect(socketedSupports(talents, { 'logica-f0-1': gem('fogo'), 'sintaxe-f0-3': gem('frio') })).toEqual(['fogo'])
+    expect(socketedSupports(['root', 'logica-c0'], { 'logica-c0': gem('fogo') })).toEqual([])
+    expect(socketedSupports(talents, undefined)).toEqual([])
   })
 })

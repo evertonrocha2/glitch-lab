@@ -194,6 +194,16 @@ export function canAllocate(allocated, id, { free = 0, branch = {} } = {}) {
   return { ok: true }
 }
 
+// The support gem ids the hero fights with: those in socket nodes it has taken, each kind once.
+// treeSockets: { [socket node id]: { id, kind: 'support', support } }.
+export function socketedSupports(allocated, treeSockets = {}) {
+  const have = new Set(allocated)
+  const ids = Object.entries(treeSockets ?? {})
+    .filter(([node, gem]) => have.has(node) && BY_ID.get(node)?.kind === 'socket' && typeof gem?.support === 'string')
+    .map(([, gem]) => gem.support)
+  return [...new Set(ids)]
+}
+
 export function talentStats(allocated) {
   const total = {}
   const effects = []
