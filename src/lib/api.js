@@ -1,6 +1,7 @@
 import { createSseParser } from '../../shared/sse.js'
 import { currentLocale, translate } from './i18n/I18nProvider.jsx'
 import { translateServerMessage } from './i18n/serverMessages.js'
+import { localDay } from './day.js'
 
 // Every error a page shows reads in the reader's language: the server's English messages are
 // translated here, and so are the client's own fallbacks.
@@ -309,7 +310,8 @@ export async function saveWorldPosition({ world, x, y }, token, { keepalive = fa
 }
 
 // The game (idle RPG). Each call returns the parsed JSON: the game View, plus extras for some.
-const game = (path, method, token, body) => request(`/api/game${path}`, { method, body, token })
+// ?today= is the reader's local day, so the game's day counters match their clock.
+const game = (path, method, token, body) => request(`/api/game${path}?today=${localDay()}`, { method, body, token })
 
 export const getGame = (token) => game('', 'GET', token)
 export const syncGame = (token) => game('/sync', 'POST', token)

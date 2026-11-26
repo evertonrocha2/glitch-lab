@@ -15,16 +15,16 @@ const call = () => {
 }
 
 const look = { hood: 1, outfit: 2, hair: 3 }
-const loadout = { skills: ['a', 'b'], thresholds: [50, 30] }
+const loadout = { skills: ['a', 'b'], thresholds: { hp: 50, mp: 30 } }
 const cases = [
   ['getGame', (t) => api.getGame(t), '/api/game', 'GET', undefined],
   ['syncGame', (t) => api.syncGame(t), '/api/game/sync', 'POST', undefined],
-  ['startHunt', (t) => api.startHunt({ world: 'w', zone: 'z', difficulty: 2 }, t), '/api/game/hunt', 'POST', { world: 'w', zone: 'z', difficulty: 2 }],
+  ['startHunt', (t) => api.startHunt({ world: 'w', zone: 'z', difficulty: 'normal' }, t), '/api/game/hunt', 'POST', { world: 'w', zone: 'z', difficulty: 'normal' }],
   ['stopHunt', (t) => api.stopHunt(t), '/api/game/hunt/stop', 'POST', undefined],
-  ['fightBoss', (t) => api.fightBoss({ world: 'w', zone: 'z', difficulty: 2 }, t), '/api/game/boss', 'POST', { world: 'w', zone: 'z', difficulty: 2 }],
+  ['fightBoss', (t) => api.fightBoss({ world: 'w', zone: 'z', difficulty: 'normal' }, t), '/api/game/boss', 'POST', { world: 'w', zone: 'z', difficulty: 'normal' }],
   ['equipItem', (t) => api.equipItem('i1', t), '/api/game/equip', 'POST', { itemId: 'i1' }],
   ['unequipSlot', (t) => api.unequipSlot('weapon', t), '/api/game/unequip', 'POST', { slot: 'weapon' }],
-  ['allocateTalents', (t) => api.allocateTalents({ x: 1 }, t), '/api/game/talents', 'POST', { add: { x: 1 } }],
+  ['allocateTalents', (t) => api.allocateTalents(['t1', 't2'], t), '/api/game/talents', 'POST', { add: ['t1', 't2'] }],
   ['respecTalents', (t) => api.respecTalents(t), '/api/game/talents/respec', 'POST', undefined],
   ['buySkill', (t) => api.buySkill('s1', t), '/api/game/skills/buy', 'POST', { skillId: 's1' }],
   ['upgradeSkill', (t) => api.upgradeSkill('s1', t), '/api/game/skills/upgrade', 'POST', { skillId: 's1' }],
@@ -42,7 +42,9 @@ it.each(cases)('%s sends the right request and returns the JSON', async (_name, 
   const data = { ok: true }
   fetch.mockResolvedValue(Response.json(data))
   await expect(run('t1')).resolves.toEqual(data)
-  expect(call()).toEqual({ url, method, body, auth: 'Bearer t1' })
+  const made = call()
+  expect(made.url).toMatch(/\?today=\d{4}-\d{2}-\d{2}$/)
+  expect({ ...made, url: made.url.replace(/\?today=[\d-]+$/, '') }).toEqual({ url, method, body, auth: 'Bearer t1' })
 })
 
 it('exposes status and code on a conflict', async () => {
