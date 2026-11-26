@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { canStand, nudge, orient, ROTATIONS, rotate } from './placement.js'
 
-// 8x5 room: walls around, water at (5,2), a portal at (1,2).
+// 8x5 room: walls around, water at (2,2) and (6,2), a town NPC at (1,3).
 const world = {
   rows: ['TTTTTTTT', 'T......T', 'T.~...~T', 'T......T', 'TTTTTTTT'],
-  portals: [{ x: 1, y: 3 }],
+  npcs: [{ id: 'merchant', x: 1, y: 3 }],
 }
 const rect = { x: 0, y: 0, w: 8, h: 5 }
 
 describe('canStand', () => {
-  it('takes floor inside the rect, not walls, water, portals or the outside', () => {
+  it('takes floor inside the rect, not walls, water, an NPC or the outside', () => {
     expect(canStand(world, rect, 3, 1)).toBe(true)
     expect(canStand(world, rect, 0, 1)).toBe(false)
     expect(canStand(world, rect, 2, 2)).toBe(false)
@@ -56,7 +56,7 @@ describe('nudge', () => {
     expect(Math.abs(out.x - 2.1) + Math.abs(out.y - 2)).toBeLessThanOrEqual(1.2)
   })
   it('keeps the point when nothing nearby is floor', () => {
-    const solid = { rows: ['TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT'], portals: [] }
+    const solid = { rows: ['TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT', 'TTTTTTTT'], npcs: [] }
     expect(nudge(solid, rect, 3, 2, { x: 0, y: 0 })).toEqual({ x: 3, y: 2 })
   })
 })

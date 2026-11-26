@@ -325,3 +325,42 @@ it('places the doll so its feet stand on the tile it is given', () => {
   expect(at.y + 43).toBe(4 * TS + 15)
   expect(at.x + 10 + 16).toBe(5 * TS + 8)
 })
+
+// Fase 3: the town's keepers and the road signs.
+it('draws each town keeper with its name over it, and each road with where it leads', () => {
+  const texts = []
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function () {
+    const ctx = anyContext(this)
+    ctx.fillText = (text) => texts.push(text)
+    ctx.measureText = (text) => ({ width: text.length * 4 })
+    return ctx
+  })
+  vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const town = WORLDS.find((world) => world.id === 'laboratorio')
+  render(
+    <I18nProvider locale="pt-BR">
+      <GameScene world={town} zoneRect={null} look={look} />
+    </I18nProvider>,
+  )
+  for (const name of ['Mercador', 'Alquimista', 'Ferreiro', 'Joalheiro', 'Quadro de missões']) expect(texts).toContain(name)
+  expect(texts).toContain('< Floresta do JavaScript')
+  expect(texts).toContain('> Biblioteca das Linguagens')
+  expect(texts).toContain('v Cidade das Humanas')
+})
+
+it('keeps the painted map when the hunted zone changes: only a new region repaints', () => {
+  let made = 0
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function () {
+    made++
+    return anyContext(this)
+  })
+  vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { rerender } = render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} />)
+  const first = made
+  rerender(<GameScene world={FLORESTA_JS} zoneRect={ZONES['floresta-js'].z2.rect} look={look} />)
+  expect(made).toBe(first)
+  rerender(<GameScene world={WORLDS.find((world) => world.id === 'caverna-sql')} zoneRect={null} look={look} />)
+  expect(made).toBeGreaterThan(first)
+})

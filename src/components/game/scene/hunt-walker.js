@@ -1,10 +1,12 @@
 import { canStand } from './placement.js'
 import { DIRECTIONS, STEP_MS, sideOf } from './walk.js'
 
-// The hero walking the hunted zone. Presentation only: the server never hears of it, and the fight
-// logs are relative to the hero, so walking changes nothing but where the fights are drawn.
+// The hero walking a region (fase 3: one walking view for towns and hunts). The fight logs are relative
+// to the hero, so walking changes nothing but where the fights are drawn; the game view hears of each
+// step (onStep) to follow roads, hunt the zone the hero stands in and save where it is.
 // The player steers with keys, the pad or a click; left alone for IDLE_MS the hero strolls to a spot a
-// few tiles away by itself (only while the caller allows it: between packs of a hunt).
+// few tiles away by itself (only while the caller allows it: between packs of a hunt), inside roamIn
+// when it is set (the hunted zone, kept off the map's edge and its roads).
 // A plain object with no timers: the scene's frame clock drives it through update(now).
 
 export const IDLE_MS = 3000
@@ -64,13 +66,19 @@ export function roamTarget(world, rect, from, random = Math.random) {
 const slide = (a, b, max) => (Math.abs(b - a) <= max ? b : a + Math.sign(b - a) * max)
 const directionTo = (from, to) => (to.x > from.x ? 'right' : to.x < from.x ? 'left' : to.y > from.y ? 'down' : 'up')
 
-// world: the map. rect: the hunted zone (the hero never leaves it). start: { x, y } tile.
-// reduced: no sliding between tiles. random: for the strolls.
-export function createWalker({ world, rect, start, random = Math.random, reduced = false }) {
+// world: the map. rect: where the hero may walk (the whole map, or a zone). start: { x, y } tile.
+// reduced: no sliding between tiles. random: for the strolls. facing: the way it faces at first.
+// onStep(tile, dir): called after each step onto a new tile. onFace(dir): called when it turns without
+// stepping (bumping into a terminal, arriving next to a clicked one).
+export function createWalker({ world, rect, start, random = Math.random, reduced = false, facing = 'down', onStep, onFace }) {
   const w = {
     tile: { x: start.x, y: start.y },
     pos: { x: start.x, y: start.y },
-    side: 1,
+    side: sideOf(facing, 1),
+    // The way it last walked or tried to: the terminal or NPC it faces wins (shared/world/map.js).
+    facing,
+    // Where strolls stay (a rect), or null for anywhere in rect.
+    roamIn: null,
     // Walking right now (sliding, or stepped in the last moments).
     moving: false,
     roaming: false,
@@ -88,16 +96,30 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     const d = DIRECTIONS[dir]
     if (!d) return false
     w.side = sideOf(dir, w.side)
+    const turned = w.facing !== dir
+    w.facing = dir
     const x = w.tile.x + d.x
     const y = w.tile.y + d.y
-    if (!canStand(world, rect, x, y)) return false
+    if (!canStand(world, rect, x, y)) {
+      if (turned) onFace?.(dir)
+      return false
+    }
     w.tile = { x, y }
     w.stepAt = now
     if (reduced) {
       w.pos.x = x
       w.pos.y = y
     }
+    onStep?.(w.tile, dir)
     return true
+  }
+  // Where a stroll may go: inside roamIn (and rect).
+  const roamRect = () => {
+    const r = w.roamIn
+    if (!r) return rect
+    const x = Math.max(r.x, rect.x)
+    const y = Math.max(r.y, rect.y)
+    return { x, y, w: Math.min(r.x + r.w, rect.x + rect.w) - x, h: Math.min(r.y + r.h, rect.y + rect.h) - y }
   }
   const steer = (now) => {
     w.lastInput = now
@@ -112,6 +134,15 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     step(dir, now)
     w.nextAt = now + STEP_MS
   }
+  // Keeps a direction held without stepping now: the first step comes STEP_MS later, unless it is
+  // released first (a key held across a road, game-view.jsx).
+  w.hold = (dir, now) => {
+    steer(now)
+    w.path = []
+    w.held = dir
+    w.pace = STEP_MS
+    w.nextAt = now + STEP_MS
+  }
   w.release = (dir) => {
     if (dir && w.held !== dir) return
     w.held = null
@@ -124,9 +155,11 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     step(dir, now)
   }
   // Walks to a clicked tile. A tile the hero can't stand on is reached by its nearest floor neighbor.
+  // Arriving next to it, the hero turns to face it (so Enter picks that terminal or NPC).
   w.walkTo = (x, y, now) => {
     steer(now)
     w.held = null
+    w.faceAt = null
     let path = pathWithin(world, rect, w.tile, { x, y })
     if (!path) {
       let best = null
@@ -135,10 +168,20 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
         if (p && (!best || p.length < best.length)) best = p
       }
       path = best
+      if (path) w.faceAt = { x, y }
     }
     w.path = path ?? []
     w.pace = STEP_MS
     w.nextAt = now
+    if (path && !path.length) turnTo()
+  }
+  const turnTo = () => {
+    const at = w.faceAt
+    w.faceAt = null
+    if (!at || Math.abs(at.x - w.tile.x) + Math.abs(at.y - w.tile.y) !== 1) return
+    w.facing = directionTo(w.tile, at)
+    w.side = sideOf(w.facing, w.side)
+    onFace?.(w.facing)
   }
 
   // Advances to `now` (ms, the frame clock). roam: whether a stroll may start.
@@ -152,12 +195,14 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
         const next = w.path.shift()
         if (!step(directionTo(w.tile, next), w.nextAt)) w.path = []
         if (!w.path.length && w.roaming) w.pauseUntil = now + ROAM_PAUSE_MS
+        if (!w.path.length) turnTo()
       }
       w.nextAt += w.pace
     }
     if (!w.held && !w.path.length && roam && !reduced && now - w.lastInput >= IDLE_MS && now >= w.pauseUntil) {
-      const target = roamTarget(world, rect, w.tile, random)
-      const path = target && pathWithin(world, rect, w.tile, target)
+      const area = roamRect()
+      const target = roamTarget(world, area, w.tile, random)
+      const path = target && pathWithin(world, area, w.tile, target)
       if (path?.length) {
         w.path = path
         w.pace = ROAM_STEP_MS
