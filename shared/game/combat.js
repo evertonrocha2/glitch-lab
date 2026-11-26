@@ -75,6 +75,8 @@
 //   phase   who 'enemy', src, skill, phase (2 or 3). Its adds spawn right after, at the same t.
 //   enrage  who 'enemy', src. The hero dies right after.
 //   death   who 'hero', or who 'enemy' with src.
+//   fragment who 'enemy', src, amount: knowledge fragments that enemy dropped, right after its death,
+//           same t. Never from simulateFight: hunt.js marks them on the shown samples (fase 4).
 import { createRng } from './rng.js'
 import { tuneSkill } from './skill-mods.js'
 import { SKILLS, skillPower } from './skills.js'

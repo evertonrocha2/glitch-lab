@@ -22,6 +22,7 @@ export const KIND_COLORS = {
   enemyHit: '#ff6b6b',
   enrage: '#ff4d4d',
   phase: '#ffffff',
+  fragment: '#c9a0ff', // knowledge fragments a fallen enemy drops (fase 4)
 }
 
 export const elementColor = (element) => ELEMENT_COLORS[element] ?? ELEMENT_COLORS.physical

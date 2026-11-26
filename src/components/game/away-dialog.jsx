@@ -32,7 +32,7 @@ export function useCounts() {
 export default function AwayDialog({ away, studyClaimed, onClose, onStudy }) {
   const { t, list, time } = useCounts()
   const titleId = useId()
-  const hunt = away ? list([['kills', away.kills], ['gold', away.gold], ['items', away.items], ['gems', away.gems], ['scrap', away.scrap], ['deaths', away.deaths]]) : ''
+  const hunt = away ? list([['kills', away.kills], ['gold', away.gold], ['fragments', away.fragments ?? 0], ['items', away.items], ['gems', away.gems], ['scrap', away.scrap], ['deaths', away.deaths]]) : ''
   const study = studyClaimed
     ? list([
         ['fragments', studyClaimed.fragments],

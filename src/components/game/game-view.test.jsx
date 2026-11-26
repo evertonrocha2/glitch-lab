@@ -197,7 +197,7 @@ it('plays a boss fight back and then shows the result', async () => {
       { t: 2000, who: 'enemy', type: 'death' },
     ],
     enemy: { id: 'rei-slime', sprite: 'rei-slime', element: 'poison', base: { hp: 1300 } },
-    loot: { items: 1, gems: 1, scrap: 0, goldLost: 0 },
+    loot: { items: 1, gems: 1, scrap: 0, goldLost: 0, fragments: 30 },
   }
   const api = makeApi(before)
   api.fightBoss.mockResolvedValue({ ...after, fight })
@@ -210,7 +210,7 @@ it('plays a boss fight back and then shows the result', async () => {
   // Every zone is open from the start: a first win opens nothing.
   expect(await screen.findByText('Rei Slime derrotado!')).toBeInTheDocument()
   expect(screen.queryByText(/Zona 2 aberta|Zona 2 abre/)).toBeNull()
-  expect(screen.getByText('Prêmio: 1 item, 1 gema')).toBeInTheDocument()
+  expect(screen.getByText('Prêmio: 1 item, 1 gema, +30 fragmentos')).toBeInTheDocument()
 })
 
 it('shows no "zonas à frente bloqueadas" sign, even for an answer that still marks zones locked', async () => {

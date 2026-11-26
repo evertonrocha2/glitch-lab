@@ -1035,6 +1035,7 @@ function ResultBanner({ replay, t, counts, onClose }) {
       ['items', fight.loot?.items ?? 0],
       ['gems', fight.loot?.gems ?? 0],
       ['scrap', fight.loot?.scrap ?? 0],
+      ['fragments', fight.loot?.fragments ?? 0],
     ])
     lines.push(loot ? t('game.result.loot', { list: loot }) : t('game.result.again'))
   } else {

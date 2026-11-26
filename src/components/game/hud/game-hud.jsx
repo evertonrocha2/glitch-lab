@@ -26,9 +26,10 @@ const LOG_TONE_CLASS = {
   crit: 'gw-log-crit text-[#f2c14e]',
   good: 'text-[#7dffb0]',
   loot: '',
+  fragment: 'text-[#c9a0ff]',
   info: 'text-[#a89fd0]',
 }
-const KIND_TONE = { hurt: 'bad', heal: 'good', leech: 'good', shield: 'good', potion: 'good', buff: 'good', hit: 'dealt', skill: 'dealt', cast: 'dealt', dot: 'dealt', crit: 'crit' }
+const KIND_TONE = { fragment: 'fragment', hurt: 'bad', heal: 'good', leech: 'good', shield: 'good', potion: 'good', buff: 'good', hit: 'dealt', skill: 'dealt', cast: 'dealt', dot: 'dealt', crit: 'crit' }
 // The newest line (last) is fully lit, each older one dimmer.
 const LOG_FADE = [1, 0.78, 0.6, 0.46, 0.34]
 // The log's fill lets the scene show through; outline and bevel stay solid.

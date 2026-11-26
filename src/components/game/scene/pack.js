@@ -87,6 +87,7 @@ function floaterFor(ev, amount, crit) {
   if (type === 'enrage') return { kind: 'enrage', key: 'game.fx.enrage', color: KIND_COLORS.enrage, big: true }
   if (type === 'phase') return { kind: 'phase', key: 'game.fx.phase', color: KIND_COLORS.phase, big: true }
   if (type === 'dot') return { kind: 'dot', text: num(amount), color: elementColor(element), big: false }
+  if (type === 'fragment') return { kind: 'fragment', text: `+${num(amount)}`, color: KIND_COLORS.fragment, big: false }
   if (amount === undefined) return null
   if (ev.who === 'enemy') {
     if (amount <= 0 && ev.absorbed > 0) return { kind: 'shield', text: num(ev.absorbed), color: KIND_COLORS.shield, big: false }
@@ -181,6 +182,9 @@ export function buildPack(fight, { speed = BOSS_SPEED, fallback = null } = {}) {
       } else if (type === 'enrage') {
         float(t, f.src, floaterFor(ev))
         shake(t, 4)
+      } else if (type === 'fragment') {
+        // Knowledge fragments rise from where the enemy fell, as it falls.
+        float(t + HURT_LAG_MS, f.src, floaterFor(ev, ev.amount, false))
       }
       continue
     }

@@ -124,6 +124,13 @@ it('colors crits gold, hits dealt light and loot in its rarity trim', () => {
   expect(loot).toHaveStyle({ color: RARITY_TRIM.epic })
 })
 
+it('says what fragments a fallen enemy dropped, in fragment purple', () => {
+  ui({ log: [{ t: 1, who: 'enemy', type: 'death', src: 0 }, { t: 1, who: 'enemy', type: 'fragment', src: 0, amount: 2 }] }, 'pt-BR')
+  const lines = within(screen.getByRole('log')).getAllByRole('listitem')
+  expect(lines.at(-1)).toHaveTextContent('Fragmentos: +2')
+  expect(lines.at(-1)).toHaveAttribute('data-tone', 'fragment')
+})
+
 it('fades the older log lines, the newest stays full', () => {
   const log = Array.from({ length: 5 }, (_, i) => ({ t: i, who: 'hero', type: 'hit', amount: 10 + i }))
   ui({ log })

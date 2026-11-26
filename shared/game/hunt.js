@@ -4,6 +4,7 @@
 // one left (minus the walk between them), so every equipped skill gets its turn.
 import { simulateFight } from './combat.js'
 import { DIFFICULTIES, packFor } from './enemies.js'
+import { huntFragments, markFragments } from './fragments.js'
 import { BAG_SIZE, SUPPORT_SALVAGE_SCRAP, rollGem, rollItem, rollSupport, salvageValue } from './items.js'
 import { createRng } from './rng.js'
 import { huntXp } from './xp.js'
@@ -70,8 +71,9 @@ const potionFights = (perFight, stock) => {
 }
 
 // xpMultiplier: the study multiplier that held for this stretch (1 without study). dropLuck: the luck
-// elixir's bonus over the stretch (elixirs.js), raising the item, gem and support drop chances; each
-// roll still takes one draw, so 0 rolls exactly what it always did.
+// elixir's bonus over the stretch (elixirs.js), raising the item, gem, support and fragment drop chances;
+// each roll still takes one draw, so 0 rolls exactly what it always did. Fragments (fase 4, fragments.js)
+// roll from their own stream, so every other drop stays what it was.
 export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFree, xpMultiplier = 1, dropLuck = 0 }) {
   const elapsedMs = Math.min(Math.max(now - startedAt, 0), MAX_HUNT_MS)
   const diff = DIFFICULTIES[difficulty]
@@ -133,6 +135,10 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     else scrapFromOverflow += SUPPORT_SALVAGE_SCRAP
   }
 
+  const tier = zone.tier ?? 1
+  const fragments = huntFragments(createRng(seed).fork('fragments'), { kills, elites, tier, luck: dropLuck })
+  const shownRng = createRng(seed).fork('shown-fragments')
+
   return {
     elapsedMs,
     kills,
@@ -145,7 +151,8 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     gems,
     supports,
     scrapFromOverflow,
+    fragments,
     potionsUsed,
-    samples: withPotions.results.slice(0, SHOWN_SAMPLES),
+    samples: withPotions.results.slice(0, SHOWN_SAMPLES).map((fight) => markFragments(fight, shownRng, { tier, luck: dropLuck })),
   }
 }

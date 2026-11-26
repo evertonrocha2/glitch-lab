@@ -58,6 +58,8 @@ export const newHero = () => ({
   elixirs: {},
   market: null,
   quests: null,
+  // Fase 4: the boss wins that paid fragments today, { day, paid: ['world:zone:difficulty'] }.
+  bossFragments: null,
 })
 
 // A saved hero with any field added after it was saved filled in from newHero. The look is always

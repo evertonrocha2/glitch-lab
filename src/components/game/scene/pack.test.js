@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { KIND_COLORS } from './floaters.js'
 import { activeFloaters, buildPack, FX_KINDS, fxFor, packAt, shakeAt, stackFloaters } from './pack.js'
 
 const fight = (log, extra = {}) => ({ won: true, reason: 'killed', ms: 3000, heroHpLeft: 10, potionsUsed: { hp: 0, mp: 0 }, log, ...extra })
@@ -198,5 +199,22 @@ describe('floater colors and words', () => {
     expect(one({ t: 1, who: 'enemy', src: 0, type: 'hit', amount: 5 })).toMatchObject({ target: -1, text: '5' })
     expect(one({ t: 1, who: 'enemy', src: 0, type: 'phase', phase: 2 })).toMatchObject({ target: 0, key: 'game.fx.phase', big: true })
     expect(one({ t: 1, who: 'enemy', src: 0, type: 'enrage' })).toMatchObject({ target: 0, key: 'game.fx.enrage' })
+  })
+})
+
+describe('knowledge fragments (fase 4)', () => {
+  it('floats the fragments a fallen enemy dropped over it, in fragment purple', () => {
+    const pack = buildPack(
+      fight([
+        spawn(0),
+        { t: 1000, who: 'hero', type: 'hit', target: 0, hits: [{ target: 0, amount: 100 }], amount: 100 },
+        { t: 1000, who: 'enemy', type: 'death', src: 0 },
+        { t: 1000, who: 'enemy', type: 'fragment', src: 0, amount: 2 },
+      ]),
+      { speed: 1 },
+    )
+    const drop = pack.floaters.find((f) => f.kind === 'fragment')
+    expect(drop).toMatchObject({ target: 0, text: '+2', color: KIND_COLORS.fragment })
+    expect(pack.floaters.filter((f) => f.kind === 'hurt')).toEqual([])
   })
 })

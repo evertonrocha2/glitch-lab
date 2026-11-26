@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { simulateFight } from '../../../shared/game/combat.js'
 import { buffFighter, elixirEffects } from '../../../shared/game/elixirs.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
+import { BOSS_FIRST_FRAGMENTS, BOSS_FRAGMENTS } from '../../../shared/game/fragments.js'
 import { pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
 import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, settleHunt } from '../../../shared/game/hunt.js'
 import { BAG_SIZE, rollGem, rollItem, rollSupport, salvageValue } from '../../../shared/game/items.js'
@@ -93,7 +94,7 @@ const dueForSync = (hunt, now) => Boolean(hunt) && (now - hunt.startedAt >= AWAY
 
 // The running hunt so far, plus its first sample fights (log and foe) for the client to animate.
 const previewOf = (result) =>
-  result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold, xp: result.xp, samples: result.samples } : null
+  result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold, xp: result.xp, fragments: result.fragments, samples: result.samples } : null
 
 // Pays the running hunt into the hero and answers the AwaySummary when it ran long enough to show.
 // keep: the hunt goes on from now (sync), its next stretch at multiplier (today's, as it is now);
@@ -112,6 +113,7 @@ export function settle(hero, now, { keep, multiplier = 1, today }) {
   const paidAt = hero.hunt.xpMultiplier ?? 1
   hero.xp += result.xp
   hero.gold += result.gold
+  hero.fragments += result.fragments
   hero.items.push(...result.items, ...result.gems, ...result.supports)
   hero.scrap += result.scrapFromOverflow
   hero.potions.hp = Math.max(0, hero.potions.hp - result.potionsUsed.hp)
@@ -124,6 +126,7 @@ export function settle(hero, now, { keep, multiplier = 1, today }) {
     elites: result.elites,
     deaths: result.deaths,
     gold: result.gold,
+    fragments: result.fragments,
     items: result.items.length,
     gems: result.gems.length,
     supports: result.supports.length,
@@ -266,9 +269,10 @@ export function stash(hero, drop) {
 }
 
 // One boss fight, simulated here (an instant replay: the client plays its log, format in combat.js). The first win per world, difficulty and zone marks the zone beaten,
-// drops 1 item (rarity boost +1), 1 gem and 1 support gem and pays bossXp at today's multiplier; later wins pay
-// nothing, so a script can't farm the boss. An Inferno loss costs 10% of the gold; potions drunk are
-// gone either way.
+// drops 1 item (rarity boost +1), 1 gem and 1 support gem, pays bossXp at today's multiplier and
+// BOSS_FIRST_FRAGMENTS knowledge fragments (fase 4). A later win pays BOSS_FRAGMENTS once a day per
+// boss and difficulty, and nothing more, so a script can't farm the boss. An Inferno loss costs 10% of
+// the gold; potions drunk are gone either way.
 export async function fightBoss(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
@@ -283,12 +287,20 @@ export async function fightBoss(store, user, today, body) {
     const result = simulateFight({ hero: buffFighter(fighterOf(draft, level), boost.damage), enemies: [enemy], seed })
     draft.potions.hp = Math.max(0, draft.potions.hp - result.potionsUsed.hp)
     draft.potions.mp = Math.max(0, draft.potions.mp - result.potionsUsed.mp)
-    const loot = { items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
+    const loot = { items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0, fragments: 0 }
     if (result.won) {
       draft.quests = countBoss(questState(draft.quests, ctx.today, level))
       const worldProgress = (draft.progress[target.world] ??= {})
       const beaten = (worldProgress[target.difficulty] ??= [])
-      if (!beaten.includes(target.zone)) {
+      const first = !beaten.includes(target.zone)
+      const key = `${target.world}:${target.zone}:${target.difficulty}`
+      const paidToday = draft.bossFragments?.day === ctx.today ? draft.bossFragments.paid : []
+      if (first || !paidToday.includes(key)) {
+        loot.fragments = first ? BOSS_FIRST_FRAGMENTS : BOSS_FRAGMENTS
+        draft.fragments += loot.fragments
+        draft.bossFragments = { day: ctx.today, paid: [...paidToday, key] }
+      }
+      if (first) {
         beaten.push(target.zone)
         const diff = DIFFICULTIES[target.difficulty]
         const rng = root.fork('drops')

@@ -122,9 +122,12 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
   expect(samples.map((fight) => fight.enemy.elite)).toEqual([false, true, false])
   expect(synced.hero.lastAway).toEqual(synced.away)
   expect(Object.keys(synced.away).sort()).toEqual([
-    'deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'supports', 'xp', 'xpMultiplier',
+    'deaths', 'elapsedMs', 'elites', 'fragments', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'supports', 'xp', 'xpMultiplier',
   ])
   expect(synced.hero.items.length).toBe(synced.away.items + synced.away.gems + synced.away.supports)
+  // Fase 4: the monsters dropped knowledge fragments, paid into the hero.
+  expect(synced.away.fragments).toBeGreaterThan(0)
+  expect(synced.hero.fragments).toBe(started.hero.fragments + synced.away.fragments)
   expect(synced.hero.hunt).toMatchObject({ zone: 'z1', startedAt: Date.now(), claims: 1 })
 })
 
@@ -274,14 +277,28 @@ it('records a boss win with its loot', async () => {
   expect(body.level.xp).toBe(ready.level.xp + body.fight.loot.xp)
   expect(body.fight.loot.levelsGained).toBe(body.level.level - ready.level.level)
 
-  // Only the first win pays: a beaten boss fought again drops nothing.
+  // Fase 4: the first win drops 30 knowledge fragments.
+  expect(body.fight.loot.fragments).toBe(30)
+  expect(body.hero.fragments).toBe(ready.hero.fragments + 30)
+
+  // Only the first win pays gear and xp: a beaten boss fought again drops nothing more that day.
   const again = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
   expect(again.fight.won).toBe(true)
   expect(again.fight.log.length).toBeGreaterThan(0)
-  expect(again.fight.loot).toEqual({ items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 })
+  expect(again.fight.loot).toEqual({ items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0, fragments: 0 })
   expect(again.level.xp).toBe(body.level.xp)
   expect(again.hero.items).toEqual(body.hero.items)
+  expect(again.hero.fragments).toBe(body.hero.fragments)
   expect(again.hero.progress[FOREST].normal).toEqual(['z1'])
+
+  // The next day a win pays 10 fragments again, once.
+  later(24 * HOUR)
+  const tomorrow = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
+  expect(tomorrow.fight.won).toBe(true)
+  expect(tomorrow.fight.loot).toMatchObject({ items: 0, xp: 0, fragments: 10 })
+  expect(tomorrow.hero.fragments).toBe(again.hero.fragments + 10)
+  const twice = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
+  expect(twice.fight.loot.fragments).toBe(0)
 })
 
 it('takes 10% of the gold when an Inferno boss wins', async () => {
