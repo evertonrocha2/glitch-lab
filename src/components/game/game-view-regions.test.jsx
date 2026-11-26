@@ -195,11 +195,20 @@ describe('the town', () => {
     expect(onNpc).toHaveBeenCalledWith('merchant')
   })
 
-  it('says the shop opens soon when no one answers onNpc', async () => {
+  it('opens the keeper in the panel, with or without onNpc', async () => {
     ui({ start: { world: 'laboratorio', x: merchant.x + 1, y: merchant.y } })
     await screen.findByRole('tablist')
     fireEvent.click(screen.getByRole('button', { name: /Falar com o Mercador/ }))
-    expect(status()).toContain('Mercador: abre em breve.')
+    expect(screen.getByRole('tab', { name: 'Cidade' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Mercador' })).toBeInTheDocument()
+  })
+
+  it('opens the Forge for the smith', async () => {
+    const smith = worldById('laboratorio').npcs.find((npc) => npc.id === 'smith')
+    ui({ start: { world: 'laboratorio', x: smith.x + 1, y: smith.y } })
+    await screen.findByRole('tablist')
+    fireEvent.click(screen.getByRole('button', { name: /Falar com o Ferreiro/ }))
+    expect(screen.getByRole('tab', { name: 'Forja' })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('reads the quest board', async () => {

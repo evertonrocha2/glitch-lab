@@ -17,7 +17,8 @@ import GameIcon from './icons/game-icon.jsx'
 import HeroLoading from './loading/hero-loading.jsx'
 import { rememberHero } from './loading/hero-memory.js'
 import LookDialog from './look-dialog.jsx'
-import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
+import { npcTarget } from './npc/npcs.js'
+import GamePanel, { TAB_GRID, TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
 import TreeTab from './panel/tree-tab.jsx'
 import WorldTab from './panel/world-tab.jsx'
@@ -95,6 +96,13 @@ const ACTIONS = [
   'upgradeSkill',
   'saveLoadout',
   'saveLook',
+  'buyMarketItem',
+  'sellItems',
+  'rerollMarket',
+  'buyElixir',
+  'buyJewel',
+  'combineGems',
+  'claimQuest',
 ]
 
 const isConflict = (err) => err?.status === 409 || err?.code === 'GAME_CONFLICT'
@@ -192,7 +200,7 @@ export function startPlace(start, view, locale) {
 //   actions), each resolving to the server answer. onSave(position, { keepalive }): keeps where the
 //   hero stands. onWorldChange(worldId): the hero crossed into another region.
 //   onNpc(id): Enter next to a town keeper ('merchant' | 'alchemist' | 'smith' | 'jeweler' |
-//   'quests'); without it the status line says the shop opens soon.
+//   'quests'); optional: the panel opens that keeper either way (the Cidade tab, the Forge for the smith).
 //   studyHref: the study page the "Estudar" entries open, in the study window over the game.
 // GameView carries its own StudyWindowProvider; a page that mounts one above it shares that one.
 export default function GameView(props) {
@@ -211,6 +219,8 @@ function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
   const [view, setView] = useState(null)
   const [tab, setTab] = useState('hero')
   const [drawer, setDrawer] = useState(false)
+  // The town keeper open in the panel's Cidade tab (null: the list).
+  const [keeper, setKeeper] = useState(null)
   const [away, setAway] = useState(null)
   const [conflict, setConflict] = useState(false)
   const [error, setError] = useState('')
@@ -560,8 +570,8 @@ function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
     const found = nearRef.current
     if (!found || opening.current) return
     if (found.kind === 'npc') {
-      if (onNpc) onNpc(found.npc.id)
-      else setNotice({ kind: 'npc', id: found.npc.id })
+      openNpc(found.npc.id)
+      onNpc?.(found.npc.id)
       return
     }
     opening.current = true
@@ -616,6 +626,15 @@ function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
     setDrawer(true)
     focusTab.current = true
   }, [])
+  // A town keeper in the panel: its view in the Cidade tab, or the Forge tab for the smith.
+  const openNpc = useCallback(
+    (id) => {
+      const to = npcTarget(id)
+      setKeeper(to.npc)
+      openTab(to.tab)
+    },
+    [openTab],
+  )
 
   // Opened on a tab, the drawer puts focus on that tab.
   useEffect(() => {
@@ -679,6 +698,8 @@ function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
       view={view}
       tab={tab}
       onTab={setTab}
+      npc={keeper}
+      onNpc={setKeeper}
       actions={actions}
       studyHref={studyHref}
       treeTab={(shared) => <TreeTab {...shared} />}
@@ -824,7 +845,7 @@ function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
               <div className="gw-scroll min-h-0 overflow-y-auto pt-1.5">{panel}</div>
             ) : (
               // Closed, the drawer still offers the tabs: one tap opens it on that tab.
-              <div className="grid grid-cols-5 gap-1">
+              <div className={TAB_GRID}>
                 {TABS.map(({ id, icon }) => (
                   <Frame as="button" tone="inset" key={id} type="button" onClick={() => openTab(id)} className={`${TAB_LOOK} text-[#a89fd0] hover:text-[#e9e4ff]`}>
                     <GameIcon name={icon} size={1} />

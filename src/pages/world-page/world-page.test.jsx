@@ -46,6 +46,13 @@ vi.mock('../../lib/api.js', () => ({
   upgradeSkill: vi.fn(),
   saveLoadout: vi.fn(),
   saveLook: vi.fn(),
+  buyMarketItem: vi.fn(),
+  sellItems: vi.fn(),
+  rerollMarket: vi.fn(),
+  buyElixir: vi.fn(),
+  buyJewel: vi.fn(),
+  combineGems: vi.fn(),
+  claimQuest: vi.fn(),
 }))
 
 const at = (position) => ({ position })

@@ -9,8 +9,13 @@ import { placeIn } from '../../components/world/enem-worlds.js'
 import {
   allocateTalents,
   AuthError,
+  buyElixir,
+  buyJewel,
+  buyMarketItem,
   buyPotions,
   buySkill,
+  claimQuest,
+  combineGems,
   equipItem,
   fightBoss,
   forgeReroll,
@@ -21,10 +26,12 @@ import {
   getHunt,
   getWorld,
   openChest,
+  rerollMarket,
   respecTalents,
   saveLoadout,
   saveLook,
   saveWorldPosition,
+  sellItems,
   socketSupport,
   startHunt,
   stopHunt,
@@ -60,6 +67,13 @@ const gameCalls = () => ({
   upgradeSkill,
   saveLoadout,
   saveLook,
+  buyMarketItem,
+  sellItems,
+  rerollMarket,
+  buyElixir,
+  buyJewel,
+  combineGems,
+  claimQuest,
 })
 const GAME_CALLS = [
   'syncGame',
@@ -82,6 +96,13 @@ const GAME_CALLS = [
   'upgradeSkill',
   'saveLoadout',
   'saveLook',
+  'buyMarketItem',
+  'sellItems',
+  'rerollMarket',
+  'buyElixir',
+  'buyJewel',
+  'combineGems',
+  'claimQuest',
 ]
 
 // What the student already finished today, for the study box's link. Unknown counts as not done.
@@ -114,8 +135,7 @@ function useDoneToday(getToken, enabled) {
 // /mundo: Glitch World, an open world (fase 3). The hero walks from the town along the roads into
 // every region; standing in a zone hunts there. The server keeps where the hero stands and is the
 // judge of every fight; the game view does the walking.
-// The town keepers (shops, quest board) only answer "opening soon" for now: GameView's onNpc hook is
-// where their panels plug in.
+// The town keepers (shops, quest board) open in the panel's Cidade tab (GameView does it on Enter).
 export default function WorldPage() {
   const { t, locale } = useI18n()
   const { getToken, signOut } = useAuth()
