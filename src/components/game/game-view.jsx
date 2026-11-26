@@ -4,6 +4,7 @@ import { worldById } from '../../../shared/world/worlds.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
+import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
 import GamePanel, { TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
@@ -229,6 +230,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
 
   // GameScene compares playback.fights by identity: a new array would restart the fight.
   const replayFight = replay?.fight
+  const gear = useMemo(() => gearOf(view?.hero.items), [view?.hero.items])
   const replayFights = useMemo(() => (replayFight ? [replayFight] : null), [replayFight])
   const samplesKey = view?.huntPreview?.samples ? JSON.stringify(view.huntPreview.samples) : ''
   const samples = useMemo(() => (samplesKey ? JSON.parse(samplesKey) : null), [samplesKey])
@@ -337,6 +339,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
                   zoneRect={zoneRect}
                   lockedRects={locked}
                   look={view.hero.look}
+                  gear={gear}
                   playback={playback}
                   zoneName={`${t(`world.name.${worldId}`)}, ${zoneLabel}`}
                 />

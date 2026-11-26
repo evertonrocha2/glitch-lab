@@ -1,54 +1,16 @@
 import { blob, ellipse, hash, line, P, rect, SHADOW, sprite } from './pixels.js'
 
-// The hero and the enemies, drawn in the scene's shaded 16px style. Each actor paints into a pixel buffer
+// The enemies, drawn in the scene's shaded 16px style. Each actor paints into a pixel buffer
 // first, then lands on the canvas with its anim's transform (lunge, squash, white flash, fade).
 //
 // API (Task 16 drives these each frame):
-//   drawHero(ctx, x, y, { look, anim, t, p, facing })
 //   drawEnemy(ctx, x, y, { sprite, anim, t, p, elite, hp, facing })
-// x, y: the top left of the actor's 16x16 tile in canvas pixels; feet stand on its bottom row. Bosses are
+// (The hero is a paper doll: see ../hero/.) x, y: the top left of the actor's 16x16 tile in canvas pixels; feet stand on its bottom row. Bosses are
 //   bigger and spill out of the tile upward and sideways.
 // anim: one of ANIMS. t: seconds, for idle loops. p: the anim's progress, 0 to 1 (attack, hurt, death).
-// facing: 1 looks right, -1 left. The hero defaults to 1, enemies to -1 (they face the hero on their left).
+// facing: 1 looks right, -1 left. Enemies default to -1 (they face the hero on their left).
 // hp: an optional 0..1 fraction for a small health bar over the enemy.
 export const ANIMS = ['idle', 'walk', 'attack', 'hurt', 'death']
-
-// look = { hood, outfit, hair }, each 0..7.
-export const LOOK_COLORS = {
-  // [dark, base, light]
-  hood: [
-    ['#4a22c4', '#6a3df0', '#9a7bff'],
-    ['#8a1c2c', '#c22a35', '#ff6b6b'],
-    ['#1f6a3a', '#2f9a52', '#6fd38a'],
-    ['#0f6d6a', '#1aa39a', '#6fe3d6'],
-    ['#a8701a', '#e0a030', '#ffd76a'],
-    ['#1c1d26', '#34364a', '#5a5d78'],
-    ['#a8366e', '#e0559a', '#ff9ac8'],
-    ['#7d8299', '#c9ccd8', '#ffffff'],
-  ],
-  // [base, dark]
-  outfit: [
-    ['#1a4fe0', '#12379e'],
-    ['#c22a35', '#7e1822'],
-    ['#2f9a52', '#1d6436'],
-    ['#9a5b2c', '#6e3d1c'],
-    ['#7a3df0', '#4a22a4'],
-    ['#5a5d78', '#34364a'],
-    ['#e0702a', '#a04a16'],
-    ['#e3e5ec', '#a9adbd'],
-  ],
-  hair: [
-    ['#3a2c40', '#1e1622'],
-    ['#7a4a26', '#4a2c17'],
-    ['#f2c14e', '#c98a1c'],
-    ['#d0502a', '#8e2f16'],
-    ['#ecebf3', '#a9a6bd'],
-    ['#3a78d4', '#22489a'],
-    ['#ff7ab8', '#c2468a'],
-    ['#4fbf6a', '#2a7f42'],
-  ],
-}
-const pick = (list, i) => list[Number.isInteger(i) && i >= 0 && i < list.length ? i : 0]
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v))
 
@@ -137,89 +99,8 @@ function motion(anim, p, facing) {
   return s
 }
 
-// ---------- hero ----------
-
-const HERO = [
-  '......oooo......',
-  '....oodhhHoo....',
-  '...odhhhhhHHo...',
-  '..odhhhhhhhhHo..',
-  '..odhrrRrrRdho..',
-  '..odresssseRdo..',
-  '..odsewssewSdo..',
-  '...osSssssSso...',
-  '..oobbbggbbboo..',
-  '.obbbbbggbbbbbo.',
-  '.obBbbbbbbbbBbo.',
-  '.osBbbbbbbbbBso.',
-  '..oBBbbbbbbBBo..',
-  '...oolloolloo...',
-  '...ollo..ollo...',
-  '...ooo....ooo...',
-]
-const LEGS_STEP = ['...oolloolloo...', '..ollo...ollo...', '..ooo.....ooo...']
-
-function heroPalette(look = {}) {
-  const [d, h, H] = pick(LOOK_COLORS.hood, look.hood)
-  const [b, B] = pick(LOOK_COLORS.outfit, look.outfit)
-  const [r, R] = pick(LOOK_COLORS.hair, look.hair)
-  return { o: '#1c1d26', h, H, d, s: '#f3c9a4', S: '#d9a27e', e: '#1c1d26', w: '#ffffff', b, B, l: '#2b2d3a', g: '#f2c14e', r, R }
-}
-
-function lantern(b, x, y, t) {
-  const glow = Math.sin(t * 6) > 0.6 ? '#fff3c0' : '#ffd76a'
-  P(b, x + 1, y - 1, '#3a2a1a')
-  rect(b, x, y, 3, 4, '#3a2a1a')
-  rect(b, x + 1, y + 1, 1, 2, glow)
-  P(b, x + 1, y, '#6b4022')
-}
-
-function sword(b, raised) {
-  if (raised) {
-    line(b, 13, 8, 15, 2, '#d9dde8')
-    P(b, 15, 1, '#ffffff')
-    P(b, 12, 9, '#f2c14e')
-    P(b, 13, 9, '#b9862a')
-    P(b, 14, 8, '#7a8094')
-    return
-  }
-  rect(b, 15, 6, 1, 6, '#d9dde8')
-  P(b, 15, 6, '#ffffff')
-  rect(b, 14, 12, 3, 1, '#f2c14e')
-  P(b, 15, 13, '#6b4022')
-}
-
-export function drawHero(ctx, x, y, { look, anim = 'idle', t = 0, p = 0, facing = 1 } = {}) {
-  const pal = heroPalette(look ?? {})
-  const s = motion(anim, p, facing)
-  const b = buffer()
-  const walking = anim === 'walk'
-  const breathe = anim === 'idle' && Math.sin(t * 2.5) > 0.4 ? 1 : 0
-  const step = walking ? Math.floor(t * 8) % 2 : 0
-  const rows = HERO.map((row, i) => (step && i >= 13 ? LEGS_STEP[i - 13] : row))
-  // The body above the legs sinks a pixel as the hero breathes (or bounces while walking).
-  rows.forEach((row, ry) => sprite(b, [row], pal, 0, ry + (ry < 13 ? breathe + (walking ? step : 0) : 0)))
-  sword(b, anim === 'attack' && p > 0.15 && p < 0.75)
-  lantern(b, 0, 11, t)
-
-  ellipse(ctx, x + 8 + s.dx, y + 15, Math.max(2, Math.round(6 * s.sx)), 2, SHADOW)
-  blit(ctx, b, { ox: x + s.dx, oy: y + s.dy, sx: s.sx, sy: s.sy, flip: facing < 0, flash: s.flash, alpha: s.alpha })
-
-  // The slash: a bright arc in front of the hero at the top of the lunge.
-  if (anim === 'attack' && p > 0.35 && p < 0.7) {
-    const k = (p - 0.35) / 0.35
-    for (let i = 0; i < 7; i++) {
-      const a = -1.2 + (i / 6) * 2.2 * Math.min(1, k * 1.6)
-      const cx = x + 8 + s.dx + facing * (4 + Math.round(Math.cos(a) * 8))
-      const cy = y + 9 + Math.round(Math.sin(a) * 7)
-      P(ctx, cx, cy, i % 2 ? '#c3e4ff' : '#ffffff')
-    }
-  }
-  if (anim === 'death') burst(ctx, x + 8, y + 8, s.q, [pal.h, pal.H, '#ffffff'], 1)
-}
-
-// Where the hero's lantern glows, for the light pass.
-export const heroLight = (x, y) => ({ x: x + 2, y: y + 12, r: 38, rgb: '255,190,100', a: 0.42 })
+// A warm glow around the hero doll's middle, for the light pass.
+export const heroLight = (x, y) => ({ x: x + 8, y: y + 4, r: 40, rgb: '255,190,100', a: 0.4 })
 
 // ---------- enemies ----------
 // Each art draws into a buffer in tile-local coordinates (feet on y = 15, centered on x = 8), facing left.

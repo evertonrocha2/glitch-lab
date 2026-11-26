@@ -6,8 +6,10 @@ import { FLORESTA_JS } from '../../../../shared/world/maps/floresta-js.js'
 import { TILES } from '../../../../shared/world/tiles.js'
 import { WORLDS } from '../../../../shared/world/worlds.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
-import { ANIMS, drawEnemy, drawHero, LOOK_COLORS } from './actors.js'
-import GameScene from './game-scene.jsx'
+import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
+import { clearHeroCache, heroSprite } from '../hero/hero-cache.js'
+import { ANIMS, drawEnemy } from './actors.js'
+import GameScene, { fightSpot, heroFrame } from './game-scene.jsx'
 import { paintLight } from './light.js'
 import { paintMap, TS } from './tiles.js'
 
@@ -30,7 +32,7 @@ function recorder() {
   return target
 }
 
-const look = { hood: 0, outfit: 0, hair: 0 }
+const look = DEFAULT_LOOK
 const z1 = ZONES['floresta-js'].z1.rect
 
 let reduce
@@ -81,23 +83,6 @@ it('fogs the locked rects and only those', () => {
   const extra = fogged.rects.slice(open.rects.length)
   expect(extra.length).toBeGreaterThan(0)
   expect(extra.every((r) => r.x >= 2 * TS)).toBe(true)
-})
-
-it('draws the hero in every look and anim, and the look changes the colors', () => {
-  for (const anim of ANIMS) {
-    for (let i = 0; i < LOOK_COLORS.hood.length; i++) {
-      const ctx = recorder()
-      drawHero(ctx, 16, 16, { look: { hood: i, outfit: i, hair: i }, anim, t: 0.3, p: 0.5 })
-      expect(ctx.rects.length, `${anim} ${i}`).toBeGreaterThan(40)
-    }
-  }
-  const styles = (l) => {
-    const ctx = recorder()
-    drawHero(ctx, 0, 0, { look: l })
-    return new Set(ctx.rects.map((r) => r.style))
-  }
-  expect(styles(look)).not.toEqual(styles({ hood: 3, outfit: 5, hair: 2 }))
-  expect(() => drawHero(recorder(), 0, 0, { look: { hood: 99, outfit: -1 } })).not.toThrow()
 })
 
 it('draws every enemy sprite in every anim, elite or not', () => {
@@ -230,4 +215,78 @@ it('plays a fight back: a loop runs under reduced motion and draws floating text
   tick(start + 1500 + 800)
   expect(texts).toContain('42')
   expect(texts).toContain('Dodge')
+})
+
+// The hero doll: a recording context, and the sprite canvases the scene put on the map.
+function drawing() {
+  const images = []
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function () {
+    const ctx = anyContext(this)
+    ctx.drawImage = (img, ...rest) => images.push({ img, rest })
+    return ctx
+  })
+  return images
+}
+
+it('maps each anim to a hero pose, with a 1px bob only while walking', () => {
+  expect(heroFrame('idle', 0, 0, false).pose).toBe('idle0')
+  expect(heroFrame('idle', 0, 0.6, false).pose).toBe('idle1')
+  expect(heroFrame('idle', 0, 1.1, false).pose).toBe('idle0')
+  expect(heroFrame('walk', 0.5, 0, false)).toMatchObject({ pose: 'idle0', bob: 0 })
+  expect(heroFrame('walk', 0.5, 0.6, false)).toMatchObject({ pose: 'idle1', bob: 1 })
+  expect(heroFrame('attack', 0.1, 0, false).pose).toBe('atk1')
+  expect(heroFrame('attack', 0.5, 0, false).pose).toBe('atk2')
+  expect(heroFrame('attack', 0.9, 0, false).pose).toBe('atk3')
+  expect(heroFrame('hurt', 0.3, 0, false).pose).toBe('hurt')
+  expect(heroFrame('death', 0.5, 0, false).pose).toBe('dead')
+})
+
+it('holds idle0 with no bob under reduced motion', () => {
+  for (const anim of ['idle', 'walk']) {
+    for (const t of [0, 0.6, 1.2]) expect(heroFrame(anim, 0.5, t, true)).toMatchObject({ pose: 'idle0', bob: 0 })
+  }
+  expect(heroFrame('attack', 0.5, 0, true).pose).toBe('atk2')
+  expect(heroFrame('hurt', 0.5, 0, true).pose).toBe('hurt')
+})
+
+it('draws the hero from heroSprite, not the 16px art', () => {
+  clearHeroCache()
+  const images = drawing()
+  vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} gear={{}} />)
+  expect(images.some((d) => d.img === heroSprite(look, {}, 'idle0'))).toBe(true)
+  expect(images.some((d) => d.img instanceof HTMLCanvasElement)).toBe(true)
+})
+
+it('shows a different sprite for different gear', () => {
+  clearHeroCache()
+  const images = drawing()
+  vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const gear = { weapon: { b: 'espada', r: 'rare' } }
+  const bare = heroSprite(look, {}, 'idle0')
+  const armed = heroSprite(look, gear, 'idle0')
+  expect(armed).not.toBe(bare)
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} gear={gear} />)
+  expect(images.some((d) => d.img === armed)).toBe(true)
+  expect(images.some((d) => d.img === bare)).toBe(false)
+})
+
+it('draws only idle0 for the hero with reduced motion', () => {
+  reduce = true
+  clearHeroCache()
+  const images = drawing()
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} gear={{}} />)
+  expect(images.some((d) => d.img === heroSprite(look, {}, 'idle0'))).toBe(true)
+  expect(images.some((d) => d.img === heroSprite(look, {}, 'idle1'))).toBe(false)
+})
+
+it('puts the doll feet on the ground line of the 16px hero, body box centered on its tile', () => {
+  const images = drawing()
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} gear={{}} />)
+  const spot = fightSpot(FLORESTA_JS, z1)
+  const hit = images.find((d) => d.img === heroSprite(look, {}, 'idle0'))
+  expect(hit.rest[1] + 43).toBe(spot.hero.y * TS + 15)
+  expect(hit.rest[0] + 10 + 16).toBe(spot.hero.x * TS + 8)
 })

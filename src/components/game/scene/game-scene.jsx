@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { isSolid } from '../../../../shared/world/tiles.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { SPRITE } from '../hero/draw-hero.js'
+import { heroSprite } from '../hero/hero-cache.js'
 import { useReducedMotion } from '../use-reduced-motion.js'
-import { drawEnemy, drawHero, enemyLight, heroLight, isBossSprite } from './actors.js'
+import { drawEnemy, enemyLight, heroLight, isBossSprite } from './actors.js'
 import { floaterAnchor, paintFloaters } from './floaters.js'
 import { paintLight } from './light.js'
 import { BOSS_SPEED, duration, HUNT_SPEED, sample, timeline, WALK_MS } from './playback.js'
+import { ellipse, SHADOW } from './pixels.js'
 import { mapLights, paintAnimated, paintBase, paintFog, readMap, TS } from './tiles.js'
 
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
@@ -55,6 +58,21 @@ function stateAt(plan, ms, loop) {
   return { walking: false, foe: run.foe, ...sample(run.frames, t - run.start) }
 }
 
+// The hero doll's pose for an anim: idle swaps frames every 500 ms, walking steps faster with a 1px bob,
+// attacks run wind up, slash, follow through. Reduced motion holds idle0 and no bob. t: seconds.
+export function heroFrame(anim, p, t, reduced) {
+  if (anim === 'death') return { pose: 'dead', bob: 0 }
+  if (anim === 'hurt') return { pose: 'hurt', bob: 0 }
+  if (anim === 'attack') return { pose: p < 0.33 ? 'atk1' : p < 0.66 ? 'atk2' : 'atk3', bob: 0 }
+  if (reduced) return { pose: 'idle0', bob: 0 }
+  const step = Math.floor(t * (anim === 'walk' ? 5 : 2)) % 2 === 1
+  return { pose: step ? 'idle1' : 'idle0', bob: anim === 'walk' && step ? 1 : 0 }
+}
+
+// Where the doll's top left lands for a hero standing on the tile at (x, y): the feet on the tile's
+// last row, the 32x32 body box centered on the tile (as the old 16px hero was).
+const dollAt = (x, y) => ({ x: x + 8 - (SPRITE.ox + 16), y: y + 16 - (SPRITE.oy + 32) })
+
 function layer(width, height, paint) {
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -69,9 +87,9 @@ function layer(width, height, paint) {
 // Static art goes to an offscreen layer once (as the mockup's makePixel); water, portals, actors and the
 // light pass are drawn each frame. With prefers-reduced-motion: one still frame, no fireflies, still water.
 //   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (actors stand in it).
-//   lockedRects: rects to cover in fog. look: { hood, outfit, hair }. enemy: { sprite, elite } for the foe
+//   lockedRects: rects to cover in fog. look: the hero's six field look. gear: { slot: { b, r } } from gearOf. enemy: { sprite, elite } for the foe
 //   on stage (optional); a fight in the playback carrying its own `enemy` ({ sprite, elite }) wins over it. playback: { fights, loop, speed? } plays fight logs (see playback.js); a loop walks 1.5 s between fights. zoneName: overrides the label.
-export default function GameScene({ world, zoneRect, lockedRects = [], look, playback, enemy, zoneName, onReady }) {
+export default function GameScene({ world, zoneRect, lockedRects = [], look, gear, playback, enemy, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
   const reduced = useReducedMotion()
@@ -82,7 +100,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, pla
   const live = useRef({})
   const tr = useRef(t)
   tr.current = t
-  live.current = { look, enemy, playback, onReady }
+  live.current = { look, gear, enemy, playback, onReady }
   const ready = useRef(false)
 
   const lockedKey = JSON.stringify(lockedRects ?? [])
@@ -136,7 +154,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, pla
 
     const draw = (time) => {
       const te = reduced ? 0 : time
-      const { look: heroLook } = live.current
+      const { look: heroLook, gear: heroGear } = live.current
       const now = play(time)
       // A fight that names its own foe ({ sprite, elite }) draws it; otherwise the enemy prop.
       const foe = now?.foe ?? live.current.enemy
@@ -149,7 +167,17 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, pla
       if (base) ctx.drawImage(base, 0, 0)
       else paintBase(ctx, world)
       paintAnimated(ctx, world, te)
-      drawHero(ctx, hx, hy, { look: heroLook, anim: heroAnim.anim, p: heroAnim.p, t: te })
+      const { pose, bob } = heroFrame(heroAnim.anim, heroAnim.p, te, reduced)
+      const doll = dollAt(hx, hy)
+      ellipse(ctx, hx + 8, hy + 15, 8, 2, SHADOW)
+      const img = heroSprite(heroLook, heroGear, pose)
+      if (heroAnim.facing === -1) {
+        ctx.save()
+        ctx.translate(hx + 8, 0)
+        ctx.scale(-1, 1)
+        ctx.drawImage(img, doll.x - (hx + 8), doll.y + bob)
+        ctx.restore()
+      } else ctx.drawImage(img, doll.x, doll.y + bob)
       if (showFoe) drawEnemy(ctx, ex, ey, { sprite: foe.sprite, elite: foe.elite, anim: flash ? 'idle' : foeAnim.anim, p: foeAnim.p, t: te })
       if (fog) ctx.drawImage(fog, 0, 0)
       else if (locked.length) paintFog(ctx, world, locked)
@@ -167,7 +195,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, pla
       if (now && !now.walking && now.floaters.length) {
         const boss = foe?.sprite ? isBossSprite(foe.sprite) : false
         const active = now.floaters.map(({ floater, actor, age }) => {
-          const a = actor === 'hero' ? floaterAnchor(hx, hy) : floaterAnchor(ex, ey, { boss })
+          const a = actor === 'hero' ? floaterAnchor(hx, hy, { boss: true }) : floaterAnchor(ex, ey, { boss })
           return { floater, age, x: a.x, y: a.y }
         })
         paintFloaters(ctx, active, { reduced, translate: tr.current })
