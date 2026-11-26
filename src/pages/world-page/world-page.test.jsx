@@ -130,3 +130,10 @@ it('stays in the hub when the game cannot be read', async () => {
   open()
   expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
 })
+
+it('puts a hero saved in an ENEM world beside the hub portal when the language hides ENEM', async () => {
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'torre-matematica', x: 3, y: 10 }, { matematica: 5 }))
+  renderAt('/mundo', { user: 'ana', locale: 'en' })
+  expect(await screen.findByRole('heading', { level: 1, name: 'The Lab' })).toBeInTheDocument()
+  expect(screen.getByRole('application')).toHaveAttribute('data-place', expect.stringMatching(/^laboratorio /))
+})

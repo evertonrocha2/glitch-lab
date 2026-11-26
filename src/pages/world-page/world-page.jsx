@@ -8,6 +8,7 @@ import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import WorldGame from '../../components/world/world-game/world-game.jsx'
+import { isEnemWorld, showsEnem } from '../../components/world/enem-worlds.js'
 import WorldPanel from '../../components/world/world-panel/world-panel.jsx'
 import {
   allocateTalents,
@@ -138,8 +139,11 @@ export default function WorldPage() {
         // right away, so its away summary shows without stepping into the portal.
         const [data, hunting] = await Promise.all([getWorld(token), huntWorldOf(token)])
         if (!live) return
-        setState(data)
-        setWorld(hunting ?? data.position.world)
+        // Where ENEM is hidden, a hero saved in an ENEM world stands beside its hub portal instead.
+        const stranded = !showsEnem(locale) && isEnemWorld(data.position.world)
+        const position = stranded ? { world: HUB_ID, ...besidePortal(worldById(HUB_ID), data.position.world) } : data.position
+        setState(stranded ? { ...data, position } : data)
+        setWorld(hunting ?? position.world)
       } catch (err) {
         if (!live) return
         if (err instanceof AuthError) await signOut()
@@ -149,7 +153,7 @@ export default function WorldPage() {
     return () => {
       live = false
     }
-  }, [getToken, signOut])
+  }, [getToken, signOut, locale])
 
   // A failed save only means the hero may start a few tiles back next time: the game goes on.
   const save = useCallback(async (position, options) => saveWorldPosition(position, await getToken(), options), [getToken])
