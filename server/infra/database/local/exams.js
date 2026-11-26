@@ -69,6 +69,25 @@ export function createLocalExams({ load, save }) {
       return [...byTopic.values()]
     },
 
+    // [{ day, topic, answered, correct }] from each question's first attempt, for one exam, grouped by
+    // the UTC day it was answered (createdAt is ISO UTC), sorted by day then topic.
+    async examAttemptDays(userId, exam) {
+      const data = await load()
+      const questions = new Map(questionsOf(data).map((item) => [item.id, item]))
+      const groups = new Map()
+      for (const attempt of firstAttempts(data, userId).values()) {
+        const question = questions.get(attempt.questionId)
+        if (!question || question.exam !== exam || question.topic === null) continue
+        const day = attempt.createdAt.slice(0, 10)
+        const key = `${day}|${question.topic}`
+        const sum = groups.get(key) ?? { day, topic: question.topic, answered: 0, correct: 0 }
+        sum.answered++
+        if (attempt.correct) sum.correct++
+        groups.set(key, sum)
+      }
+      return [...groups.values()].sort((a, b) => a.day.localeCompare(b.day) || a.topic.localeCompare(b.topic))
+    },
+
     async listUserTracks(userId) {
       const data = await load()
       return tracksOf(data)

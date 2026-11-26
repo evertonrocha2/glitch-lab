@@ -82,6 +82,12 @@ export function createSupabaseExams(db) {
       return rows.map((row) => ({ topic: row.topic, answered: Number(row.answered), correct: Number(row.correct) }))
     },
 
+    // day comes back from PostgREST as a 'YYYY-MM-DD' string; the function already sorts by day, topic.
+    async examAttemptDays(userId, exam) {
+      const rows = unwrap(await db.rpc('exam_attempt_days', { p_user: userId, p_exam: exam })) ?? []
+      return rows.map((row) => ({ day: String(row.day).slice(0, 10), topic: row.topic, answered: Number(row.answered), correct: Number(row.correct) }))
+    },
+
     async listUserTracks(userId) {
       const rows = unwrap(await tracks().select('*').eq('user_id', userId).order('created_at', { ascending: true })) ?? []
       return rows.map(toTrack)

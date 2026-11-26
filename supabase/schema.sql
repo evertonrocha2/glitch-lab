@@ -908,6 +908,24 @@ as $$
 $$;
 revoke execute on function public.exam_attempt_summary(uuid, text) from public, anon, authenticated;
 
+-- Per UTC day and topic: first answers only, for the daily study cap.
+create or replace function public.exam_attempt_days(p_user uuid, p_exam text)
+returns table (day date, topic text, answered bigint, correct bigint)
+language sql stable security definer set search_path = public
+as $$
+  select (f.created_at at time zone 'utc')::date, q.topic, count(*), count(*) filter (where f.correct)
+  from (
+    select distinct on (question_id) question_id, correct, created_at
+    from public.question_attempts where user_id = p_user
+    order by question_id, created_at
+  ) f
+  join public.exam_questions q on q.id = f.question_id
+  where q.exam = p_exam and q.topic is not null
+  group by (f.created_at at time zone 'utc')::date, q.topic
+  order by 1, 2;
+$$;
+revoke execute on function public.exam_attempt_days(uuid, text) from public, anon, authenticated;
+
 -- One answer per student and question: the first one. Two answers sent at once can't both land.
 create unique index if not exists question_attempts_one on public.question_attempts (user_id, question_id);
 

@@ -62,6 +62,26 @@ export function examsStoreContract(getStore, ids) {
     expect(await store.summarizeExamAttempts(ids.alice, newExam())).toEqual([])
   })
 
+  it('counts first answers per UTC day and topic, only my own', async () => {
+    const store = getStore()
+    const exam = newExam()
+    await store.upsertExamQuestions([
+      examQuestion(exam, { number: 1, topic: 'funcoes' }),
+      examQuestion(exam, { number: 2, topic: 'funcoes' }),
+    ])
+    const [q1, q2] = await store.listExamQuestions(exam, 'funcoes', { offset: 0, limit: 10 })
+    await store.recordFirstAttempt(ids.alice, { questionId: q1.id, choice: 'C', correct: false })
+    await store.recordFirstAttempt(ids.alice, { questionId: q2.id, choice: 'B', correct: true })
+    // A second answer to the same question changes nothing.
+    await store.recordFirstAttempt(ids.alice, { questionId: q1.id, choice: 'B', correct: true })
+    await store.recordFirstAttempt(ids.bob, { questionId: q1.id, choice: 'B', correct: true })
+
+    const today = new Date().toISOString().slice(0, 10)
+    expect(await store.examAttemptDays(ids.alice, exam)).toEqual([{ day: today, topic: 'funcoes', answered: 2, correct: 1 }])
+    expect(await store.examAttemptDays(ids.bob, exam)).toEqual([{ day: today, topic: 'funcoes', answered: 1, correct: 1 }])
+    expect(await store.examAttemptDays(ids.alice, newExam())).toEqual([])
+  })
+
   it('saves only one first answer when two arrive at once', async () => {
     const store = getStore()
     const exam = newExam()
