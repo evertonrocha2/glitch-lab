@@ -13,6 +13,7 @@ export const SAMPLE_FIGHTS = 12
 export const ELITE_RATE = 0.1
 export const DROP_CHANCE = 0.12
 export const GEM_CHANCE = 0.01
+export const GEM_SALVAGE_SCRAP = 10
 const ELITE_GOLD = 3
 const ELITE_EVERY = Math.round(1 / ELITE_RATE)
 const SHOWN_SAMPLES = 3
@@ -82,10 +83,14 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     const elite = k < elites
     if (elite || rng.chance(DROP_CHANCE)) {
       const item = rollItem(rng, { ilvl, rarityBoost: diff.rarityBoost })
-      if (items.length < bagFree) items.push(item)
+      if (items.length + gems.length < bagFree) items.push(item)
       else scrapFromOverflow += salvageValue(item).scrap
     }
-    if (rng.chance(GEM_CHANCE)) gems.push(rollGem(rng))
+    if (rng.chance(GEM_CHANCE)) {
+      const gem = rollGem(rng)
+      if (items.length + gems.length < bagFree) gems.push(gem)
+      else scrapFromOverflow += GEM_SALVAGE_SCRAP
+    }
   }
 
   return {
