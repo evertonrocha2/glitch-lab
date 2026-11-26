@@ -14,6 +14,8 @@ export const TABS = [
   { id: 'world', icon: 'map' },
 ]
 
+const slot = (content, shared) => (typeof content === 'function' ? content(shared) : content)
+
 const WALLET = [
   { field: 'gold', icon: 'coins' },
   { field: 'scrap', icon: 'scrap' },
@@ -30,7 +32,11 @@ const WALLET = [
 //   plus extras): { equipItem(itemId), unequipSlot(slot), forgeUpgrade(itemId), forgeSalvage(itemIds),
 //   forgeReroll(itemId, affix), forgeSocket(itemId, gemId, socket), openChest(), buyPotions(kind, count) }.
 //   The page applies the View it gets back; the panel only reads the extras for its messages.
-// - treeTab, worldTab: the content of the Árvore and Mundo tabs (Tasks 19 and 20), any node.
+// - treeTab, worldTab: the content of the Árvore and Mundo tabs (Tasks 19 and 20), any node, or a
+//   function (shared) => node that gets { view, actions, runner, ... }, so the tab shares the panel's
+//   one-action-at-a-time runner and its message line. The tree wants
+//   (shared) => <TreeTab {...shared} />, with allocateTalents, respecTalents, buySkill, upgradeSkill and
+//   saveLoadout in actions.
 // - target (optional): { world, zone, difficulty } the power bar measures against. Defaults to the
 //   running hunt, else the first open zone not yet beaten on Normal.
 // - portrait (optional): the hero portrait and its "edit look" button, shown at the top of the Hero tab.
@@ -75,10 +81,10 @@ export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab 
 
   const content = {
     hero: <HeroTab {...shared} target={target} portrait={portrait} studyHref={studyHref} />,
-    tree: treeTab,
+    tree: slot(treeTab, shared),
     bag: <BagTab {...shared} />,
     forge: <ForgeTab {...shared} />,
-    world: worldTab,
+    world: slot(worldTab, shared),
   }
 
   return (

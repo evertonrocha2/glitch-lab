@@ -73,8 +73,9 @@ export const plainRing = gear({ id: 'aaaaaaaaaaa6', base: 'anel', slot: 'ring', 
 
 export const gem = { id: 'aaaaaaaaaaa7', kind: 'gem', gem: 'sintaxe' }
 
-export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, legendarySword, plainRing, gem], gold = 500, scrap = 40, fragments = 30, chests = [], potions = { hp: 3, mp: 1 }, hunt = null, level = 12, free = 2, correct = 14, toNextPoint = 6 } = {}) {
-  const stats = heroStats({ level, items: items.filter((item) => item.equipped), talents: ['root'] })
+export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, legendarySword, plainRing, gem], gold = 500, scrap = 40, fragments = 30, chests = [], potions = { hp: 3, mp: 1 }, hunt = null, level = 12, free = 2, correct = 14, toNextPoint = 6, talents = ['root'], skills = { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] }, thresholds = { hp: 0.4, mp: 0.25 } } = {}) {
+  const spent = talents.filter((id) => id !== 'root').length
+  const stats = heroStats({ level, items: items.filter((item) => item.equipped), talents })
   return {
     hero: {
       gold,
@@ -84,9 +85,9 @@ export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, l
       keys: 0,
       chests,
       potions,
-      thresholds: { hp: 0.4, mp: 0.25 },
-      talents: ['root'],
-      skills: { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] },
+      thresholds,
+      talents,
+      skills,
       items,
       hunt,
       progress: {},
@@ -94,7 +95,7 @@ export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, l
       lastAway: null,
     },
     level: { level, xp: 3400, into: 400, needed: 900 },
-    talentPoints: { total: free, spent: 0, free },
+    talentPoints: { total: free + spent, spent, free },
     stats,
     power: power(stats),
     zones: {
@@ -125,5 +126,10 @@ export function makeActions(vi, view) {
     forgeSocket: ok(),
     openChest: ok(),
     buyPotions: ok(),
+    allocateTalents: ok(),
+    respecTalents: ok(),
+    buySkill: ok(),
+    upgradeSkill: ok(),
+    saveLoadout: ok(),
   }
 }
