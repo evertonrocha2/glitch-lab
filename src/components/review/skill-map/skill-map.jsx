@@ -7,8 +7,8 @@ import { useLabels } from '../../../lib/i18n/labels.js'
 import ErrorNotice from '../../ui/error-notice/error-notice.jsx'
 import PixelButton, { buttonClasses } from '../../ui/pixel-button/pixel-button.jsx'
 
-// The activity graph's purple ramp: gray for "not met", then light to dark by mastery.
-export const LEVEL_FILL = ['#e3e5ec', '#b19bf9', '#8f6ff5', '#6a3df0', '#4a1fc4']
+// The activity graph's purple ramp: a dark slot for "not met", then brighter by mastery.
+export const LEVEL_FILL = ['#2a2250', '#4f2fb0', '#6f45f0', '#9a74ff', '#d2bcff']
 const SEGMENTS = 20
 const SEGMENT = 5
 
@@ -25,7 +25,7 @@ function Bar({ mastery, level }) {
           y={0}
           width={SEGMENT - 1}
           height={6}
-          fill={index < filled ? LEVEL_FILL[Math.max(level, 1)] : '#f4f5f8'}
+          fill={index < filled ? LEVEL_FILL[Math.max(level, 1)] : '#100c20'}
         />
       ))}
     </svg>

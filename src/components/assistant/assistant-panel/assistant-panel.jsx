@@ -113,7 +113,7 @@ function Dialog() {
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Clicking the dimmed page closes the panel; keyboard users have Escape and the Close button. */}
-      <button type="button" tabIndex={-1} aria-label={t('app.assistant.closeBackdrop')} onClick={close} className="absolute inset-0 cursor-default bg-ink/40" />
+      <button type="button" tabIndex={-1} aria-label={t('app.assistant.closeBackdrop')} onClick={close} className="absolute inset-0 cursor-default bg-void/75" />
       <aside
         ref={panel}
         role="dialog"

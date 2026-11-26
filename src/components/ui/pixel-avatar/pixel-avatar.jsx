@@ -2,12 +2,12 @@ import { useMemo } from 'react'
 import { AVATAR_COLORS } from '../../../../shared/profile.js'
 import { IDENTICON_SIZE, identicon } from '../../../lib/identicon.js'
 
-// Pixels in the chosen color on a light tile of the same family. swatch is the solid color for pickers.
+// Pixels in the chosen color on a dark tile of the same family. swatch is the solid color for pickers.
 export const AVATAR_STYLES = {
   violet: { fill: 'fill-primary', tile: 'bg-primary-soft', swatch: 'bg-primary' },
   cobalt: { fill: 'fill-secondary', tile: 'bg-secondary-soft', swatch: 'bg-secondary' },
-  grape: { fill: 'fill-[#4a1fb8]', tile: 'bg-primary-soft', swatch: 'bg-[#4a1fb8]' },
-  sky: { fill: 'fill-[#2f7df6]', tile: 'bg-secondary-soft', swatch: 'bg-[#2f7df6]' },
+  grape: { fill: 'fill-[#b896ff]', tile: 'bg-primary-soft', swatch: 'bg-[#b896ff]' },
+  sky: { fill: 'fill-[#8fd0ff]', tile: 'bg-secondary-soft', swatch: 'bg-[#8fd0ff]' },
   ink: { fill: 'fill-ink', tile: 'bg-mist', swatch: 'bg-ink' },
 }
 

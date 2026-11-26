@@ -82,7 +82,7 @@ export default function AiPreview({ action, before, after, cases, onApply, onDis
   ]
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-3 sm:p-6">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-void/75 p-3 sm:p-6">
       <div
         ref={panel}
         role="dialog"

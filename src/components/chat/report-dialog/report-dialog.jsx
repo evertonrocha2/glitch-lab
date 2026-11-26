@@ -47,7 +47,7 @@ export default function ReportDialog({ kind, message, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-void/75 p-4">
       <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} className="w-full max-w-md border-2 border-ink bg-white p-5 shadow-pixel-ink">
         <h2 id={`${id}-title`} className="font-pixel text-xl font-bold text-ink">
           {t('chat.report.title')}

@@ -146,7 +146,7 @@ export default function CommunityNewPage() {
                   <span className="sr-only">{t(`chat.color.${color}`)}</span>
                   <span
                     aria-hidden="true"
-                    className={`size-8 border-2 border-ink ${AVATAR_STYLES[color].swatch} peer-checked:shadow-[3px_3px_0_var(--color-ink)] peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-primary peer-focus-visible:outline-2 peer-focus-visible:outline-secondary`}
+                    className={`size-8 border-2 border-ink ${AVATAR_STYLES[color].swatch} peer-checked:shadow-[3px_3px_0_var(--color-void)] peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-primary peer-focus-visible:outline-2 peer-focus-visible:outline-gold`}
                   />
                 </label>
               ))}
@@ -162,7 +162,7 @@ export default function CommunityNewPage() {
                   <span className="sr-only">{t(`chat.icon.${icon}`)}</span>
                   <span
                     aria-hidden="true"
-                    className="grid h-12 place-items-center border-2 border-ink bg-white fill-ink peer-checked:bg-primary peer-checked:fill-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-secondary"
+                    className="grid h-12 place-items-center border-2 border-ink bg-white fill-ink peer-checked:bg-primary peer-checked:fill-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold"
                   >
                     <PixelIcon name={icon} className="size-6" />
                   </span>

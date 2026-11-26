@@ -26,7 +26,7 @@ function Alternative({ item, picked, attempt, onPick }) {
       <span className="flex size-8 shrink-0 items-center justify-center border-2 border-ink bg-white font-label text-xs text-ink">{item.letter}</span>{' '}
       <span className="min-w-0 flex-1 break-words pt-1">
         {item.image && !item.text.trim() ? (
-          <img src={item.image} alt={t('exams.imageAlt', { letter: item.letter })} loading="lazy" className="h-auto max-w-full" />
+          <img src={item.image} alt={t('exams.imageAlt', { letter: item.letter })} loading="lazy" className="h-auto max-w-full bg-[#fff] p-1" />
         ) : (
           item.text
         )}

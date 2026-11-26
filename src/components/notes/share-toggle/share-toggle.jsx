@@ -64,9 +64,9 @@ export default function ShareToggle({ noteId, isPublic, sharing, onShare }) {
         {/* A pixel switch: the knob sits left when off, right (and purple) when on. */}
         <span
           aria-hidden="true"
-          className="flex h-6 w-11 shrink-0 items-center border-2 border-ink bg-white p-0.5 peer-checked:justify-end peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-secondary peer-disabled:opacity-50"
+          className="flex h-6 w-11 shrink-0 items-center border-2 border-ink bg-white p-0.5 peer-checked:justify-end peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold peer-disabled:opacity-50"
         >
-          <span className={`size-4 border-2 border-ink ${on ? 'bg-white' : 'bg-ink'}`} />
+          <span className={`size-4 border-2 border-void ${on ? 'bg-[#fff]' : 'bg-muted'}`} />
         </span>
         <span className="font-label text-[10px] text-ink">{t('notes.share.switch')}</span>
       </label>

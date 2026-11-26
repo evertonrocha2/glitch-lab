@@ -10,7 +10,7 @@ export default function PixelBug({ className = '' }) {
       aria-hidden="true"
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       shapeRendering="crispEdges"
-      className={`drop-shadow-[3px_3px_0_var(--color-ink)] ${className}`}
+      className={`drop-shadow-[3px_3px_0_var(--color-void)] ${className}`}
     >
       {BUG.flatMap((row, y) =>
         [...row].map((cell, x) =>

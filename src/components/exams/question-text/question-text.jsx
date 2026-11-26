@@ -9,7 +9,7 @@ export default function QuestionText({ text, className = '' }) {
       {blocks.map((block, index) =>
         block.type === 'image' ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: blocks of one fixed question
-          <img key={index} src={block.src} alt={block.alt} loading="lazy" className="h-auto max-w-full border border-line" />
+          <img key={index} src={block.src} alt={block.alt} loading="lazy" className="h-auto max-w-full border border-line bg-[#fff] p-1" />
         ) : (
           // biome-ignore lint/suspicious/noArrayIndexKey: blocks of one fixed question
           <p key={index} className="whitespace-pre-line leading-relaxed">

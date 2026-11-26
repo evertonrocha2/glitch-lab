@@ -180,7 +180,7 @@ export default function InterrogationPage() {
                   maxLength={INTERROGATION_LIMITS.answer}
                   rows={4}
                   aria-describedby="interrogation-answer-hint"
-                  className="mt-2 block w-full resize-y border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  className="mt-2 block w-full resize-y border-2 border-ink bg-white px-3 py-2.5 text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 />
                 <p id="interrogation-answer-hint" className="mt-2 text-sm text-muted">
                   {t('interrogation.answer.hint', { max: INTERROGATION_LIMITS.answer })}

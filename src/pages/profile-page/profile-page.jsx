@@ -128,7 +128,7 @@ function AboutFields({ draft, change }) {
                 onChange={() => change({ role: role.id })}
                 className="peer sr-only"
               />
-              <span className="block border-2 border-line bg-white px-2.5 py-1.5 text-sm text-ink transition-colors peer-checked:border-ink peer-checked:bg-secondary peer-checked:text-white peer-checked:shadow-pixel-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-secondary hover:border-ink">
+              <span className="block border-2 border-line bg-white px-2.5 py-1.5 text-sm text-ink transition-colors peer-checked:border-ink peer-checked:bg-secondary peer-checked:text-white peer-checked:shadow-pixel-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold hover:border-ink">
                 {role.label}
               </span>
             </label>
@@ -253,7 +253,7 @@ function ColorPicker({ value, onChange }) {
           />
           <span
             aria-hidden="true"
-            className={`block size-9 border-2 border-ink ${AVATAR_STYLES[color.id].swatch} peer-checked:shadow-pixel-ink peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-ink peer-focus-visible:outline-secondary`}
+            className={`block size-9 border-2 border-ink ${AVATAR_STYLES[color.id].swatch} peer-checked:shadow-pixel-ink peer-checked:outline-2 peer-checked:outline-offset-2 peer-checked:outline-ink peer-focus-visible:outline-gold`}
           />
         </label>
       ))}

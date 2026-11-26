@@ -36,7 +36,7 @@ function Key({ name, mac, t }) {
   else if (name === 'Alt') content = mac ? 'Option' : 'Alt'
   else if (name === 'Up' || name === 'Down') content = <Arrow down={name === 'Down'} label={t(`editor.keys.${name.toLowerCase()}`)} />
   return (
-    <kbd className="inline-flex min-h-5 min-w-5 items-center justify-center border-2 border-ink bg-white px-1 font-label text-[10px] leading-none text-ink shadow-[2px_2px_0_var(--color-ink)]">
+    <kbd className="inline-flex min-h-5 min-w-5 items-center justify-center border-2 border-ink bg-white px-1 font-label text-[10px] leading-none text-ink shadow-[2px_2px_0_var(--color-void)]">
       {content}
     </kbd>
   )

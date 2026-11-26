@@ -959,7 +959,7 @@ export default function NoteEditor({ note, cases, onSave, onDelete, onExport, sh
             role="group"
             aria-label={t('notes.block.divider')}
             onKeyDown={(event) => dividerKey(event, block)}
-            className="py-4 focus-visible:outline-2 focus-visible:outline-secondary"
+            className="py-4 focus-visible:outline-2 focus-visible:outline-gold"
           >
             <hr className="border-0 border-t-2 border-dashed border-ink/50" />
           </div>

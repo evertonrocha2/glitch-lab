@@ -3,9 +3,10 @@ import { activityLevel, calendarDay, WEEKS } from '../../../../shared/activity.j
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
 
-// One purple, light to dark (checked: lightness rises step by step, and the lightest step still
-// stands out from white). Empty days use the neutral line gray, so "nothing" never reads as a level.
-const LEVEL_FILL = ['#e3e5ec', '#b19bf9', '#8f6ff5', '#6a3df0', '#4a1fc4']
+// One purple, dark to light on the night (more activity glows brighter; each step's lightness rises,
+// and the first one still stands out from an empty day). Empty days are a flat dark slot, so
+// "nothing" never reads as a level.
+const LEVEL_FILL = ['#2a2250', '#4f2fb0', '#6f45f0', '#9a74ff', '#d2bcff']
 const CELL = 11
 const GAP = 3
 const STEP = CELL + GAP
@@ -155,7 +156,7 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
                 width={CELL}
                 height={CELL}
                 fill={LEVEL_FILL[activityLevel(activity.days[hover.index])]}
-                stroke="var(--color-ink)"
+                stroke="var(--color-gold)"
                 strokeWidth={1.5}
               />
             )}
@@ -163,7 +164,7 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
           {hover && (
             <p
               role="status"
-              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full border-2 border-ink bg-white px-2 py-1 text-xs whitespace-nowrap text-ink shadow-pixel-ink"
+              className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full border-2 border-void bg-raised px-2 py-1 text-xs whitespace-nowrap text-ink shadow-pixel-ink"
               style={{ left: hover.x, top: hover.y - 6 }}
             >
               {describe(activity.days[hover.index], calendarDay(activity.start, hover.index))}

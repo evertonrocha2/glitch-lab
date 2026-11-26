@@ -1,6 +1,6 @@
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 
-// A 9x9 pixel medal on a ribbon: "#" is ink, "o" the metal, "r" the ribbon, "*" a shine.
+// A 9x9 pixel medal on a ribbon: "#" is the dark outline, "o" the metal, "r" the ribbon, "*" a shine.
 const ROWS = ['.rr...rr.', '..rr.rr..', '...rrr...', '..#####..', '.#oo*oo#.', '.#o*ooo#.', '.#ooooo#.', '.#ooooo#.', '..#####..']
 
 // Gold, silver and bronze, plus the purple and blue ribbons of the app.
@@ -9,7 +9,7 @@ const METALS = {
   2: { metal: '#b4bccb', shine: '#f1f3f7', ribbon: 'var(--color-secondary)' },
   3: { metal: '#c87a3f', shine: '#f3c9a3', ribbon: 'var(--color-primary)' },
 }
-const FILL = { '#': 'var(--color-ink)' }
+const FILL = { '#': 'var(--color-void)' }
 
 export default function Medal({ place, className = 'size-8', label = true }) {
   const t = useT()

@@ -86,10 +86,10 @@ export default function CodeEditor({ id, value, onChange, minLines = 8, maxLengt
 
   return (
     <div>
-      <div className="flex border-2 border-ink bg-white transition-shadow duration-150 focus-within:shadow-pixel">
+      <div className="flex border-2 border-ink bg-inset shadow-[inset_2px_2px_0_var(--color-void)] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold">
         <div
           aria-hidden="true"
-          className="select-none border-r-2 border-ink bg-mist px-2.5 py-3 text-right font-mono text-sm leading-relaxed text-muted"
+          className="select-none border-r-2 border-line bg-night px-2.5 py-3 text-right font-mono text-sm leading-relaxed text-muted"
         >
           {Array.from({ length: lines }, (_, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: line numbers are positions.

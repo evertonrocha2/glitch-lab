@@ -43,7 +43,7 @@ function CodeLines({ lines, bugLine = null, onPick, picked, answer, disabled }) 
                   disabled={disabled}
                   onClick={() => onPick(id)}
                   aria-label={`${t('review.lineNumber', { line: number })}: ${line.trim()}`}
-                  className="flex w-full min-h-10 items-center px-2 lg:min-h-8 text-left hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-default disabled:hover:bg-transparent"
+                  className="flex w-full min-h-10 items-center px-2 lg:min-h-8 text-left hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-gold disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   {body}
                   {(isAnswer || isPicked) && (
@@ -77,7 +77,7 @@ function Options({ card, onPick, picked, answer, disabled }) {
             type="button"
             disabled={disabled}
             onClick={() => onPick(option.id)}
-            className={`flex min-h-11 items-center justify-between gap-3 border-2 px-3 py-2 text-left text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-default ${border}`}
+            className={`flex min-h-11 items-center justify-between gap-3 border-2 px-3 py-2 text-left text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-default ${border}`}
           >
             {card.type === 'cause' ? (
               <span>{labels.concept(option.value)}</span>

@@ -37,7 +37,7 @@ function Message({ message, showSender, actions }) {
   const { locale } = useI18n()
   const time = new Date(message.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const bubble = message.mine
-    ? 'border-ink bg-primary text-white shadow-[3px_3px_0_var(--color-ink)]'
+    ? 'border-ink bg-primary text-white shadow-[3px_3px_0_var(--color-void)]'
     : 'border-ink bg-white text-ink shadow-[3px_3px_0_var(--color-line)]'
   return (
     <li className={`group flex gap-2 ${message.mine ? 'justify-end' : 'justify-start'} ${showSender ? 'mt-3' : 'mt-1'}`}>

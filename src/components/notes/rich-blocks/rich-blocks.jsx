@@ -2,11 +2,11 @@ import { CALLOUT_EMOJI, headingLevel, isList } from '../../../../shared/note-blo
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import InlineText from '../inline-text/inline-text.jsx'
 
-// Soft boxes in the Pixel Lab colors; the warning one is a pale yellow, never a loud one.
+// Soft boxes in the Pixel Lab colors; the warning one is a muted gold, never a loud one.
 export const CALLOUT_TONE = {
   info: 'border-secondary bg-secondary-soft',
   tip: 'border-primary bg-primary-soft',
-  warning: 'border-ink bg-[#fff6d6]',
+  warning: 'border-gold-dark bg-warn-soft',
 }
 
 // Consecutive to-dos share one list, consecutive list items one <ul>/<ol> (indented ones nested

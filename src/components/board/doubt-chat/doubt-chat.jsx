@@ -107,7 +107,7 @@ export default function DoubtChat({ onClose, onCreated, onOpenCase }) {
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <button type="button" tabIndex={-1} aria-label={t('question.close')} onClick={onClose} className="absolute inset-0 cursor-default bg-ink/40" />
+      <button type="button" tabIndex={-1} aria-label={t('question.close')} onClick={onClose} className="absolute inset-0 cursor-default bg-void/75" />
       <aside
         ref={panel}
         role="dialog"

@@ -77,7 +77,7 @@ export default function CodeLines({ code, onPick, disabled = false, picked = nul
                 onClick={() => onPick?.(line)}
                 onKeyDown={(event) => onKeyDown(event, line)}
                 onFocus={() => setActive(line)}
-                className={`flex min-h-10 w-full items-center lg:min-h-8 text-left transition-colors disabled:cursor-default focus-visible:rounded-none focus-visible:bg-secondary-soft focus-visible:shadow-[inset_4px_0_0_var(--color-secondary)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-secondary ${tone}`}
+                className={`flex min-h-10 w-full items-center lg:min-h-8 text-left transition-colors disabled:cursor-default focus-visible:rounded-none focus-visible:bg-secondary-soft focus-visible:shadow-[inset_4px_0_0_var(--color-secondary)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold ${tone}`}
               >
                 {gutter}
                 {body}

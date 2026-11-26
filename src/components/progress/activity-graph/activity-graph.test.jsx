@@ -22,7 +22,7 @@ it('draws one square per day up to today and explains a day on hover', () => {
   const { container } = render(<ActivityGraph activity={calendar} today={TODAY} />)
   // 52 full weeks plus Sunday to Thursday of this one.
   expect(container.querySelectorAll('rect')).toHaveLength(52 * 7 + 5)
-  const busy = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill') === '#8f6ff5')
+  const busy = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill') === '#6f45f0')
   fireEvent.mouseMove(busy)
   expect(screen.getByRole('status')).toHaveTextContent('2 activities on Tue, Oct 20, 2026')
 })
@@ -38,7 +38,7 @@ it('speaks Brazilian Portuguese: summary, weekdays, months and the hover text', 
   expect(within(table).getByRole('row', { name: 'Outubro de 2026 2' })).toBeInTheDocument()
   const labels = [...container.querySelectorAll('text')].map((text) => text.textContent)
   expect(labels).toEqual(expect.arrayContaining(['Seg', 'Qua', 'Sex', 'Out']))
-  const busy = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill') === '#8f6ff5')
+  const busy = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill') === '#6f45f0')
   fireEvent.mouseMove(busy)
   expect(screen.getByRole('status')).toHaveTextContent('2 atividades em ter., 20 de out. de 2026')
 })

@@ -53,7 +53,7 @@ export default function CaseDrawer({ item, onClose, onTrain, training, notes = [
         tabIndex={-1}
         aria-label={t('board.drawer.closePanel')}
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-ink/40"
+        className="absolute inset-0 cursor-default bg-void/75"
       />
       <aside
         ref={panel}
