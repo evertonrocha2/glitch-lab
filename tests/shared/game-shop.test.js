@@ -30,7 +30,8 @@ describe('the economy yardstick', () => {
     }
   })
   it('knows the highest item level a hunt drops', () => {
-    expect(maxDropIlvl()).toBe(z.z3.ilvl + DIFFICULTIES.inferno.ilvl)
+    const top = Math.max(...Object.values(ZONES).flatMap((world) => Object.values(world).map((zone) => zone.ilvl)))
+    expect(maxDropIlvl()).toBe(top + DIFFICULTIES.inferno.ilvl)
   })
 })
 
@@ -66,7 +67,8 @@ describe('the merchant stock', () => {
     expect(marketIlvl(7)).toBe(7)
     expect(marketIlvl(7, 3)).toBe(21)
     expect(marketIlvl(35, 2)).toBe(20)
-    expect(marketIlvl(60)).toBe(maxDropIlvl())
+    expect(marketIlvl(60)).toBe(Math.min(60, maxDropIlvl()))
+    expect(marketIlvl(60, MAX_MARKET_TIER)).toBeLessThanOrEqual(maxDropIlvl())
   })
 
   it('prices by rarity and item level, and buys back for less than any sale, but more than salvage scrap is worth', () => {
