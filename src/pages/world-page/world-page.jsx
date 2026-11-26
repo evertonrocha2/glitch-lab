@@ -185,7 +185,7 @@ export default function WorldPage() {
   }, [world, save])
 
   return (
-    <AppShell wide={Boolean(state && inGame)}>
+    <AppShell>
       <PageHeader kicker={t('world.page.kicker')} title={world ? t(`world.name.${world}`) : t('world.nav')} />
       {message && (
         <div className="mt-6">
@@ -194,8 +194,9 @@ export default function WorldPage() {
       )}
       {!state && !message && <WorldPageSkeleton />}
       {state && inGame && <GameView worldId={world} api={gameApi} onLeave={leave} studyHref={studyHref({ locale, doneToday })} />}
+      {/* The map is at most 15 tiles wide, so the grid stops there and the panel stays beside it. */}
       {state && !inGame && (
-        <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="mt-8 grid items-start gap-6 lg:max-w-[65rem] lg:grid-cols-[minmax(0,1fr)_18rem]">
           <WorldGame state={state} heroColor={heroColor} onSave={save} onWorldChange={setWorld} />
           <WorldPanel state={state} currentWorld={world} />
         </div>

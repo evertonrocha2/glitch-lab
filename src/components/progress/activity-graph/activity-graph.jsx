@@ -11,6 +11,8 @@ const GAP = 3
 const STEP = CELL + GAP
 const LEFT = 30
 const TOP = 18
+// How far the graph may grow past its own size to fill a wide card (the skeleton uses the same 1.75).
+const MAX_SCALE = 1.75
 // Rows 1, 3 and 5 (Monday, Wednesday, Friday): the calendar starts on a Sunday.
 const WEEKDAY_ROWS = [1, 3, 5]
 // Any Sunday will do to name the weekdays.
@@ -120,16 +122,17 @@ export default function ActivityGraph({ activity, today, title: titleProp, class
 
       <div className="mt-5 border-2 border-ink bg-white p-4 shadow-pixel">
         <div ref={scroller} className="relative overflow-x-auto pb-1">
-          {/* Fills the card on wide screens; on a phone it keeps a readable size and scrolls. */}
+          {/* Fills the card on wide screens, up to 1.75x its size (centered past that, so the squares
+              and labels don't balloon on a wide monitor); on a phone it keeps a readable size and scrolls. */}
           <svg
             viewBox={`0 0 ${width} ${height}`}
-            style={{ minWidth: width }}
+            style={{ minWidth: width, maxWidth: width * MAX_SCALE }}
             shapeRendering="crispEdges"
             role="img"
             aria-label={`${title}: ${summary}.`}
             onMouseMove={onMove}
             onMouseLeave={() => setHover(null)}
-            className="block h-auto w-full"
+            className="mx-auto block h-auto w-full"
           >
             {months.map(({ week, month }) => (
               <text key={`${week}-${month}`} x={LEFT + week * STEP} y={10} className="fill-muted font-label text-[10px]">

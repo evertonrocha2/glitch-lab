@@ -17,15 +17,18 @@ import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
 import StudyTimer from '../study-timer/study-timer.jsx'
 import AppNav from '../app-nav/app-nav.jsx'
 
+// The width every row of the signed-in pages shares: the header's two rows and the page.
+const COLUMN = 'mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12'
+
 // Top bar for the signed-in pages, plus the study timer, message and badge toasts and the assistant.
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
 // content (opening a drawer, typing) doesn't redraw them.
-// wide: the page gets up to 100rem instead of the 6xl column (the hunt game wants the room).
-export default function AppShell({ children, wide = false }) {
+// The bar and the page run close to the screen's edges, with a side margin; ultra-wide screens stop at 120rem.
+export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-mist">
       <AppHeader />
-      <main data-wide={wide} className={`mx-auto ${wide ? 'max-w-[100rem]' : 'max-w-6xl'} px-5 pt-10 pb-28 sm:px-8 sm:pt-14`}>
+      <main className={`${COLUMN} pt-10 pb-28 sm:pt-14`}>
         {children}
       </main>
       <ShellWidgets />
@@ -56,7 +59,7 @@ const AppHeader = memo(function AppHeader() {
   return (
     <header className="border-b-2 border-ink bg-white">
       {/* Top row: the brand on the left; the language, the assistant, notifications and your account on the right. */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-5 py-3 sm:gap-3 sm:px-8">
+      <div className={`${COLUMN} flex items-center justify-between gap-2 py-3 sm:gap-3`}>
         <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
           <PixelLogo className="size-5 shrink-0 sm:size-7" />
           {/* On narrow phones the right side fills the row, so only the logo shows; the name stays for screen readers. */}
@@ -82,7 +85,7 @@ const AppHeader = memo(function AppHeader() {
       </div>
       {/* Second row: the pages, on one line; the ones that don't fit go in a "More" menu. */}
       <div className="border-t-2 border-dashed border-line">
-        <div className="mx-auto flex max-w-6xl items-center px-5 sm:px-8">
+        <div className={`${COLUMN} flex items-center`}>
           <AppNav level={progress?.level ?? null} unread={unread} />
         </div>
       </div>

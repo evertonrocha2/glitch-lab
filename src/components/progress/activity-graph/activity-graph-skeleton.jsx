@@ -15,7 +15,7 @@ export default function ActivityGraphSkeleton({ className = '' }) {
       </div>
       <div className="mt-5 border-2 border-ink bg-white p-4 shadow-pixel">
         <div className="overflow-hidden pb-1">
-          <Bone className="w-full" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}`, minWidth: WIDTH }} />
+          <Bone className="mx-auto w-full" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}`, minWidth: WIDTH, maxWidth: WIDTH * 1.75 }} />
         </div>
         <div className="mt-3 flex justify-end">
           <Line className="font-label text-[10px]" width="w-32" />

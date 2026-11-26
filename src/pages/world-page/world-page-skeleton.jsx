@@ -6,7 +6,7 @@ import { useT } from '../../lib/i18n/I18nProvider.jsx'
 export default function WorldPageSkeleton() {
   const t = useT()
   return (
-    <Skeleton label={t('world.page.loading')} className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <Skeleton label={t('world.page.loading')} className="mt-8 grid gap-6 lg:max-w-[65rem] lg:grid-cols-[minmax(0,1fr)_18rem]">
       <Bone className="aspect-[3/2] w-full max-w-[720px] border-2 border-line" />
       <PixelCard tone="secondary" className="p-5">
         <Line className="font-label text-xs" width="w-32" />

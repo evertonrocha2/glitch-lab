@@ -93,14 +93,11 @@ it('opens the hunt game in the Forest and comes back beside its portal', async (
   await title()
   fireEvent.keyDown(screen.getByRole('application'), { key: 'ArrowUp' })
   expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
-  // The hunt gets the wide page, so the scene can show the forest from far away.
-  expect(screen.getByRole('main')).toHaveAttribute('data-wide', 'true')
   await vi.waitFor(() => expect(syncGame).toHaveBeenCalledWith('token-ana'))
   fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Voltar ao Laboratório' }))
   expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
   expect(screen.getByRole('application')).toHaveAttribute('data-place', 'laboratorio 2 2')
-  expect(screen.getByRole('main')).toHaveAttribute('data-wide', 'false')
   await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'laboratorio', x: 2, y: 2 }, 'token-ana', undefined))
 })
 
