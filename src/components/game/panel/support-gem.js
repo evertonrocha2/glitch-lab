@@ -18,14 +18,14 @@ const seconds = (ms) => ms / 1000
 const PASSIVE_VARS = {
   golpeTwice: (p) => ({ pct: pct(p.echo) }),
   breadthFirst: (p) => ({ n: p.targets }),
-  divideConquer: () => ({}),
+  parallelFire: () => ({}),
   fork: () => ({}),
   endlessWinter: (p) => ({ pct: pct(p.area) }),
   globalScope: (p) => ({ pct: pct(p.area) }),
   quickCache: (p) => ({ pct: pct(p.cooldown) }),
   memoryLeak: (p) => ({ pct: pct(p.duration) }),
   critBlast: (p) => ({ pct: pct(p.blast.pct), radius: p.blast.radius }),
-  tryCatch: (p) => ({ pct: pct(p.reflect) }),
+  rethrow: (p) => ({ pct: pct(p.reflect) }),
   garbageCollector: (p) => ({ pct: pct(p.hot.pct), seconds: seconds(p.hot.ms) }),
 }
 const SUPPORT_VARS = {

@@ -30,10 +30,10 @@ const firstBurst = (fight, kind) => {
 const SPREAD = [dummy(4, 0), dummy(0, 4), dummy(-4, 0), dummy(0, -4)]
 
 describe('the scene draws the extra areas, lines and jumps', () => {
-  it('two chama patches with divideConquer, three with projeteis too', () => {
+  it('two chama patches with parallelFire, three with projeteis too', () => {
     expect(firstBurst(fightWith(['chama'], { foes: SPREAD }), 'fireball')).toHaveLength(1)
-    expect(firstBurst(fightWith(['chama'], { effects: ['divideConquer'], foes: SPREAD }), 'fireball')).toHaveLength(2)
-    const three = firstBurst(fightWith(['chama'], { effects: ['divideConquer'], supports: ['projeteis'], foes: SPREAD }), 'fireball')
+    expect(firstBurst(fightWith(['chama'], { effects: ['parallelFire'], foes: SPREAD }), 'fireball')).toHaveLength(2)
+    const three = firstBurst(fightWith(['chama'], { effects: ['parallelFire'], supports: ['projeteis'], foes: SPREAD }), 'fireball')
     expect(three).toHaveLength(3)
     expect(new Set(three.map((fx) => JSON.stringify(fx.spot))).size).toBe(3)
   })
@@ -54,16 +54,16 @@ describe('the scene draws the extra areas, lines and jumps', () => {
     expect(firstBurst(fightWith(['golpe'], { effects: ['globalScope'], foes: near }), 'cleave')[0].radius).toBeCloseTo(2.16)
   })
 
-  it('a crit blast draws as a splash, tryCatch as a zap, vampiro and the heal over time as a mend', () => {
+  it('a crit blast draws as a splash, rethrow as a zap, vampiro and the heal over time as a mend', () => {
     expect(fxFor({ who: 'hero', type: 'skill', skill: 'critBlast', shape: 'area', at: { x: 1, y: 0 }, radius: 1.5, hits: [{ target: 1, amount: 9 }] })[0].kind).toBe('splash')
-    expect(fxFor({ who: 'hero', type: 'skill', skill: 'tryCatch', shape: 'single', target: 0, hits: [{ target: 0, amount: 9 }] })[0].kind).toBe('zap')
+    expect(fxFor({ who: 'hero', type: 'skill', skill: 'rethrow', shape: 'single', target: 0, hits: [{ target: 0, amount: 9 }] })[0].kind).toBe('zap')
     expect(fxFor({ who: 'hero', type: 'heal', skill: 'vampiro', shape: 'self', amount: 9 })[0].kind).toBe('mend')
     expect(fxFor({ who: 'hero', type: 'heal', skill: 'cura', shape: 'self', amount: 9, hot: true })[0].kind).toBe('mend')
   })
 
   it('every effect a fully modded fight draws is a known kind', () => {
     const fight = fightWith(['golpe', 'raio', 'chama', 'veneno'], {
-      effects: ['golpeTwice', 'breadthFirst', 'divideConquer', 'fork', 'critBlast'],
+      effects: ['golpeTwice', 'breadthFirst', 'parallelFire', 'fork', 'critBlast'],
       supports: ['projeteis', 'fogo', 'vampiro', 'frio'],
       foes: [dummy(1.2, 0), dummy(2.2, 0), ...SPREAD],
       over: { critChance: 50 },

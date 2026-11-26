@@ -29,7 +29,7 @@
 //   (skill passives ride there) and hero.supports (support gem ids). Extra areas or lines land where
 //   foes no earlier one hit stand (an area a radius away from the others): one hit or burn per foe per
 //   cast. golpeTwice strikes again right away at its share; critBlast explodes on each crit target;
-//   vampiro heals once per cast; tryCatch answers each absorbed hit; garbageCollector heals every second.
+//   vampiro heals once per cast; rethrow answers each absorbed hit; garbageCollector heals every second.
 //
 // LOG FORMAT (the contract the scene draws from). Every event: { t, type, who, ... }
 //   t      ms since the fight began (a multiple of TICK_MS). Events at the same t keep their order.
@@ -58,7 +58,7 @@
 //           one more area or line of the same cast, same t, right after the first), echo? (golpeTwice's
 //           second strike), added? ('fire': the hits carry the fogo support's fire).
 //   skill   who 'hero', skill 'critBlast', shape 'area', at, radius: a crit target exploding on the
-//           foes around it. skill 'tryCatch', shape 'single', target (the attacker): barreira answering
+//           foes around it. skill 'rethrow', shape 'single', target (the attacker): barreira answering
 //           a hit it absorbed.
 //   dot     who 'hero', skill, element, hits [{ target, amount }], amount: one tick of a burn on every
 //           enemy carrying it.
@@ -133,7 +133,7 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   const loadout = (hero.skills ?? [])
     .filter((s) => s && SKILL_BY_ID[s.id])
     .map((s) => ({ def: tuneSkill(SKILL_BY_ID[s.id], tuning), level: s.level ?? 1, readyAt: Math.max(0, cooldowns[s.id] ?? 0) }))
-  // tryCatch: the share of each absorbed hit barreira sends back.
+  // rethrow: the share of each absorbed hit barreira sends back.
   const reflectShare = loadout.find((slot) => slot.def.reflect)?.def.reflect ?? 0
   const manaCost = (def) => def.mana * (effects.has(EFFECT.recursion) ? 2 : 1)
   const defs = enemies ?? (enemy ? [enemy] : [])
@@ -210,7 +210,7 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
     if (h.hp <= 0) heroDies()
     else if (absorbed > 0 && reflectShare > 0 && event.skill !== MOD.reflect && foes[src]?.alive) {
       const hits = strike([{ e: foes[src], raw: absorbed * reflectShare, crit: false }], 'physical')
-      land({ who: 'hero', type: 'skill', skill: 'tryCatch', shape: 'single', element: 'physical', target: src, hits, amount: sum(hits) })
+      land({ who: 'hero', type: 'skill', skill: 'rethrow', shape: 'single', element: 'physical', target: src, hits, amount: sum(hits) })
     }
   }
 

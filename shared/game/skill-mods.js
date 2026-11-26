@@ -6,14 +6,14 @@
 // Passives (one notable each, talents.js places them):
 // - golpeTwice: golpe strikes again right after, at 50% power (one more cleave).
 // - breadthFirst: raio jumps to 2 more foes.
-// - divideConquer: chama throws a second burning patch at the next thickest spot.
+// - parallelFire: chama throws a second burning patch at the next thickest spot.
 // - fork: veneno spits a second line.
 // - endlessWinter: nevasca radius +40%.
 // - globalScope: +20% area (radius, or a line's width) for every around, area and pierce skill.
 // - quickCache: every skill cooldown recovers 15% faster.
 // - memoryLeak: dots last 30% longer.
 // - critBlast: a skill hit that crits explodes for 30% of that hit on the other foes within 1.5 tiles.
-// - tryCatch: while barreira holds, 40% of the damage it absorbs hits the attacker back.
+// - rethrow: while barreira holds, 40% of the damage it absorbs hits the attacker back.
 // - garbageCollector: cura also heals 4% of max hp every second for 5 s.
 // Support gems (each counts once, however many sockets hold it):
 // - projeteis: area and pierce skills throw 1 more area or line, 15% less damage.
@@ -31,14 +31,14 @@ import { SKILLS } from './skills.js'
 export const PASSIVES = {
   golpeTwice: { skill: 'golpe', icon: 'sword', echo: 0.5 },
   breadthFirst: { skill: 'raio', icon: 'bolt', targets: 2 },
-  divideConquer: { skill: 'chama', icon: 'flame', extra: 1 },
+  parallelFire: { skill: 'chama', icon: 'flame', extra: 1 },
   fork: { skill: 'veneno', icon: 'poison', extra: 1 },
   endlessWinter: { skill: 'nevasca', icon: 'snow', area: 0.4 },
   globalScope: { icon: 'map', area: 0.2 },
   quickCache: { icon: 'clock', cooldown: 0.15 },
   memoryLeak: { icon: 'scroll', duration: 0.3, kinds: ['dot'] },
   critBlast: { icon: 'target', blast: { pct: 0.3, radius: 1.5 } },
-  tryCatch: { skill: 'barreira', icon: 'barrier', reflect: 0.4 },
+  rethrow: { skill: 'barreira', icon: 'barrier', reflect: 0.4 },
   garbageCollector: { skill: 'cura', icon: 'heart', hot: { pct: 0.04, ms: 5000 } },
 }
 

@@ -38,9 +38,9 @@ describe('passives', () => {
     expect(targets(of(run(['raio'], { effects: ['breadthFirst', 'chainBolt'], foes: line }), (e) => e.skill === 'raio')[0])).toHaveLength(7)
   })
 
-  it('divideConquer: chama throws a second patch on the next group, every foe burns once', () => {
+  it('parallelFire: chama throws a second patch on the next group, every foe burns once', () => {
     const foes = [dummy(4, 0), dummy(4.5, 0.5), dummy(0, 4), dummy(0.4, 4.3), dummy(-4, 0)]
-    const r = run(['chama'], { effects: ['divideConquer'], foes })
+    const r = run(['chama'], { effects: ['parallelFire'], foes })
     const first = of(r, (e) => e.type === 'cast' && e.skill === 'chama')[0]
     const casts = at(r, first.t, (e) => e.type === 'cast' && e.skill === 'chama')
     expect(casts).toHaveLength(2)
@@ -54,8 +54,8 @@ describe('passives', () => {
     expect(targets(tick).sort()).toEqual([0, 1, 2, 3])
   })
 
-  it('divideConquer with one group: no second patch (nobody new to burn)', () => {
-    const r = run(['chama'], { effects: ['divideConquer'], foes: [dummy(4, 0), dummy(4.5, 0.5)] })
+  it('parallelFire with one group: no second patch (nobody new to burn)', () => {
+    const r = run(['chama'], { effects: ['parallelFire'], foes: [dummy(4, 0), dummy(4.5, 0.5)] })
     const first = of(r, (e) => e.type === 'cast' && e.skill === 'chama')[0]
     expect(at(r, first.t, (e) => e.type === 'cast' && e.skill === 'chama')).toHaveLength(1)
   })
@@ -120,16 +120,16 @@ describe('passives', () => {
     expect(of(run(['golpe'], { effects: ['critBlast'], foes }), (e) => e.skill === 'critBlast')).toHaveLength(0)
   })
 
-  it('tryCatch: hits barreira absorbs come back at 40% to the attacker', () => {
+  it('rethrow: hits barreira absorbs come back at 40% to the attacker', () => {
     const biter = dummy(1.3, 0, { attack: 50, hp: 1e6 })
-    const r = run(['barreira'], { effects: ['tryCatch'], foes: [biter], over: { armor: 0 } })
+    const r = run(['barreira'], { effects: ['rethrow'], foes: [biter], over: { armor: 0 } })
     const absorbed = of(r, (e) => e.who === 'enemy' && e.type === 'hit' && e.absorbed > 0)
     expect(absorbed.length).toBeGreaterThan(0)
-    const back = of(r, (e) => e.skill === 'tryCatch')
+    const back = of(r, (e) => e.skill === 'rethrow')
     expect(back.length).toBe(absorbed.length)
     expect(back[0]).toMatchObject({ who: 'hero', type: 'skill', shape: 'single', target: 0 })
     expect(back[0].hits[0].amount).toBe(Math.round(absorbed[0].absorbed * 0.4))
-    expect(of(run(['barreira'], { foes: [biter], over: { armor: 0 } }), (e) => e.skill === 'tryCatch')).toHaveLength(0)
+    expect(of(run(['barreira'], { foes: [biter], over: { armor: 0 } }), (e) => e.skill === 'rethrow')).toHaveLength(0)
   })
 
   it('garbageCollector: after cura, 4% of max hp comes back each second for 5 s', () => {
@@ -144,14 +144,14 @@ describe('passives', () => {
 })
 
 describe('supports', () => {
-  it('projeteis: chama throws 2 patches for 15% less; with divideConquer 3', () => {
+  it('projeteis: chama throws 2 patches for 15% less; with parallelFire 3', () => {
     const foes = [dummy(4, 0), dummy(0, 4), dummy(-4, 0), dummy(0, -4)]
     const r = run(['chama'], { supports: ['projeteis'], foes })
     const first = of(r, (e) => e.type === 'cast' && e.skill === 'chama')[0]
     expect(at(r, first.t, (e) => e.type === 'cast' && e.skill === 'chama')).toHaveLength(2)
     const tick = of(r, (e) => e.type === 'dot' && e.skill === 'chama')[0]
     for (const hit of tick.hits) expect(hit.amount).toBe(Math.round(100 * S.chama.power * 0.85))
-    const three = run(['chama'], { effects: ['divideConquer'], supports: ['projeteis'], foes })
+    const three = run(['chama'], { effects: ['parallelFire'], supports: ['projeteis'], foes })
     expect(at(three, first.t, (e) => e.type === 'cast' && e.skill === 'chama')).toHaveLength(3)
   })
 
@@ -227,7 +227,7 @@ describe('supports', () => {
 
   it('is deterministic with every mod on', () => {
     const all = () => run(['golpe', 'raio', 'chama', 'veneno'], {
-      effects: ['golpeTwice', 'breadthFirst', 'divideConquer', 'fork', 'critBlast', 'quickCache'],
+      effects: ['golpeTwice', 'breadthFirst', 'parallelFire', 'fork', 'critBlast', 'quickCache'],
       supports: ['projeteis', 'fogo', 'vampiro', 'frio'],
       foes: [dummy(2, 0), dummy(3, 1), dummy(0, 3), dummy(-2, 1)],
       over: { critChance: 40 },
