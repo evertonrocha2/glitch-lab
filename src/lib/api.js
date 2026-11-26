@@ -336,6 +336,20 @@ export const openChest = (token) => game('/chests/open', 'POST', token)
 export const buyPotions = (kind, count, token) => game('/potions/buy', 'POST', token, { kind, count })
 export const saveLook = ({ skin, hairStyle, hairColor, eyeStyle, eyeColor, outfit }, token) =>
   game('/look', 'PUT', token, { skin, hairStyle, hairColor, eyeStyle, eyeColor, outfit })
+// The town's NPCs (fase 3). The View carries npc { market, alchemist, jeweler, quests }; getMarket reads
+// one market tier (a town's own) as { market }. tier is optional everywhere (the hero level's tier).
+// The alchemist's potions are buyPotions above. Each action answers the View plus its own extra:
+// bought + market, sold, reroll + market, elixir, jewel, combined, quest.
+export const getMarket = (tier, token) => request(`/api/game/market?today=${localDay()}${tier ? `&tier=${tier}` : ''}`, { token })
+export const buyMarketItem = (itemId, tier, token) => game('/market/buy', 'POST', token, { itemId, tier })
+export const sellItems = (itemIds, token) => game('/market/sell', 'POST', token, { itemIds })
+export const rerollMarket = (tier, token) => game('/market/reroll', 'POST', token, { tier })
+// currency: 'gold' or 'fragments'.
+export const buyElixir = (type, currency, token) => game('/alchemist/elixir', 'POST', token, { type, currency })
+// kind: 'gem' (id: a gem id) or 'support' (id: a support gem id).
+export const buyJewel = (kind, id, token) => game('/jeweler/buy', 'POST', token, { kind, id })
+export const combineGems = (gemIds, token) => game('/jeweler/combine', 'POST', token, { gemIds })
+export const claimQuest = (questId, token) => game('/quests/claim', 'POST', token, { questId })
 
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
