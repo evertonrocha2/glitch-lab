@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { studyHref } from './study-cta.js'
+import { studyHref, studyPageOf, studyPages } from './study-cta.js'
 
 describe('studyHref', () => {
   it("sends to the daily puzzle while today's daily isn't done", () => {
@@ -27,5 +27,23 @@ describe('studyHref', () => {
         expect(studyHref({ locale: 'en', doneToday: { daily, hunt } })).not.toMatch(/enem/)
       }
     }
+  })
+})
+
+describe('studyPages', () => {
+  it('lists every page whose right answers count as acertos, in the order the switcher shows them', () => {
+    expect(studyPages('pt-BR').map((page) => page.href)).toEqual(['/daily', '/hunt', '/exams/enem', '/board', '/glitchdle', '/duel'])
+  })
+
+  it('leaves ENEM out of the English UI', () => {
+    expect(studyPages('en').map((page) => page.id)).toEqual(['daily', 'hunt', 'board', 'glitchdle', 'duel'])
+  })
+
+  it('finds the page a study link belongs to, by its path', () => {
+    expect(studyPageOf('/daily', 'pt-BR')?.id).toBe('daily')
+    expect(studyPageOf('/exams/enem/matematica?embed=1', 'pt-BR')?.id).toBe('enem')
+    expect(studyPageOf('/duel/abc', 'en')?.id).toBe('duel')
+    expect(studyPageOf('/exams/enem', 'en')).toBeNull()
+    expect(studyPageOf('/notes', 'pt-BR')).toBeNull()
   })
 })
