@@ -2,9 +2,10 @@ import { useId, useState } from 'react'
 import { LOADOUT_SIZE, MAX_SKILL_LEVEL, MAX_THRESHOLD, SKILLS, skillPower, skillUpgradeCost } from '../../../../shared/game/skills.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
-import { ActionButton, BlockTitle } from './panel-ui.jsx'
+import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
+import { ActionButton } from './panel-ui.jsx'
 
-const BOX = 'flex flex-col gap-1.5 border-2 border-[#2e2650] bg-[#160f2e] p-1.5'
+const BOX = 'flex flex-col gap-2 p-2.5'
 const SKILL_BY_ID = Object.fromEntries(SKILLS.map((skill) => [skill.id, skill]))
 const THRESHOLD_STEP = 0.05
 
@@ -47,7 +48,7 @@ function SkillsBody({ view, actions, runner }) {
 
   return (
     <>
-      <BlockTitle id={listId}>{t('game.skills.list')}</BlockTitle>
+      <SectionTitle id={listId}>{t('game.skills.list')}</SectionTitle>
       <ul aria-labelledby={listId} className="m-0 flex list-none flex-col gap-1.5 p-0">
         {SKILLS.map((def) => (
           <SkillRow
@@ -65,18 +66,18 @@ function SkillsBody({ view, actions, runner }) {
         ))}
       </ul>
 
-      <section aria-labelledby={loadoutId} className={BOX}>
-        <BlockTitle id={loadoutId}>{t('game.loadout.title')}</BlockTitle>
+      <Frame as="section" aria-labelledby={loadoutId} className={BOX}>
+        <SectionTitle id={loadoutId}>{t('game.loadout.title')}</SectionTitle>
         <ol aria-labelledby={loadoutId} className="m-0 flex list-none flex-col gap-1 p-0">
           {slots.map((id, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: slots are positions.
-            <li key={i} className="flex min-h-11 items-center gap-1.5">
-              <b className="w-4 text-center text-[#9a93b8]" aria-hidden="true">
+            <li key={i} className="flex min-h-11 items-center gap-2 border-2 border-[#120c22] bg-[#100c20] py-0.5 pl-1.5 pr-0.5 shadow-[inset_2px_2px_0_#0a0818]">
+              <Chip tone="ink" aria-hidden="true">
                 {i + 1}
-              </b>
+              </Chip>
               <span className="sr-only">{t('game.loadout.slot', { slot: i + 1 })}: </span>
               {id ? <GameIcon name={SKILL_BY_ID[id]?.icon ?? 'bag'} size={1} /> : <span className="inline-block size-4.5" />}
-              <span className={`flex-1 ${id ? 'text-white' : 'text-[#7d8196]'}`}>{id ? skillName(id) : t('game.loadout.empty')}</span>
+              <span className={`min-w-0 flex-1 ${id ? 'text-white' : 'text-[#7d8196]'}`}>{id ? skillName(id) : t('game.loadout.empty')}</span>
               {id && (
                 <span className="flex gap-1">
                   <SlotButton label={t('game.loadout.up', { skill: skillName(id) })} hidden={i === 0} onClick={() => move(i, i - 1)}>
@@ -93,13 +94,13 @@ function SkillsBody({ view, actions, runner }) {
             </li>
           ))}
         </ol>
-      </section>
+      </Frame>
 
-      <section aria-labelledby={potionsId} className={BOX}>
-        <BlockTitle id={potionsId}>{t('game.loadout.potions')}</BlockTitle>
+      <Frame as="section" aria-labelledby={potionsId} className={BOX}>
+        <SectionTitle id={potionsId}>{t('game.loadout.potions')}</SectionTitle>
         <Threshold label={t('game.loadout.hp')} icon="hppot" value={thresholds.hp} onChange={(hp) => setThresholds((now) => ({ ...now, hp }))} />
         <Threshold label={t('game.loadout.mp')} icon="mppot" value={thresholds.mp} onChange={(mp) => setThresholds((now) => ({ ...now, mp }))} />
-      </section>
+      </Frame>
 
       <span>
         <ActionButton tone="gold" busy={runner.busy} why={changed ? null : t('game.why.unchanged')} quiet onClick={save}>
@@ -114,14 +115,10 @@ function SkillsBody({ view, actions, runner }) {
 function SlotButton({ label, hidden = false, onClick, children }) {
   if (hidden) return <span className="inline-block size-11" />
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="size-11 cursor-pointer border-2 border-[#8f6bff] bg-[#2a1f5a] text-[13px] text-white focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2c14e]"
-    >
+    <Frame as="button" type="button" tone="raised" onClick={onClick} className="size-11 cursor-pointer text-[13px] leading-none text-[#e9e4ff] hover:text-white">
       <span aria-hidden="true">{children}</span>
       <span className="sr-only">{label}</span>
-    </button>
+    </Frame>
   )
 }
 
@@ -130,7 +127,7 @@ function Threshold({ label, icon, value, onChange }) {
   return (
     <div className="flex items-center gap-2">
       <GameIcon name={icon} size={1} />
-      <label htmlFor={id} className="flex-1 text-[#d9d3f5]">
+      <label htmlFor={id} className="flex-1 text-[#e9e4ff]">
         {label}
       </label>
       <input
@@ -144,7 +141,7 @@ function Threshold({ label, icon, value, onChange }) {
         onChange={(event) => onChange(Math.round(Number(event.target.value) * 100) / 100)}
         className="h-11 w-28 cursor-pointer accent-[#f2c14e]"
       />
-      <output htmlFor={id} className="w-9 text-right text-white">
+      <output htmlFor={id} className="w-10 text-right font-pixel text-[10px] text-white">
         {pct(value)}%
       </output>
     </div>
@@ -184,20 +181,18 @@ function SkillRow({ def, level, slot, canEquip, view, actions, runner, text, onE
     )
 
   return (
-    <li className={BOX}>
-      <div className="flex items-center gap-2">
-        <GameIcon name={def.icon} size={2} />
-        <div className="flex flex-1 flex-col">
-          <b className={have ? 'text-white' : 'text-[#b9b0de]'}>{name}</b>
-          <small className={have ? 'text-[#ffd76a]' : 'text-[#7d8196]'}>
-            {have ? t('game.skills.level', { level, max: MAX_SKILL_LEVEL }) : t('game.skills.notOwned')}
-          </small>
+    <Frame as="li" tone={have ? 'panel' : 'inset'} className={BOX}>
+      <div className="flex items-center gap-2.5">
+        <GameIcon name={def.icon} size={2} className={have ? '' : 'opacity-60'} />
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+          <b className={`font-pixel text-[11px] font-normal leading-tight ${have ? 'text-white' : 'text-[#a89fd0]'}`}>{name}</b>
+          <Chip tone={have ? 'gold' : 'muted'}>{have ? t('game.skills.level', { level, max: MAX_SKILL_LEVEL }) : t('game.skills.notOwned')}</Chip>
         </div>
       </div>
-      <small className="text-[#8fb8ff]">{describe(t, def, level)}</small>
-      <small className="text-[#b9b0de]">{t('game.skills.meta', { mana: text.number(def.mana), seconds: text.number(def.cooldownMs / 1000) })}</small>
-      {!have && <small className="text-[#b9b0de]">{t('game.skills.price', { fragments: text.number(def.price) })}</small>}
-      {cost && <small className="text-[#b9b0de]">{t('game.skills.next', { fragments: text.number(cost.fragments) })}</small>}
+      <small className="text-[11px] text-[#8fb8ff]">{describe(t, def, level)}</small>
+      <small className="text-[11px] text-[#a89fd0]">{t('game.skills.meta', { mana: text.number(def.mana), seconds: text.number(def.cooldownMs / 1000) })}</small>
+      {!have && <small className="text-[11px] text-[#a89fd0]">{t('game.skills.price', { fragments: text.number(def.price) })}</small>}
+      {cost && <small className="text-[11px] text-[#a89fd0]">{t('game.skills.next', { fragments: text.number(cost.fragments) })}</small>}
       <span className="flex flex-wrap items-start gap-1.5">
         {have ? (
           <>
@@ -218,6 +213,6 @@ function SkillRow({ def, level, slot, canEquip, view, actions, runner, text, onE
           </ActionButton>
         )}
       </span>
-    </li>
+    </Frame>
   )
 }

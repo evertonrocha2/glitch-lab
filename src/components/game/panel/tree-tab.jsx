@@ -4,11 +4,10 @@ import { canAllocate, MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, TALENTS } from '../.
 import { capitalize } from '../../../lib/i18n/format.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
+import Frame, { Chip } from '../ui/frame.jsx'
 import { ActionButton, ConfirmButton, GameDialog } from './panel-ui.jsx'
 import SkillsView from './skills-view.jsx'
 import TalentCanvas, { BRANCH_COLORS } from './talent-canvas.jsx'
-
-const BOX = 'flex flex-col gap-1.5 border-2 border-[#2e2650] bg-[#160f2e] p-1.5'
 const VIEWS = ['talents', 'skills']
 const BRANCHES = ['logica', 'sintaxe', 'algoritmos']
 const NODE_BY_ID = new Map(TALENTS.nodes.map((node) => [node.id, node]))
@@ -114,17 +113,23 @@ export default function TreeTab({ view, actions, runner, start = 'talents' }) {
     <>
       <fieldset className="m-0 grid grid-cols-2 gap-1 border-0 p-0">
         <legend className="sr-only">{t('game.tree.views')}</legend>
-        {VIEWS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={mode === id}
-            onClick={() => setMode(id)}
-            className={`min-h-11 cursor-pointer border-2 px-2 text-[11px] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2c14e] ${mode === id ? 'border-[#f2c14e] bg-[#2a1f5a] text-white' : 'border-[#2e2650] bg-[#1e1838] text-[#b9b0de]'}`}
-          >
-            {t(`game.tree.${id}`)}
-          </button>
-        ))}
+        {VIEWS.map((id) => {
+          const on = mode === id
+          return (
+            <Frame
+              as="button"
+              key={id}
+              type="button"
+              tone={on ? 'raised' : 'inset'}
+              aria-pressed={on}
+              onClick={() => setMode(id)}
+              className={`min-h-11 cursor-pointer px-2 pb-1.5 pt-2 font-pixel text-[10px] leading-tight ${on ? 'text-white' : 'text-[#a89fd0] hover:text-[#e9e4ff]'}`}
+            >
+              {t(`game.tree.${id}`)}
+              {on && <i aria-hidden="true" className="absolute inset-x-1 bottom-1 block h-0.5 bg-[#f2c14e]" />}
+            </Frame>
+          )
+        })}
       </fieldset>
       {mode === 'talents' ? <TalentsView view={view} actions={actions} runner={runner} text={text} /> : <SkillsView view={view} actions={actions} runner={runner} />}
     </>
@@ -181,7 +186,9 @@ function TalentsView({ view, actions, runner, text }) {
 
   // The pieces shown both in the tab and in the expanded dialog.
   const canvas = (
-    <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} onSelect={setSelectedId} />
+    <Frame tone="inset" className="p-1">
+      <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} onSelect={setSelectedId} />
+    </Frame>
   )
   const nodeList = (cardRef) => (
     <ul aria-label={t('game.tree.list')} className="sr-only">
@@ -219,12 +226,12 @@ function TalentsView({ view, actions, runner, text }) {
         onUnqueue={() => setQueue(queue.filter((id) => id !== selected.id))}
       />
     ) : (
-      <p className="m-0 text-[#b9b0de]">{t('game.tree.pick')}</p>
+      <p className="m-0 text-[11px] text-[#a89fd0]">{t('game.tree.pick')}</p>
     )
   const queueBar =
     queue.length > 0 ? (
-      <section aria-label={t('game.tree.queue', { count: queue.length })} className={BOX}>
-        <p className="m-0 text-[#7fffe9]">{t('game.tree.queue', { count: queue.length })}</p>
+      <Frame as="section" aria-label={t('game.tree.queue', { count: queue.length })} className="flex flex-col gap-2 p-2.5">
+        <p className="m-0 font-pixel text-[10px] text-[#7fffe9]">{t('game.tree.queue', { count: queue.length })}</p>
         <span className="flex flex-wrap gap-1.5">
           <ActionButton tone="gold" busy={runner.busy} onClick={confirm}>
             {t('game.tree.confirm', { count: queue.length })}
@@ -233,11 +240,14 @@ function TalentsView({ view, actions, runner, text }) {
             {t('game.tree.clear')}
           </ActionButton>
         </span>
-      </section>
+      </Frame>
     ) : null
   const freeLine = (
-    <span className="flex items-center gap-1">
-      <span>{t('game.tree.free')}</span> <b className="text-[#ffd76a]">{text.number(left)}</b>
+    <span className="flex items-center gap-1.5">
+      <span className="font-pixel text-[10px] text-[#e9e4ff]">{t('game.tree.free')}</span>
+      <Chip tone="gold" className="text-[10px]">
+        {text.number(left)}
+      </Chip>
     </span>
   )
 
@@ -246,9 +256,9 @@ function TalentsView({ view, actions, runner, text }) {
       <div className="flex flex-col gap-1 text-[11px]">
         <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1">
           {freeLine}
-          <span className="text-[#b9b0de]">{t('game.tree.respecRate', { gold: text.number(RESPEC_GOLD_PER_POINT) })}</span>
+          <span className="text-[#a89fd0]">{t('game.tree.respecRate', { gold: text.number(RESPEC_GOLD_PER_POINT) })}</span>
         </p>
-        <small className="text-[10px] text-[#9a93b8]">{t('game.tree.hint')}</small>
+        <small className="text-[10px] text-[#a89fd0]">{t('game.tree.hint')}</small>
       </div>
 
       {expanded ? null : canvas}
@@ -257,7 +267,7 @@ function TalentsView({ view, actions, runner, text }) {
       </span>
       {nodeList(inlineCard)}
 
-      <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-[10px] text-[#b9b0de]">
+      <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-[10px] text-[#a89fd0]">
         <Legend shape="rounded-full size-2.5" color="#4a4266">
           {t('game.tree.legend.small')}
         </Legend>
@@ -326,14 +336,19 @@ function TalentCard({ node, state, why, requirement, busy, text, headingRef, onT
   const titleId = useId()
   const color = BRANCH_COLORS[node.branch]
   return (
-    <section aria-labelledby={titleId} className="border-2 bg-[#120e26] p-2 shadow-[0_0_0_2px_#0a0818,4px_4px_0_rgba(0,0,0,.5)]" style={{ borderColor: color }}>
-      <div className="mb-1.5 flex items-center gap-2 border-b border-[#2e2650] pb-1.5">
+    <Frame
+      as="section"
+      aria-labelledby={titleId}
+      className="p-2.5"
+      style={{ '--f-hi': color, '--f-lo': `color-mix(in srgb, ${color} 40%, #0a0818)` }}
+    >
+      <div className="mb-2 flex items-center gap-2 border-b-2 border-[#0a0818] pb-2 shadow-[0_2px_0_#3e3170]">
         <GameIcon name={node.icon} size={node.kind === 'keystone' ? 2 : 1} />
-        <div className="flex flex-col">
-          <h3 id={titleId} ref={headingRef} tabIndex={-1} className="m-0 text-[13px] font-bold text-white focus-visible:outline-2 focus-visible:outline-[#f2c14e]">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h3 id={titleId} ref={headingRef} tabIndex={-1} className="m-0 font-pixel text-[12px] font-normal leading-tight text-white focus-visible:outline-2 focus-visible:outline-[#f2c14e]">
             {text.name(node)}
           </h3>
-          <small className="text-[#9a93b8]">{text.kind(node)}</small>
+          <small className="text-[#a89fd0]">{text.kind(node)}</small>
         </div>
       </div>
       {node.kind !== 'root' && (
@@ -345,7 +360,7 @@ function TalentCard({ node, state, why, requirement, busy, text, headingRef, onT
           ))}
         </ul>
       )}
-      {requirement && <p className="m-0 mb-1.5 text-[#9a93b8]">{requirement}</p>}
+      {requirement && <p className="m-0 mb-1.5 text-[#a89fd0]">{requirement}</p>}
       {state === 'owned' && <p className="m-0 text-[#6fe39a]">{t('game.tree.have')}</p>}
       {state === 'queued' && (
         <span className="flex flex-col gap-1">
@@ -362,6 +377,6 @@ function TalentCard({ node, state, why, requirement, busy, text, headingRef, onT
           {t('game.tree.take')}
         </ActionButton>
       )}
-    </section>
+    </Frame>
   )
 }

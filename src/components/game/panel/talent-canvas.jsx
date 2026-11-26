@@ -200,7 +200,7 @@ export default function TalentCanvas({ owned, queued, open, selected, labels, on
       height={TREE_HEIGHT}
       aria-hidden="true"
       onClick={onClick}
-      className="block w-full cursor-pointer border-2 border-[#2e2650]"
+      className="block w-full cursor-pointer border-2 border-[#120c22]"
       style={{ aspectRatio: `${TREE_WIDTH} / ${TREE_HEIGHT}` }}
     />
   )
