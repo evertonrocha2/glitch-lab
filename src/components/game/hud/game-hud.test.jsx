@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeAll, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
+import { RARITY_TRIM } from '../ui/tokens.js'
 import GameHud from './game-hud.jsx'
 
 // happy-dom has no canvas: the icons draw nothing here.
@@ -13,6 +14,8 @@ const view = (over = {}) => ({
     potions: { hp: 4, mp: 2 },
     skills: { owned: { golpe: 1, raio: 2 }, loadout: ['golpe', 'raio', null, null] },
     hunt: null,
+    look: { skin: 2, hairStyle: 1, hairColor: 3, eyeStyle: 0, eyeColor: 1, outfit: 2 },
+    items: [],
   },
   level: { level: 12, xp: 3400, into: 3400, needed: 7500 },
   stats: { hp: 1240, mana: 160 },
@@ -27,26 +30,37 @@ const ui = (props, locale = 'en') =>
     </I18nProvider>,
   )
 
-it('exposes hp, mana and xp as progressbars', () => {
+it('exposes hp, mana and xp as meters with the numbers inside', () => {
   ui({ live: { hp: 893, mana: 88 } })
-  const hp = screen.getByRole('progressbar', { name: /Health/ })
+  const hp = screen.getByRole('meter', { name: /Health/ })
   expect(hp).toHaveAttribute('aria-valuenow', '893')
   expect(hp).toHaveAttribute('aria-valuemin', '0')
   expect(hp).toHaveAttribute('aria-valuemax', '1240')
-  expect(screen.getByRole('progressbar', { name: /Mana/ })).toHaveAttribute('aria-valuenow', '88')
-  const xp = screen.getByRole('progressbar', { name: /XP/ })
+  expect(hp).toHaveTextContent('893 / 1,240')
+  expect(screen.getByRole('meter', { name: /Mana/ })).toHaveAttribute('aria-valuenow', '88')
+  const xp = screen.getByRole('meter', { name: /XP/ })
   expect(xp).toHaveAttribute('aria-valuenow', '3400')
   expect(xp).toHaveAttribute('aria-valuemax', '7500')
 })
 
 it('formats numbers per locale', () => {
   ui({ live: { hp: 893, mana: 88 } }, 'pt-BR')
-  expect(screen.getByText('Vida 893 / 1.240')).toBeInTheDocument()
+  expect(screen.getByRole('meter', { name: 'Vida' })).toHaveTextContent('893 / 1.240')
 })
 
 it('defaults to full hp and mana without live data', () => {
   ui({})
-  expect(screen.getByRole('progressbar', { name: /Health/ })).toHaveAttribute('aria-valuenow', '1240')
+  expect(screen.getByRole('meter', { name: /Health/ })).toHaveAttribute('aria-valuenow', '1240')
+})
+
+it('shows the hero face as a labeled portrait with the level badge', () => {
+  ui({})
+  const face = screen.getByRole('img', { name: 'Your hero' })
+  expect(face.tagName).toBe('CANVAS')
+  // The head crop at scale 2: 24 art pixels -> 48 canvas pixels.
+  expect(face).toHaveAttribute('width', '48')
+  expect(screen.getByText('Level 12')).toBeInTheDocument()
+  expect(screen.getByTestId('level-badge')).toHaveTextContent('12')
 })
 
 it('shows buffs with seconds', () => {
@@ -59,7 +73,7 @@ it('shows the boss bar with phase and enrage', () => {
   expect(screen.getByText('Slime King')).toBeInTheDocument()
   expect(screen.getByText('Phase 2 of 3')).toBeInTheDocument()
   expect(screen.getByText('Enrage in 0:42')).toBeInTheDocument()
-  expect(screen.getByRole('progressbar', { name: /Slime King/ })).toHaveAttribute('aria-valuenow', '6320')
+  expect(screen.getByRole('meter', { name: /Slime King/ })).toHaveAttribute('aria-valuenow', '6320')
 })
 
 it('locked difficulty chips show the min level', () => {
@@ -88,6 +102,34 @@ it('keeps the combat log visible but silent for screen readers', () => {
   expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'off')
 })
 
+it('colors crits gold, hits dealt light and loot in its rarity trim', () => {
+  ui({
+    log: [
+      { t: 1, who: 'hero', type: 'hit', amount: 10 },
+      { t: 2, who: 'hero', type: 'crit', amount: 25 },
+      { t: 3, who: 'hero', type: 'skill', skill: 'raio', amount: 40, crit: true },
+      { t: 4, who: 'hero', type: 'loot', rarity: 'epic' },
+    ],
+  })
+  const [hit, crit, skillCrit, loot] = within(screen.getByRole('log')).getAllByRole('listitem')
+  expect(hit).toHaveAttribute('data-tone', 'dealt')
+  expect(crit).toHaveAttribute('data-tone', 'crit')
+  expect(crit.className).toContain('gw-log-crit')
+  expect(skillCrit).toHaveAttribute('data-tone', 'crit')
+  expect(loot).toHaveAttribute('data-tone', 'loot')
+  expect(loot).toHaveAttribute('data-rarity', 'epic')
+  expect(loot).toHaveStyle({ color: RARITY_TRIM.epic })
+})
+
+it('fades the older log lines, the newest stays full', () => {
+  const log = Array.from({ length: 5 }, (_, i) => ({ t: i, who: 'hero', type: 'hit', amount: 10 + i }))
+  ui({ log })
+  const lines = within(screen.getByRole('log')).getAllByRole('listitem')
+  const alpha = lines.map((li) => Number(li.style.opacity || 1))
+  expect(alpha[4]).toBe(1)
+  for (let i = 1; i < alpha.length; i++) expect(alpha[i]).toBeGreaterThan(alpha[i - 1])
+})
+
 it('keeps the last 5 log events', () => {
   const log = Array.from({ length: 7 }, (_, i) => ({ t: i, who: 'hero', type: 'hit', amount: 10 + i }))
   ui({ log })
@@ -102,6 +144,14 @@ it('draws 4 skill slots and 2 potion slots with counts and cooldown', () => {
   expect(screen.getByLabelText(/Mana potion/)).toHaveTextContent('2')
   expect(screen.getByLabelText(/Bolt/)).toHaveTextContent('4s')
   expect(screen.getAllByTestId('slot')).toHaveLength(6)
+})
+
+it('marks each slot with its key chip and the empty ones with a plus', () => {
+  ui({})
+  const slots = screen.getAllByTestId('slot')
+  expect(slots.map((s) => s.querySelector('kbd')?.textContent)).toEqual(['Q', 'W', 'E', 'R', '1', '2'])
+  expect(slots.filter((s) => s.hasAttribute('data-empty'))).toHaveLength(2)
+  expect(screen.getAllByLabelText('Empty skill slot')).toHaveLength(2)
 })
 
 it('F calls onFullscreen and M, I, K call onKey', () => {
