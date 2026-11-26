@@ -3,7 +3,7 @@ import Frame from '../../components/game/ui/frame.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 
 // A dark bar that breathes, the game's own skeleton color.
-const BONE = 'block bg-[#2a2250] motion-safe:animate-skeleton'
+const BONE = 'block bg-[#29303c] motion-safe:animate-skeleton'
 
 // Glitch World while it loads: the game console in the same grid the map arrives in, with the hero
 // walking the loading screen where the map goes (it is the status), its status line and the panel
@@ -13,7 +13,7 @@ export default function WorldPageSkeleton() {
   return (
     <Frame tone="panel" className="mt-6 grid items-start gap-2 p-1.5 shadow-pixel lg:grid-cols-[minmax(0,1fr)_20rem] lg:p-2">
       <div className="flex min-w-0 flex-col gap-2">
-        <HeroLoading label={t('world.page.loading')} className="aspect-[3/2] w-full border-2 border-[#120c22]" />
+        <HeroLoading label={t('world.page.loading')} className="aspect-[3/2] w-full border-2 border-[#0e1116]" />
         <Frame tone="inset" aria-hidden="true" className="flex min-h-14 items-center px-3 py-2">
           <span className={`${BONE} h-2.5 w-1/2`} />
         </Frame>

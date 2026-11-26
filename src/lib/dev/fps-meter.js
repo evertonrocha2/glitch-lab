@@ -66,7 +66,7 @@ export function installFpsMeter(doc = document) {
       font: '11px/1.4 "Geist Mono", ui-monospace, monospace',
       background: '#fff',
       border: '2px solid #1c1d26',
-      boxShadow: '3px 3px 0 #6a3df0',
+      boxShadow: '3px 3px 0 #4a76a3',
       pointerEvents: 'none',
       whiteSpace: 'pre',
     })
