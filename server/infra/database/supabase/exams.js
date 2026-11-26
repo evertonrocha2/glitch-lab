@@ -1,3 +1,5 @@
+import { pageAll } from './paging.js'
+
 // Postgres "invalid input syntax for type uuid": a malformed id simply matches nothing.
 const INVALID_UUID = '22P02'
 // Postgres "unique_violation".
@@ -84,7 +86,8 @@ export function createSupabaseExams(db) {
 
     // day comes back from PostgREST as a 'YYYY-MM-DD' string; the function already sorts by day, topic.
     async examAttemptDays(userId, exam) {
-      const rows = unwrap(await db.rpc('exam_attempt_days', { p_user: userId, p_exam: exam })) ?? []
+      // One row per (day, topic) adds up past the 1000-row cap, so read it a page at a time.
+      const rows = await pageAll(async (from, to) => unwrap(await db.rpc('exam_attempt_days', { p_user: userId, p_exam: exam }).range(from, to)))
       return rows.map((row) => ({ day: String(row.day).slice(0, 10), topic: row.topic, answered: Number(row.answered), correct: Number(row.correct) }))
     },
 
