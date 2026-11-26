@@ -41,11 +41,11 @@ export const unequip = (store, user, today, body) =>
 
 // Talents in the order given. One refusal refuses them all, with canAllocate's reason.
 export const allocateTalents = (store, user, today, body) =>
-  act(store, user, today, (hero, { fuel }) => {
+  act(store, user, today, (hero, { fuel, talentPoints }) => {
     const { add } = body
     if (!Array.isArray(add) || add.length === 0 || add.length > TALENTS.nodes.length || !add.every((id) => isId(id))) throw badRequest()
     for (const id of add) {
-      const free = fuel.talentPoints - spentPoints(hero)
+      const free = talentPoints - spentPoints(hero)
       const verdict = canAllocate(hero.talents, id, { free, branch: fuel.ledger.branch })
       if (!verdict.ok) throw detailedBadRequest(MESSAGES.talent, { reason: verdict.reason })
       hero.talents.push(id)

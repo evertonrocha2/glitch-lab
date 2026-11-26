@@ -5,14 +5,16 @@ import { pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
 import { GEM_SALVAGE_SCRAP, settleHunt } from '../../../shared/game/hunt.js'
 import { BAG_SIZE, rollGem, rollItem, salvageValue } from '../../../shared/game/items.js'
 import { createRng } from '../../../shared/game/rng.js'
+import { bossXp, correctToday, levelsGained, startingXp, studyMultiplier } from '../../../shared/game/xp.js'
 import { HUNT_WORLDS, ZONES, enemyFor, zoneState } from '../../../shared/game/zones.js'
 import { badRequest, codedConflict } from '../../core/errors.js'
 import { isId } from '../../core/validation.js'
 import { loadFuel } from './game.fuel.js'
-import { MESSAGES, fighterOf, newHero, pendingTotals, toView, withDefaults } from './game.model.js'
+import { MESSAGES, fighterOf, levelOf, newHero, pendingTotals, talentPointsOf, toView, withDefaults } from './game.model.js'
 
 // Glitch World v2: the server is the only authority over the hero. The client sends intents (sync,
-// hunt here, stop, fight this boss); every drop, gold coin and fight result is rolled here.
+// hunt here, stop, fight this boss); every drop, gold coin, XP point and fight result is rolled here.
+// Hunting and first boss wins give XP; today's acertos multiply it (shared/game/xp.js).
 
 export const AWAY_MIN_MS = 5 * 60_000
 const INFERNO_GOLD_LOSS = 0.1
@@ -34,6 +36,19 @@ export async function mutate(store, userId, fn) {
   return { hero: withDefaults(saved.data), extra }
 }
 
+// A hero saved before XP was stored gets the XP its study gave (so it keeps its level); it is saved
+// with the next write. Stored XP is never touched here.
+const seedXp = (hero, fuel) => {
+  hero.xp = startingXp(hero, fuel.studyXp)
+}
+
+// mutate, with the hero's XP seeded before fn sees it.
+const change = (store, user, ctx, fn) =>
+  mutate(store, user.id, (draft) => {
+    seedXp(draft, ctx.fuel)
+    return fn(draft)
+  })
+
 export const bagFree = (hero) => Math.max(0, BAG_SIZE - hero.items.filter((item) => !item.equipped).length)
 
 // Known world, zone and difficulty only: the zone table is looked up with own keys, never the prototype.
@@ -51,18 +66,21 @@ function requireOpen(hero, level, { world, zone, difficulty }) {
 
 // The running hunt's result up to now, without changing the hero. null when no hunt runs
 // (or it points at a zone that no longer exists). Each claim has its own seed, so drops never repeat.
-function huntResult(hero, level, now) {
+// The stretch fights at the level the hero has when it is paid, and earns XP at the multiplier
+// recorded when it began (a hunt saved before multipliers existed: x1).
+function huntResult(hero, now) {
   const hunt = hero.hunt
   const zone = hunt && Object.hasOwn(ZONES[hunt.world] ?? {}, hunt.zone) ? ZONES[hunt.world][hunt.zone] : null
   if (!zone || !Object.hasOwn(DIFFICULTIES, hunt.difficulty)) return null
   return settleHunt({
-    hero: fighterOf(hero, level),
+    hero: fighterOf(hero, levelOf(hero).level),
     zone,
     difficulty: hunt.difficulty,
     startedAt: hunt.startedAt,
     now,
     seed: `${hunt.seed}:${hunt.claims}`,
     bagFree: bagFree(hero),
+    xpMultiplier: hunt.xpMultiplier ?? 1,
   })
 }
 
@@ -72,23 +90,29 @@ function huntResult(hero, level, now) {
 const dueForSync = (hunt, now) => Boolean(hunt) && (now - hunt.startedAt >= AWAY_MIN_MS || now < hunt.startedAt)
 
 // The running hunt so far, plus its first sample fights (log and foe) for the client to animate.
-const previewOf = (result) => (result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold, samples: result.samples } : null)
+const previewOf = (result) =>
+  result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold, xp: result.xp, samples: result.samples } : null
 
 // Pays the running hunt into the hero and answers the AwaySummary when it ran long enough to show.
-// keep: the hunt goes on from now (sync); otherwise it ends (stop, or a new hunt).
-export function settle(hero, level, now, { keep }) {
+// keep: the hunt goes on from now (sync), its next stretch at multiplier (today's, as it is now);
+// otherwise it ends (stop, or a new hunt). Each stretch keeps the multiplier it began with, so study
+// done mid-stretch boosts the next one (sync pays a stretch once it ran AWAY_MIN_MS).
+export function settle(hero, now, { keep, multiplier = 1 }) {
   if (!hero.hunt) return undefined
-  const result = huntResult(hero, level, now)
+  const result = huntResult(hero, now)
   if (!result) {
     hero.hunt = null
     return undefined
   }
+  const xpBefore = hero.xp
+  const paidAt = hero.hunt.xpMultiplier ?? 1
+  hero.xp += result.xp
   hero.gold += result.gold
   hero.items.push(...result.items, ...result.gems)
   hero.scrap += result.scrapFromOverflow
   hero.potions.hp = Math.max(0, hero.potions.hp - result.potionsUsed.hp)
   hero.potions.mp = Math.max(0, hero.potions.mp - result.potionsUsed.mp)
-  hero.hunt = keep ? { ...hero.hunt, startedAt: now, claims: hero.hunt.claims + 1 } : null
+  hero.hunt = keep ? { ...hero.hunt, startedAt: now, claims: hero.hunt.claims + 1, xpMultiplier: multiplier } : null
   if (result.elapsedMs < AWAY_MIN_MS) return undefined
   const away = {
     elapsedMs: result.elapsedMs,
@@ -99,6 +123,9 @@ export function settle(hero, level, now, { keep }) {
     items: result.items.length,
     gems: result.gems.length,
     scrap: result.scrapFromOverflow,
+    xp: result.xp,
+    xpMultiplier: paidAt,
+    levelsGained: levelsGained(xpBefore, hero.xp),
   }
   hero.lastAway = away
   return away
@@ -124,11 +151,13 @@ function claimStudy(hero, ledger) {
   return any ? claimed : undefined
 }
 
+// multiplier: what today's acertos multiply hunt XP by, for stretches and boss wins that begin now.
 async function context(store, user, today) {
-  return { fuel: await loadFuel(store, user.id, today), today, now: Date.now() }
+  const fuel = await loadFuel(store, user.id, today)
+  return { fuel, today, now: Date.now(), multiplier: studyMultiplier(correctToday(fuel.ledger, today)) }
 }
 
-const viewOf = (hero, ctx) => toView(hero, { ...ctx, huntPreview: previewOf(huntResult(hero, ctx.fuel.level.level, ctx.now)) })
+const viewOf = (hero, ctx) => toView(hero, { ...ctx, huntPreview: previewOf(huntResult(hero, ctx.now)) })
 
 // Fields left undefined drop out of the JSON.
 const withExtra = (view, extra) => ({ ...view, ...extra })
@@ -137,13 +166,14 @@ const withExtra = (view, extra) => ({ ...view, ...extra })
 // with the build as it was (whatever its length), let fn change the hero, and keep the hunt going from
 // now with the new build. Actions that leave the build alone (potions, look, chests, salvage) settle
 // too, so the hunt is always paid with the bag and stock it ran with. When fn throws, nothing is saved,
-// not even the settlement. fn gets the hero and { fuel, today, now, level } and answers extra fields.
+// not even the settlement. fn gets the hero and { fuel, today, now, multiplier, level, talentPoints }
+// (level and talent points after the settlement paid its XP) and answers extra fields.
 export async function act(store, user, today, fn) {
   const ctx = await context(store, user, today)
-  const level = ctx.fuel.level.level
-  const { hero, extra } = await mutate(store, user.id, (draft) => {
-    const away = settle(draft, level, ctx.now, { keep: true })
-    return { away, ...fn(draft, { ...ctx, level }) }
+  const { hero, extra } = await change(store, user, ctx, (draft) => {
+    const away = settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier })
+    const level = levelOf(draft).level
+    return { away, ...fn(draft, { ...ctx, level, talentPoints: talentPointsOf(draft, ctx.fuel.ledger) }) }
   })
   return withExtra(viewOf(hero, ctx), extra)
 }
@@ -175,30 +205,32 @@ export function spend(hero, field, amount, message) {
 export async function getGame(store, user, today) {
   const ctx = await context(store, user, today)
   const loaded = await store.getGameHero(user.id)
-  return viewOf(withDefaults(loaded?.data ?? newHero()), ctx)
+  const hero = withDefaults(loaded?.data ?? newHero())
+  seedXp(hero, ctx.fuel)
+  return viewOf(hero, ctx)
 }
 
 // Pays the running hunt once it ran AWAY_MIN_MS (and keeps it going) and claims every pending
 // study reward. When neither happens nothing is saved, so an idle player's polling never writes.
 export async function sync(store, user, today) {
   const ctx = await context(store, user, today)
-  const { hero, extra } = await mutate(store, user.id, (draft) => {
+  const { hero, extra } = await change(store, user, ctx, (draft) => {
     const due = dueForSync(draft.hunt, ctx.now)
-    const away = due ? settle(draft, ctx.fuel.level.level, ctx.now, { keep: true }) : undefined
+    const away = due ? settle(draft, ctx.now, { keep: true, multiplier: ctx.multiplier }) : undefined
     const studyClaimed = claimStudy(draft, ctx.fuel.ledger)
     return due || studyClaimed ? { away, studyClaimed } : NO_CHANGE
   })
   return withExtra(viewOf(hero, ctx), extra)
 }
 
-// Pays any running hunt, then starts hunting { world, zone, difficulty }.
+// Pays any running hunt, then starts hunting { world, zone, difficulty } (open at the level that
+// payment leaves), at today's multiplier.
 export async function startHunt(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
-  const level = ctx.fuel.level.level
-  const { hero, extra } = await mutate(store, user.id, (draft) => {
-    requireOpen(draft, level, target)
-    const away = settle(draft, level, ctx.now, { keep: false })
+  const { hero, extra } = await change(store, user, ctx, (draft) => {
+    const away = settle(draft, ctx.now, { keep: false })
+    requireOpen(draft, levelOf(draft).level, target)
     draft.hunt = {
       world: target.world,
       zone: target.zone,
@@ -206,6 +238,7 @@ export async function startHunt(store, user, today, body) {
       startedAt: ctx.now,
       seed: `${user.id}:hunt:${randomUUID()}`,
       claims: 0,
+      xpMultiplier: ctx.multiplier,
     }
     return { away }
   })
@@ -215,7 +248,7 @@ export async function startHunt(store, user, today, body) {
 // Pays the running hunt and ends it.
 export async function stopHunt(store, user, today) {
   const ctx = await context(store, user, today)
-  const { hero, extra } = await mutate(store, user.id, (draft) => ({ away: settle(draft, ctx.fuel.level.level, ctx.now, { keep: false }) }))
+  const { hero, extra } = await change(store, user, ctx, (draft) => ({ away: settle(draft, ctx.now, { keep: false }) }))
   return withExtra(viewOf(hero, ctx), extra)
 }
 
@@ -229,14 +262,15 @@ export function stash(hero, drop) {
   return false
 }
 
-// One boss fight, simulated here. The first win per world, difficulty and zone marks the zone beaten
-// and drops 1 item (rarity boost +1) and 1 gem; later wins pay nothing, so a script can't farm the
-// boss. An Inferno loss costs 10% of the gold; potions drunk are gone either way.
+// One boss fight, simulated here. The first win per world, difficulty and zone marks the zone beaten,
+// drops 1 item (rarity boost +1) and 1 gem and pays bossXp at today's multiplier; later wins pay
+// nothing, so a script can't farm the boss. An Inferno loss costs 10% of the gold; potions drunk are
+// gone either way.
 export async function fightBoss(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
-  const level = ctx.fuel.level.level
-  const { hero, extra } = await mutate(store, user.id, (draft) => {
+  const { hero, extra } = await change(store, user, ctx, (draft) => {
+    const level = levelOf(draft).level
     requireOpen(draft, level, target)
     if (level < target.def.bossLevel) throw badRequest(MESSAGES.bossLevel)
     const seed = `${user.id}:${target.zone}:${target.difficulty}:${randomUUID()}`
@@ -245,7 +279,7 @@ export async function fightBoss(store, user, today, body) {
     const result = simulateFight({ hero: fighterOf(draft, level), enemy, seed })
     draft.potions.hp = Math.max(0, draft.potions.hp - result.potionsUsed.hp)
     draft.potions.mp = Math.max(0, draft.potions.mp - result.potionsUsed.mp)
-    const loot = { items: 0, gems: 0, scrap: 0, goldLost: 0 }
+    const loot = { items: 0, gems: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 }
     if (result.won) {
       const worldProgress = (draft.progress[target.world] ??= {})
       const beaten = (worldProgress[target.difficulty] ??= [])
@@ -257,6 +291,9 @@ export async function fightBoss(store, user, today, body) {
         if (stash(draft, rollItem(rng, { ilvl: target.def.ilvl + diff.ilvl, rarityBoost: diff.rarityBoost + 1 }))) loot.items++
         if (stash(draft, rollGem(rng))) loot.gems++
         loot.scrap = draft.scrap - scrapBefore
+        loot.xp = bossXp(target.def, target.difficulty, ctx.multiplier)
+        draft.xp += loot.xp
+        loot.levelsGained = levelsGained(draft.xp - loot.xp, draft.xp)
       }
     } else if (target.difficulty === 'inferno') {
       loot.goldLost = Math.floor(draft.gold * INFERNO_GOLD_LOSS)

@@ -1,12 +1,15 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { heroLevel, xpForLevel } from '../../shared/game/fuel.js'
+import { bossXp, huntXp } from '../../shared/game/xp.js'
+import { ZONES } from '../../shared/game/zones.js'
 import { newHero } from '../../server/modules/game/game.model.js'
 import { api, useTempStore } from './helpers.js'
 import { CASE, SECRET, challengeFor } from './store-contract.js'
 
-// The Inferno test needs level 40, far more study than a test can create: it lifts the level
-// through loadFuel. Every other test runs on real study data.
+// The Inferno test needs level 40, far more study than a test can create: it lifts the study XP a
+// hero without stored xp starts from (the migration) through loadFuel. Every other test runs on real
+// study data.
 const fuel = vi.hoisted(() => ({ level: null }))
 vi.mock('../../server/modules/game/game.fuel.js', async (importOriginal) => {
   const real = await importOriginal()
@@ -14,7 +17,7 @@ vi.mock('../../server/modules/game/game.fuel.js', async (importOriginal) => {
     ...real,
     loadFuel: async (...args) => {
       const loaded = await real.loadFuel(...args)
-      return fuel.level ? { ...loaded, level: heroLevel(xpForLevel(fuel.level)) } : loaded
+      return fuel.level ? { ...loaded, studyXp: xpForLevel(fuel.level) } : loaded
     },
   }
 })
@@ -74,6 +77,8 @@ it('starts a new player at level 1 with no gold and only the first Normal zone o
   expect(body.study.branch).toEqual({ logica: 0, sintaxe: 0, algoritmos: 0 })
   expect(body.power).toBeGreaterThan(0)
   expect(body.huntPreview).toBeNull()
+  // No acertos today: XP x1.0.
+  expect(body.study.xpMultiplier).toBe(1)
   const zones = body.zones[FOREST]
   expect(zones.normal.map((zone) => zone.unlocked)).toEqual([true, false, false])
   expect([...zones.pesadelo, ...zones.inferno].some((zone) => zone.unlocked)).toBe(false)
@@ -88,6 +93,7 @@ it('claims study rewards once on sync', async () => {
   expect(first.hero.fragments).toBe(30)
   expect(first.studyClaimed.fragments).toBe(30)
   expect(first.study.pending.fragments).toBe(0)
+  expect(first.study.xpMultiplier).toBe(1.3)
   const second = await bodyOf(await post('/sync'))
   expect(second.hero.fragments).toBe(30)
   expect(second.studyClaimed).toBeUndefined()
@@ -113,7 +119,9 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
     expect(fight.enemy).toEqual({ id: expect.any(String), sprite: expect.any(String), elite: false })
   }
   expect(synced.hero.lastAway).toEqual(synced.away)
-  expect(Object.keys(synced.away).sort()).toEqual(['deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'scrap'])
+  expect(Object.keys(synced.away).sort()).toEqual([
+    'deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'xp', 'xpMultiplier',
+  ])
   expect(synced.hero.items.length).toBe(synced.away.items + synced.away.gems)
   expect(synced.hero.hunt).toMatchObject({ zone: 'z1', startedAt: Date.now(), claims: 1 })
 })
@@ -239,12 +247,17 @@ it('refuses a boss above the hero level, and records a win with its loot', async
   const loot = body.hero.items.filter((item) => !item.equipped)
   expect(loot.map((item) => item.kind).sort()).toEqual(['gear', 'gem'])
   expect(body.fight.loot).toMatchObject({ items: 1, gems: 1, goldLost: 0 })
+  // The first win pays XP, times today's multiplier (8 gym passes: x1.8).
+  expect(body.fight.loot.xp).toBe(bossXp(ZONES[FOREST].z1, 'normal', 1.8))
+  expect(body.level.xp).toBe(ready.level.xp + body.fight.loot.xp)
+  expect(body.fight.loot.levelsGained).toBe(body.level.level - ready.level.level)
 
   // Only the first win pays: a beaten boss fought again drops nothing.
   const again = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
   expect(again.fight.won).toBe(true)
   expect(again.fight.log.length).toBeGreaterThan(0)
-  expect(again.fight.loot).toEqual({ items: 0, gems: 0, scrap: 0, goldLost: 0 })
+  expect(again.fight.loot).toEqual({ items: 0, gems: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 })
+  expect(again.level.xp).toBe(body.level.xp)
   expect(again.hero.items).toEqual(body.hero.items)
   expect(again.hero.progress[FOREST].normal).toEqual(['z1'])
 })
@@ -272,6 +285,98 @@ it('costs nothing to lose a Normal boss', async () => {
   const body = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
   expect(body.fight.won).toBe(false)
   expect(body.hero.gold).toBe(1000)
+})
+
+const z1 = ZONES[FOREST].z1
+const startHunt = () => post('/hunt', { world: FOREST, zone: 'z1', difficulty: 'normal' })
+
+it('pays hunt XP on settle and reports xp, its multiplier and the levels gained', async () => {
+  const hero = newHero()
+  hero.xp = xpForLevel(5)
+  await store.saveGameHero('alice', hero, 0)
+  const started = await bodyOf(await startHunt())
+  expect(started.hero.hunt.xpMultiplier).toBe(1)
+  later(HOUR)
+  const preview = await bodyOf(await get())
+  expect(preview.huntPreview.xp).toBeGreaterThan(0)
+  const synced = await bodyOf(await post('/sync'))
+  expect(synced.away.xp).toBe(preview.huntPreview.xp)
+  expect(synced.away.xp).toBe(huntXp({ kills: synced.away.kills, elites: synced.away.elites, zone: z1, difficulty: 'normal' }))
+  expect(synced.away.xpMultiplier).toBe(1)
+  expect(synced.level.xp).toBe(xpForLevel(5) + synced.away.xp)
+  expect(synced.level.level).toBe(heroLevel(xpForLevel(5) + synced.away.xp).level)
+  expect(synced.away.levelsGained).toBe(synced.level.level - 5)
+  expect(synced.away.levelsGained).toBeGreaterThan(0)
+  expect((await store.getGameHero('alice')).data.xp).toBe(synced.level.xp)
+  // Stopping pays the stretch since the last settle too.
+  later(10 * 60_000)
+  const stopped = await bodyOf(await post('/hunt/stop'))
+  expect(stopped.level.xp).toBe(synced.level.xp + stopped.away.xp)
+})
+
+it('pays each stretch with the multiplier that held when it began; study mid-hunt boosts the next one', async () => {
+  const hero = newHero()
+  hero.xp = 0
+  await store.saveGameHero('alice', hero, 0)
+  await startHunt()
+  await gymPasses(10)
+  later(HOUR)
+  const first = await bodyOf(await post('/sync'))
+  expect(first.away.xpMultiplier).toBe(1)
+  expect(first.study.xpMultiplier).toBe(2)
+  expect(first.hero.hunt.xpMultiplier).toBe(2)
+  later(HOUR)
+  const second = await bodyOf(await post('/sync'))
+  expect(second.away.xpMultiplier).toBe(2)
+  expect(second.away.xp).toBe(huntXp({ kills: second.away.kills, elites: second.away.elites, zone: z1, difficulty: 'normal', multiplier: 2 }))
+  expect(second.level.xp).toBe(first.level.xp + second.away.xp)
+})
+
+it('pays a hunt saved before the multiplier existed at x1', async () => {
+  const hero = newHero()
+  hero.xp = 0
+  hero.hunt = { world: FOREST, zone: 'z1', difficulty: 'normal', startedAt: Date.now(), seed: 'alice:old', claims: 0 }
+  await store.saveGameHero('alice', hero, 0)
+  await gymPasses(20)
+  later(HOUR)
+  const synced = await bodyOf(await post('/sync'))
+  expect(synced.away.xpMultiplier).toBe(1)
+  expect(synced.hero.hunt.xpMultiplier).toBe(3)
+})
+
+it("reads the multiplier from the acertos on the client's day", async () => {
+  await gymPasses(4)
+  expect((await game()).study.xpMultiplier).toBe(1.4)
+  const tomorrow = await (await api('/api/game?today=2026-11-26', { method: 'GET' })).json()
+  expect(tomorrow.study.xpMultiplier).toBe(1)
+})
+
+it('migrates a hero saved without xp to the xp its study gives, stores it on the next write, then study stops adding xp', async () => {
+  await gymPasses(8)
+  await store.saveGameHero('alice', newHero(), 0)
+  const before = await game()
+  expect(before.level.level).toBeGreaterThanOrEqual(5)
+  await startHunt()
+  expect((await store.getGameHero('alice')).data.xp).toBe(before.level.xp)
+  await gymPasses(5)
+  const after = await game()
+  expect(after.level.xp).toBe(before.level.xp)
+  // Talent points still count acertos: 13 passes are one more point than 8.
+  expect(after.talentPoints.total).toBe(before.talentPoints.total + 1)
+})
+
+it('opens what a level gates as soon as hunt XP reaches it', async () => {
+  const hero = newHero()
+  hero.xp = xpForLevel(8) - 1
+  hero.progress = { [FOREST]: { normal: ['z1'] } }
+  await store.saveGameHero('alice', hero, 0)
+  expect((await game()).zones[FOREST].normal.find((zone) => zone.id === 'z2').unlocked).toBe(false)
+  await startHunt()
+  later(HOUR)
+  const synced = await bodyOf(await post('/sync'))
+  expect(synced.level.level).toBeGreaterThanOrEqual(8)
+  expect(synced.zones[FOREST].normal.find((zone) => zone.id === 'z2').unlocked).toBe(true)
+  expect(synced.talentPoints.total).toBe(synced.level.level - 1)
 })
 
 it('needs a session', async () => {

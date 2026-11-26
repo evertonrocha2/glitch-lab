@@ -1,6 +1,6 @@
 // Study fuel for Glitch World: turns what the student already did in the app (exam questions, bugs,
-// dailies, glitchdle, hunt, duels, review) into hero XP, level, talent points and per-day rewards.
-// Pure: no I/O and no randomness. The hero only ever grows from study, never from idling.
+// dailies, glitchdle, hunt, duels, review) into talent points, per-day rewards and the daily XP
+// multiplier (shared/game/xp.js). The level curve lives here too. Pure: no I/O and no randomness.
 import { topicById } from '../exams/catalog.js'
 
 export const CONCEPT_BRANCH = {
@@ -85,6 +85,7 @@ export function studyLedger({ examDays = [], cases = [], challenges = [], daily,
   return { days, totals, branch }
 }
 
+// The XP study alone used to give. Only seeds a hero saved before XP was stored (startingXp).
 export const heroXp = (appXp, ledger) => appXp + 12 * ledger.totals.examCorrect + 3 * ledger.totals.examWrong
 
 export const MAX_LEVEL = 60

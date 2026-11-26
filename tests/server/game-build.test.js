@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { heroLevel, talentPoints, xpForLevel } from '../../shared/game/fuel.js'
+import { xpForLevel } from '../../shared/game/fuel.js'
 import { AFFIXES, BAG_SIZE, GEMS, salvageValue } from '../../shared/game/items.js'
 import { newHero } from '../../server/modules/game/game.model.js'
 import { api, useTempStore } from './helpers.js'
 
 // Most tests need a level (and its talent points) far above what a test can study for: loadFuel
-// lifts both. fuel.level null keeps the real level 1.
+// lifts the study XP a hero without stored xp starts from (the migration), so the level and its
+// points follow. fuel.level null keeps the real level 1.
 const fuel = vi.hoisted(() => ({ level: null }))
 vi.mock('../../server/modules/game/game.fuel.js', async (importOriginal) => {
   const real = await importOriginal()
@@ -14,8 +15,7 @@ vi.mock('../../server/modules/game/game.fuel.js', async (importOriginal) => {
     ...real,
     loadFuel: async (...args) => {
       const loaded = await real.loadFuel(...args)
-      if (!fuel.level) return loaded
-      return { ...loaded, level: heroLevel(xpForLevel(fuel.level)), talentPoints: talentPoints(fuel.level, loaded.ledger.totals.correct) }
+      return fuel.level ? { ...loaded, studyXp: xpForLevel(fuel.level) } : loaded
     },
   }
 })

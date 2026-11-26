@@ -1,8 +1,9 @@
-import { ACERTO_POINTS_CAP, ACERTOS_PER_POINT, pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
+import { ACERTO_POINTS_CAP, ACERTOS_PER_POINT, heroLevel, pendingStudy, studyRewards, talentPoints } from '../../../shared/game/fuel.js'
 import { DEFAULT_LOOK, normalizeLook } from '../../../shared/game/look.js'
 import { heroStats, power } from '../../../shared/game/stats.js'
 import { HUNT_WORLDS, zoneState } from '../../../shared/game/zones.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
+import { correctToday, studyMultiplier } from '../../../shared/game/xp.js'
 
 // The message texts are part of the API: the client translates them by exact text
 // (src/lib/i18n/messages/server.js).
@@ -25,6 +26,8 @@ export const MESSAGES = {
 }
 
 // A new player's hero. Only the server writes it: the client sends intents, never results.
+// It has no xp yet: the service seeds it from study (startingXp in shared/game/xp.js), so a hero saved
+// before XP was stored keeps its level, and stores it on its next write.
 export const newHero = () => ({
   gold: 0,
   fragments: 0,
@@ -37,7 +40,7 @@ export const newHero = () => ({
   talents: ['root'],
   skills: { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] },
   items: [], // gear and gems; equipped gear carries equipped: slot
-  hunt: null, // { world, zone, difficulty, startedAt, seed, claims }
+  hunt: null, // { world, zone, difficulty, startedAt, seed, claims, xpMultiplier }
   progress: {}, // { [worldId]: { normal: [zoneId], pesadelo: [], inferno: [] } }
   look: { ...DEFAULT_LOOK },
   lookSet: false, // true once the player has picked a look (PUT /game/look)
@@ -53,6 +56,12 @@ export const withDefaults = (data) => {
   hero.lookSet = hero.lookSet === true
   return hero
 }
+
+// The level the stored xp gives: { level, xp, into, needed }.
+export const levelOf = (hero) => heroLevel(hero.xp ?? 0)
+
+// One per level plus the acerto points (capped), as before XP came from hunting.
+export const talentPointsOf = (hero, ledger) => talentPoints(levelOf(hero).level, ledger.totals.correct)
 
 export const equippedOf = (hero) => hero.items.filter((item) => item.equipped)
 
@@ -78,12 +87,13 @@ function publicHero(hero) {
   return { ...rest, hunt: publicHunt }
 }
 
-// ctx: { fuel: { ledger, level, talentPoints }, today, huntPreview }.
+// ctx: { fuel: { ledger }, today, huntPreview }. The hero's xp is already seeded (the service does it).
 export function toView(hero, { fuel, today, huntPreview = null }) {
-  const level = fuel.level.level
+  const levelInfo = levelOf(hero)
+  const level = levelInfo.level
   const stats = statsOf(hero, level)
   const spent = hero.talents.filter((id) => id !== 'root').length
-  const total = fuel.talentPoints
+  const total = talentPointsOf(hero, fuel.ledger)
   const zones = Object.fromEntries(
     HUNT_WORLDS.map((worldId) => [
       worldId,
@@ -94,17 +104,19 @@ export function toView(hero, { fuel, today, huntPreview = null }) {
   const capped = Math.floor(totalCorrect / ACERTOS_PER_POINT) >= ACERTO_POINTS_CAP
   return {
     hero: publicHero(hero),
-    level: fuel.level,
+    level: levelInfo,
     talentPoints: { total, spent, free: Math.max(0, total - spent) },
     stats,
     power: power(stats),
     zones,
     study: {
       today: {
-        correct: fuel.ledger.days.find((row) => row.day === today)?.correct ?? 0,
+        correct: correctToday(fuel.ledger, today),
         toNextPoint: capped ? null : ACERTOS_PER_POINT - (totalCorrect % ACERTOS_PER_POINT),
       },
       pending: pendingTotals(pendingStudy(studyRewards(fuel.ledger), hero.claimed)),
+      // What today's acertos multiply hunt XP by (the HUD buff): 1 + 0.1 each, up to 3.
+      xpMultiplier: studyMultiplier(correctToday(fuel.ledger, today)),
       // Correct answers per tree branch (the user's own counters): the tree shows keystone progress.
       branch: { ...fuel.ledger.branch },
     },
