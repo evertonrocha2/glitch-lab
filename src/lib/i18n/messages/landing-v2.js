@@ -1,6 +1,6 @@
 // The "noite arcana" landing: the hero with a live hero card, the modes as item cards, the quest
 // panel and the CTA band. The sections that kept their text (how it works, compare, features, bug
-// types, FAQ, try) still read landing.* from landing.js. ENEM copy exists only in pt-BR.
+// types, FAQ) still read landing.* from landing.js. ENEM copy exists only in pt-BR.
 export default {
   en: {
     'landing.nav.modes': 'Modes',
@@ -89,7 +89,7 @@ export default {
     'landing.v2.cta.line2': 'waiting.',
     'landing.v2.cta.body': "One question already counts. Pick your hero's look and do your first quest today.",
     'landing.v2.cta.signUp': 'Create my hero',
-    'landing.v2.cta.try': 'Try an error first',
+    'landing.v2.cta.modes': 'See the modes',
     'landing.v2.cta.world': 'Open the Glitch World',
     'landing.v2.cta.note': 'Free, with an email and a password',
 
@@ -195,7 +195,7 @@ export default {
     'landing.v2.cta.line2': 'esperando.',
     'landing.v2.cta.body': 'Uma questão já conta. Escolha a cara do seu herói e faça a primeira missão hoje.',
     'landing.v2.cta.signUp': 'Criar meu herói',
-    'landing.v2.cta.try': 'Testar com um erro',
+    'landing.v2.cta.modes': 'Ver os modos',
     'landing.v2.cta.world': 'Abrir o Glitch World',
     'landing.v2.cta.note': 'Grátis, com e-mail e senha',
 

@@ -1,8 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
-import { takeDraft } from '../lib/draft.js'
-import { currentLocation, renderAt } from '../test/render.jsx'
+import { renderAt } from '../test/render.jsx'
 
 vi.mock('../lib/api.js', () => ({ AuthError: class extends Error {}, listCases: vi.fn().mockResolvedValue([]) }))
 
@@ -12,11 +11,6 @@ it('shows the brand and the tagline as the main heading', () => {
   renderAt('/')
   expect(within(screen.getByRole('banner')).getByRole('link', { name: 'StudyQuest, home' })).toHaveTextContent('StudyQuest')
   expect(screen.getByRole('heading', { level: 1, name: TAGLINE })).toBeInTheDocument()
-})
-
-it('keeps the error form in the try section', () => {
-  renderAt('/')
-  expect(within(document.getElementById('try')).getByLabelText('Error message')).toBeInTheDocument()
 })
 
 it('explains the three parts in order', () => {
@@ -31,14 +25,6 @@ it('offers sign in when signed out and the board when signed in', () => {
   unmount()
   renderAt('/', { user: 'alice' })
   expect(within(screen.getByRole('banner')).getByRole('link', { name: 'My board' })).toHaveAttribute('href', '/board')
-})
-
-it('keeps the pasted error and goes to the board', async () => {
-  renderAt('/')
-  await userEvent.type(screen.getByLabelText('Error message'), 'ReferenceError: x is not defined')
-  await userEvent.click(screen.getByRole('button', { name: 'Investigate' }))
-  expect(currentLocation()).toBe('/login?next=%2Fboard')
-  expect(takeDraft()).toEqual({ error: 'ReferenceError: x is not defined', code: '' })
 })
 
 it('presents the features, the comparison, bug types, ranks and answers', async () => {
@@ -74,6 +60,5 @@ it('speaks Brazilian Portuguese on the landing page', async () => {
   expect(screen.getByRole('heading', { level: 3, name: 'ENEM' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Abrir todas' }))
   expect(screen.getByRole('button', { name: 'Meu código está seguro?' })).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByLabelText('Mensagem de erro')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Investigar' })).toBeDisabled()
+  expect(screen.queryByLabelText('Mensagem de erro')).not.toBeInTheDocument()
 })

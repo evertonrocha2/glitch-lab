@@ -38,8 +38,8 @@ export default function CtaBand() {
               <Link to="/login?mode=signup" className="lp-btn lp-btn-gold max-sm:basis-full">
                 {t('landing.v2.cta.signUp')}
               </Link>
-              <a href="#try" className="lp-btn lp-btn-ghost max-sm:basis-full">
-                {t('landing.v2.cta.try')}
+              <a href="#modes" className="lp-btn lp-btn-ghost max-sm:basis-full">
+                {t('landing.v2.cta.modes')}
               </a>
             </>
           )}

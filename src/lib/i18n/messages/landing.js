@@ -14,20 +14,8 @@ export default {
     'landing.footer.ai': 'Explanations by AI. AI can be wrong, so test the fix yourself.',
 
     // Hero
-    'landing.hero.kicker': '> debugging gym for students',
-    'landing.hero.line1': 'Paste the error.',
-    'landing.hero.line2.before': 'Understand ',
-    'landing.hero.line2.why': 'why',
-    'landing.hero.line2.after': '.',
-    'landing.hero.line3': 'Practice so it never happens again.',
-    'landing.hero.body':
-      'AI chatbots hand you the fix. StudyQuest explains why it broke, saves it to your board, and trains you with fresh bugs of the same kind until you stop writing them.',
     'landing.hero.signUp': 'Create a free account',
     'landing.hero.signIn': 'Sign in',
-    'landing.hero.found': 'Bug found: line 2',
-    'landing.hero.why': 'Why it broke',
-    'landing.hero.answer': 'user.name was never set. It is undefined, and undefined has no .length to read.',
-    'landing.hero.caption': 'Example of StudyQuest explaining a JavaScript TypeError',
 
     // Marquee
     'landing.marquee.label': "What's inside",
@@ -133,11 +121,8 @@ export default {
     'landing.bugs.example.other': 'Anything else. Still explained, still saved.',
 
     // Levels
-    'landing.levels.kicker': 'Level up',
-    'landing.levels.title': 'From {first} to {last}',
     'landing.levels.body': 'Progress you can see. Every case, fix, note and minute of study moves you up a level.',
     'landing.levels.list': 'Level ladder',
-    'landing.levels.earn': 'How you earn XP',
     'landing.levels.earn.case': 'Investigate an error',
     'landing.levels.earn.pass': 'Pass a gym challenge',
     'landing.levels.earn.cleanPass': 'Pass it without hints',
@@ -175,12 +160,6 @@ export default {
     'landing.faq.account.q': 'Do I need an account?',
     'landing.faq.account.a':
       'Yes, to keep a board: sign up free with an email and a password.',
-
-    // Try section
-    'landing.try.kicker': 'Your turn',
-    'landing.try.title': 'Investigate your error',
-    'landing.try.body':
-      'Paste the message exactly as it appears. JavaScript, Python and most other languages work. It lands on your board as a new case.',
 
     // Error form
     'landing.form.examples': 'Try an example:',
@@ -306,20 +285,8 @@ export default {
     'landing.nav.signUp': 'Criar conta',
     'landing.footer.ai': 'Explicações feitas por IA. A IA pode errar, então teste a correção você mesmo.',
 
-    'landing.hero.kicker': '> gym de debug para estudantes',
-    'landing.hero.line1': 'Cole o erro.',
-    'landing.hero.line2.before': 'Entenda o ',
-    'landing.hero.line2.why': 'porquê',
-    'landing.hero.line2.after': '.',
-    'landing.hero.line3': 'Pratique para nunca mais errar igual.',
-    'landing.hero.body':
-      'Chatbots de IA te entregam a correção. O StudyQuest explica por que quebrou, salva no seu board e te treina com bugs novos do mesmo tipo até você parar de cometê-los.',
     'landing.hero.signUp': 'Criar conta grátis',
     'landing.hero.signIn': 'Entrar',
-    'landing.hero.found': 'Bug encontrado: linha 2',
-    'landing.hero.why': 'Por que quebrou',
-    'landing.hero.answer': 'user.name nunca foi definido. Ele é undefined, e undefined não tem .length para ler.',
-    'landing.hero.caption': 'Exemplo do StudyQuest explicando um TypeError de JavaScript',
 
     'landing.marquee.label': 'O que tem dentro',
     'landing.marquee.bugTypes': '{count} tipos de bug rastreados',
@@ -419,11 +386,8 @@ export default {
     'landing.bugs.example.key-error': "KeyError: 'email'",
     'landing.bugs.example.other': 'Qualquer outra coisa. Explicado e salvo do mesmo jeito.',
 
-    'landing.levels.kicker': 'Suba de nível',
-    'landing.levels.title': 'De {first} a {last}',
     'landing.levels.body': 'Progresso que dá para ver. Cada caso, correção, nota e minuto de estudo te faz subir de nível.',
     'landing.levels.list': 'Escada de níveis',
-    'landing.levels.earn': 'Como ganhar XP',
     'landing.levels.earn.case': 'Investigar um erro',
     'landing.levels.earn.pass': 'Passar num desafio do gym',
     'landing.levels.earn.cleanPass': 'Passar sem dicas',
@@ -461,10 +425,6 @@ export default {
     'landing.faq.account.a':
       'Sim, para manter um board: cadastre-se de graça com e-mail e senha.',
 
-    'landing.try.kicker': 'Sua vez',
-    'landing.try.title': 'Investigue seu erro',
-    'landing.try.body':
-      'Cole a mensagem exatamente como ela aparece. JavaScript, Python e a maioria das outras linguagens funcionam. Ela cai no seu board como um caso novo.',
 
     'landing.form.examples': 'Teste um exemplo:',
     'landing.form.error': 'Mensagem de erro',

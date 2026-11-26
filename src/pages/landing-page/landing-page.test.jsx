@@ -107,3 +107,11 @@ it('sends the CTA band into the game once signed in', () => {
   const band = screen.getByRole('heading', { name: /Your hero is waiting/ }).closest('section')
   expect(within(band).getByRole('link', { name: 'Open the Glitch World' })).toHaveAttribute('href', '/mundo')
 })
+
+it('has no error form: investigating lives on the board', () => {
+  renderAt('/')
+  expect(document.getElementById('try')).toBeNull()
+  expect(screen.queryByLabelText('Error message')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Investigate' })).not.toBeInTheDocument()
+  expect(document.querySelector('a[href="#try"]')).toBeNull()
+})
