@@ -552,14 +552,15 @@
   }
 }
 
-/* The shared language picker, dressed for the dark header. */
-.lp-lang select {
+/* The shared language picker, dressed for the header. Two classes deep, so it beats the
+   theme's boxed-field rule in index.css, which loads after this file. */
+.lp .lp-lang select {
   border-color: var(--lp-void);
   background: var(--lp-raised);
   color: var(--lp-text);
   box-shadow: inset 1px 1px 0 #3b3072;
 }
-.lp-lang select:hover {
+.lp .lp-lang select:hover {
   background: #403276;
 }
 .lp-lang svg {
