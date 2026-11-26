@@ -132,6 +132,29 @@ describe('arrival', () => {
     }
   })
 
+  it('walks every road of all six hunt regions into the neighbor, on open ground inside a hunt zone or the town', () => {
+    const hunts = WORLDS.filter((world) => world.id !== HUB_ID)
+    expect(hunts.map((world) => world.id).sort()).toEqual(
+      ['biblioteca-linguagens', 'caverna-sql', 'cidade-humanas', 'floresta-js', 'jardim-natureza', 'torre-matematica'],
+    )
+    for (const world of hunts) {
+      expect(world.roads.length, world.id).toBeGreaterThan(0)
+      for (const road of world.roads) {
+        for (const tile of roadTiles(world, road)) {
+          const at = arrival(world, tile.x, tile.y)
+          const next = worldById(at.world)
+          expect(canEnter(next, at.x, at.y), `${world.id} -> ${at.world} ${key(at)}`).toBe(true)
+          if (next.id !== HUB_ID) expect(zoneAt(next, at.x, at.y), `${world.id} -> ${at.world} ${key(at)}`).not.toBeNull()
+          // And the road home from there leads back onto this road.
+          const back = { left: [1, 0], right: [-1, 0], up: [0, 1], down: [0, -1] }[at.facing]
+          const home = arrival(next, at.x + back[0], at.y + back[1])
+          expect(home.world).toBe(world.id)
+          expect(canEnter(world, home.x, home.y)).toBe(true)
+        }
+      }
+    }
+  })
+
   it('is null off a road, and when the road leads to a region the caller does not know', () => {
     expect(arrival(worldById(HUB_ID), 5, 5)).toBeNull()
     expect(arrival(worldById(HUB_ID), 0, 11, () => null)).toBeNull()
