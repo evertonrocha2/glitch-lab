@@ -32,6 +32,9 @@ async function request(path, { method = 'GET', body, token, keepalive, signal } 
     // The status rides along, so a caller can tell "gone" (404) from a hiccup worth retrying.
     const error = new Error(serverMessage(data, genericMessage))
     error.status = res.status
+    // The game sends a code on a 409 (GAME_CONFLICT) and a reason on some 400s.
+    if (data?.code) error.code = data.code
+    if (data?.reason) error.reason = data.reason
     throw error
   }
   return data
@@ -304,6 +307,29 @@ export function getWorld(token) {
 export async function saveWorldPosition({ world, x, y }, token, { keepalive = false } = {}) {
   return (await request('/api/world/position', { method: 'PUT', body: { world, x, y }, token, keepalive })).position
 }
+
+// The game (idle RPG). Each call returns the parsed JSON: the game View, plus extras for some.
+const game = (path, method, token, body) => request(`/api/game${path}`, { method, body, token })
+
+export const getGame = (token) => game('', 'GET', token)
+export const syncGame = (token) => game('/sync', 'POST', token)
+export const startHunt = ({ world, zone, difficulty }, token) => game('/hunt', 'POST', token, { world, zone, difficulty })
+export const stopHunt = (token) => game('/hunt/stop', 'POST', token)
+export const fightBoss = ({ world, zone, difficulty }, token) => game('/boss', 'POST', token, { world, zone, difficulty })
+export const equipItem = (itemId, token) => game('/equip', 'POST', token, { itemId })
+export const unequipSlot = (slot, token) => game('/unequip', 'POST', token, { slot })
+export const allocateTalents = (add, token) => game('/talents', 'POST', token, { add })
+export const respecTalents = (token) => game('/talents/respec', 'POST', token)
+export const buySkill = (skillId, token) => game('/skills/buy', 'POST', token, { skillId })
+export const upgradeSkill = (skillId, token) => game('/skills/upgrade', 'POST', token, { skillId })
+export const saveLoadout = ({ skills, thresholds }, token) => game('/loadout', 'PUT', token, { skills, thresholds })
+export const forgeUpgrade = (itemId, token) => game('/forge/upgrade', 'POST', token, { itemId })
+export const forgeSalvage = (itemIds, token) => game('/forge/salvage', 'POST', token, { itemIds })
+export const forgeReroll = (itemId, affix, token) => game('/forge/reroll', 'POST', token, { itemId, affix })
+export const forgeSocket = (itemId, gemId, socket, token) => game('/forge/socket', 'POST', token, { itemId, gemId, socket })
+export const openChest = (token) => game('/chests/open', 'POST', token)
+export const buyPotions = (kind, count, token) => game('/potions/buy', 'POST', token, { kind, count })
+export const saveLook = ({ hood, outfit, hair }, token) => game('/look', 'PUT', token, { hood, outfit, hair })
 
 // The Lab assistant: { reply, parts, actions, agents, steps }.
 export function askAssistant({ messages, page }, token) {
