@@ -132,6 +132,8 @@ export function makeActions(vi, view) {
     buyPotions: ok(),
     allocateTalents: ok(),
     respecTalents: ok(),
+    socketSupport: ok(),
+    unsocketSupport: ok(),
     buySkill: ok(),
     upgradeSkill: ok(),
     saveLoadout: ok(),

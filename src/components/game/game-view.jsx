@@ -79,6 +79,8 @@ const ACTIONS = [
   'buyPotions',
   'allocateTalents',
   'respecTalents',
+  'socketSupport',
+  'unsocketSupport',
   'buySkill',
   'upgradeSkill',
   'saveLoadout',

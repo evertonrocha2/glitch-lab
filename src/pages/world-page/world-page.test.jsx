@@ -39,6 +39,8 @@ vi.mock('../../lib/api.js', () => ({
   buyPotions: vi.fn(),
   allocateTalents: vi.fn(),
   respecTalents: vi.fn(),
+  socketSupport: vi.fn(),
+  unsocketSupport: vi.fn(),
   buySkill: vi.fn(),
   upgradeSkill: vi.fn(),
   saveLoadout: vi.fn(),
