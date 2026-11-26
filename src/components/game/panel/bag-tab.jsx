@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import { GEM_SALVAGE_SCRAP } from '../../../../shared/game/hunt.js'
-import { BAG_SIZE, MAX_POTION_BUY, POTION_PRICE, RARITIES, SLOTS, SUPPORT_SALVAGE_SCRAP, salvageValue } from '../../../../shared/game/items.js'
+import { BAG_SIZE, RARITIES, SLOTS, SUPPORT_SALVAGE_SCRAP, salvageValue } from '../../../../shared/game/items.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { ItemPopover, ItemTip, cellIn, useItemPeek } from '../item-popover/item-popover.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
@@ -25,10 +25,10 @@ const SORTS = {
 
 // The Bolsa tab: the 60-cell grid (sorted by rarity or slot), a tooltip on hover or focus, a popover
 // beside the clicked item with its card and Equip, Forge and Salvage, multi-select salvage (clicks pick,
-// no popover), the chests and the potion shop.
+// no popover), the chests, and a way to the Alquimista, who sells the potions since fase 3.
 const QUICK_RARITIES = ['common', 'uncommon', 'rare']
 
-export default function BagTab({ view, actions, runner, onSelect, onForge }) {
+export default function BagTab({ view, actions, runner, onSelect, onForge, onNpc }) {
   const text = useItemText()
   const { t } = text
   const gridId = useId()
@@ -188,7 +188,7 @@ export default function BagTab({ view, actions, runner, onSelect, onForge }) {
       )}
 
       <Chests view={view} actions={actions} runner={runner} text={text} onGot={show} />
-      <PotionShop view={view} actions={actions} runner={runner} text={text} />
+      <PotionsLink view={view} text={text} onNpc={onNpc} />
     </>
   )
 }
@@ -220,53 +220,23 @@ function Chests({ view, actions, runner, text, onGot }) {
   )
 }
 
-function PotionShop({ view, actions, runner, text }) {
+// The potions on hand, and the way to the Alquimista, who sells them now (the Cidade tab).
+function PotionsLink({ view, text, onNpc }) {
   const { t } = text
-  const titleId = useId()
-  const countId = useId()
-  const [kind, setKind] = useState('hp')
-  // The field keeps what is typed (it may be empty for a moment); count is that, kept in 1..20.
-  const [typed, setTyped] = useState('1')
-  const count = Math.min(MAX_POTION_BUY, Math.max(1, Math.floor(Number(typed)) || 1))
-  const cost = POTION_PRICE * count
-  const short = view.hero.gold < cost
   return (
-    <Frame as="section" aria-labelledby={titleId} className="flex flex-col gap-2 p-2.5">
-      <SectionTitle id={titleId}>{t('game.shop.title')}</SectionTitle>
-      <fieldset className="m-0 flex gap-1.5 border-0 p-0">
-        <legend className="sr-only">{t('game.shop.kind')}</legend>
-        {['hp', 'mp'].map((id) => (
-          <ActionButton key={id} pressed={kind === id} tone={kind === id ? 'gold' : 'default'} onClick={() => setKind(id)}>
-            <span className="inline-flex items-center gap-1">
-              <GameIcon name={id === 'hp' ? 'hppot' : 'mppot'} size={1} />
-              {t(`game.shop.${id}`, { count: view.hero.potions[id] ?? 0 })}
-            </span>
-          </ActionButton>
-        ))}
-      </fieldset>
-      <div className="flex flex-wrap items-start gap-1.5">
-        <label htmlFor={countId} className="flex min-h-11 items-center gap-1.5 text-[#a89fd0]">
-          {t('game.shop.count')}
-          <input
-            id={countId}
-            type="number"
-            min={1}
-            max={MAX_POTION_BUY}
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            onBlur={() => setTyped(String(count))}
-            className="h-11 w-16 border-2 border-[#120c22] bg-[#100c20] px-2 font-pixel text-[11px] text-white shadow-[inset_2px_2px_0_#0a0818,inset_-2px_-2px_0_#2a2250] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2c14e]"
-          />
-        </label>
-        <ActionButton
-          tone="gold"
-          busy={runner.busy}
-          why={short ? t('game.why.gold') : null}
-          onClick={() => runner.run(() => actions.buyPotions(kind, count), () => t('game.shop.bought', { count }))}
-        >
-          {t('game.shop.buy', { gold: text.number(cost) })}
+    <Frame className="flex flex-wrap items-center gap-2.5 p-2">
+      <span className="flex items-center gap-1.5">
+        <GameIcon name="hppot" size={1} label={t('game.hud.potionHp', { count: view.hero.potions.hp ?? 0 })} />
+        <b className="font-pixel text-[11px] font-normal text-white">{text.number(view.hero.potions.hp ?? 0)}</b>
+        <GameIcon name="mppot" size={1} label={t('game.hud.potionMp', { count: view.hero.potions.mp ?? 0 })} />
+        <b className="font-pixel text-[11px] font-normal text-white">{text.number(view.hero.potions.mp ?? 0)}</b>
+      </span>
+      <small className="min-w-32 flex-1 text-[11px] leading-snug text-[#b0b6c1]">{t('gameNpc.bag.potions')}</small>
+      {onNpc && (
+        <ActionButton onClick={() => onNpc('alchemist')}>
+          {t('gameNpc.bag.toAlchemist')}
         </ActionButton>
-      </div>
+      )}
     </Frame>
   )
 }

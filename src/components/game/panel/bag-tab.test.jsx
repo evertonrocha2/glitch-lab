@@ -129,18 +129,11 @@ it('turns the open button off with no chest', () => {
   expect(screen.getByText('No chests to open')).toBeInTheDocument()
 })
 
-it('buys potions by kind and count', async () => {
-  const { actions } = ui()
-  fireEvent.click(screen.getByRole('button', { name: 'Mana (1)' }))
-  fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '3' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Buy for 120 gold' }))
-  await waitFor(() => expect(actions.buyPotions).toHaveBeenCalledWith('mp', 3))
-})
-
-it('says why the potion buy is off', () => {
-  ui({ view: makeView({ gold: 30 }) }, 'pt-BR')
-  expect(screen.getByRole('button', { name: 'Comprar por 40 de ouro' })).toBeDisabled()
-  expect(screen.getByText('Falta ouro')).toBeInTheDocument()
+it('points to the Alchemist for potions, with the counts on hand', () => {
+  ui()
+  expect(screen.queryByLabelText('Amount')).toBeNull()
+  expect(screen.getByText('Potions are sold by the Alchemist now')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Visit the Alchemist' })).toBeInTheDocument()
 })
 
 it('shows a server refusal as an alert', async () => {

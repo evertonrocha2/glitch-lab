@@ -21,10 +21,10 @@ const ui = (props = {}, locale = 'en') =>
     </I18nProvider>,
   )
 
-it('renders five tabs with the selected one in the tab order', () => {
+it('renders six tabs with the selected one in the tab order', () => {
   ui()
   const tabs = screen.getAllByRole('tab')
-  expect(tabs.map((tab) => tab.textContent)).toEqual(['Hero', expect.stringContaining('Tree'), 'Bag', 'Forge', 'World'])
+  expect(tabs.map((tab) => tab.textContent)).toEqual(['Hero', expect.stringContaining('Tree'), 'Bag', 'Forge', 'Town', 'World'])
   expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
   expect(tabs[0]).toHaveAttribute('tabindex', '0')
   expect(tabs[1]).toHaveAttribute('tabindex', '-1')
@@ -33,12 +33,12 @@ it('renders five tabs with the selected one in the tab order', () => {
   expect(panel).toHaveAttribute('aria-labelledby', tabs[0].id)
 })
 
-it('keeps the five tabs in one tablist, each with its icon and label', () => {
+it('keeps the six tabs in one tablist, each with its icon and label', () => {
   ui()
   const lists = screen.getAllByRole('tablist')
   expect(lists).toHaveLength(1)
   const tabs = screen.getAllByRole('tab')
-  expect(tabs).toHaveLength(5)
+  expect(tabs).toHaveLength(6)
   for (const tab of tabs) {
     expect(lists[0]).toContainElement(tab)
     expect(tab.querySelector('canvas')).not.toBeNull()
