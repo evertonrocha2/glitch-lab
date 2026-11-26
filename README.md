@@ -101,6 +101,15 @@ Seven requests in all, sent with a descriptive User-Agent and cached for the day
 
 Data: [Wikidata](https://www.wikidata.org) (CC0) and [Stack Overflow](https://stackoverflow.com/tags) tag counts via the Stack Exchange API (CC BY-SA 4.0), for the languages' question counts too. The Glitchdle page shows the same credit.
 
+## Glitch World v2
+
+`/mundo` is an idle RPG that study fuels. The hero is yours, and the server decides everything: the browser only sends intents (equip, fight, forge), never a stat, drop or result.
+
+- **Study is the only way to level.** Hero XP comes from what you already do: ENEM answers, dailies, bugs fixed, Glitchdle, hunts, duels and reviews. Each 10 right answers (up to 30 points) turn into a talent point, plus one per level.
+- **Daily rewards have caps.** Study earns fragments (150 a day at most), potions from reviews (6 a day) and a daily chest. The chest gets better with a streak of up to 7 days.
+- **Hunts, bosses and the forge.** Start a hunt in the Forest and the hero fights on its own, even offline (up to 8 hours). Each zone ends in a boss. Gear drops, and the forge upgrades, rerolls, sockets and salvages it.
+- **Data.** The hero lives in the new table `game_heroes` (one row per user, with a version for safe saves). The SQL function `exam_attempt_days` gives the ENEM answers per day.
+
 ## Try it
 
 Open the live site, press **Create a free account** and sign up with an email and a password. Then paste an error on the board to open your first case.

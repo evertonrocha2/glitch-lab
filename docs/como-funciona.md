@@ -215,6 +215,8 @@ Postgres com 26 tabelas. A estrutura está em [supabase/schema.sql](../supabase/
 - **Row Level Security ligado em todas as tabelas, sem nenhuma política.** Na prática, ninguém consegue ler ou escrever direto do navegador. Só a API, com a chave secreta (`SUPABASE_SERVICE_ROLE_KEY`), entra no banco.
 - O código acessa o banco por uma interface única, o **store**. Existem duas implementações com o mesmo contrato: uma para o Supabase e outra que salva num arquivo JSON local (`.data/db.json`), usada no desenvolvimento e nos testes. Um conjunto de testes de contrato garante que as duas se comportam igual.
 
+- **Glitch World v2:** a tabela `game_heroes` guarda o herói (uma linha por usuário, com um número de versão para salvar sem colisão). A função SQL `exam_attempt_days` devolve as respostas do ENEM por dia. Os dois entram pelo mesmo `schema.sql`.
+
 ### Tempo real (x1)
 
 No x1, cada jogador precisa saber na hora que o outro respondeu. Em vez de WebSocket próprio, o navegador usa o **Supabase Realtime**:
@@ -340,6 +342,14 @@ src/
 9. **Comunidade:** artigos com comentários, curtidas e avaliações, perfis públicos e notificações.
 10. **Progresso:** XP, nível, medalhas, sequência, gráfico de atividade e mapa de habilidades. Tudo é calculado a partir dos dados salvos, então não existe um contador para burlar.
 11. **Assistente:** um painel lateral que conhece seus dados e ajuda em qualquer tela.
+
+### Glitch World v2
+
+O `/mundo` é um RPG idle alimentado pelo estudo. O servidor decide tudo. O navegador só manda intenções (equipar, lutar, forjar), nunca um atributo ou resultado.
+
+- **O nível vem só do estudo.** O XP do herói sai do que você já faz: ENEM, desafios do dia, bugs, Glitchdle, caça, x1 e revisão. A cada 10 acertos (até 30 pontos) você ganha 1 ponto de talento, fora o 1 de cada nível.
+- **Prêmio diário com teto.** Estudar dá fragmentos (até 150 por dia), poções pela revisão (até 6 por dia) e um baú do desafio do dia. O baú melhora com a sequência, até 7 dias.
+- **Caças, chefes e forja.** Na Floresta, o herói caça sozinho, até offline (no máximo 8 horas). Cada zona acaba num chefe. O equipamento cai, e a forja melhora, sorteia de novo, encaixa gema e desmonta.
 
 ## Segurança
 
