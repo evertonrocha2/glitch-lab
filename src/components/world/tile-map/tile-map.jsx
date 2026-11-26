@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { zoneAt } from '../../../../shared/world/map.js'
+import { portalAt, zoneAt } from '../../../../shared/world/map.js'
 import { TILE_PX, TILES } from '../../../../shared/world/tiles.js'
 import { AVATAR_STYLES } from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import { cameraFor, TILE_SCREEN_PX } from '../camera.js'
@@ -47,7 +47,7 @@ export default function TileMap({ world, hero, heroColor, lockedZones, viewport,
     for (let x = camera.x - 1; x <= camera.x + cols; x++) {
       const char = row[x]
       if (char === undefined) continue
-      drawn.push({ x, y, char, locked: char === 'D' && lockedZones.has(zoneAt(world, x, y)?.id) })
+      drawn.push({ x, y, char, locked: char === 'D' && lockedZones.has(zoneAt(world, x, y)?.id), portal: portalAt(world, x, y)?.to })
       if (x >= camera.x && x < camera.x + cols && y >= camera.y && y < camera.y + rows) clickable.push({ x, y })
     }
   }
@@ -71,8 +71,8 @@ export default function TileMap({ world, hero, heroColor, lockedZones, viewport,
         </g>
       </defs>
       <g className={slide} style={translate(-camera.x, -camera.y)}>
-        {drawn.map(({ x, y, char, locked }) => (
-          <g key={`${x},${y}`}>
+        {drawn.map(({ x, y, char, locked, portal }) => (
+          <g key={`${x},${y}`} data-portal={portal}>
             <use href={`#${prefix}-${TILES[char].name}`} x={x * TILE_PX} y={y * TILE_PX} />
             {locked && <use data-lock href={`#${prefix}-lock`} transform={`translate(${x * TILE_PX + 2} ${y * TILE_PX + 2}) scale(0.5)`} />}
           </g>

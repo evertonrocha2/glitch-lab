@@ -21,9 +21,9 @@ function Location() {
 let onSave
 let onWorldChange
 
-function play(position, signals, { extra = null } = {}) {
+function play(position, signals, { extra = null, locale = 'pt-BR' } = {}) {
   return render(
-    <I18nProvider locale="pt-BR">
+    <I18nProvider locale={locale}>
       <MemoryRouter initialEntries={['/mundo']}>
         <Routes>
           <Route path="*" element={<WorldGame state={stateAt(position, signals)} heroColor="cobalt" onSave={onSave} onWorldChange={onWorldChange} />} />
@@ -299,4 +299,26 @@ it('sends saves one after another, so an older one never lands last', async () =
   await act(async () => finishFirst())
   expect(onSave).toHaveBeenCalledTimes(2)
   expect(location()).toBe('/exams/enem/aritmetica')
+})
+
+// ENEM only shows in the pt-BR UI: in English the hub draws the ENEM portals as floor.
+it('hides the ENEM portals in English and shows them in Portuguese', () => {
+  const allOpen = { linguagens: 99, humanas: 99, natureza: 99, matematica: 99, codeSolved: 99 }
+  // From (10,6) the view holds the bottom portals to jardim-natureza (7,8) and torre-matematica (12,8).
+  const english = play({ world: 'laboratorio', x: 10, y: 6 }, allOpen, { locale: 'en' })
+  expect(english.container.querySelector('[data-portal="torre-matematica"]')).toBeNull()
+  expect(english.container.querySelector('[data-portal="jardim-natureza"]')).toBeNull()
+  english.unmount()
+  const portuguese = play({ world: 'laboratorio', x: 10, y: 6 }, allOpen)
+  expect(portuguese.container.querySelector('[data-portal="torre-matematica"]')).not.toBeNull()
+  expect(portuguese.container.querySelector('[data-portal="jardim-natureza"]')).not.toBeNull()
+})
+
+it('walks over a hidden ENEM portal in English without going anywhere', () => {
+  const allOpen = { linguagens: 99, humanas: 99, natureza: 99, matematica: 99, codeSolved: 99 }
+  play({ world: 'laboratorio', x: 12, y: 7 }, allOpen, { locale: 'en' })
+  tap('ArrowDown')
+  expect(place()).toBe('laboratorio 12 8')
+  expect(onWorldChange).not.toHaveBeenCalled()
+  expect(screen.getByRole('status')).toHaveTextContent('')
 })

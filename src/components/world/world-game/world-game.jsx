@@ -5,10 +5,11 @@ import { canEnter, pathTo, portalAt, terminalNear, tileAt, zoneAt } from '../../
 import { isSolid } from '../../../../shared/world/tiles.js'
 import { openZones } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
-import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import { viewportFor } from '../camera.js'
 import DPad from '../d-pad/d-pad.jsx'
+import { visibleWorld } from '../enem-worlds.js'
 import { progressText, studyHref } from '../requirement-text.js'
 import TileMap from '../tile-map/tile-map.jsx'
 
@@ -31,7 +32,7 @@ const PAGE_NAMES = { daily: 'app.nav.daily', glitchdle: 'app.nav.glitchdle', hun
 // comes from the server, the walking happens here. onSave(position, { keepalive }) keeps the place to
 // come back to (its failures are ignored: the game goes on); onWorldChange(worldId) follows portals.
 export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
-  const t = useT()
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const helpId = useId()
   // frameRef measures the room the map has; mapRef is the focusable map itself, as wide as its tiles.
@@ -56,10 +57,14 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   // A terminal opens once, and only while the game is still on screen.
   const opening = useRef(false)
   const mounted = useRef(true)
+  // The map as this locale sees it: outside pt-BR the ENEM portals are plain floor.
+  const localeRef = useRef(locale)
+  const mapOf = useCallback((id) => visibleWorld(worldById(id), localeRef.current), [])
   useEffect(() => {
     stateRef.current = state
     saveRef.current = onSave
     worldChangeRef.current = onWorldChange
+    localeRef.current = locale
   })
 
   // keepalive saves are the page going away: they go out right now instead of waiting their turn.
@@ -130,7 +135,7 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
   const step = useCallback(
     (dir) => {
       const current = heroRef.current
-      const world = worldById(current.world)
+      const world = mapOf(current.world)
       const open = openZones(stateRef.current, current.world)
       const x = current.x + DIRECTIONS[dir].x
       const y = current.y + DIRECTIONS[dir].y
@@ -168,7 +173,7 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
       release()
       stopPath()
       const current = heroRef.current
-      const found = pathTo(worldById(current.world), current, { x, y }, openZones(stateRef.current, current.world))
+      const found = pathTo(mapOf(current.world), current, { x, y }, openZones(stateRef.current, current.world))
       if (!found) return
       // Next to a tile it can't stand on (a terminal, a locked door), the hero turns to it, bumping
       // into it: that picks the clicked terminal and says what a locked door asks for.
@@ -194,11 +199,11 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
     [release, step, stopPath],
   )
 
-  const terminal = terminalNear(worldById(hero.world), hero.x, hero.y, hero.facing)
+  const terminal = terminalNear(visibleWorld(worldById(hero.world), locale), hero.x, hero.y, hero.facing)
 
   const openTerminal = useCallback(async () => {
     const current = heroRef.current
-    const found = terminalNear(worldById(current.world), current.x, current.y, current.facing)
+    const found = terminalNear(mapOf(current.world), current.x, current.y, current.facing)
     if (!found || opening.current) return
     opening.current = true
     release()
@@ -262,7 +267,7 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
     if (dir) release(dir)
   }
 
-  const world = worldById(hero.world)
+  const world = visibleWorld(worldById(hero.world), locale)
   const worldName = t(`world.name.${hero.world}`)
   const lockedZones = new Set(world.zones.map((zone) => zone.id).filter((id) => !openZones(state, hero.world).has(id)))
   const terminalLabel =

@@ -1,8 +1,9 @@
 import { useId } from 'react'
 import { nextGoal } from '../../../../shared/world/unlocks.js'
 import { HUB_ID } from '../../../../shared/world/worlds.js'
-import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import PixelCard from '../../ui/pixel-card/pixel-card.jsx'
+import { isEnemWorld, showsEnem } from '../enem-worlds.js'
 import { LOCK, LOCK_COLORS } from '../hero-sprite.js'
 import { leftText, progressText } from '../requirement-text.js'
 
@@ -16,9 +17,11 @@ function LockIcon() {
 
 // Beside the map: the lock closest to opening, then every world with what it still asks for.
 // state is GET /api/world; currentWorld is where the hero stands.
-export default function WorldPanel({ state, currentWorld }) {
-  const t = useT()
+// Outside pt-BR the ENEM worlds are left out, from the list and from the next goal.
+export default function WorldPanel({ state: all, currentWorld }) {
+  const { t, locale } = useI18n()
   const listId = useId()
+  const state = showsEnem(locale) ? all : { ...all, worlds: all.worlds.filter((world) => !isEnemWorld(world.id)) }
   const goal = nextGoal(state)
   const nameOf = (id) => t(`world.name.${id}`)
   const target = goal && (goal.zoneId ? t('world.zone', { world: nameOf(goal.worldId), n: goal.zoneId.slice(1) }) : nameOf(goal.worldId))
