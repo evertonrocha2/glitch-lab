@@ -19,12 +19,12 @@ import StudyTimer from '../study-timer/study-timer.jsx'
 import AppNav from '../app-nav/app-nav.jsx'
 
 // The width every row of the signed-in pages shares: the header's two rows and the page.
-const COLUMN = 'mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12'
+const COLUMN = 'mx-auto max-w-[88rem] px-5 sm:px-10 lg:px-16'
 
 // Top bar for the signed-in pages, plus the study timer, message and badge toasts and the assistant.
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
 // content (opening a drawer, typing) doesn't redraw them.
-// The bar and the page run close to the screen's edges, with a side margin; ultra-wide screens stop at 120rem.
+// The bar and the page share one centered column with roomy side margins; wide screens stop at 88rem.
 // Inside the game's study window (embed mode, src/app/embed.js) the page shows alone.
 export default function AppShell({ children }) {
   const { search } = useLocation()
