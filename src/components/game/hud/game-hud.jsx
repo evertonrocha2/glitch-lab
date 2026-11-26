@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { DIFFICULTIES } from '../../../../shared/game/enemies.js'
 import { SKILLS } from '../../../../shared/game/skills.js'
+import { MULTIPLIER_CAP } from '../../../../shared/game/xp.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { gearOf } from '../hero/gear.js'
 import { HeroCanvas } from '../hero/hero-canvas.jsx'
@@ -64,6 +65,31 @@ function Slot({ label, icon, keyHint, cooldown, count, className = '' }) {
   )
 }
 
+// The study XP buff: today's correct answers multiply hunt XP (1 + 0.1 each, up to x3). At x1.0 it
+// still shows, muted, with a hint to study, so players learn it exists. role note + aria-label for
+// screen readers; title is the same sentence as a mouse tooltip.
+function StudyBuff({ multiplier, correct, className = '' }) {
+  const { t, locale } = useI18n()
+  const mult = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(multiplier)
+  const active = multiplier > 1
+  const label = !active
+    ? t('gameXp.none', { mult })
+    : t(multiplier >= MULTIPLIER_CAP ? 'gameXp.max' : 'gameXp.active', { mult, count: correct })
+  return (
+    <Frame
+      role="note"
+      aria-label={label}
+      title={label}
+      data-active={active}
+      tone={active ? 'raised' : 'inset'}
+      className={`pointer-events-auto items-center gap-1 px-1.5 py-1 font-label text-[10px] ${active ? 'text-[#7dffb0]' : 'text-[#a89fd0]'} ${className}`}
+    >
+      <GameIcon name="book" size={1} className={active ? '' : 'opacity-50'} />
+      <span aria-hidden="true">{t('gameXp.chip', { mult })}</span>
+    </Frame>
+  )
+}
+
 // One camera zoom step: a raised pixel button with a big - or +.
 function ZoomButton({ label, disabled, onClick, children }) {
   return (
@@ -119,7 +145,7 @@ export default function GameHud({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const { level, stats, hero } = view
+  const { level, stats, hero, study } = view
   const gear = useMemo(() => gearOf(hero.items), [hero.items])
   const maxHp = stats.hp
   const maxMana = stats.mana
@@ -143,32 +169,37 @@ export default function GameHud({
   return (
     // biome-ignore lint/a11y/useSemanticElements: a fieldset is for form controls; this only names the overlay.
     <div role="group" aria-label={t('game.hud.label')} className="pointer-events-none absolute inset-0 font-pixel text-[#e9e4ff]">
-      <Frame className="pointer-events-auto absolute left-2 top-2 flex items-start gap-2 p-1.5">
-        <div className="relative shrink-0">
-          <Frame tone="inset" className="p-1 leading-none">
-            <HeroCanvas look={hero.look} gear={gear} crop="head" scale={2} label={t('game.hero.doll')} className="block" />
-          </Frame>
-          <Chip tone="gold" data-testid="level-badge" aria-hidden="true" className="absolute -bottom-1 -right-1.5 z-10">
-            {level.level}
-          </Chip>
-        </div>
-        <div className="flex w-[136px] flex-col gap-1">
-          <span className="sr-only">{t('game.hud.level', { level: level.level })}</span>
-          <Bar label={t('game.hud.hp')} value={Math.round(hp)} max={Math.round(maxHp)} text={nums(hp, maxHp)} color={FILL.hp} className="h-4" />
-          <Bar label={t('game.hud.mana')} value={Math.round(mana)} max={Math.round(maxMana)} text={nums(mana, maxMana)} color={FILL.mp} className="h-4" />
-          <Bar label={t('game.hud.xp')} value={level.into} max={level.needed} text={nums(level.into, level.needed)} color={FILL.xp} className="h-4" />
-          {live.buffs?.length > 0 && (
-            <ul aria-label={t('game.hud.buffs')} className="mt-0.5 flex gap-1">
-              {live.buffs.map((b) => (
-                <li key={b.id} className={`relative border-2 p-px ${b.bad ? 'border-[#ff5a6e] bg-[#2e0f1a]' : 'border-[#4fd1c5] bg-[#10263a]'}`}>
-                  <GameIcon name={b.icon} size={1} />
-                  <em className="absolute -bottom-1 -right-1 bg-[#120c22] px-0.5 text-[8px] not-italic">{t('game.hud.seconds', { seconds: b.seconds })}</em>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Frame>
+      {/* The unit frame, and the study XP buff under it. On a phone the boss bar takes that row, so the
+          buff steps aside for the fight (as the difficulty chips do). */}
+      <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+        <Frame className="pointer-events-auto flex items-start gap-2 p-1.5">
+          <div className="relative shrink-0">
+            <Frame tone="inset" className="p-1 leading-none">
+              <HeroCanvas look={hero.look} gear={gear} crop="head" scale={2} label={t('game.hero.doll')} className="block" />
+            </Frame>
+            <Chip tone="gold" data-testid="level-badge" aria-hidden="true" className="absolute -bottom-1 -right-1.5 z-10">
+              {level.level}
+            </Chip>
+          </div>
+          <div className="flex w-[136px] flex-col gap-1">
+            <span className="sr-only">{t('game.hud.level', { level: level.level })}</span>
+            <Bar label={t('game.hud.hp')} value={Math.round(hp)} max={Math.round(maxHp)} text={nums(hp, maxHp)} color={FILL.hp} className="h-4" />
+            <Bar label={t('game.hud.mana')} value={Math.round(mana)} max={Math.round(maxMana)} text={nums(mana, maxMana)} color={FILL.mp} className="h-4" />
+            <Bar label={t('game.hud.xp')} value={level.into} max={level.needed} text={nums(level.into, level.needed)} color={FILL.xp} className="h-4" />
+            {live.buffs?.length > 0 && (
+              <ul aria-label={t('game.hud.buffs')} className="mt-0.5 flex gap-1">
+                {live.buffs.map((b) => (
+                  <li key={b.id} className={`relative border-2 p-px ${b.bad ? 'border-[#ff5a6e] bg-[#2e0f1a]' : 'border-[#4fd1c5] bg-[#10263a]'}`}>
+                    <GameIcon name={b.icon} size={1} />
+                    <em className="absolute -bottom-1 -right-1 bg-[#120c22] px-0.5 text-[8px] not-italic">{t('game.hud.seconds', { seconds: b.seconds })}</em>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Frame>
+        <StudyBuff multiplier={study?.xpMultiplier ?? 1} correct={study?.today?.correct ?? 0} className={boss ? 'hidden sm:flex' : 'flex'} />
+      </div>
 
       {/* On a phone the boss bar spans the scene under the unit frame, where the difficulty chips were
           (they step aside for the fight); from sm it sits at the top, right of center. */}

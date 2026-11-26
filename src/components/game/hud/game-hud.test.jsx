@@ -236,3 +236,39 @@ it('ignores its shortcuts while a modal dialog is open', () => {
     modal.remove()
   }
 })
+
+const studyView = (correct, xpMultiplier) => view({ study: { today: { correct, toNextPoint: 2 }, xpMultiplier } })
+
+it('shows the study XP buff next to the unit frame, with what it is and where it comes from', () => {
+  ui({ view: studyView(8, 1.8) })
+  const buff = screen.getByRole('note', { name: /XP x1\.8/ })
+  expect(buff).toHaveTextContent('XP x1.8')
+  expect(buff).toHaveAttribute('data-active', 'true')
+  expect(buff.getAttribute('aria-label')).toMatch(/8 correct answers today/)
+  // The tooltip says the same for the mouse.
+  expect(buff).toHaveAttribute('title', buff.getAttribute('aria-label'))
+})
+
+it('shows x1.0 muted with a hint to study, so players learn the buff exists', () => {
+  ui({ view: studyView(0, 1) })
+  const buff = screen.getByRole('note', { name: /XP x1\.0/ })
+  expect(buff).toHaveTextContent('XP x1.0')
+  expect(buff).toHaveAttribute('data-active', 'false')
+  expect(buff.getAttribute('aria-label')).toMatch(/Study/)
+  expect(buff.getAttribute('aria-label')).toMatch(/x3/)
+})
+
+it('says when the buff is at its max', () => {
+  ui({ view: studyView(25, 3) })
+  expect(screen.getByRole('note', { name: /max/ })).toHaveTextContent('XP x3.0')
+})
+
+it('formats the multiplier per locale', () => {
+  ui({ view: studyView(8, 1.8) }, 'pt-BR')
+  expect(screen.getByRole('note', { name: /x1,8/ })).toHaveTextContent('XP x1,8')
+})
+
+it('reads a View without study as x1.0', () => {
+  ui({})
+  expect(screen.getByRole('note', { name: /XP x1\.0/ })).toHaveAttribute('data-active', 'false')
+})
