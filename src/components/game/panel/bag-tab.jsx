@@ -21,6 +21,8 @@ const SORTS = {
 
 // The Bolsa tab: the 60-cell grid (sorted by rarity or slot), the selected item's tooltip with Equip,
 // Salvage and Forge, multi-select salvage, the chests and the potion shop.
+const QUICK_RARITIES = ['common', 'uncommon', 'rare']
+
 export default function BagTab({ view, actions, runner, selectedId, onSelect, onForge }) {
   const text = useItemText()
   const { t } = text
@@ -35,6 +37,15 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
   const manyVars = { count: pickedItems.length, scrap: text.number(pickedItems.reduce((sum, item) => sum + scrapOf(item), 0)) }
 
   const togglePick = (id) => setPicked((now) => (now.includes(id) ? now.filter((each) => each !== id) : [...now, id]))
+  // One click picks every bag item of a rarity (only the lower three: nobody bulk-salvages epics),
+  // a second click lets them all go.
+  const rarityIds = (rarity) => items.filter((item) => item.kind === 'gear' && item.rarity === rarity).map((item) => item.id)
+  const quickRarities = QUICK_RARITIES.filter((rarity) => rarityIds(rarity).length > 0)
+  const allPicked = (rarity) => rarityIds(rarity).every((id) => picked.includes(id))
+  const toggleRarity = (rarity) => {
+    const ids = rarityIds(rarity)
+    setPicked((now) => (ids.every((id) => now.includes(id)) ? now.filter((id) => !ids.includes(id)) : [...new Set([...now, ...ids])]))
+  }
   const stopPicking = () => {
     setPicking(false)
     setPicked([])
@@ -93,6 +104,12 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
         <ActionButton pressed={picking} onClick={() => (picking ? stopPicking() : setPicking(true))} busy={runner.busy}>
           {t(picking ? 'game.bag.multiDone' : 'game.bag.multi')}
         </ActionButton>
+        {picking &&
+          quickRarities.map((rarity) => (
+            <ActionButton key={rarity} pressed={allPicked(rarity)} onClick={() => toggleRarity(rarity)}>
+              {t(`game.bag.allOf.${rarity}`)}
+            </ActionButton>
+          ))}
         {picking &&
           (pickedItems.length > 0 ? (
             // A new pick disarms the confirm (the key changes), so it always salvages what it names.

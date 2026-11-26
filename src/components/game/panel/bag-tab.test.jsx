@@ -78,7 +78,7 @@ it('disarms the salvage confirm when another item is selected', () => {
 
 it('disarms the multi-select confirm when the picked set changes', () => {
   const { actions } = ui()
-  fireEvent.click(screen.getByRole('button', { name: 'Select many' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Salvage many' }))
   fireEvent.click(screen.getByRole('button', { name: 'Ring, Uncommon' }))
   fireEvent.click(screen.getByRole('button', { name: 'Salvage 1 item (+4 scrap)' }))
   expect(screen.getByRole('button', { name: 'Yes, salvage 1 item (+4 scrap)' })).toBeInTheDocument()
@@ -93,7 +93,7 @@ it('salvages many at once', async () => {
   const actions = makeActions(vi, view)
   actions.forgeSalvage = vi.fn(async () => ({ ...view, salvage: { scrap: 14 } }))
   ui({ view, actions })
-  fireEvent.click(screen.getByRole('button', { name: 'Select many' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Salvage many' }))
   fireEvent.click(screen.getByRole('button', { name: 'Ring, Uncommon' }))
   fireEvent.click(screen.getByRole('button', { name: 'Syntax Gem' }))
   expect(screen.getByRole('button', { name: 'Syntax Gem' })).toHaveAttribute('aria-pressed', 'true')
@@ -153,4 +153,22 @@ it('shows a server refusal as an alert', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Ring, Uncommon' }))
   fireEvent.click(screen.getByRole('button', { name: 'Equip' }))
   await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Your bag is full.'))
+})
+
+it('picks every bag item of a rarity in one click, and a second click lets them go', () => {
+  const view = makeView()
+  const twin = { ...plainRing, id: 'aaaaaaaaaaz1' }
+  view.hero.items = [...view.hero.items, twin]
+  ui({ view })
+  fireEvent.click(screen.getByRole('button', { name: 'Salvage many' }))
+  fireEvent.click(screen.getByRole('button', { name: 'All uncommon' }))
+  const rings = screen.getAllByRole('button', { name: 'Ring, Uncommon' })
+  expect(rings).toHaveLength(2)
+  for (const ring of rings) expect(ring).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Syntax Gem' })).toHaveAttribute('aria-pressed', 'false')
+  expect(screen.getByRole('button', { name: /^Salvage 2 items/ })).toBeInTheDocument()
+  // Rarities the bag doesn't hold get no shortcut.
+  expect(screen.queryByRole('button', { name: 'All common' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'All uncommon' }))
+  for (const ring of screen.getAllByRole('button', { name: 'Ring, Uncommon' })) expect(ring).toHaveAttribute('aria-pressed', 'false')
 })
