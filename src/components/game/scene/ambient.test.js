@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ZONES } from '../../../../shared/game/zones.js'
 import { canEnter, zoneAt } from '../../../../shared/world/map.js'
 import { WORLDS } from '../../../../shared/world/worlds.js'
-import { AMBIENT_CAP, AMBIENT_PER_ZONE, createAmbient, KEEP_AWAY } from './ambient.js'
+import { ENEMIES } from '../../../../shared/game/enemies.js'
+import { AMBIENT_CAP, AMBIENT_PER_ZONE, CLAIM_RANGE, createAmbient, KEEP_AWAY, REFILL_MS, VIEW_MARGIN } from './ambient.js'
 
 const REGIONS = WORLDS.filter((world) => ZONES[world.id])
 const TOWN = WORLDS.find((world) => world.kind === 'town')
@@ -49,24 +50,61 @@ describe('createAmbient', () => {
     for (let s = 0; s < 5; s++) expect(createAmbient({ world: wide, zones, seed: s }).monsters().length).toBeLessThanOrEqual(AMBIENT_CAP)
   })
 
-  it('keeps every monster at least KEEP_AWAY tiles (Chebyshev) from each avoid tile after update', () => {
+  it('never vanishes or jumps when the hero comes close: a monster near an avoid tile keeps its spot', () => {
     expect(KEEP_AWAY).toBe(4)
     for (const world of REGIONS) {
       const ambient = make(world)
-      // Stand the hero and a pack right on top of where monsters are, then walk around the zones.
-      const start = ambient.monsters().slice(0, 3).map((m) => ({ x: m.x, y: m.y }))
-      let now = 1000
-      ambient.update(now, start)
-      for (const m of ambient.monsters()) for (const a of start) expect(chebyshev(m, a), `${world.id} ${m.id}`).toBeGreaterThanOrEqual(KEEP_AWAY)
+      const before = ambient.monsters().map((m) => ({ id: m.id, x: m.x, y: m.y }))
+      // The hero and a pack right on top of where monsters stand, for a long while.
+      const avoid = before.slice(0, 3).map((m) => ({ x: m.x, y: m.y }))
+      for (let now = 1000; now <= 20000; now += 50) ambient.update(now, avoid)
+      const after = new Map(ambient.monsters().map((m) => [m.id, m]))
+      expect(after.size, world.id).toBe(before.length)
+      for (const m of before) {
+        const near = avoid.some((a) => chebyshev(m, a) < KEEP_AWAY)
+        if (!near) continue
+        const now = after.get(m.id)
+        expect({ x: now.x, y: now.y, fade: now.fade }, `${world.id} ${m.id}`).toEqual({ x: m.x, y: m.y, fade: 1 })
+      }
+    }
+  })
+
+  it('turns a monster within KEEP_AWAY to face the hero (the first avoid tile)', () => {
+    const world = REGIONS[0]
+    const ambient = make(world)
+    const m = ambient.monsters()[0]
+    ambient.update(1000, [{ x: m.x - 2, y: m.y }])
+    expect(ambient.monsters().find((each) => each.id === m.id).facing).toBe(-1)
+    ambient.update(1050, [{ x: m.x + 2, y: m.y }])
+    expect(ambient.monsters().find((each) => each.id === m.id).facing).toBe(1)
+  })
+
+  it('never wanders within KEEP_AWAY tiles of an avoid tile', () => {
+    for (const world of REGIONS) {
+      const ambient = make(world)
+      let now = 0
       for (const zone of Object.values(ZONES[world.id])) {
         const floor = floorOf(world, zone)
-        for (let i = 0; i < floor.length; i += 7) {
-          const avoid = [floor[i], floor[(i + 3) % floor.length], floor[(i + 11) % floor.length]]
-          now += 400
+        const avoid = [floor[Math.floor(floor.length / 2)], floor[Math.floor(floor.length / 5)]]
+        // A step already under way when the avoid tiles moved finishes first.
+        for (const end = now + 800; now <= end; now += 50) ambient.update(now, avoid)
+        const start = new Map(ambient.monsters().map((m) => [m.id, avoid.every((a) => chebyshev(m, a) >= KEEP_AWAY)]))
+        for (const end = now + 15000; now <= end; now += 50) {
           ambient.update(now, avoid)
-          for (const m of ambient.monsters()) for (const a of avoid) expect(chebyshev(m, a), `${world.id} ${m.id}`).toBeGreaterThanOrEqual(KEEP_AWAY)
+          for (const m of ambient.monsters()) {
+            if (!start.get(m.id)) continue
+            const at = { x: Math.round(m.x), y: Math.round(m.y) }
+            for (const a of avoid) expect(chebyshev(at, a), `${world.id} ${m.id}`).toBeGreaterThanOrEqual(KEEP_AWAY)
+          }
         }
       }
+    }
+  })
+
+  it('shows each monster with the sprite of its enemy id', () => {
+    const sprites = new Map(ENEMIES.map((e) => [e.id, e.sprite]))
+    for (const world of REGIONS) {
+      for (const m of make(world).monsters()) expect(m.sprite, `${world.id} ${m.enemy}`).toBe(sprites.get(m.enemy))
     }
   })
 
@@ -113,5 +151,128 @@ describe('createAmbient', () => {
     expect(ambient.monsters()).toEqual([])
     // Not even when handed a region's zones.
     expect(createAmbient({ world: TOWN, zones: ZONES[REGIONS[0].id], seed: 1 }).monsters()).toEqual([])
+  })
+})
+
+// An open 30x20 field in two zones: claims and refills are easy to reason about.
+const FIELD = {
+  id: 'field',
+  kind: 'code',
+  rows: Array.from({ length: 20 }, () => '.'.repeat(30)),
+  zones: [
+    { id: 'z1', rect: { x: 0, y: 0, w: 15, h: 20 } },
+    { id: 'z2', rect: { x: 15, y: 0, w: 15, h: 20 } },
+  ],
+}
+const FIELD_ZONES = [
+  { id: 'z1', rect: FIELD.zones[0].rect, enemies: ['slime', 'lobo-syntax'] },
+  { id: 'z2', rect: FIELD.zones[1].rect, enemies: ['golem-if'] },
+]
+const field = (extra = {}) => createAmbient({ world: FIELD, zones: FIELD_ZONES, seed: 'field', ...extra })
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+const member = (enemy) => ({ enemy, sprite: enemy })
+const HERO = { x: 7, y: 10 }
+const inZ1 = (m) => zoneAt(FIELD, m.x, m.y)?.id === 'z1'
+const nearHero = (list) => list.filter((m) => inZ1(m) && dist(m, HERO) <= CLAIM_RANGE).sort((a, b) => dist(a, HERO) - dist(b, HERO))
+
+describe('claimPack', () => {
+  it('hands each member the nearest unclaimed monster of the hero zone, preferring its enemy, and removes it', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const before = ambient.monsters().map((m) => ({ ...m }))
+    const near = nearHero(before)
+    expect(near.length).toBeGreaterThanOrEqual(2)
+    const want = near[0].enemy
+    const claims = ambient.claimPack([member(want), member(want)], HERO)
+    expect(claims).toHaveLength(2)
+    const same = near.filter((m) => m.enemy === want)
+    expect(claims[0]).toMatchObject({ x: same[0].x, y: same[0].y, id: same[0].id, enemy: want })
+    for (const c of claims) {
+      expect(c).not.toBeNull()
+      expect(inZ1(c)).toBe(true)
+      expect(dist(c, HERO)).toBeLessThanOrEqual(CLAIM_RANGE)
+      expect(c.enemy).toBe(want)
+    }
+    expect(new Set(claims.map((c) => c.id)).size).toBe(2)
+    // Gone from the ambient set at once.
+    const left = ambient.monsters()
+    expect(left).toHaveLength(before.length - 2)
+    for (const c of claims) expect(left.some((m) => m.id === c.id)).toBe(false)
+  })
+
+  it('takes the nearest monster when none shows the enemy, switching its look', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const near = nearHero(ambient.monsters())
+    expect(near.length).toBeGreaterThan(0)
+    const [claim] = ambient.claimPack([{ enemy: 'mosca-null', sprite: 'mosca-null' }], HERO)
+    expect(claim).toMatchObject({ x: near[0].x, y: near[0].y, id: near[0].id, enemy: 'mosca-null', sprite: 'mosca-null' })
+  })
+
+  it('gives null to the members left over when the hero zone has too few monsters in range', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const near = nearHero(ambient.monsters())
+    const claims = ambient.claimPack(Array.from({ length: near.length + 3 }, () => member('slime')), HERO)
+    expect(claims.filter(Boolean)).toHaveLength(near.length)
+    expect(claims.slice(near.length)).toEqual([null, null, null])
+    for (const c of claims.filter(Boolean)) expect(inZ1(c)).toBe(true)
+    // A hero outside every zone claims nothing.
+    expect(ambient.claimPack([member('slime')], { x: 40, y: 40 })).toEqual([null])
+  })
+
+  it('refills a claimed slot only after REFILL_MS, on a tile outside the view (with VIEW_MARGIN)', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const count = () => ambient.monsters().filter(inZ1).length
+    const full = count()
+    const claims = ambient.claimPack([member('slime'), member('slime')], HERO).filter(Boolean)
+    expect(claims.length).toBe(2)
+    expect(count()).toBe(full - 2)
+    // The camera sees the left 8 columns: a refill lands at x >= 8 + VIEW_MARGIN.
+    const view = { x: 0, y: 0, w: 8, h: 20 }
+    let now = 0
+    for (; now < REFILL_MS - 50; now += 50) ambient.update(now, [HERO], view)
+    expect(count()).toBe(full - 2)
+    for (; now <= REFILL_MS + 1000; now += 50) ambient.update(now, [HERO], view)
+    expect(count()).toBe(full)
+    const old = new Set(claims.map((c) => c.id))
+    const back = ambient.monsters().filter((m) => old.has(m.id))
+    expect(back).toHaveLength(2)
+    for (const m of back) {
+      expect(m.x).toBeGreaterThanOrEqual(view.x + view.w + VIEW_MARGIN)
+      expect(inZ1(m)).toBe(true)
+      expect(m.fade).toBe(1)
+    }
+  })
+
+  it('waits while the whole zone is in view, and refills once the view moves away', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const count = () => ambient.monsters().filter(inZ1).length
+    const full = count()
+    expect(ambient.claimPack([member('slime')], HERO)[0]).not.toBeNull()
+    const all = { x: 0, y: 0, w: 15, h: 20 }
+    for (let now = 0; now <= REFILL_MS * 3; now += 100) ambient.update(now, [], all)
+    expect(count()).toBe(full - 1)
+    const away = { x: 0, y: 0, w: 4, h: 20 }
+    for (let now = REFILL_MS * 3; now <= REFILL_MS * 4; now += 100) ambient.update(now, [], away)
+    expect(count()).toBe(full)
+  })
+
+  it('still claims and refills under reducedMotion, and nothing walks', () => {
+    const ambient = field({ reducedMotion: true })
+    ambient.update(0, [])
+    const before = new Map(ambient.monsters().map((m) => [m.id, { x: m.x, y: m.y }]))
+    const claims = ambient.claimPack([member('slime'), member('lobo-syntax')], HERO)
+    expect(claims.filter(Boolean)).toHaveLength(2)
+    for (const c of claims) expect(before.get(c.id)).toEqual({ x: c.x, y: c.y })
+    const view = { x: 0, y: 0, w: 8, h: 20 }
+    for (let now = 0; now <= REFILL_MS * 2; now += 100) ambient.update(now, [HERO], view)
+    expect(ambient.monsters()).toHaveLength(before.size)
+    for (const m of ambient.monsters()) {
+      expect(m.anim).toBe('idle')
+      if (!claims.some((c) => c.id === m.id)) expect({ x: m.x, y: m.y }).toEqual(before.get(m.id))
+    }
   })
 })
