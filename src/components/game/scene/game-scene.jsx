@@ -141,6 +141,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
   tr.current = t
   live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level }
   const ready = useRef(false)
+  const levelRef = useRef({ from: null, at: -1, n: 0 })
 
   const lockedKey = JSON.stringify(lockedRects ?? [])
   const zoneKey = JSON.stringify(zoneRect ?? null)
@@ -198,7 +199,8 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
     const floaterList = []
     const lightOut = []
     const order = []
-    const levelUp = { from: null, at: -1, n: 0 }
+    // Kept across effect runs (a hunt starting rebuilds the loop), so a level gained then still shows.
+    const levelUp = levelRef.current
     let lastTime = 0
     let cameraX = Number.NaN
     let cameraY = Number.NaN
@@ -359,7 +361,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
       } else if (live.current.enemy?.sprite && !playing) {
         drawFoe(ctx, heroPx.x + 2 * TS, heroPx.y - 1, { sprite: live.current.enemy.sprite, elite: live.current.enemy.elite, t: te })
       }
-      paintLevelUp(time * 1000)
+      paintLevelUp(clock)
       if (overlay) {
         // Phase: a white flash. Enrage: a red pulse. The hero falling: the world dims. Softer and steady with reduced motion.
         const pulse = overlay.kind === 'enrage' && !reduced ? 0.5 + 0.5 * Math.sin(overlay.p * Math.PI * 4) : 1
@@ -494,7 +496,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
         ctx.lineWidth = 3
         ctx.strokeStyle = '#3a2a0a'
         const text = tr.current('game.fx.levelUp', { n: levelUp.n })
-        const y = heroPx.y - 46 - (reduced ? 0 : Math.round(Math.min(1, p * 3) * 6))
+        const y = heroPx.y - 40 - (reduced ? 0 : Math.round(Math.min(1, p * 3) * 4))
         ctx.strokeText?.(text, heroPx.x, y)
         ctx.fillStyle = '#ffd23f'
         ctx.fillText(text, heroPx.x, y)
