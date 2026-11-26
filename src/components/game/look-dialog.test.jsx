@@ -69,11 +69,11 @@ it('has six labeled radio groups with one radio per option', () => {
 
 it('picking options updates the preview label', () => {
   ui()
-  expect(preview()).toHaveAccessibleName('Seu herói: pele clara, cabelo curto castanho, olhos redondo castanho, roupa azul')
+  expect(preview()).toHaveAccessibleName('Seu herói: pele clara, cabelo curto castanho, olhos: redondo, cor dos olhos: castanho, roupa: azul')
   fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Cor do cabelo' })).getByRole('radio', { name: 'ruivo' }))
   fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Cabelo' })).getByRole('radio', { name: 'espetado' }))
-  fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Roupa' })).getByRole('radio', { name: 'roxo' }))
-  expect(preview()).toHaveAccessibleName('Seu herói: pele clara, cabelo espetado ruivo, olhos redondo castanho, roupa roxo')
+  fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Roupa' })).getByRole('radio', { name: 'roxa' }))
+  expect(preview()).toHaveAccessibleName('Seu herói: pele clara, cabelo espetado ruivo, olhos: redondo, cor dos olhos: castanho, roupa: roxa')
 })
 
 it('speaks English too', () => {
@@ -178,4 +178,20 @@ it('keeps its keys from the game shortcuts behind it', () => {
   })
   window.removeEventListener('keydown', onWindowKey)
   expect(onWindowKey).not.toHaveBeenCalled()
+})
+
+it('first time: pressing on the backdrop keeps focus inside the creator', () => {
+  ui({ first: true })
+  const dialog = screen.getByRole('dialog', { name: 'Crie seu herói' })
+  const backdrop = dialog.parentElement.firstElementChild
+  const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+  backdrop.dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(dialog.contains(document.activeElement)).toBe(true)
+})
+
+it('pt-BR preview reads with each part named, so adjectives never clash with the noun', () => {
+  ui({ look: { ...DEFAULT_LOOK, outfit: 1, eyeStyle: 1 } })
+  expect(preview()).toHaveAccessibleName(/roupa: vermelha/)
+  expect(preview()).toHaveAccessibleName(/olhos: brilho/)
 })

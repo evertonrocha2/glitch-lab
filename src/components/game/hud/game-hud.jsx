@@ -71,10 +71,11 @@ function ZoomButton({ label, disabled, onClick, children }) {
       as="button"
       tone="raised"
       type="button"
-      onClick={onClick}
-      disabled={disabled}
+      // aria-disabled, not disabled: the button keeps keyboard focus when it reaches the limit.
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled}
       aria-label={label}
-      className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center font-pixel text-base text-[#e9e4ff] disabled:cursor-default disabled:opacity-40"
+      className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center font-pixel text-base text-[#e9e4ff] aria-disabled:cursor-default aria-disabled:opacity-40"
     >
       <span aria-hidden="true">{children}</span>
     </Frame>
@@ -106,6 +107,8 @@ export default function GameHud({
   useEffect(() => {
     function onKeyDown(e) {
       if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || typing(e.target)) return
+      // A modal (creator, away summary, tree dialog) owns the keyboard: nothing changes behind it.
+      if (document.querySelector('[aria-modal="true"]')) return
       const key = e.key.toLowerCase()
       if (key === 'f') handlers.current.onFullscreen?.()
       else if (key === '-') handlers.current.onZoom?.(-1)

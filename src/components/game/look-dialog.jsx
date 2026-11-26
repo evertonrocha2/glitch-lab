@@ -95,7 +95,15 @@ export default function LookDialog({ look, gear, first = false, onSave, onClose,
       {dismiss ? (
         <button type="button" tabIndex={-1} aria-label={t('game.look.cancel')} onClick={dismiss} className="absolute inset-0 cursor-default bg-[#05040c]/80" />
       ) : (
-        <div aria-hidden="true" className="absolute inset-0 bg-[#05040c]/80" />
+        // First time there is no way out but a choice: a press outside keeps focus in the creator.
+        <div
+          aria-hidden="true"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            panel.current?.focus()
+          }}
+          className="absolute inset-0 bg-[#05040c]/80"
+        />
       )}
       <Frame
         ref={panel}

@@ -204,11 +204,35 @@ it('zoom buttons and the - and + keys step the camera out and in, and stop at th
       <GameHud view={view()} onZoom={onZoom} zoom="far" />
     </I18nProvider>,
   )
-  expect(screen.getByRole('button', { name: 'Zoom out (-)' })).toBeDisabled()
-  expect(screen.getByRole('button', { name: 'Zoom in (+)' })).toBeEnabled()
+  // aria-disabled, not disabled: a focused button that turns disabled would drop keyboard focus.
+  const out = screen.getByRole('button', { name: 'Zoom out (-)' })
+  expect(out).toHaveAttribute('aria-disabled', 'true')
+  expect(out).toBeEnabled()
+  onZoom.mockClear()
+  fireEvent.click(out)
+  expect(onZoom).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'Zoom in (+)' })).toHaveAttribute('aria-disabled', 'false')
 })
 
 it('hides the zoom buttons without onZoom', () => {
   ui({})
   expect(screen.queryByRole('button', { name: 'Zoom out (-)' })).toBeNull()
+})
+
+it('ignores its shortcuts while a modal dialog is open', () => {
+  const onZoom = vi.fn()
+  const onFullscreen = vi.fn()
+  const onKey = vi.fn()
+  ui({ onZoom, onFullscreen, onKey })
+  const modal = document.createElement('div')
+  modal.setAttribute('aria-modal', 'true')
+  document.body.append(modal)
+  try {
+    for (const key of ['f', '-', '+', 'm', 'i', 'k']) fireEvent.keyDown(window, { key })
+    expect(onZoom).not.toHaveBeenCalled()
+    expect(onFullscreen).not.toHaveBeenCalled()
+    expect(onKey).not.toHaveBeenCalled()
+  } finally {
+    modal.remove()
+  }
 })
