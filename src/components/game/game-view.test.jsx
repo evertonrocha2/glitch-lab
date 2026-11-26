@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
+import { SETTLE_MS } from '../world/use-auto-hunt.js'
 import GameView from './game-view.jsx'
 import { makeView } from './panel/fixtures.js'
 
@@ -13,6 +14,10 @@ beforeAll(() => {
 const AWAY = { elapsedMs: 2 * 3600_000 + 15 * 60_000, kills: 212, elites: 21, deaths: 0, gold: 3400, items: 4, gems: 0, scrap: 0 }
 const CLAIMED = { fragments: 120, potions: 0, chests: [{ day: '2026-11-25', boost: 0 }], keys: 0, honor: 0 }
 const HUNT = { world: 'floresta-js', zone: 'z1', difficulty: 'normal', startedAt: 0, claims: 0 }
+// The town square (safe: no hunt starts there) and the Forest's clearing (z1).
+const TOWN = { world: 'laboratorio', x: 16, y: 8 }
+const CLEARING = { world: 'floresta-js', x: 29, y: 10 }
+const SCENE = { name: /^Glitch World: / }
 
 function makeApi(view = makeView()) {
   const ok = () => vi.fn(async () => view)
@@ -40,11 +45,11 @@ function makeApi(view = makeView()) {
   }
 }
 
-function ui(api, { locale = 'pt-BR', onLeave = vi.fn() } = {}) {
+function ui(api, { locale = 'pt-BR', start = TOWN, onSave = vi.fn(async () => {}) } = {}) {
   return render(
     <I18nProvider locale={locale}>
       <MemoryRouter>
-        <GameView worldId="floresta-js" api={api} onLeave={onLeave} studyHref="/daily" />
+        <GameView start={start} api={api} onSave={onSave} studyHref="/daily" />
       </MemoryRouter>
     </I18nProvider>,
   )
@@ -103,7 +108,7 @@ it('opens the study page in a window over the game from the quest card, the game
   const study = screen.getByRole('region', { name: 'Estudo' })
   expect(study.querySelector('iframe')).toHaveAttribute('src', '/daily?embed=1')
   expect(screen.getByRole('tablist')).toBeInTheDocument()
-  expect(screen.getByRole('region', { name: 'Cena da caça' })).toBeInTheDocument()
+  expect(screen.getByRole('region', SCENE)).toBeInTheDocument()
 })
 
 it('syncs every 20 s while the study window is open and once when it closes', async () => {
@@ -163,15 +168,16 @@ it('says the hero changed in another tab on a 409, with a reload button', async 
   expect(screen.getByRole('button', { name: 'Recarregar' })).toBeInTheDocument()
 })
 
-it('applies the View an action returns', async () => {
+it('applies the View an action returns: standing in the clearing starts its hunt', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
   const api = makeApi(makeView({ gold: 500 }))
   api.startHunt.mockResolvedValue(makeView({ gold: 777, hunt: HUNT }))
-  ui(api)
-  fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  const clearing = screen.getByRole('region', { name: /Clareira/ })
-  fireEvent.click(within(clearing).getByRole('button', { name: 'Caçar aqui' }))
+  ui(api, { start: CLEARING })
+  await screen.findByRole('tablist')
+  await act(() => vi.advanceTimersByTimeAsync(SETTLE_MS))
+  expect(api.startHunt).toHaveBeenCalledWith({ world: 'floresta-js', zone: 'z1', difficulty: 'normal' })
   expect(await screen.findByText('777')).toBeInTheDocument()
-  expect(screen.getByText(/Caçando em Clareira \(Normal\)/)).toBeInTheDocument()
+  expect(screen.getAllByText(/Caçando em Clareira \(Normal\)/).length).toBeGreaterThan(0)
 })
 
 it('plays a boss fight back and then shows the result', async () => {
@@ -195,9 +201,9 @@ it('plays a boss fight back and then shows the result', async () => {
   }
   const api = makeApi(before)
   api.fightBoss.mockResolvedValue({ ...after, fight })
-  ui(api)
+  ui(api, { start: CLEARING })
   fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  fireEvent.click(within(screen.getByRole('region', { name: /Clareira/ })).getByRole('button', { name: 'Enfrentar chefe' }))
+  fireEvent.click(within(screen.getByRole('region', { name: 'Clareira' })).getByRole('button', { name: 'Enfrentar chefe' }))
   expect(await screen.findByText('Lutando contra Rei Slime')).toBeInTheDocument()
   expect(screen.queryByText('Rei Slime derrotado!')).toBeNull()
   await act(() => vi.advanceTimersByTimeAsync(10_000))
@@ -211,7 +217,7 @@ it('shows no "zonas à frente bloqueadas" sign, even for an answer that still ma
   const view = makeView()
   for (const zone of view.zones['floresta-js'].normal.slice(1)) zone.unlocked = false
   ui(makeApi(view))
-  expect(await screen.findByRole('region', { name: 'Cena da caça' })).toBeInTheDocument()
+  expect(await screen.findByRole('region', SCENE)).toBeInTheDocument()
   expect(screen.queryByText('Zonas à frente bloqueadas')).toBeNull()
 })
 
@@ -229,21 +235,18 @@ it('says why a boss fight was lost, and the Inferno gold cost', async () => {
   }
   const api = makeApi(view)
   api.fightBoss.mockResolvedValue({ ...view, fight })
-  ui(api)
+  ui(api, { start: CLEARING })
   fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  fireEvent.click(within(screen.getByRole('region', { name: /Clareira/ })).getByRole('button', { name: 'Enfrentar chefe' }))
+  fireEvent.click(within(screen.getByRole('region', { name: 'Clareira' })).getByRole('button', { name: 'Enfrentar chefe' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Pular luta' }))
   expect(await screen.findByText('Você perdeu: o chefe entrou em fúria. -10% de ouro (-50)')).toBeInTheDocument()
 })
 
-it('goes back to the Lab from the world tab', async () => {
-  const api = makeApi(makeView({ hunt: HUNT }))
-  const onLeave = vi.fn()
-  ui(api, { onLeave })
+it('has no "back to the Lab" teleport: the hero walks home along the roads', async () => {
+  ui(makeApi(makeView({ hunt: HUNT })))
   fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Voltar ao Laboratório' }))
-  await vi.waitFor(() => expect(onLeave).toHaveBeenCalled())
-  expect(api.stopHunt).toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: 'Voltar ao Laboratório' })).toBeNull()
+  expect(screen.getByText('Entre numa zona para caçar nela. Na cidade a caça para e paga.')).toBeInTheDocument()
 })
 
 it('offers fullscreen once the hero loaded, where the browser has it', async () => {
@@ -299,7 +302,7 @@ it('never runs two server calls at once, even under StrictMode', async () => {
     <StrictMode>
       <I18nProvider locale="pt-BR">
         <MemoryRouter>
-          <GameView worldId="floresta-js" api={api} onLeave={vi.fn()} studyHref="/daily" />
+          <GameView start={TOWN} api={api} onSave={vi.fn()} studyHref="/daily" />
         </MemoryRouter>
       </I18nProvider>
     </StrictMode>,
@@ -311,12 +314,14 @@ it('never runs two server calls at once, even under StrictMode', async () => {
 })
 
 it('applies a sync queued behind an action after the action', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
   const api = makeApi(makeView({ gold: 500 }))
   const hunt = deferred()
   api.startHunt.mockImplementationOnce(() => hunt.promise)
-  ui(api)
-  fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
-  fireEvent.click(within(screen.getByRole('region', { name: /Clareira/ })).getByRole('button', { name: 'Caçar aqui' }))
+  ui(api, { start: CLEARING })
+  await screen.findByRole('tablist')
+  await act(() => vi.advanceTimersByTimeAsync(SETTLE_MS))
+  expect(api.startHunt).toHaveBeenCalledTimes(1)
   api.syncGame.mockResolvedValue(makeView({ gold: 900, hunt: HUNT }))
   await visible()
   expect(api.syncGame).toHaveBeenCalledTimes(1)
@@ -431,7 +436,7 @@ describe('on a phone', () => {
 it('starts the camera far out, zooms in from the HUD and remembers the level', async () => {
   window.localStorage.removeItem('gd:game-zoom')
   const first = ui(makeApi())
-  const scene = await screen.findByRole('region', { name: 'Cena da caça' })
+  const scene = await screen.findByRole('region', SCENE)
   const farAspect = scene.style.aspectRatio
   fireEvent.click(screen.getByRole('button', { name: 'Aproximar câmera (+)' }))
   expect(scene.style.aspectRatio).not.toBe(farAspect)
@@ -439,7 +444,7 @@ it('starts the camera far out, zooms in from the HUD and remembers the level', a
   first.unmount()
 
   ui(makeApi())
-  const again = await screen.findByRole('region', { name: 'Cena da caça' })
+  const again = await screen.findByRole('region', SCENE)
   expect(again.style.aspectRatio).not.toBe(farAspect)
   window.localStorage.removeItem('gd:game-zoom')
 })

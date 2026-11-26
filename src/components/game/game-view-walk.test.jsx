@@ -36,22 +36,23 @@ function ui() {
   return render(
     <I18nProvider locale="pt-BR">
       <MemoryRouter>
-        <GameView worldId="floresta-js" api={api} onLeave={vi.fn()} studyHref="/daily" />
+        <GameView start={{ world: 'laboratorio', x: 16, y: 8 }} api={api} onSave={vi.fn()} studyHref="/daily" />
       </MemoryRouter>
     </I18nProvider>,
   )
 }
 
-describe('walking the hunt map', () => {
+describe('walking a region', () => {
   it('offers the pad on phones and says how to walk', async () => {
     ui()
     expect(await screen.findByRole('group', { name: /^(Andar|Walk)$/ })).toBeInTheDocument()
     expect(screen.getByText(/ande com as setas ou WASD/)).toBeInTheDocument()
+    expect(screen.getByText(/Setas ou WASD para andar/)).toBeInTheDocument()
   })
 
   it('takes the arrows and WASD from the page, never from a text field', async () => {
     ui()
-    await screen.findByRole('region', { name: 'Cena da caça' })
+    await screen.findByRole('region', { name: /^Glitch World: / })
     const fromPage = new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })
     document.body.dispatchEvent(fromPage)
     expect(fromPage.defaultPrevented).toBe(true)

@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ZONES } from '../../../shared/game/zones.js'
+import { topicById } from '../../../shared/exams/catalog.js'
+import { ZONES, zoneDef } from '../../../shared/game/zones.js'
+import { npcNear, terminalNear, zoneAt } from '../../../shared/world/map.js'
+import { arrival } from '../../../shared/world/roads.js'
 import { worldById } from '../../../shared/world/worlds.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import DPad from '../world/d-pad/d-pad.jsx'
+import { shownIn, visibleWorld } from '../world/enem-worlds.js'
+import { huntMove, useAutoHunt } from '../world/use-auto-hunt.js'
+import { usePositionSave } from '../world/use-position-save.js'
+import ZoneToast from '../world/zone-toast.jsx'
 import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
 import HeroLoading from './loading/hero-loading.jsx'
+import { rememberHero } from './loading/hero-memory.js'
 import LookDialog from './look-dialog.jsx'
 import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
@@ -18,7 +26,7 @@ import GameScene, { fightSpot } from './scene/game-scene.jsx'
 import { createWalker } from './scene/hunt-walker.js'
 import { duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
 import { cameraOn, directionOf } from './scene/walk.js'
-import Frame from './ui/frame.jsx'
+import Frame, { Chip } from './ui/frame.jsx'
 import { StudyWindowProvider, useStudyWindow } from './study-window/study-window-provider.jsx'
 import { useFullscreen } from './use-fullscreen.js'
 import { useReducedMotion } from './use-reduced-motion.js'
@@ -28,6 +36,8 @@ export const SYNC_MS = 60_000
 // quest card while the student answers.
 export const STUDY_SYNC_MS = 20_000
 const TICK_MS = 200
+// A road crossing: the stage fades to the slate night and back (no fade with reduced motion).
+export const FADE_MS = 160
 // The closed drawer's height when it can't be measured (handle 44 + tab row 52 + padding and frame).
 const DOCK_PX = 102
 const WIDE = '(min-width: 1024px)'
@@ -116,14 +126,13 @@ function useMediaQuery(query) {
   return matches
 }
 
-// The window of the map around the fight spot, kept inside the map.
-function cropFor(world, rect, { w, h }) {
+// The window of the map around a tile, kept inside the map.
+function cropFor(world, at, { w, h }) {
   const cols = world.rows.reduce((max, row) => Math.max(max, row.length), 0)
   const rows = world.rows.length
-  const spot = fightSpot(world, rect)
   return {
-    x: clamp(Math.round(spot.hero.x + 1.5 - w / 2), 0, Math.max(0, cols - w)),
-    y: clamp(Math.round(spot.hero.y + 0.5 - h / 2), 0, Math.max(0, rows - h)),
+    x: clamp(Math.round(at.x + 0.5 - w / 2), 0, Math.max(0, cols - w)),
+    y: clamp(Math.round(at.y + 0.5 - h / 2), 0, Math.max(0, rows - h)),
     w,
     h,
     cols,
@@ -147,20 +156,43 @@ const isTyping = (target) => {
 }
 const clock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
-// The zone the scene shows: the boss being fought, the hunt, else the first zone not yet beaten
-// (every zone is open, shared/game/zones.js).
-function shownZone(view, worldId, replay) {
-  if (replay) return replay.target.zone
-  if (view.hero.hunt?.world === worldId) return view.hero.hunt.zone
-  const list = view.zones?.[worldId]?.normal ?? []
-  return (list.find((zone) => !zone.beaten) ?? list.at(-1))?.id ?? 'z1'
+const wholeOf = (world) => ({ x: 0, y: 0, w: world.rows[0].length, h: world.rows.length })
+// A zone kept off the map's edge, where the roads are: the hero's strolls stay in it.
+const insetOf = (world, rect) => {
+  const x = Math.max(rect.x, 1)
+  const y = Math.max(rect.y, 1)
+  return { x, y, w: Math.min(rect.x + rect.w, world.rows[0].length - 1) - x, h: Math.min(rect.y + rect.h, world.rows.length - 1) - y }
 }
 
-// Layout B on /mundo for a hunt world: the lit scene with the HUD on the left, the panel on the right
-// (a bottom drawer under lg). Syncs on mount, every minute while hunting and when the tab comes back;
-// shows the away summary, loops the hunt's sample fights and replays a boss fight before its result.
-//   worldId: the hunt world. api: the game calls bound to the token (syncGame, startHunt, stopHunt,
-//   fightBoss and the panel actions), each resolving to the server answer. onLeave: back to the Lab.
+// Where a terminal takes the student, and what its button says.
+const PAGES = { daily: '/daily', glitchdle: '/glitchdle', hunt: '/hunt' }
+const PAGE_NAMES = { daily: 'app.nav.daily', glitchdle: 'app.nav.glitchdle', hunt: 'hunt.title' }
+export const terminalHref = (terminal) => (terminal.kind === 'topic' ? `/exams/enem/${terminal.topicId}` : PAGES[terminal.kind])
+
+// Where the hero stands when the game opens: the saved place, unless a hunt runs in a zone the hero
+// is not in (a hunt started before regions were walked, or in another tab): then the hero stands in
+// that zone, so the hunt goes on around it. A hunt in a region this locale hides leaves the hero where
+// it was (the town then stops it).
+export function startPlace(start, view, locale) {
+  const hunt = view?.hero?.hunt
+  const def = hunt && zoneDef(hunt.world, hunt.zone)
+  if (!def || !shownIn(locale)(hunt.world)) return start
+  const saved = worldById(start.world)
+  if (start.world === hunt.world && saved && zoneAt(saved, start.x, start.y)?.id === hunt.zone) return start
+  return { world: hunt.world, ...fightSpot(worldById(hunt.world), def.rect).hero }
+}
+
+// Layout B on /mundo, the one walking view (fase 3): the lit region with the HUD on the left, the panel
+// on the right (a bottom drawer under lg). The hero walks every region; walking off a road at a map
+// edge enters the neighbor; standing in a hunt zone hunts there (useAutoHunt), the town is safe.
+// Syncs on mount, every minute while hunting and when the tab comes back; shows the away summary,
+// loops the hunt's sample fights around the hero and replays a boss fight before its result.
+//   start: { world, x, y } where the hero stands (GET /api/world, already fitted to the locale).
+//   api: the game calls bound to the token (syncGame, startHunt, stopHunt, fightBoss and the panel
+//   actions), each resolving to the server answer. onSave(position, { keepalive }): keeps where the
+//   hero stands. onWorldChange(worldId): the hero crossed into another region.
+//   onNpc(id): Enter next to a town keeper ('merchant' | 'alchemist' | 'smith' | 'jeweler' |
+//   'quests'); without it the status line says the shop opens soon.
 //   studyHref: the study page the "Estudar" entries open, in the study window over the game.
 // GameView carries its own StudyWindowProvider; a page that mounts one above it shares that one.
 export default function GameView(props) {
@@ -171,12 +203,11 @@ export default function GameView(props) {
   )
 }
 
-function GameScreen({ worldId, api, onLeave, studyHref }) {
-  const { t } = useI18n()
+function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
+  const { t, locale } = useI18n()
   const studyWindow = useStudyWindow()
   const studyOpen = studyWindow.isOpen
   const counts = useCounts()
-  const world = worldById(worldId)
   const [view, setView] = useState(null)
   const [tab, setTab] = useState('hero')
   const [drawer, setDrawer] = useState(false)
@@ -185,6 +216,16 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   const [error, setError] = useState('')
   const [replay, setReplay] = useState(null)
   const [lookOpen, setLookOpen] = useState(false)
+  // A visit: the region the hero walks and where it came in ({ world, x, y, facing, n, held }); a new
+  // one builds a new walker. here: where it stands now, after every step.
+  const [visit, setVisit] = useState(null)
+  const [here, setHere] = useState(null)
+  const [difficulty, setDifficulty] = useState('normal')
+  // The zone the player stopped the hunt in by hand ({ world, zone }), until the hero leaves it.
+  const [paused, setPaused] = useState(null)
+  // What the hero just did that the status line says: { kind: 'travel', world } or { kind: 'npc', id }.
+  const [notice, setNotice] = useState(null)
+  const [fade, setFade] = useState(false)
   const wide = useMediaQuery(WIDE)
   const [zoom, changeZoom] = useZoom()
   const reduced = useReducedMotion()
@@ -195,6 +236,9 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   replayRef.current = replay
   const viewRef = useRef(null)
   viewRef.current = view
+  const hereRef = useRef(null)
+  const visitRef = useRef(null)
+  visitRef.current = visit
   const mounted = useRef(false)
   useEffect(() => {
     mounted.current = true
@@ -337,26 +381,140 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
     })
   }, [actions])
 
-  // GameScene compares playback.fights by identity: a new array would restart the fight.
-  const replayFight = replay?.fight
-  const gear = useMemo(() => gearOf(view?.hero.items), [view?.hero.items])
-  const replayFights = useMemo(() => (replayFight ? [replayFight] : null), [replayFight])
-  const samplesKey = view?.huntPreview?.samples ? JSON.stringify(view.huntPreview.samples) : ''
-  const samples = useMemo(() => (samplesKey ? JSON.parse(samplesKey) : null), [samplesKey])
+  // The first View places the hero (startPlace) and picks the difficulty the hunt runs on.
+  useEffect(() => {
+    if (!view || visitRef.current) return
+    const place = startPlace(start, view, locale)
+    hereRef.current = { world: place.world, x: place.x, y: place.y, facing: 'down' }
+    setHere(hereRef.current)
+    setVisit({ ...hereRef.current, n: 0, held: null })
+    setDifficulty(view.hero.hunt?.difficulty ?? 'normal')
+    if (place.world !== start.world) onWorldChange?.(place.world)
+  }, [view, start, locale, onWorldChange])
 
-  // The hero walks the shown zone (presentation only: nothing goes to the server). A new zone, or the
-  // reduced motion setting changing, starts a new walker at the zone's middle.
-  const walkZone = view ? shownZone(view, worldId, replay) : null
+  // The region as this locale sees it (ENEM roads walled up outside pt-BR).
+  const regionOf = useCallback((id) => (shownIn(locale)(id) ? visibleWorld(worldById(id), locale) : null), [locale])
+  const world = here ? regionOf(here.world) : null
+
+  // Saves where the hero stands: soon while walking, now on a road crossing or a terminal.
+  const { saveSoon, saveNow } = usePositionSave(() => hereRef.current, onSave)
+
+  // Crossing a road: fade out, swap the region (a new visit and walker at the arrival tile, still
+  // walking if a key was held), fade back in. With reduced motion it just swaps.
+  const walkerRef = useRef(null)
+  const travelling = useRef(false)
+  const fadeTimers = useRef([])
+  useEffect(() => () => fadeTimers.current.forEach(clearTimeout), [])
+  const travel = useCallback(
+    (out) => {
+      if (travelling.current) return
+      travelling.current = true
+      const go = () => {
+        // Still holding the key that walked out: keep walking on the other side.
+        const held = walkerRef.current?.held ?? null
+        const place = { world: out.world, x: out.x, y: out.y, facing: out.facing }
+        // The camera starts over at the arrival tile.
+        cameraRef.current = null
+        hereRef.current = place
+        setHere(place)
+        setVisit({ ...place, n: (visitRef.current?.n ?? 0) + 1, held })
+        setNotice({ kind: 'travel', world: out.world })
+        onWorldChange?.(out.world)
+        saveNow()
+        travelling.current = false
+      }
+      if (reduced) return go()
+      setFade(true)
+      fadeTimers.current.push(
+        setTimeout(() => {
+          go()
+          fadeTimers.current.push(setTimeout(() => mounted.current && setFade(false), 30))
+        }, FADE_MS),
+      )
+    },
+    [reduced, onWorldChange, saveNow],
+  )
+
+  // Every step: follow it, cross a road at the edge, else save soon.
+  const onStep = useRef(null)
+  onStep.current = (tile, dir) => {
+    const current = hereRef.current
+    if (!current) return
+    const next = { world: current.world, x: tile.x, y: tile.y, facing: dir }
+    hereRef.current = next
+    setHere(next)
+    setNotice(null)
+    const out = arrival(regionOf(current.world), tile.x, tile.y, regionOf)
+    if (out) travel(out)
+    else saveSoon()
+  }
+  const onFace = useRef(null)
+  onFace.current = (dir) => {
+    const current = hereRef.current
+    if (!current || current.facing === dir) return
+    hereRef.current = { ...current, facing: dir }
+    setHere(hereRef.current)
+  }
+
+  // One walker per visit (and per reduced motion setting), starting where the hero stands.
   const walker = useMemo(() => {
-    if (!walkZone) return null
-    const rect = ZONES[worldId][walkZone].rect
-    return createWalker({ world, rect, start: fightSpot(world, rect).hero, reduced })
-  }, [world, worldId, walkZone, reduced])
-  const walkerRef = useRef(walker)
+    if (!visit) return null
+    const region = regionOf(visit.world)
+    const at = hereRef.current ?? visit
+    return createWalker({
+      world: region,
+      rect: wholeOf(region),
+      start: at,
+      facing: at.facing ?? 'down',
+      reduced,
+      onStep: (tile, dir) => onStep.current(tile, dir),
+      onFace: (dir) => onFace.current(dir),
+    })
+  }, [visit, reduced, regionOf])
   walkerRef.current = walker
+  // A key still held across a road keeps walking on the other side (from the next step on, so a quick
+  // tap that crossed stops on the arrival tile).
+  useEffect(() => {
+    const held = visitRef.current?.held
+    if (walker && held) walker.hold(held, clock())
+  }, [walker])
 
-  // Arrows and WASD walk the hero while the page itself (or the stage) has the keyboard: a focused
-  // tab list, input or open dialog keeps its keys.
+  // Where the hero stands decides the hunt: the zone under it on the picked difficulty, or none.
+  const zone = here && world ? zoneAt(world, here.x, here.y) : null
+  const zoneId = zone?.id ?? null
+  const hereWorld = here?.world ?? null
+  const wanted = useMemo(() => (zoneId ? { world: hereWorld, zone: zoneId, difficulty } : null), [hereWorld, zoneId, difficulty])
+  const replaying = Boolean(replay && !replay.done)
+  const reportError = useCallback((err) => {
+    if (!isConflict(err) && mounted.current) setError(err?.message || String(err))
+  }, [])
+  useAutoHunt({
+    view,
+    wanted,
+    paused,
+    blocked: replaying,
+    start: (target) => actions.startHunt(target).catch(reportError),
+    stop: () => actions.stopHunt().catch(reportError),
+  })
+  // Leaving the zone the hunt was paused in lets it hunt again.
+  useEffect(() => {
+    if (paused && (paused.world !== hereWorld || paused.zone !== zoneId)) setPaused(null)
+  }, [paused, hereWorld, zoneId])
+  const pause = useCallback(async () => {
+    if (!zoneId) return
+    setPaused({ world: hereWorld, zone: zoneId })
+    await actions.stopHunt()
+  }, [actions, hereWorld, zoneId])
+
+  // The hero strolls between packs only inside the zone it hunts, away from the roads.
+  useEffect(() => {
+    if (walker && world) walker.roamIn = zone ? insetOf(world, zone.rect) : null
+  }, [walker, world, zone])
+
+  // Arrows and WASD walk the hero, Enter talks to the keeper or opens the terminal next to it, while
+  // the page itself (or the stage) has the keyboard: a focused tab list, input or open dialog keeps its keys.
+  const nearRef = useRef(null)
+  const openNear = useRef(null)
   useEffect(() => {
     const ours = (event) => {
       const target = event.target
@@ -365,6 +523,13 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
       return target === document.body || target === document.documentElement || Boolean(stageRef.current?.contains(target))
     }
     const onDown = (event) => {
+      if (event.key === 'Enter') {
+        if (nearRef.current && !event.repeat && ours(event)) {
+          event.preventDefault()
+          openNear.current?.()
+        }
+        return
+      }
       const dir = directionOf(event.key)
       if (!dir || !walkerRef.current || !ours(event)) return
       event.preventDefault()
@@ -385,6 +550,27 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
     }
   }, [])
 
+  // The terminal or keeper next to the hero (the faced one first): Enter or its button opens it.
+  const npc = here && world ? npcNear(world, here.x, here.y, here.facing) : null
+  const terminal = here && world && !npc ? terminalNear(world, here.x, here.y, here.facing) : null
+  const near = npc ? { kind: 'npc', npc } : terminal ? { kind: 'terminal', terminal } : null
+  nearRef.current = near
+  const opening = useRef(false)
+  openNear.current = async () => {
+    const found = nearRef.current
+    if (!found || opening.current) return
+    if (found.kind === 'npc') {
+      if (onNpc) onNpc(found.npc.id)
+      else setNotice({ kind: 'npc', id: found.npc.id })
+      return
+    }
+    opening.current = true
+    walkerRef.current?.release()
+    await saveNow()
+    opening.current = false
+    if (mounted.current) studyWindow.open(terminalHref(found.terminal))
+  }
+
   // The camera follows the hero: the scene reports where it draws the hero and the map slides under
   // the stage without a React render. The last spot is kept so a render puts the map back there.
   const mapRef = useRef(null)
@@ -395,14 +581,13 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
       cameraRef.current = { x: pos.x, y: pos.y }
       const node = mapRef.current
       const crop = cropRef.current
-      if (!node || !crop) return
+      if (!node || !crop || !world) return
       const at = stageOffset(world, pos, crop)
       node.style.left = `${at.left}%`
       node.style.top = `${at.top}%`
     },
     [world],
   )
-
   // Under lg the panel is a drawer docked at the bottom. While it shows, the page learns its closed
   // height (--dock-h), so the study timer sits above it instead of under it.
   const dock = useRef(null)
@@ -446,7 +631,19 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
     handle.current?.focus()
   }
 
-  if (!view) {
+  // GameScene compares playback.fights by identity: a new array would restart the fight.
+  const replayFight = replay?.fight
+  const gear = useMemo(() => gearOf(view?.hero.items), [view?.hero.items])
+  // The loading screen walks this hero next time.
+  const heroLook = view?.hero.look
+  useEffect(() => {
+    if (heroLook) rememberHero(heroLook, gear)
+  }, [heroLook, gear])
+  const replayFights = useMemo(() => (replayFight ? [replayFight] : null), [replayFight])
+  const samplesKey = view?.huntPreview?.samples ? JSON.stringify(view.huntPreview.samples) : ''
+  const samples = useMemo(() => (samplesKey ? JSON.parse(samplesKey) : null), [samplesKey])
+
+  if (!view || !here || !world) {
     return (
       <div className="mt-8 grid gap-3">
         {conflict ? (
@@ -462,17 +659,20 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
     )
   }
 
-  const zoneId = shownZone(view, worldId, replay)
-  const zones = ZONES[worldId]
-  const zoneRect = zones[zoneId].rect
-  const difficulty = replay?.target.difficulty ?? view.hero.hunt?.difficulty ?? 'normal'
-  const crop = cropFor(world, zoneRect, wide ? CROP[zoom].wide : CROP[zoom].narrow)
+  const hunt = view.hero.hunt
+  // The running hunt plays around the hero only where it runs: in the zone the hero stands in.
+  const huntHere = Boolean(hunt && zone && hunt.world === here.world && hunt.zone === zone.id)
+  const shownDifficulty = replay?.target.difficulty ?? hunt?.difficulty ?? difficulty
+  const crop = cropFor(world, here, wide ? CROP[zoom].wide : CROP[zoom].narrow)
   cropRef.current = crop
-  const mapAt = cameraRef.current ? stageOffset(world, cameraRef.current, crop) : { left: (-crop.x / crop.w) * 100, top: (-crop.y / crop.h) * 100 }
-  const zoneLabel = t(`game.zone.${zones[zoneId].name}`)
-  const bossName = replay ? t(`game.boss.${zones[replay.target.zone].boss}`) : ''
+  const mapAt = cameraRef.current ? stageOffset(world, cameraRef.current, crop) : stageOffset(world, here, crop)
+  const regionName = t(`world.name.${here.world}`)
+  const zoneLabel = zone ? t(`game.zone.${ZONES[here.world][zone.id].name}`) : t('world.safe')
+  const huntZoneLabel = hunt && zoneDef(hunt.world, hunt.zone) ? t(`game.zone.${zoneDef(hunt.world, hunt.zone).name}`) : zoneLabel
+  const bossName = replay ? t(`game.boss.${ZONES[replay.target.world][replay.target.zone].boss}`) : ''
+  const move = huntMove({ hunt, wanted, paused })
 
-  const playback = replay ? { fights: replayFights, loop: false } : hunting && samples ? { fights: samples, loop: true } : undefined
+  const playback = replay ? { fights: replayFights, loop: false } : huntHere && samples ? { fights: samples, loop: true } : undefined
 
   const panel = (
     <GamePanel
@@ -482,7 +682,17 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
       actions={actions}
       studyHref={studyHref}
       treeTab={(shared) => <TreeTab {...shared} />}
-      worldTab={(shared) => <WorldTab {...shared} replaying={Boolean(replay && !replay.done)} onLeave={onLeave} />}
+      worldTab={(shared) => (
+        <WorldTab
+          {...shared}
+          replaying={replaying}
+          here={{ world: here.world, zone: zone?.id ?? null }}
+          difficulty={difficulty}
+          onDifficulty={setDifficulty}
+          paused={Boolean(paused)}
+          onPause={pause}
+        />
+      )}
       fill={wide}
       onEditLook={() => setLookOpen(true)}
     />
@@ -494,7 +704,8 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
       <StageFrame>
         {(fullscreen) => (
           <section
-            aria-label={t('game.view.label')}
+            aria-label={t('world.view.label', { place: `${regionName}, ${zoneLabel}` })}
+            data-place={`${here.world} ${here.x} ${here.y}`}
             className="relative w-full overflow-hidden"
             style={{
               aspectRatio: `${crop.w} / ${crop.h}`,
@@ -512,19 +723,19 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
             >
               <GameScene
                 world={world}
-                zoneRect={zoneRect}
+                zoneRect={zone?.rect ?? null}
                 look={view.hero.look}
                 gear={gear}
                 playback={playback}
                 walker={walker}
                 onCamera={onCamera}
                 level={view.level?.level}
-                zoneName={`${t(`world.name.${worldId}`)}, ${zoneLabel}`}
+                zoneName={`${regionName}, ${zoneLabel}`}
               />
             </div>
             <StageHud
               view={view}
-              replay={replay && !replay.done ? replay : null}
+              replay={replaying ? replay : null}
               samples={playback?.loop ? samples : null}
               bossName={bossName}
               onReplayEnd={finish}
@@ -535,7 +746,15 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
               zoom={zoom}
               onZoom={changeZoom}
             />
+            <ZoneToast view={view} world={here.world} zone={zone?.id ?? null} difficulty={difficulty} />
             {replay?.done && <ResultBanner replay={replay} t={t} counts={counts} onClose={() => setReplay(null)} />}
+            {!reduced && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-[#0d1017] transition-opacity ease-out"
+                style={{ opacity: fade ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}
+              />
+            )}
           </section>
         )}
       </StageFrame>
@@ -553,8 +772,13 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
         view={view}
         replay={replay}
         bossName={bossName}
-        zoneLabel={zoneLabel}
-        difficulty={difficulty}
+        zoneLabel={huntZoneLabel}
+        difficulty={shownDifficulty}
+        settling={move === 'start' ? zoneLabel : null}
+        pausedIn={paused && zone ? zoneLabel : null}
+        notice={notice}
+        near={near}
+        onNear={() => openNear.current?.()}
         onSkip={finish}
         error={error}
       />
@@ -715,11 +939,14 @@ function Conflict({ t }) {
   )
 }
 
-// Under the scene: what the hero is doing (and the hunt so far), or the boss fight with its skip button.
-function StatusLine({ t, counts, view, replay, bossName, zoneLabel, difficulty, onSkip, error }) {
+// Under the scene: what the hero is doing (and the hunt so far), the boss fight with its skip button,
+// and the terminal or keeper next to the hero with its Enter button.
+function StatusLine({ t, counts, view, replay, bossName, zoneLabel, difficulty, settling, pausedIn, notice, near, onNear, onSkip, error }) {
   const preview = view.huntPreview
-  let text = t('game.view.idle')
+  let text = t('world.view.idle')
   if (replay && !replay.done) text = t('game.view.fighting', { boss: bossName })
+  else if (pausedIn) text = t('world.view.paused', { zone: pausedIn })
+  else if (settling) text = t('world.view.settling', { zone: settling })
   else if (view.hero.hunt)
     text = t('game.view.hunting', {
       zone: zoneLabel,
@@ -731,21 +958,44 @@ function StatusLine({ t, counts, view, replay, bossName, zoneLabel, difficulty, 
         ['gold', preview.gold],
       ])
     : ''
+  let nearLabel = ''
+  if (near?.kind === 'npc') nearLabel = t(near.npc.id === 'quests' ? 'world.npc.read' : 'world.npc.talk', { name: t(`world.npc.${near.npc.id}`) })
+  else if (near?.kind === 'terminal') {
+    const terminal = near.terminal
+    nearLabel =
+      terminal.kind === 'topic'
+        ? t('world.terminal.topic', { name: topicById('enem', terminal.topicId)?.name ?? terminal.topicId })
+        : t('world.terminal.page', { name: t(PAGE_NAMES[terminal.kind]) })
+  }
   return (
     <Frame tone="inset" className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-3 py-1.5 font-mono text-xs text-[#e9e4ff]">
-      <p className="m-0">
-        <b className="font-pixel text-[12px] font-normal text-white">{text}</b>
-        {!replay && view.hero.hunt && preview && list && (
-          <span className="ml-2 text-[#a89fd0]">
-            {t('game.view.preview', {
-              time: counts.time(preview.elapsedMs),
-              list,
-            })}
-          </span>
-        )}
-        {error && <span className="ml-2 text-[#ff9aa6]">{error}</span>}
-      </p>
+      <div className="m-0 min-w-0 flex-1 leading-relaxed">
+        {/* Always there, so screen readers hear what changes in it. */}
+        <p role="status" className="m-0">
+          <b className="font-pixel text-[12px] font-normal text-white">{text}</b>
+          {!replay && view.hero.hunt && !settling && preview && list && (
+            <span className="ml-2 text-[#a89fd0]">
+              {t('game.view.preview', {
+                time: counts.time(preview.elapsedMs),
+                list,
+              })}
+            </span>
+          )}
+          {notice?.kind === 'travel' && <span className="ml-2 text-[#e8c35a]">{t('world.view.travel', { world: t(`world.name.${notice.world}`) })}</span>}
+          {notice?.kind === 'npc' && <span className="ml-2 text-[#e8c35a]">{t('world.npc.soon', { name: t(`world.npc.${notice.id}`) })}</span>}
+          {error && <span className="ml-2 text-[#ff9aa6]">{error}</span>}
+        </p>
+        <p className="m-0 text-[11px] text-[#a89fd0]">{t('world.view.help')}</p>
+      </div>
       {replay && !replay.done && <ActionButton onClick={onSkip}>{t('game.view.skip')}</ActionButton>}
+      {near && !(replay && !replay.done) && (
+        <ActionButton tone="gold" onClick={onNear}>
+          <span className="inline-flex items-center gap-2">
+            {nearLabel}
+            <Chip tone="ink">Enter</Chip>
+          </span>
+        </ActionButton>
+      )}
     </Frame>
   )
 }

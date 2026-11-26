@@ -1,79 +1,74 @@
-import { useId, useState } from 'react'
+import { useId, useMemo } from 'react'
 import { DIFFICULTIES } from '../../../../shared/game/enemies.js'
-import { HUNT_WORLDS, ZONES } from '../../../../shared/game/zones.js'
+import { ZONES, zoneDef } from '../../../../shared/game/zones.js'
 import { HUB_ID, WORLDS } from '../../../../shared/world/worlds.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
-import { isEnemWorld, showsEnem } from '../../world/enem-worlds.js'
+import { shownIn } from '../../world/enem-worlds.js'
+import { dangerOf, suggestedPower, zoneInfo } from '../../world/zone-info.js'
 import GameIcon from '../icons/game-icon.jsx'
 import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
 import { ActionButton } from './panel-ui.jsx'
 
+export { dangerOf, suggestedPower }
+
 const ORDER = Object.keys(DIFFICULTIES)
-
-// The zone's suggested power on a difficulty: enemies scale by its mult, so the power does too.
-export const suggestedPower = (zone, difficulty) => Math.round(zone.suggestedPower * DIFFICULTIES[difficulty].mult)
-
-// How dangerous a zone is for the hero: at the suggested power it beats the boss, under 70% of it it
-// does not (shared/game/zones.js), so those are the steps. Advice only: every zone is open.
-export function dangerOf(power, suggested) {
-  if (power >= suggested) return 'safe'
-  return power >= suggested * 0.7 ? 'risky' : 'deadly'
-}
 const DANGER_TONE = { safe: 'ok', risky: 'gold', deadly: 'danger' }
 
-// The Mundo tab: the world map list, the Forest's zones on a difficulty, and per zone "Caçar aqui"
-// and "Enfrentar chefe". Every zone and difficulty is open from the start: each zone says how
-// dangerous it is for the hero, and a harder difficulty shows a strong warning. actions.startHunt / fightBoss / stopHunt take { world, zone, difficulty } and
-// resolve to the new View (the page applies it, and plays the boss fight back). replaying: a boss
-// fight is on screen, so nothing else starts. onLeave: back to the Lab, after the hunt stops.
-export default function WorldTab({ view, actions, runner, replaying = false, onLeave }) {
+// The Mundo tab (fase 3): the hunt running now (with a pause for the zone the hero stands in), the
+// difficulty the hero hunts on, and every region this locale shows by tier: the town, then each hunt
+// region with its zones, how dangerous each is for the hero, its suggested level, about what an hour
+// there pays (the server's own rules, at today's study multiplier) and its boss. The hero hunts by
+// walking (standing in a zone hunts there), so there is no "hunt here" button; a boss is fought from
+// the region the hero stands in.
+//   here: { world, zone } where the hero stands. difficulty / onDifficulty: the picked difficulty.
+//   paused: the player paused the hunt in this zone. onPause(): stops the hunt and keeps it stopped
+//   until the hero leaves the zone. replaying: a boss fight is on screen, so nothing else starts.
+//   actions.fightBoss takes { world, zone, difficulty } and resolves to the new View.
+export default function WorldTab({ view, actions, runner, replaying = false, here, difficulty = 'normal', onDifficulty, paused = false, onPause }) {
   const { t, locale } = useI18n()
-  const fmt = new Intl.NumberFormat(locale)
-  const mapsId = useId()
-  const world = view.hero.hunt?.world ?? HUNT_WORLDS[0]
-  const [difficulty, setDifficulty] = useState(view.hero.hunt?.difficulty ?? 'normal')
+  const fmt = useMemo(() => new Intl.NumberFormat(locale), [locale])
+  const regionsId = useId()
   const level = view.level.level
-  const list = view.zones?.[world]?.[difficulty] ?? []
   const hunt = view.hero.hunt
-  const zoneName = (id) => t(`game.zone.${ZONES[world][id].name}`)
   const busy = runner.busy
   const heroPower = view.power ?? 0
   const diff = DIFFICULTIES[difficulty]
+  const why = replaying ? t('game.why.fighting') : null
+  const zoneName = (world, id) => t(`game.zone.${ZONES[world][id].name}`)
 
-  const worlds = WORLDS.filter((each) => each.id !== HUB_ID && (showsEnem(locale) || !isEnemWorld(each.id)))
+  // The town first, then the regions by tier, in map order within a tier.
+  const regions = useMemo(
+    () => WORLDS.filter((world) => shownIn(locale)(world.id)).sort((a, b) => a.tier - b.tier || WORLDS.indexOf(a) - WORLDS.indexOf(b)),
+    [locale],
+  )
+  // Every zone's numbers for this hero and difficulty (an hour of the server's own settle each).
+  const infos = useMemo(() => {
+    const out = {}
+    for (const world of regions) for (const id of Object.keys(ZONES[world.id] ?? {})) out[`${world.id}:${id}`] = zoneInfo(view, world.id, id, difficulty)
+    return out
+  }, [regions, view, difficulty])
 
-  const start = (zone) => runner.run(() => actions.startHunt({ world, zone, difficulty }), () => t('game.world.started', { zone: zoneName(zone) }))
-  const fight = (zone) => runner.run(() => actions.fightBoss({ world, zone, difficulty }))
-  const stop = () => runner.run(() => actions.stopHunt(), () => t('game.world.stopped'))
-  const leave = async () => {
-    if (hunt) {
-      const done = await runner.run(() => actions.stopHunt())
-      if (!done) return
-    }
-    onLeave?.()
-  }
+  const fight = (world, zone) => runner.run(() => actions.fightBoss({ world, zone, difficulty }))
+  const pause = () => runner.run(() => onPause(), () => t('game.world.stopped'))
+  const huntDef = hunt && zoneDef(hunt.world, hunt.zone)
 
   return (
     <>
-      <SectionTitle id={mapsId}>{t('game.world.maps')}</SectionTitle>
-      <ul aria-labelledby={mapsId} className="m-0 grid list-none grid-cols-2 gap-1.5 p-0">
-        {worlds.map((each) => {
-          const here = each.id === world
-          const note = here ? t('game.world.here') : HUNT_WORLDS.includes(each.id) ? '' : t('game.world.soon')
-          return (
-            <Frame
-              as="li"
-              key={each.id}
-              tone={here ? 'gold' : 'inset'}
-              aria-current={here ? 'location' : undefined}
-              className="flex min-h-12 flex-col items-start justify-center gap-1 px-2.5 py-2"
-            >
-              <span className={`font-pixel text-[10px] leading-tight ${here ? 'text-[#f2c14e]' : 'text-[#a89fd0]'}`}>{t(`world.name.${each.id}`)}</span>
-              {note && <Chip tone={here ? 'gold' : 'muted'}>{note}</Chip>}
-            </Frame>
-          )
-        })}
-      </ul>
+      <Frame tone="inset" className="flex flex-col gap-1.5 p-2.5">
+        <p className="m-0 font-pixel text-[11px] leading-relaxed text-white">
+          {huntDef
+            ? t('game.view.hunting', { zone: `${t(`world.name.${hunt.world}`)}, ${zoneName(hunt.world, hunt.zone)}`, difficulty: t(`game.diff.${hunt.difficulty}`) })
+            : t('world.view.idle')}
+        </p>
+        <p className="m-0 text-[11px] leading-relaxed text-[#a89fd0]">{t('world.tab.walk')}</p>
+        {huntDef && here?.zone && hunt.world === here.world && hunt.zone === here.zone && !paused && (
+          <span>
+            <ActionButton busy={busy} why={why} onClick={pause}>
+              {t('world.tab.pause')}
+            </ActionButton>
+          </span>
+        )}
+      </Frame>
 
       <fieldset className="m-0 flex flex-col gap-1.5 border-0 p-0">
         <legend className="mb-1.5 w-full p-0">
@@ -81,7 +76,7 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
         </legend>
         <div className="flex flex-wrap gap-1.5">
           {ORDER.map((id) => (
-            <ActionButton key={id} pressed={id === difficulty} onClick={() => setDifficulty(id)} tone={id === difficulty ? 'gold' : 'default'}>
+            <ActionButton key={id} pressed={id === difficulty} onClick={() => onDifficulty?.(id)} tone={id === difficulty ? 'gold' : 'default'}>
               {t(`game.diff.${id}`)}
             </ActionButton>
           ))}
@@ -99,73 +94,71 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
         </div>
       </fieldset>
 
-      <SectionTitle>{t('game.world.zones')}</SectionTitle>
-      {list.map((state, at) => {
-        const def = ZONES[world][state.id]
-        const here = hunt?.world === world && hunt.zone === state.id && hunt.difficulty === difficulty
-        const why = replaying ? t('game.why.fighting') : null
-        const suggested = suggestedPower(def, difficulty)
-        const danger = dangerOf(heroPower, suggested)
-        return (
-          <ZoneCard
-            key={state.id}
-            title={t('game.world.zoneTitle', { n: at + 1, name: zoneName(state.id) })}
-            tag={
-              <Chip tone={DANGER_TONE[danger]} title={t('gameOpen.danger.label', { danger: t(`gameOpen.danger.${danger}`) })} className="shrink-0">
-                {t(`gameOpen.danger.${danger}`)}
-              </Chip>
-            }
-          >
-            <p className="m-0 text-[11px] text-[#a89fd0]">{t('gameOpen.zone.level', { level: Math.max(state.minLevel, diff.minLevel) })}</p>
-            <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px]">
-              <GameIcon name="skull" size={1} />
-              {t('game.world.boss', { boss: t(`game.boss.${def.boss}`) })}
-              {state.beaten && <Chip tone="ok">{t('game.world.beaten')}</Chip>}
-            </p>
-            <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px] text-[#a89fd0]">
-              {t('game.world.power', { power: fmt.format(suggested) })}
-              {here && <Chip tone="gold">{t('game.world.hunting')}</Chip>}
-            </p>
-            {heroPower < suggested && <p className="m-0 text-[11px] text-[#ff9aa6]">{t('gameOpen.under', { power: fmt.format(heroPower) })}</p>}
-            <div className="flex flex-wrap items-start gap-1.5">
-              {here ? (
-                <ActionButton busy={busy} onClick={stop}>
-                  {t('game.world.stop')}
-                </ActionButton>
-              ) : (
-                <ActionButton busy={busy} why={why} onClick={() => start(state.id)}>
-                  {t('game.world.hunt')}
-                </ActionButton>
-              )}
-              <ActionButton tone="danger" busy={busy} why={why} onClick={() => fight(state.id)}>
-                {t('game.world.fight')}
-              </ActionButton>
-            </div>
-          </ZoneCard>
-        )
-      })}
-
-      <span>
-        <ActionButton busy={busy} onClick={leave}>
-          {t('game.world.leave')}
-        </ActionButton>
-      </span>
+      <SectionTitle id={regionsId}>{t('world.tab.regions')}</SectionTitle>
+      <ul aria-labelledby={regionsId} className="m-0 flex list-none flex-col gap-2 p-0">
+        {regions.map((world) => {
+          const isHere = here?.world === world.id
+          const zones = ZONES[world.id] ? Object.values(ZONES[world.id]) : []
+          const beaten = (view.zones?.[world.id]?.[difficulty] ?? []).filter((each) => each.beaten).map((each) => each.id)
+          return (
+            <Frame
+              as="li"
+              key={world.id}
+              tone={isHere ? 'gold' : 'panel'}
+              aria-current={isHere ? 'location' : undefined}
+              aria-label={t(`world.name.${world.id}`)}
+              className="flex flex-col gap-1.5 p-2.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <h4 className={`m-0 font-pixel text-[11px] font-normal leading-tight ${isHere ? 'text-[#e8c35a]' : 'text-white'}`}>{t(`world.name.${world.id}`)}</h4>
+                <span className="flex flex-wrap gap-1">
+                  {isHere && <Chip tone="gold">{t('game.world.here')}</Chip>}
+                  <Chip tone={world.id === HUB_ID ? 'ok' : 'muted'}>{world.id === HUB_ID ? t('world.safe') : t('world.tier', { n: world.tier })}</Chip>
+                </span>
+              </div>
+              {world.id === HUB_ID && <p className="m-0 text-[11px] leading-relaxed text-[#a89fd0]">{t('world.tab.town')}</p>}
+              {zones.map((zone) => {
+                const info = infos[`${world.id}:${zone.id}`]
+                const huntingHere = hunt?.world === world.id && hunt.zone === zone.id && hunt.difficulty === difficulty
+                const won = beaten.includes(zone.id)
+                return (
+                  <Frame as="section" key={zone.id} tone="inset" aria-label={zoneName(world.id, zone.id)} className="flex flex-col gap-1 px-2 py-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <h5 className="m-0 font-pixel text-[10px] font-normal leading-tight text-white">
+                        {t('game.world.zoneTitle', { n: zone.id.slice(1), name: zoneName(world.id, zone.id) })}
+                      </h5>
+                      <Chip tone={DANGER_TONE[info.danger]} title={t('gameOpen.danger.label', { danger: t(`gameOpen.danger.${info.danger}`) })} className="shrink-0">
+                        {t(`gameOpen.danger.${info.danger}`)}
+                      </Chip>
+                    </div>
+                    <p className="m-0 flex flex-wrap items-center gap-x-2 text-[11px] text-[#a89fd0]">
+                      <span>{t('gameOpen.zone.level', { level: info.level })}</span>
+                      {info.xpHour !== null && <b className="font-normal text-[#e8c35a]">{t('world.xpHour', { xp: fmt.format(info.xpHour) })}</b>}
+                      <span>{t('world.tab.xpKill', { xp: fmt.format(zone.xp * diff.mult) })}</span>
+                    </p>
+                    <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px]">
+                      <GameIcon name="skull" size={1} />
+                      {t('game.world.boss', { boss: t(`game.boss.${zone.boss}`) })}
+                      {won && <Chip tone="ok">{t('game.world.beaten')}</Chip>}
+                      {huntingHere && <Chip tone="gold">{t('game.world.hunting')}</Chip>}
+                    </p>
+                    <p className="m-0 text-[11px] text-[#a89fd0]">{t('game.world.power', { power: fmt.format(info.suggested) })}</p>
+                    {heroPower < info.suggested && <p className="m-0 text-[11px] text-[#ff9aa6]">{t('gameOpen.under', { power: fmt.format(heroPower) })}</p>}
+                    {isHere && (
+                      <span>
+                        <ActionButton tone="danger" busy={busy} why={why} onClick={() => fight(world.id, zone.id)}>
+                          {t('game.world.fight')}
+                        </ActionButton>
+                      </span>
+                    )}
+                  </Frame>
+                )
+              })}
+              {!isHere && zones.length > 0 && <p className="m-0 text-[10px] leading-relaxed text-[#8a93ad]">{t('world.tab.fightHere')}</p>}
+            </Frame>
+          )
+        })}
+      </ul>
     </>
-  )
-}
-
-// A zone: a raised box with its title and, on the right, its danger tag.
-function ZoneCard({ title, tag, children }) {
-  const titleId = useId()
-  return (
-    <Frame as="section" tone="panel" aria-labelledby={titleId} className="flex flex-col gap-1.5 p-2.5">
-      <div className="flex items-start justify-between gap-2">
-        <h4 id={titleId} className="m-0 font-pixel text-[11px] font-normal leading-tight text-white">
-          {title}
-        </h4>
-        {tag}
-      </div>
-      {children}
-    </Frame>
   )
 }
