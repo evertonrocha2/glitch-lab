@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { DIFFICULTIES } from '../../../../shared/game/enemies.js'
 import { SKILLS } from '../../../../shared/game/skills.js'
+import { ELIXIRS } from '../../../../shared/game/elixirs.js'
 import { MULTIPLIER_CAP } from '../../../../shared/game/xp.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { gearOf } from '../hero/gear.js'
 import { HeroCanvas } from '../hero/hero-canvas.jsx'
 import GameIcon from '../icons/game-icon.jsx'
+import { activeElixirs, countdown, useNow } from '../npc/elixir-time.js'
 import Bar from '../ui/bar.jsx'
 import Frame, { Chip } from '../ui/frame.jsx'
 import { RARITY_TRIM } from '../ui/tokens.js'
@@ -91,6 +93,32 @@ function StudyBuff({ multiplier, correct, className = '' }) {
       <GameIcon name="book" size={1} className={active ? '' : 'opacity-50'} />
       <span aria-hidden="true">{t('gameXp.chip', { mult })}</span>
     </Frame>
+  )
+}
+
+// The Alquimista's elixirs while they run (hero.elixirs), one chip each beside the study buff: the
+// elixir's icon and its bonus; the name, the effect and the time left in the tooltip and the label.
+// The clock ticks only while one runs.
+function ElixirBuffs({ elixirs }) {
+  const { t } = useI18n()
+  const now = useNow(activeElixirs(elixirs, Date.now()).length > 0)
+  const active = activeElixirs(elixirs, now)
+  if (active.length === 0) return null
+  return (
+    <ul aria-label={t('gameNpc.hud.elixirs')} className="m-0 flex list-none gap-1 p-0">
+      {active.map(({ type, left }) => {
+        const pct = Math.round(ELIXIRS[type].bonus * 100)
+        const label = t('gameNpc.hud.elixir', { name: t(`gameNpc.elixir.${type}`), effect: t(`gameNpc.elixirEffect.${type}`, { pct }), time: countdown(left) })
+        return (
+          <li key={type} className="flex">
+            <Frame role="note" aria-label={label} title={label} tone="raised" className="pointer-events-auto flex items-center gap-1 px-1.5 py-1 font-label text-[10px] normal-case text-[#cfe8c9]">
+              <GameIcon name={`elixir-${type}`} size={1} />
+              <span aria-hidden="true">+{pct}%</span>
+            </Frame>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -202,7 +230,10 @@ export default function GameHud({
             )}
           </div>
         </Frame>
-        <StudyBuff multiplier={study?.xpMultiplier ?? 1} correct={study?.today?.correct ?? 0} className={boss ? 'hidden sm:flex' : 'flex'} />
+        <div className={`flex-wrap items-start gap-1 ${boss ? 'hidden sm:flex' : 'flex'}`}>
+          <StudyBuff multiplier={study?.xpMultiplier ?? 1} correct={study?.today?.correct ?? 0} className="flex" />
+          <ElixirBuffs elixirs={hero.elixirs} />
+        </div>
       </div>
 
       {/* On a phone the boss bar spans the scene under the unit frame, where the difficulty chips were

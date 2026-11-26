@@ -291,3 +291,27 @@ it('names the talent and support log lines instead of printing their ids', () =>
   expect(text).toMatch(/Bug Splash/)
   expect(text).not.toMatch(/critBlast|rethrow|vampiro|bugSplash/)
 })
+
+it('shows each active elixir as a buff chip next to the study buff, its countdown in the tooltip', async () => {
+  const { act } = await import('@testing-library/react')
+  vi.useFakeTimers({ now: new Date('2026-11-26T12:00:00Z'), toFake: ['Date', 'setInterval', 'clearInterval'] })
+  try {
+    const now = Date.now()
+    const hero = { ...view().hero, elixirs: { damage: { startedAt: now - 1000, expiresAt: now + 125_000 }, xp: { startedAt: 0, expiresAt: now - 5 } } }
+    ui({ view: view({ hero }) })
+    const chips = within(screen.getByRole('list', { name: 'Elixirs' })).getAllByRole('listitem')
+    expect(chips).toHaveLength(1)
+    const chip = within(chips[0]).getByRole('note')
+    expect(chip).toHaveAttribute('aria-label', 'Fury elixir: +20% damage, 2:05 left')
+    expect(chip).toHaveAttribute('title', 'Fury elixir: +20% damage, 2:05 left')
+    act(() => vi.advanceTimersByTime(5000))
+    expect(chip).toHaveAttribute('title', 'Fury elixir: +20% damage, 2:00 left')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+it('shows no elixir chips without an active elixir', () => {
+  ui()
+  expect(screen.queryByRole('list', { name: 'Elixirs' })).toBeNull()
+})
