@@ -1,4 +1,4 @@
-// The two fragment shaders of the "noite arcana" site. Both read u_res, u_time; the arcana one also
+// The two fragment shaders of the "Ardósia" site. Both read u_res, u_time; the arcana one also
 // follows u_pointer (0..1, eased by the runner) and u_scroll (0..1 as its section leaves the screen).
 // Shaders sit only behind heroes and CTA bands, never behind reading content.
 
@@ -19,8 +19,9 @@ float fbm3(vec2 p){ float v = 0., a = .5; mat2 r = mat2(.8,-.6,.6,.8);
   for (int i = 0; i < 3; i++){ v += a*noise(p); p = r*p*2.03 + vec2(1.7, 9.2); a *= .5; } return v; }
 `
 
-// Névoa arcana: domain-warped fog in violet and indigo, aurora ribbons across the top, a light pool
-// behind the hero card that leans toward the pointer, molten gold low on the left, gold motes.
+// Névoa arcana, in Ardósia: domain-warped fog in graphite slate and steel blue, calm steel and silver
+// aurora ribbons across the top, a light pool behind the hero card that leans toward the pointer, a
+// soft gold glow low on the left, gold motes.
 export const ARCANA = `${COMMON}
 uniform vec2 u_pointer;
 uniform float u_scroll;
@@ -53,42 +54,42 @@ void main(){
   vec2 r = vec2(fbm(p*1.5 + 3.2*q + vec2(1.7, 9.2) + t*1.6), fbm(p*1.5 + 3.2*q + vec2(8.3, 2.8) - t*1.3));
   float f = fbm(p*1.25 + 2.6*r);
 
-  // Lifted for a night lit by aurora: the darkest fog is a deep violet, never black.
-  vec3 deep   = vec3(.120, .080, .260);
-  vec3 indigo = vec3(.220, .150, .560);
-  vec3 violet = vec3(.520, .320, 1.00);
-  vec3 lilac  = vec3(.860, .730, 1.00);
-  vec3 mana   = vec3(.180, .400, .950);
+  // Lifted for a night lit by aurora: the darkest fog is a deep slate, never black.
+  vec3 deep   = vec3(.078, .090, .115);
+  vec3 slate  = vec3(.150, .185, .240);
+  vec3 steel  = vec3(.300, .410, .540);
+  vec3 silver = vec3(.660, .720, .800);
+  vec3 sage   = vec3(.250, .350, .330);
 
-  vec3 col = mix(deep, indigo, smoothstep(.18, .70, f));
-  col = mix(col, mana, .32 * smoothstep(.45, .95, q.x) * smoothstep(.3, .8, f));
-  col = mix(col, violet, smoothstep(.40, .88, f + .25*length(r) - .15));
-  col += lilac * pow(smoothstep(.55, .98, f + .1*r.y), 2.5) * .75;
+  vec3 col = mix(deep, slate, smoothstep(.18, .70, f));
+  col = mix(col, sage, .28 * smoothstep(.45, .95, q.x) * smoothstep(.3, .8, f));
+  col = mix(col, steel, smoothstep(.40, .88, f + .25*length(r) - .15));
+  col += silver * pow(smoothstep(.55, .98, f + .1*r.y), 2.5) * .45;
 
   // Light pool behind the hero card (right), leaning toward the pointer; quieter on the copy side.
   vec2 pc = vec2(.74, .50) + lean * vec2(.10, .08);
   float pool = smoothstep(1.1, .0, length((uv - pc) * vec2(1.3, 1.)));
   float pool2 = smoothstep(.9, .0, length((uv - vec2(.12, 1.05)) * vec2(1.1, 1.6)));
   col *= .95 + .6*pool + .4*pool2;
-  // Molten gold low on the left, under the copy.
+  // A soft gold glow low on the left, under the copy.
   float warm = smoothstep(.85, .0, length((uv - vec2(.18, -.12)) * vec2(.9, 1.5)));
-  col += vec3(.62, .34, .08) * warm * (.35 + .65*smoothstep(.3, .8, f)) * .55;
-  col = mix(col, col*1.25 + vec3(.02, .0, .05), smoothstep(.5, .9, f) * pool);
+  col += vec3(.58, .38, .12) * warm * (.35 + .65*smoothstep(.3, .8, f)) * .42;
+  col = mix(col, col*1.2 + vec3(.015, .02, .03), smoothstep(.5, .9, f) * pool);
 
-  // Aurora across the top: three curtains, teal into mana, lilac into magenta, a faint gold one.
+  // Aurora across the top: three calm curtains, steel blue, silver, and a faint gold one.
   float ta = u_time * .6;
-  vec3 aur = curtain(uv, ta, 0., vec3(.20, 1.0, .74), vec3(.18, .42, 1.0)) * 1.6;
-  aur += curtain(uv, ta*1.13, 1., vec3(.72, .52, 1.0), vec3(.80, .26, .90)) * 1.8;
-  aur += curtain(uv, ta*.87, 2., vec3(1.0, .78, .40), vec3(.95, .38, .55)) * 1.0;
+  vec3 aur = curtain(uv, ta, 0., vec3(.55, .72, .88), vec3(.28, .42, .60)) * .9;
+  aur += curtain(uv, ta*1.13, 1., vec3(.80, .84, .90), vec3(.42, .50, .60)) * .8;
+  aur += curtain(uv, ta*.87, 2., vec3(1.0, .82, .48), vec3(.62, .48, .34)) * .6;
   // Softer at the far edges, and never down in the lower half.
   aur *= smoothstep(-.1, .3, uv.x) * smoothstep(1.15, .75, uv.x) * .8 + .2;
   aur *= smoothstep(.38, .64, uv.y);
   col += aur * (.8 + .4*f);
 
   // A soft sky glow from the top, then a light vignette and a touch more exposure.
-  col += vec3(.10, .07, .22) * smoothstep(.3, 1., uv.y);
+  col += vec3(.06, .075, .10) * smoothstep(.3, 1., uv.y);
   col *= mix(.8, 1., smoothstep(1.25, .35, length((uv-.5)*vec2(1.2, 1.))));
-  col = col * 1.1 + vec3(.012, .008, .03);
+  col = col * 1.08 + vec3(.010, .012, .018);
 
   // Gold motes drifting up.
   vec3 gold = vec3(1., .78, .32);
@@ -113,7 +114,7 @@ void main(){
   gl_FragColor = vec4(col, 1.);
 }`
 
-// Brasas: embers rising through heat shimmer, ember and gold under a violet haze.
+// Brasas: embers rising through heat shimmer, ember and gold under a slate haze.
 export const EMBERS = `${COMMON}
 vec3 emberLayer(vec2 p, float scale, float speed, float seed, float t){
   p *= scale;
@@ -139,14 +140,14 @@ void main(){
   float flame = fbm(vec2(ps.x*1.8, ps.y*1.2 - t*.35));
   float flame2 = fbm(vec2(ps.x*3.2 + 7., ps.y*2.4 - t*.7));
   float heat = smoothstep(.95, -.1, uv.y + (flame - .5)*.55 + (flame2 - .5)*.25);
-  vec3 night = vec3(.130, .090, .270);
+  vec3 night = vec3(.090, .100, .125);
   vec3 maroon = vec3(.30, .06, .08);
   vec3 ember = vec3(1., .40, .16);
   vec3 gold = vec3(1., .74, .30);
   vec3 col = mix(night, maroon, smoothstep(.0, .55, heat));
   col = mix(col, ember, smoothstep(.55, .95, heat) * .85);
   col = mix(col, gold, smoothstep(.88, 1.05, heat) * .7);
-  col = mix(col, vec3(.25, .16, .50), smoothstep(.55, 1., uv.y) * .55 * (.6 + .4*fbm(p*2. + t*.05)));
+  col = mix(col, vec3(.19, .23, .29), smoothstep(.55, 1., uv.y) * .55 * (.6 + .4*fbm(p*2. + t*.05)));
   col += emberLayer(ps, 7., .55, 1., t) * (.35 + .65*(1. - uv.y));
   col += emberLayer(ps + 3.3, 4.2, .42, 7., t) * (.4 + .6*(1. - uv.y));
   col += emberLayer(ps + 9.1, 13., .85, 4., t) * .45 * (1. - uv.y);
@@ -163,11 +164,11 @@ export const SHADERS = {
     fragment: ARCANA,
     t0: 18,
     fallback:
-      'radial-gradient(70% 38% at 50% 0%, rgba(140, 160, 255, .45), transparent 70%), radial-gradient(60% 70% at 72% 42%, #5f38c4 0%, transparent 60%), radial-gradient(50% 60% at 18% 88%, rgba(170, 96, 26, .5) 0%, transparent 60%), linear-gradient(180deg, #2a1d5e, #221950)',
+      'radial-gradient(70% 38% at 50% 0%, rgba(150, 180, 212, .3), transparent 70%), radial-gradient(60% 70% at 72% 42%, #3c5470 0%, transparent 60%), radial-gradient(50% 60% at 18% 88%, rgba(160, 104, 34, .38) 0%, transparent 60%), linear-gradient(180deg, #222833, #1d222b)',
   },
   embers: {
     fragment: EMBERS,
     t0: 9,
-    fallback: 'radial-gradient(80% 90% at 50% 120%, #d4521f 0%, #6e1c10 35%, transparent 70%), linear-gradient(180deg, #2a1d5e, #2a1430)',
+    fallback: 'radial-gradient(80% 90% at 50% 120%, #d4521f 0%, #6e1c10 35%, transparent 70%), linear-gradient(180deg, #222833, #2a1e1c)',
   },
 }
