@@ -36,6 +36,9 @@ const STEP_MS = 700
 const FADE_MS = 400
 // How often an empty slot with no tile to come back on looks again.
 const RETRY_MS = 500
+// A slot comes back on one of this many free off-view tiles nearest the hero (just past the edge of
+// the view), so the hero's strolls (hunt-walker.js) reach it soon.
+const REFILL_NEAR = 4
 
 const STEPS = [
   { x: 0, y: -1 },
@@ -115,12 +118,24 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
 
   const wait = () => WAIT_MS[0] + roll.int(WAIT_MS[1] - WAIT_MS[0] + 1)
 
-  // A free tile of the monster's zone, clear of every avoid tile and off the view: a few random
-  // tries, then a scan.
+  // A free tile of the monster's zone, clear of every avoid tile and off the view. With a view and a
+  // hero: one of the REFILL_NEAR such tiles nearest the hero. Else a few random tries, then a scan.
   function refillTile(m, avoid, view) {
     const floor = m.area.floor
     if (!floor.length) return null
     const ok = (t) => !taken.has(keyOf(t.x, t.y)) && clear(avoid, t.x, t.y) && (!view || offView(view, t.x, t.y))
+    const hero = avoid[0]
+    if (view && hero) {
+      const near = []
+      const far = (t) => (t.x - hero.x) ** 2 + (t.y - hero.y) ** 2
+      for (const t of floor) {
+        if (!ok(t)) continue
+        near.push(t)
+        near.sort((a, b) => far(a) - far(b))
+        if (near.length > REFILL_NEAR) near.pop()
+      }
+      return near.length ? near[roll.int(near.length)] : null
+    }
     for (let i = 0; i < 12; i++) {
       const t = floor[roll.int(floor.length)]
       if (ok(t)) return t

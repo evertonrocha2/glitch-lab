@@ -246,6 +246,18 @@ describe('claimPack', () => {
     }
   })
 
+  it('brings a claimed slot back just past the edge of the view nearest the hero, so strolls find it soon', () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const [claim] = ambient.claimPack([member('slime')], HERO)
+    const view = { x: 0, y: 0, w: 8, h: 20 }
+    for (let now = 0; now <= REFILL_MS + 600; now += 50) ambient.update(now, [HERO], view)
+    const back = ambient.monsters().find((m) => m.id === claim.id)
+    expect(back.x).toBeGreaterThanOrEqual(view.x + view.w + VIEW_MARGIN)
+    expect(back.x).toBeLessThanOrEqual(view.x + view.w + VIEW_MARGIN + 3)
+    expect(Math.abs(back.y - HERO.y)).toBeLessThanOrEqual(3)
+  })
+
   it('waits while the whole zone is in view, and refills once the view moves away', () => {
     const ambient = field()
     ambient.update(0, [])
