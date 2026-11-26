@@ -3,7 +3,7 @@ import { ZONES } from '../../../../shared/game/zones.js'
 import { canEnter, zoneAt } from '../../../../shared/world/map.js'
 import { WORLDS } from '../../../../shared/world/worlds.js'
 import { ENEMIES } from '../../../../shared/game/enemies.js'
-import { AMBIENT_CAP, AMBIENT_PER_ZONE, CLAIM_RANGE, createAmbient, KEEP_AWAY, REFILL_MS, VIEW_MARGIN } from './ambient.js'
+import { AMBIENT_CAP, AMBIENT_PER_ZONE, CLAIM_RANGE, createAmbient, KEEP_AWAY, NOTICE, REFILL_MS, VIEW_MARGIN } from './ambient.js'
 
 const REGIONS = WORLDS.filter((world) => ZONES[world.id])
 const TOWN = WORLDS.find((world) => world.kind === 'town')
@@ -300,5 +300,57 @@ describe('claimPack', () => {
       expect(m.anim).toBe('idle')
       if (!claims.some((c) => c.id === m.id)) expect({ x: m.x, y: m.y }).toEqual(before.get(m.id))
     }
+  })
+})
+
+describe('monsters that notice the hero', () => {
+  it('drift toward a hero within NOTICE tiles, about a tile a second, and stop KEEP_AWAY short', () => {
+    expect(NOTICE).toBe(16)
+    const ambient = field()
+    ambient.update(0, [])
+    const hero = { x: 7, y: 10 }
+    const watched = ambient.monsters().filter((m) => inZ1(m) && chebyshev(m, hero) <= NOTICE && chebyshev(m, hero) > KEEP_AWAY + 3)
+    expect(watched.length).toBeGreaterThan(0)
+    const before = new Map(watched.map((m) => [m.id, chebyshev(m, hero)]))
+    for (let now = 0; now <= 4000; now += 50) ambient.update(now, [hero])
+    const after = new Map(ambient.monsters().map((m) => [m.id, m]))
+    let closer = 0
+    for (const [id, d] of before) {
+      const m = after.get(id)
+      const now = chebyshev({ x: Math.round(m.x), y: Math.round(m.y) }, hero)
+      if (now < d) closer++
+      // About a tile a second: never more than 5 tiles in 4 s.
+      expect(d - now).toBeLessThanOrEqual(5)
+    }
+    expect(closer / before.size).toBeGreaterThan(0.5)
+    for (let now = 4000; now <= 30000; now += 50) ambient.update(now, [hero])
+    for (const m of ambient.monsters()) {
+      if (!before.has(m.id)) continue
+      expect(chebyshev({ x: Math.round(m.x), y: Math.round(m.y) }, hero)).toBeGreaterThanOrEqual(KEEP_AWAY)
+    }
+    // Most of them now wait near the hero, ready to be the next pack.
+    const near = ambient.monsters().filter((m) => before.has(m.id) && dist(m, hero) <= CLAIM_RANGE)
+    expect(near.length / before.size).toBeGreaterThan(0.6)
+  })
+
+  it("leaves the other zones' monsters to their own wandering", () => {
+    const ambient = field()
+    ambient.update(0, [])
+    const hero = { x: 13, y: 10 }
+    const others = ambient.monsters().filter((m) => !inZ1(m) && chebyshev(m, hero) <= NOTICE && chebyshev(m, hero) > KEEP_AWAY)
+    expect(others.length).toBeGreaterThan(0)
+    const before = others.reduce((sum, m) => sum + dist(m, hero), 0)
+    for (let now = 0; now <= 6000; now += 50) ambient.update(now, [hero])
+    const after = ambient.monsters().filter((m) => others.some((o) => o.id === m.id))
+    // A plain wander moves a tile every 1.5 to 3 s at most: no march toward the hero.
+    expect(after.reduce((sum, m) => sum + dist(m, hero), 0)).toBeGreaterThan(before - others.length * 2)
+  })
+
+  it('does not drift under reducedMotion', () => {
+    const ambient = field({ reducedMotion: true })
+    ambient.update(0, [])
+    const before = JSON.stringify(ambient.monsters().map((m) => [m.x, m.y]))
+    for (let now = 0; now <= 10000; now += 50) ambient.update(now, [{ x: 7, y: 10 }])
+    expect(JSON.stringify(ambient.monsters().map((m) => [m.x, m.y]))).toBe(before)
   })
 })

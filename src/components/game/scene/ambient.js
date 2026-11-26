@@ -24,6 +24,10 @@ export const AMBIENT_CAP = 54
 // Tiles (Chebyshev) a wandering monster never steps into around the hero and the live pack. One
 // already that close stands where it is, facing the hero: it never vanishes because the hero came.
 export const KEEP_AWAY = 4
+// A monster within this many tiles (Chebyshev) of the hero notices it and drifts its way, a step about
+// every second, until KEEP_AWAY: the next pack gathers where the player can see it.
+export const NOTICE = 16
+const DRIFT_WAIT_MS = 300
 // How far (tiles) from the hero a pack fight looks for monsters to claim.
 export const CLAIM_RANGE = 8
 // How long a claimed slot stays empty before a new monster may appear.
@@ -169,13 +173,20 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
     return true
   }
 
-  // One tile up, down, left or right, inside the zone, free and clear; or stay put.
-  function wander(m, avoid) {
+  // One tile up, down, left or right, inside the zone, free and clear; or stay put. A monster that
+  // noticed the hero (drawn) only takes a step that brings it no farther from it, nearest first.
+  const order = STEPS.slice()
+  function wander(m, avoid, hero, drawn) {
     const first = roll.int(4)
+    for (let k = 0; k < 4; k++) order[k] = STEPS[(first + k) % 4]
+    const far = (step) => (m.tx + step.x - hero.x) ** 2 + (m.ty + step.y - hero.y) ** 2
+    if (drawn) order.sort((a, b) => far(a) - far(b))
+    const here = drawn ? (m.tx - hero.x) ** 2 + (m.ty - hero.y) ** 2 : 0
     for (let k = 0; k < 4; k++) {
-      const step = STEPS[(first + k) % 4]
+      const step = order[k]
       const x = m.tx + step.x
       const y = m.ty + step.y
+      if (drawn && far(step) > here) break
       if (!m.area.keys.has(keyOf(x, y)) || taken.has(keyOf(x, y)) || !clear(avoid, x, y)) continue
       m.fx = m.tx
       m.fy = m.ty
@@ -193,6 +204,8 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
     lastNow = now
     let changed = false
     const hero = avoid[0]
+    // Only the hero's own zone notices it (the others never join its packs).
+    const heroZone = hero ? zoneAt(world, Math.round(hero.x), Math.round(hero.y))?.id : null
     for (const m of list) {
       const v = m.view
       if (m.nextAt === null) m.nextAt = now + wait()
@@ -207,8 +220,9 @@ export function createAmbient({ world, zones, seed, reducedMotion = false }) {
         if (hero && hero.x !== m.tx) v.facing = hero.x > m.tx ? 1 : -1
         m.nextAt = now + wait()
       } else if (!reducedMotion && m.moveAt < 0 && now >= m.nextAt) {
-        if (wander(m, avoid)) m.moveAt = now
-        m.nextAt = now + wait()
+        const drawn = heroZone === m.area.zone.id && Math.max(Math.abs(hero.x - m.tx), Math.abs(hero.y - m.ty)) <= NOTICE
+        if (wander(m, avoid, hero, drawn)) m.moveAt = now
+        m.nextAt = now + (drawn ? DRIFT_WAIT_MS : wait())
       }
       if (m.moveAt >= 0) {
         const q = Math.min(1, (now - m.moveAt) / STEP_MS)
