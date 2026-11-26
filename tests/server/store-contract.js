@@ -9,6 +9,7 @@ import { messagesStoreContract } from './store-contract-messages.js'
 import { noteFoldersStoreContract } from './store-contract-note-folders.js'
 import { studyStoreContract } from './store-contract-study.js'
 import { variantsStoreContract } from './store-contract-variants.js'
+import { gameStoreContract } from './store-contract-game.js'
 import { worldStoreContract } from './store-contract-world.js'
 
 // Every store (local file, Supabase) must pass these. Not a test file itself: suites import it.
@@ -818,6 +819,9 @@ export function storeContract(label, makeStore, ids = { alice: 'alice', bob: 'bo
     examsStoreContract(() => store, ids)
     // Glitch World positions: see store-contract-world.js.
     worldStoreContract(() => store, ids)
+
+    // Glitch World v2 heroes: see store-contract-game.js.
+    gameStoreContract(() => store, ids)
   })
 }
 

@@ -939,3 +939,14 @@ create table if not exists public.world_positions (
   updated_at timestamptz not null default now()
 );
 alter table public.world_positions enable row level security;
+
+-- Glitch World v2: one row per hero. The whole hero (currencies, talents, skills, bag, hunt, boss
+-- progress, look, study rewards claimed) is one jsonb document, written under a version check so two
+-- tabs can never pay the same reward twice.
+create table if not exists public.game_heroes (
+  user_id uuid primary key references public.users (id) on delete cascade,
+  version int not null,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.game_heroes enable row level security;

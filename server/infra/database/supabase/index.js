@@ -4,6 +4,7 @@ import { createSupabaseCommunity } from './community.js'
 import { createSupabaseDuels } from './duel.js'
 import { createSupabaseEvents } from './events.js'
 import { createSupabaseExams } from './exams.js'
+import { createSupabaseGame } from './game.js'
 import { createSupabaseWorld } from './world.js'
 import { createSupabaseHunt } from './hunt.js'
 import { createSupabaseReview } from './review.js'
@@ -502,5 +503,6 @@ export function createSupabaseStore({ url, serviceKey }) {
     ...createSupabasePuzzleVariants(db, { toChallenge }),
     ...createSupabaseExams(db),
     ...createSupabaseWorld(db),
+    ...createSupabaseGame(db),
   }
 }

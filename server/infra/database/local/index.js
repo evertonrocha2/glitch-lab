@@ -6,6 +6,7 @@ import { createLocalCommunity } from './community.js'
 import { createLocalDuels } from './duel.js'
 import { createLocalEvents } from './events.js'
 import { createLocalExams } from './exams.js'
+import { createLocalGame } from './game.js'
 import { createLocalWorld } from './world.js'
 import { createLocalHunt } from './hunt.js'
 import { createLocalReview } from './review.js'
@@ -443,5 +444,6 @@ export function createLocalStore({ file }) {
     ...createLocalPuzzleVariants({ load, save }),
     ...createLocalExams({ load, save }),
     ...createLocalWorld({ load, save }),
+    ...createLocalGame({ load, save }),
   }
 }
