@@ -1,8 +1,11 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
 import { unlocks } from '../../../../shared/world/unlocks.js'
+import { worldById } from '../../../../shared/world/worlds.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
+import { cameraOn, cropFor } from '../hub-scene/hub-view.js'
 import WorldGame, { SAVE_DELAY_MS, STEP_MS } from './world-game.jsx'
 
 const signalsOf = ({ codeSolved = 0, ...areas } = {}) => ({
@@ -26,7 +29,7 @@ function play(position, signals, { extra = null, locale = 'pt-BR' } = {}) {
     <I18nProvider locale={locale}>
       <MemoryRouter initialEntries={['/mundo']}>
         <Routes>
-          <Route path="*" element={<WorldGame state={stateAt(position, signals)} heroColor="cobalt" onSave={onSave} onWorldChange={onWorldChange} />} />
+          <Route path="*" element={<WorldGame state={stateAt(position, signals)} look={DEFAULT_LOOK} gear={{}} onSave={onSave} onWorldChange={onWorldChange} />} />
         </Routes>
         <Location />
         {extra}
@@ -43,16 +46,33 @@ const tap = (key) => {
   fireEvent.keyUp(map(), { key })
 }
 const wait = (ms) => act(() => vi.advanceTimersByTime(ms))
-const tile = (container, x, y) => container.querySelector(`[data-x="${x}"][data-y="${y}"]`)
+// The map is a canvas: a tile is clicked at its middle, through the camera on the hero (far zoom on
+// a wide stage, as a test has no matchMedia and no saved zoom). The picture is 10px a tile here.
+const TILE = 10
+const clickTile = (x, y) => {
+  const [id, hx, hy] = place().split(' ')
+  const world = worldById(id)
+  const crop = cropFor(world, 'far', true)
+  const camera = cameraOn(world, { x: Number(hx), y: Number(hy) }, crop)
+  fireEvent.click(document.querySelector('canvas'), { clientX: (x + 0.5 - camera.x) * TILE, clientY: (y + 0.5 - camera.y) * TILE })
+}
 const location = () => screen.getByTestId('location').textContent
 
 beforeEach(() => {
   vi.useFakeTimers()
+  // jsdom has no canvas: the scene draws nothing, the game around it plays as usual.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    const width = (Number(this.getAttribute('width')) / 16) * TILE
+    const height = (Number(this.getAttribute('height')) / 16) * TILE
+    return { left: 0, top: 0, width, height, right: width, bottom: height, x: 0, y: 0 }
+  })
   onSave = vi.fn().mockResolvedValue(undefined)
   onWorldChange = vi.fn()
 })
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 it('walks one tile per arrow press and stops at walls', () => {
@@ -122,19 +142,19 @@ it('travels through a portal and saves right away', () => {
 })
 
 it('walks to a clicked tile and ignores a tile it cannot reach', () => {
-  const { container } = play({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 })
-  fireEvent.click(tile(container, 5, 9))
+  play({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 })
+  clickTile(5, 9)
   wait(STEP_MS * 4)
   expect(place()).toBe('caverna-sql 5 9')
-  fireEvent.click(tile(container, 13, 9)) // inside the locked zone 2
+  clickTile(13, 9) // inside the locked zone 2
   wait(STEP_MS * 10)
   expect(place()).toBe('caverna-sql 5 9')
 })
 
 it('walks next to a terminal when the terminal is clicked', () => {
-  const { container } = play({ world: 'floresta-js', x: 3, y: 9 })
+  play({ world: 'floresta-js', x: 3, y: 9 })
   expect(screen.queryByRole('button', { name: /glitchdle|daily|diários/i })).toBeNull()
-  fireEvent.click(tile(container, 4, 6)) // the Glitchdle terminal; (3,8) is a tree, so the way is round it
+  clickTile(4, 6) // the Glitchdle terminal; (3,8) is a tree, so the way is round it
   wait(STEP_MS * 4)
   expect(place()).toBe('floresta-js 4 7')
   expect(screen.getByRole('button', { name: /abrir/i })).toBeVisible()
@@ -234,7 +254,7 @@ it('stays where the player went when they leave before the save ends', async () 
     <I18nProvider locale="pt-BR">
       <MemoryRouter initialEntries={['/mundo']}>
         <Routes>
-          <Route path="/mundo" element={<WorldGame state={stateAt({ world: 'torre-matematica', x: 2, y: 5 }, { matematica: 5 })} heroColor="cobalt" onSave={onSave} onWorldChange={onWorldChange} />} />
+          <Route path="/mundo" element={<WorldGame state={stateAt({ world: 'torre-matematica', x: 2, y: 5 }, { matematica: 5 })} look={DEFAULT_LOOK} gear={{}} onSave={onSave} onWorldChange={onWorldChange} />} />
           <Route path="*" element={null} />
         </Routes>
         <Location />
@@ -250,30 +270,30 @@ it('stays where the player went when they leave before the save ends', async () 
 })
 
 it('walks past a portal on a click path instead of going through it', () => {
-  const { container } = play({ world: 'laboratorio', x: 5, y: 1 }, { codeSolved: 3 })
-  fireEvent.click(tile(container, 9, 1))
+  play({ world: 'laboratorio', x: 5, y: 1 }, { codeSolved: 3 })
+  clickTile(9, 1)
   wait(STEP_MS * 10)
   expect(place()).toBe('laboratorio 9 1')
   expect(onWorldChange).not.toHaveBeenCalled()
 })
 
 it('offers the terminal that was clicked, not its neighbor', () => {
-  const { container } = play({ world: 'torre-matematica', x: 4, y: 7 }, { matematica: 5 })
-  fireEvent.click(tile(container, 6, 6))
+  play({ world: 'torre-matematica', x: 4, y: 7 }, { matematica: 5 })
+  clickTile(6, 6)
   wait(STEP_MS * 6)
   expect(screen.getByRole('button', { name: /Grandezas, medidas e escalas/ })).toBeVisible()
 })
 
 it('says what a locked door asks for when it is tapped, every time', () => {
-  const { container } = play({ world: 'caverna-sql', x: 5, y: 10 }, { codeSolved: 3 })
-  fireEvent.click(tile(container, 11, 10))
+  play({ world: 'caverna-sql', x: 5, y: 10 }, { codeSolved: 3 })
+  clickTile(11, 10)
   wait(STEP_MS * 8)
   expect(place()).toBe('caverna-sql 10 10')
   expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
   tap('ArrowLeft')
   expect(screen.getByRole('status')).not.toHaveTextContent(/desafios/)
   tap('ArrowRight')
-  fireEvent.click(tile(container, 11, 10))
+  clickTile(11, 10)
   expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
 })
 
@@ -304,14 +324,16 @@ it('sends saves one after another, so an older one never lands last', async () =
 // ENEM only shows in the pt-BR UI: in English the hub draws the ENEM portals as floor.
 it('hides the ENEM portals in English and shows them in Portuguese', () => {
   const allOpen = { linguagens: 99, humanas: 99, natureza: 99, matematica: 99, codeSolved: 99 }
-  // From (10,6) the view holds the bottom portals to jardim-natureza (7,8) and torre-matematica (12,8).
+  // The canvas lists where the portals it draws lead: the bottom ones go to jardim-natureza (7,8) and torre-matematica (12,8).
+  const portals = (view) => view.container.querySelector('canvas').dataset.portals.split(' ')
   const english = play({ world: 'laboratorio', x: 10, y: 6 }, allOpen, { locale: 'en' })
-  expect(english.container.querySelector('[data-portal="torre-matematica"]')).toBeNull()
-  expect(english.container.querySelector('[data-portal="jardim-natureza"]')).toBeNull()
+  expect(portals(english)).not.toContain('torre-matematica')
+  expect(portals(english)).not.toContain('jardim-natureza')
+  expect(portals(english)).toContain('caverna-sql')
   english.unmount()
   const portuguese = play({ world: 'laboratorio', x: 10, y: 6 }, allOpen)
-  expect(portuguese.container.querySelector('[data-portal="torre-matematica"]')).not.toBeNull()
-  expect(portuguese.container.querySelector('[data-portal="jardim-natureza"]')).not.toBeNull()
+  expect(portals(portuguese)).toContain('torre-matematica')
+  expect(portals(portuguese)).toContain('jardim-natureza')
 })
 
 it('walks over a hidden ENEM portal in English without going anywhere', () => {
@@ -321,4 +343,32 @@ it('walks over a hidden ENEM portal in English without going anywhere', () => {
   expect(place()).toBe('laboratorio 12 8')
   expect(onWorldChange).not.toHaveBeenCalled()
   expect(screen.getByRole('status')).toHaveTextContent('')
+})
+
+it('zooms the camera with - and + and its buttons, remembered with the hunt\'s key', () => {
+  play({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 })
+  const canvas = () => document.querySelector('canvas')
+  expect(canvas()).toHaveAttribute('width', String(24 * 16))
+  press('+')
+  expect(canvas()).toHaveAttribute('width', String(19 * 16))
+  expect(localStorage.getItem('gd:game-zoom')).toBe('mid')
+  fireEvent.click(screen.getByRole('button', { name: /Aproximar/ }))
+  expect(canvas()).toHaveAttribute('width', String(15 * 16))
+  expect(screen.getByRole('button', { name: /Aproximar/ })).toHaveAttribute('aria-disabled', 'true')
+  press('-')
+  fireEvent.click(screen.getByRole('button', { name: /Afastar/ }))
+  expect(canvas()).toHaveAttribute('width', String(24 * 16))
+  expect(localStorage.getItem('gd:game-zoom')).toBe('far')
+  expect(place()).toBe('caverna-sql 3 10')
+})
+
+it('starts at the zoom the hunt left, and a click still lands on the tile under it', () => {
+  localStorage.setItem('gd:game-zoom', 'near')
+  play({ world: 'caverna-sql', x: 3, y: 10 }, { codeSolved: 3 })
+  const canvas = document.querySelector('canvas')
+  expect(canvas).toHaveAttribute('width', String(15 * 16))
+  // 15x9 tiles with the camera at 0, 6: (5,9) is the 6th column, 4th row.
+  fireEvent.click(canvas, { clientX: 5.5 * TILE, clientY: 3.5 * TILE })
+  wait(STEP_MS * 4)
+  expect(place()).toBe('caverna-sql 5 9')
 })

@@ -6,21 +6,24 @@ import { isSolid } from '../../../../shared/world/tiles.js'
 import { openZones } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
-import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
-import { viewportFor } from '../camera.js'
+import { ActionButton } from '../../game/panel/panel-ui.jsx'
+import Frame, { Chip } from '../../game/ui/frame.jsx'
 import DPad from '../d-pad/d-pad.jsx'
 import { visibleWorld } from '../enem-worlds.js'
+import HubScene from '../hub-scene/hub-scene.jsx'
+import { useHubZoom, useMediaQuery, useStageBox } from '../hub-scene/hub-hooks.js'
+import { cropFor, fitCrop, lockedPortals, lockedRects, STEP_MS } from '../hub-scene/hub-view.js'
 import { progressText, studyHref } from '../requirement-text.js'
-import TileMap from '../tile-map/tile-map.jsx'
 
-// About 8 steps a second while a key, a pad button or a click path keeps the hero walking.
-export const STEP_MS = 125
+export { STEP_MS }
 // A walk is saved at most this often; changing worlds and opening a terminal save right away.
 export const SAVE_DELAY_MS = 5000
 
 const DIRECTIONS = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }
 const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' }
 const directionOf = (key) => KEYS[key] ?? KEYS[key.toLowerCase()] ?? null
+// The stage is desktop-sized from lg up, as the hunt's.
+const WIDE = '(min-width: 1024px)'
 const directionBetween = (from, to) => Object.keys(DIRECTIONS).find((dir) => from.x + DIRECTIONS[dir].x === to.x && from.y + DIRECTIONS[dir].y === to.y) ?? null
 
 // Where a terminal takes the student.
@@ -28,20 +31,23 @@ const PAGES = { daily: '/daily', glitchdle: '/glitchdle', hunt: '/hunt' }
 const terminalHref = (terminal) => (terminal.kind === 'topic' ? `/exams/enem/${terminal.topicId}` : PAGES[terminal.kind])
 const PAGE_NAMES = { daily: 'app.nav.daily', glitchdle: 'app.nav.glitchdle', hunt: 'hunt.title' }
 
-// The hero walking a Glitch World map. state is GET /api/world ({ worlds, zones, position }): what's open
-// comes from the server, the walking happens here. onSave(position, { keepalive }) keeps the place to
-// come back to (its failures are ignored: the game goes on); onWorldChange(worldId) follows portals.
-export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
+// The hero walking a Glitch World map, drawn like the hunt (hub-scene.jsx). state is GET /api/world
+// ({ worlds, zones, position }): what's open comes from the server, the walking happens here.
+// look, gear: the hero's look and gearOf(items), from the game View. onSave(position, { keepalive })
+// keeps the place to come back to (its failures are ignored: the game goes on); onWorldChange(worldId)
+// follows portals.
+export default function WorldGame({ state, look, gear, onSave, onWorldChange }) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
   const helpId = useId()
-  // frameRef measures the room the map has; mapRef is the focusable map itself, as wide as its tiles.
-  const frameRef = useRef(null)
   const mapRef = useRef(null)
+  const stageRef = useRef(null)
   const [hero, setHero] = useState(() => ({ ...state.position, facing: 'down', frame: 0 }))
   // What the hero just ran into: { kind: 'locked', lock } or { kind: 'travel', world }.
   const [notice, setNotice] = useState(null)
-  const [viewport, setViewport] = useState(() => viewportFor(720))
+  const [zoom, changeZoom] = useHubZoom()
+  const wide = useMediaQuery(WIDE)
+  const box = useStageBox(stageRef)
 
   // The walking runs on timers, so it reads the latest values through refs.
   const heroRef = useRef(hero)
@@ -235,18 +241,6 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
     }
   }, [persist])
 
-  // As many tiles as fit the map's frame.
-  useEffect(() => {
-    const frame = frameRef.current
-    if (!frame || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(([entry]) => {
-      const next = viewportFor(entry.contentRect.width)
-      setViewport((current) => (current.cols === next.cols && current.rows === next.rows ? current : next))
-    })
-    observer.observe(frame)
-    return () => observer.disconnect()
-  }, [])
-
   function onKeyDown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return
     if (event.key === 'Enter') {
@@ -254,6 +248,12 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
         event.preventDefault()
         openTerminal()
       }
+      return
+    }
+    // - and + (or =) move the camera, as in the hunt.
+    if (event.key === '-' || event.key === '+' || event.key === '=') {
+      event.preventDefault()
+      if (!event.repeat) changeZoom(event.key === '-' ? -1 : 1)
       return
     }
     const dir = directionOf(event.key)
@@ -269,7 +269,10 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
 
   const world = visibleWorld(worldById(hero.world), locale)
   const worldName = t(`world.name.${hero.world}`)
-  const lockedZones = new Set(world.zones.map((zone) => zone.id).filter((id) => !openZones(state, hero.world).has(id)))
+  const open = openZones(state, hero.world)
+  // The zoom's crop, widened to fill the stage at the tile size its height allows.
+  const fit = fitCrop(world, zoom, cropFor(world, zoom, wide), box)
+  const crop = { w: fit.w, h: fit.h }
   const terminalLabel =
     terminal &&
     (terminal.kind === 'topic'
@@ -277,58 +280,98 @@ export default function WorldGame({ state, heroColor, onSave, onWorldChange }) {
       : t('world.terminal.page', { name: t(PAGE_NAMES[terminal.kind]) }))
 
   return (
-    <div className="flex flex-col gap-4">
-      <div ref={frameRef} className="w-full">
-        <div
-          ref={mapRef}
-          role="application"
-          tabIndex={0}
-          aria-label={t('world.map.label', { world: worldName })}
-          aria-describedby={helpId}
-          data-place={`${hero.world} ${hero.x} ${hero.y}`}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          onBlur={() => release()}
-          className="w-fit max-w-full overflow-hidden border-2 border-ink shadow-pixel"
-        >
-          <TileMap
-            world={world}
-            hero={hero}
-            heroColor={heroColor}
-            lockedZones={lockedZones}
-            viewport={viewport}
-            onTileClick={(x, y) => {
-              mapRef.current?.focus({ preventScroll: true })
-              walkTo(x, y)
-            }}
-          />
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="relative flex flex-col gap-2">
+        {/* The dark stage the hunt draws in. */}
+        <div ref={stageRef} className="relative flex items-center justify-center border-2 border-[#120c22] bg-[#05040c] shadow-[-2px_-2px_0_#0a0818,2px_2px_0_#3e3170]">
+          <div
+            ref={mapRef}
+            role="application"
+            tabIndex={0}
+            aria-label={t('world.map.label', { world: worldName })}
+            aria-describedby={helpId}
+            data-place={`${hero.world} ${hero.x} ${hero.y}`}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            onBlur={() => release()}
+            className="w-full outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#f2c14e]"
+            style={{ maxWidth: fit.tile ? `${Math.floor(fit.tile * fit.w)}px` : `${crop.w * 48}px` }}
+          >
+            <HubScene
+              world={world}
+              hero={hero}
+              look={look}
+              gear={gear}
+              crop={crop}
+              lockedRects={lockedRects(world, open)}
+              lockedPortals={lockedPortals(world, state)}
+              onTileClick={(x, y) => {
+                mapRef.current?.focus({ preventScroll: true })
+                walkTo(x, y)
+              }}
+            />
+          </div>
+        </div>
+        {/* On phones the pad and the zoom sit right under the map (above the study timer at the bottom of
+            the screen), so nothing covers the map; from sm up the zoom floats in the stage's corner. */}
+        <div className="flex items-center justify-center gap-6 sm:contents">
+          <DPad className="sm:hidden" onPress={press} onRelease={() => release()} onStep={step} />
+          <div className="flex flex-col gap-1 sm:absolute sm:bottom-2 sm:right-2">
+            <ZoomButton label={t('game.hud.zoomIn')} disabled={zoom === 'near'} onClick={() => changeZoom(1)}>
+              +
+            </ZoomButton>
+            <ZoomButton label={t('game.hud.zoomOut')} disabled={zoom === 'far'} onClick={() => changeZoom(-1)}>
+              -
+            </ZoomButton>
+          </div>
         </div>
       </div>
-      {/* Right under the map on phones, above the study timer that sits at the bottom of the screen. */}
-      <DPad className="mx-auto sm:hidden" onPress={press} onRelease={() => release()} onStep={step} />
-      <p id={helpId} className="text-sm text-muted">
-        {t('world.map.help')}
-      </p>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        {/* Always there, so screen readers hear what changes in it. Its height is kept so nothing jumps. */}
-        <div role="status" className="min-h-10 min-w-0 flex-1">
-          {notice?.kind === 'locked' && notice.lock && (
-            <p>
-              {t('world.locked', { progress: progressText(t, notice.lock) })}{' '}
-              <Link to={studyHref(notice.lock.requirement)} className="font-label text-secondary underline underline-offset-4">
-                {t('world.locked.study')}
-              </Link>
-            </p>
-          )}
-          {notice?.kind === 'travel' && <p>{t('world.announce.travel', { world: t(`world.name.${notice.world}`) })}</p>}
+      <Frame tone="inset" className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 font-mono text-xs text-[#e9e4ff]">
+        <div className="min-w-0 flex-1 leading-relaxed">
+          {/* Always there, so screen readers hear what changes in it. */}
+          <div role="status">
+            {notice?.kind === 'locked' && notice.lock && (
+              <p className="m-0">
+                {t('world.locked', { progress: progressText(t, notice.lock) })}{' '}
+                <Link to={studyHref(notice.lock.requirement)} className="font-pixel text-[11px] text-[#f2c14e] underline underline-offset-4 hover:text-[#ffd76a]">
+                  {t('world.locked.study')}
+                </Link>
+              </p>
+            )}
+            {notice?.kind === 'travel' && <p className="m-0 font-pixel text-[12px] text-white">{t('world.announce.travel', { world: t(`world.name.${notice.world}`) })}</p>}
+          </div>
+          {/* How to play: in the status line while nothing happens, always the map's description. */}
+          <p id={helpId} className={notice ? 'sr-only' : 'm-0 text-[#a89fd0]'}>
+            {t('world.map.help')}
+          </p>
         </div>
         {terminal && (
-          <PixelButton variant="secondary" onClick={openTerminal}>
-            {terminalLabel}
-            <kbd className="border border-white/60 px-1 font-mono text-[10px]">Enter</kbd>
-          </PixelButton>
+          <ActionButton tone="gold" onClick={openTerminal}>
+            <span className="inline-flex items-center gap-2">
+              {terminalLabel}
+              <Chip tone="ink">Enter</Chip>
+            </span>
+          </ActionButton>
         )}
-      </div>
+      </Frame>
     </div>
+  )
+}
+
+// One camera zoom step, as the hunt's HUD draws it: a raised pixel button with a big - or +.
+function ZoomButton({ label, disabled, onClick, children }) {
+  return (
+    <Frame
+      as="button"
+      tone="raised"
+      type="button"
+      // aria-disabled, not disabled: the button keeps keyboard focus when it reaches the limit.
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled}
+      aria-label={label}
+      className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center font-pixel text-base text-[#e9e4ff] aria-disabled:cursor-default aria-disabled:opacity-40"
+    >
+      <span aria-hidden="true">{children}</span>
+    </Frame>
   )
 }

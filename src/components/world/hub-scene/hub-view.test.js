@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { unlocks } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
-import { approach, cameraOn, cropFor, heroPose, lockedPortals, lockedRects, sideOf, tileAtPoint } from './hub-view.js'
+import { approach, cameraOn, cropFor, fitCrop, heroPose, lockedPortals, lockedRects, sideOf, tileAtPoint } from './hub-view.js'
 
 const lab = worldById('laboratorio') // 15x10
 const cave = worldById('caverna-sql') // 32x20
@@ -119,4 +119,26 @@ it('finds the portals that lead to a world still locked', () => {
   ])
   expect(lockedPortals(lab, stateWith({ codeSolved: 3 }))).not.toContainEqual({ x: 7, y: 1 })
   expect(lockedPortals(cave, stateWith({ codeSolved: 3 }))).toEqual([])
+})
+
+describe('fitCrop', () => {
+  it('fills a wide stage with more columns of the map at the tile size its height allows', () => {
+    // 1000x516: the 15 rows are 34.4px each, so 29 columns fill the width.
+    expect(fitCrop(cave, 'far', { w: 24, h: 15 }, { width: 1000, height: 516 })).toEqual({ w: 29, h: 15, tile: 516 / 15 })
+  })
+
+  it('never shows more columns than the map has, nor fewer than the zoom asks', () => {
+    expect(fitCrop(cave, 'far', { w: 24, h: 15 }, { width: 1470, height: 568 }).w).toBe(32)
+    expect(fitCrop(cave, 'far', { w: 12, h: 15 }, { width: 335, height: 460 })).toEqual({ w: 12, h: 15, tile: 335 / 12 })
+  })
+
+  it('caps the tile at 3x its art far out and lets it grow with the zoom', () => {
+    expect(fitCrop(lab, 'far', { w: 15, h: 10 }, { width: 1470, height: 568 })).toEqual({ w: 15, h: 10, tile: 48 })
+    expect(fitCrop(cave, 'mid', { w: 19, h: 12 }, { width: 1470, height: 568 }).tile).toBeCloseTo(568 / 12)
+    expect(fitCrop(cave, 'near', { w: 15, h: 9 }, { width: 1470, height: 568 }).tile).toBeCloseTo(568 / 9)
+  })
+
+  it('keeps the crop when the stage has not been measured', () => {
+    expect(fitCrop(cave, 'far', { w: 24, h: 15 }, null)).toEqual({ w: 24, h: 15, tile: null })
+  })
 })

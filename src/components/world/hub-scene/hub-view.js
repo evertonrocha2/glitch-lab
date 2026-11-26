@@ -3,6 +3,10 @@ import { heroFrame } from '../../game/scene/game-scene.jsx'
 // What part of a Glitch World map the hub shows and how the hero stands in it. Pure helpers, so the
 // canvas (hub-scene.jsx) and the game around it (world-game.jsx) agree on the same numbers.
 
+// About 8 steps a second while a key, a pad button or a click path keeps the hero walking; the hero
+// also takes this long to slide from one tile to the next on screen.
+export const STEP_MS = 125
+
 // The zoom levels, remembered with the hunt's own key: one setting for the whole game.
 export const ZOOMS = ['far', 'mid', 'near']
 export const ZOOM_KEY = 'gd:game-zoom'
@@ -74,4 +78,18 @@ export const lockedRects = (world, open) => world.zones.filter((zone) => !open.h
 export function lockedPortals(world, state) {
   const shut = new Set(state.worlds.filter((item) => !item.unlocked).map((item) => item.id))
   return world.portals.filter((portal) => shut.has(portal.to)).map(({ x, y }) => ({ x, y }))
+}
+
+// A tile is drawn at most 3x its 16 art pixels far out (about the hunt's size on a wide screen), a bit
+// more at each zoom step, so a small map (the Lab) sits in the dark stage instead of blowing up.
+const TILE_MAX_PX = 48
+
+// The crop fitted to the stage box ({ width, height } in CSS pixels, height being what the screen
+// leaves): tiles as big as the box allows, then as many more columns of the map as fill its width.
+// Returns { w, h, tile } with tile in CSS pixels, or the crop with tile null before it is measured.
+export function fitCrop(world, zoom, crop, box) {
+  if (!(box?.width > 0) || !(box?.height > 0)) return { ...crop, tile: null }
+  const { cols } = sizeOf(world)
+  const tile = Math.min(TILE_MAX_PX / (SCALE[zoom] ?? 1), box.width / crop.w, box.height / crop.h)
+  return { w: clamp(Math.floor(box.width / tile + 1e-9), crop.w, Math.max(crop.w, cols)), h: crop.h, tile }
 }
