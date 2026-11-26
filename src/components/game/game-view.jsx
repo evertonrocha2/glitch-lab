@@ -6,19 +6,20 @@ import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
-import GamePanel, { TABS } from './panel/game-panel.jsx'
+import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
 import TreeTab from './panel/tree-tab.jsx'
 import WorldTab from './panel/world-tab.jsx'
 import { replayAt } from './replay.js'
 import GameScene, { fightSpot } from './scene/game-scene.jsx'
 import { duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
+import Frame from './ui/frame.jsx'
 import { useFullscreen } from './use-fullscreen.js'
 
 export const SYNC_MS = 60_000
 const TICK_MS = 200
-// The closed drawer's height when it can't be measured (handle 44 + tab row 44 + padding and border).
-const DOCK_PX = 100
+// The closed drawer's height when it can't be measured (handle 44 + tab row 52 + padding and frame).
+const DOCK_PX = 102
 const WIDE = '(min-width: 1024px)'
 // The part of the map the scene shows, in tiles: actors and numbers stay readable at panel width.
 const CROP = { wide: { w: 16, h: 10 }, narrow: { w: 10, h: 12 } }
@@ -309,114 +310,125 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
       studyHref={studyHref}
       treeTab={(shared) => <TreeTab {...shared} />}
       worldTab={(shared) => <WorldTab {...shared} replaying={Boolean(replay && !replay.done)} onLeave={onLeave} />}
+      fill={wide}
     />
   )
 
-  return (
-    <div className="mt-6 grid items-start gap-4 pb-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:pb-0">
-      <div className="flex min-w-0 flex-col gap-2">
-        {conflict && <Conflict t={t} />}
-        <StageFrame>
-          {(fullscreen) => (
-            <section
-              aria-label={t('game.view.label')}
-              className="relative w-full overflow-hidden"
+  const stage = (
+    <div className="flex min-w-0 flex-col gap-2">
+      {conflict && <Conflict t={t} />}
+      <StageFrame>
+        {(fullscreen) => (
+          <section
+            aria-label={t('game.view.label')}
+            className="relative w-full overflow-hidden"
+            style={{
+              aspectRatio: `${crop.w} / ${crop.h}`,
+              maxWidth: fullscreen.active ? `calc(100vh * ${crop.w / crop.h})` : undefined,
+            }}
+          >
+            <div
+              className="absolute"
               style={{
-                aspectRatio: `${crop.w} / ${crop.h}`,
-                maxWidth: fullscreen.active ? `calc(100vh * ${crop.w / crop.h})` : undefined,
+                width: `${(crop.cols / crop.w) * 100}%`,
+                left: `${(-crop.x / crop.w) * 100}%`,
+                top: `${(-crop.y / crop.h) * 100}%`,
               }}
             >
-              <div
-                className="absolute"
-                style={{
-                  width: `${(crop.cols / crop.w) * 100}%`,
-                  left: `${(-crop.x / crop.w) * 100}%`,
-                  top: `${(-crop.y / crop.h) * 100}%`,
-                }}
-              >
-                <GameScene
-                  world={world}
-                  zoneRect={zoneRect}
-                  lockedRects={locked}
-                  look={view.hero.look}
-                  gear={gear}
-                  playback={playback}
-                  zoneName={`${t(`world.name.${worldId}`)}, ${zoneLabel}`}
-                />
-              </div>
-              <StageHud
-                view={view}
-                replay={replay && !replay.done ? replay : null}
-                samples={playback?.loop ? samples : null}
-                bossName={bossName}
-                onReplayEnd={finish}
-                onKey={openTab}
-                onFullscreen={fullscreen.toggle}
-                fullscreenSupported={fullscreen.supported}
-                fullscreenActive={fullscreen.active}
+              <GameScene
+                world={world}
+                zoneRect={zoneRect}
+                lockedRects={locked}
+                look={view.hero.look}
+                gear={gear}
+                playback={playback}
+                zoneName={`${t(`world.name.${worldId}`)}, ${zoneLabel}`}
               />
-              {lockedAhead && (
-                <p className="pointer-events-none absolute right-2 top-[126px] m-0 flex items-center sm:top-[100px] gap-1 border-2 border-[#0a0818] bg-[rgba(16,12,36,0.82)] px-1.5 py-1 font-pixel text-[10px] text-[#c3b2ff]">
-                  <GameIcon name="key" size={1} />
-                  <span className="sr-only sm:not-sr-only">{t('game.view.lockedAhead')}</span>
-                </p>
-              )}
-              {replay?.done && <ResultBanner replay={replay} t={t} counts={counts} onClose={() => setReplay(null)} />}
-            </section>
-          )}
-        </StageFrame>
-        <StatusLine
-          t={t}
-          counts={counts}
-          view={view}
-          replay={replay}
-          bossName={bossName}
-          zoneLabel={zoneLabel}
-          difficulty={difficulty}
-          onSkip={finish}
-          error={error}
-        />
-      </div>
-
-      {wide ? (
-        panel
-      ) : (
-        // biome-ignore lint/a11y/noStaticElementInteractions: Escape anywhere in the drawer closes it.
-        <div
-          ref={dock}
-          onKeyDown={onDockKey}
-          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col border-t-[3px] border-[#0a0818] bg-[#120e26] shadow-[0_-4px_0_rgba(0,0,0,.35)]"
-        >
-          <button
-            ref={handle}
-            type="button"
-            aria-expanded={drawer}
-            aria-label={drawer ? t('game.view.closePanel') : t('game.view.openPanel')}
-            onClick={() => setDrawer((open) => !open)}
-            className="flex min-h-11 cursor-pointer flex-col items-center justify-center gap-1 bg-[#1a1433] font-pixel text-[11px] text-[#c3b2ff]"
-          >
-            <i aria-hidden="true" className="block h-1 w-10 bg-[#4a4266]" />
-            {t('game.view.panel')}
-          </button>
-          {drawer ? (
-            <div className="min-h-0 overflow-y-auto">{panel}</div>
-          ) : (
-            // Closed, the drawer still offers the tabs: one tap opens it on that tab.
-            <div className="grid grid-cols-5 gap-1 px-1.5 pb-2 font-mono">
-              {TABS.map(({ id, icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => openTab(id)}
-                  className="flex min-h-11 cursor-pointer flex-col items-center justify-center border-2 border-[#2e2650] bg-[#1e1838] text-[10px] text-[#b9b0de]"
-                >
-                  <GameIcon name={icon} size={1} />
-                  {t(`game.tab.${id}`)}
-                </button>
-              ))}
             </div>
-          )}
-        </div>
+            <StageHud
+              view={view}
+              replay={replay && !replay.done ? replay : null}
+              samples={playback?.loop ? samples : null}
+              bossName={bossName}
+              onReplayEnd={finish}
+              onKey={openTab}
+              onFullscreen={fullscreen.toggle}
+              fullscreenSupported={fullscreen.supported}
+              fullscreenActive={fullscreen.active}
+            />
+            {lockedAhead && (
+              <p className="pointer-events-none absolute right-2 top-[126px] m-0 flex items-center sm:top-[100px] gap-1 border-2 border-[#0a0818] bg-[rgba(16,12,36,0.82)] px-1.5 py-1 font-pixel text-[10px] text-[#c3b2ff]">
+                <GameIcon name="key" size={1} />
+                <span className="sr-only sm:not-sr-only">{t('game.view.lockedAhead')}</span>
+              </p>
+            )}
+            {replay?.done && <ResultBanner replay={replay} t={t} counts={counts} onClose={() => setReplay(null)} />}
+          </section>
+        )}
+      </StageFrame>
+      <StatusLine
+        t={t}
+        counts={counts}
+        view={view}
+        replay={replay}
+        bossName={bossName}
+        zoneLabel={zoneLabel}
+        difficulty={difficulty}
+        onSkip={finish}
+        error={error}
+      />
+    </div>
+  )
+
+  return (
+    <div className="mt-6 pb-16 lg:pb-0">
+      {wide ? (
+        // The console: scene, status line and panel in one dark frame, so the game reads as one screen.
+        // The scene column sets the height; the panel fills it and scrolls its tab inside.
+        <Frame tone="panel" className="grid grid-cols-[minmax(0,1fr)_400px] gap-2 p-2 shadow-pixel">
+          {stage}
+          <div className="relative min-h-[440px]">
+            <div className="absolute inset-0 flex">{panel}</div>
+          </div>
+        </Frame>
+      ) : (
+        <>
+          <Frame tone="panel" className="p-1.5 shadow-pixel">
+            {stage}
+          </Frame>
+          <Frame
+            tone="panel"
+            ref={dock}
+            onKeyDown={onDockKey}
+            className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col px-1.5 pb-1.5 shadow-[0_-4px_0_rgba(5,4,12,.45)]"
+          >
+            <button
+              ref={handle}
+              type="button"
+              aria-expanded={drawer}
+              aria-label={drawer ? t('game.view.closePanel') : t('game.view.openPanel')}
+              onClick={() => setDrawer((open) => !open)}
+              className="flex min-h-11 cursor-pointer items-center justify-center gap-2.5 font-pixel text-[11px] uppercase tracking-[0.08em] text-[#a89fd0] hover:text-white focus-visible:rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#f2c14e]"
+            >
+              <Chevron up={!drawer} />
+              {t('game.view.panel')}
+              <Chevron up={!drawer} />
+            </button>
+            {drawer ? (
+              <div className="gw-scroll min-h-0 overflow-y-auto pt-1.5">{panel}</div>
+            ) : (
+              // Closed, the drawer still offers the tabs: one tap opens it on that tab.
+              <div className="grid grid-cols-5 gap-1">
+                {TABS.map(({ id, icon }) => (
+                  <Frame as="button" tone="inset" key={id} type="button" onClick={() => openTab(id)} className={`${TAB_LOOK} text-[#a89fd0] hover:text-[#e9e4ff]`}>
+                    <GameIcon name={icon} size={1} />
+                    <span className="max-w-full truncate leading-[1.35]">{t(`game.tab.${id}`)}</span>
+                  </Frame>
+                ))}
+              </div>
+            )}
+          </Frame>
+        </>
       )}
 
       {away && <AwayDialog away={away.away} studyClaimed={away.studyClaimed} onClose={() => setAway(null)} />}
@@ -484,7 +496,7 @@ function StageFrame({ children }) {
   const ref = useRef(null)
   const fullscreen = useFullscreen(ref)
   return (
-    <div ref={ref} className="relative flex items-center justify-center border-2 border-ink bg-[#05040c] shadow-pixel">
+    <div ref={ref} className="relative flex items-center justify-center border-2 border-[#120c22] bg-[#05040c] shadow-[-2px_-2px_0_#0a0818,2px_2px_0_#3e3170]">
       {children(fullscreen)}
     </div>
   )
@@ -518,21 +530,21 @@ function StatusLine({ t, counts, view, replay, bossName, zoneLabel, difficulty, 
       ])
     : ''
   return (
-    <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 font-mono text-xs text-ink">
+    <Frame tone="inset" className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-3 py-1.5 font-mono text-xs text-[#e9e4ff]">
       <p className="m-0">
-        <b>{text}</b>
+        <b className="font-pixel text-[12px] font-normal text-white">{text}</b>
         {!replay && view.hero.hunt && preview && list && (
-          <span className="ml-2 text-muted">
+          <span className="ml-2 text-[#a89fd0]">
             {t('game.view.preview', {
               time: counts.time(preview.elapsedMs),
               list,
             })}
           </span>
         )}
-        {error && <span className="ml-2 text-danger">{error}</span>}
+        {error && <span className="ml-2 text-[#ff9aa6]">{error}</span>}
       </p>
       {replay && !replay.done && <ActionButton onClick={onSkip}>{t('game.view.skip')}</ActionButton>}
-    </div>
+    </Frame>
   )
 }
 
@@ -576,4 +588,17 @@ function ResultBanner({ replay, t, counts, onClose }) {
       </ActionButton>
     </output>
   )
+}
+
+// A pixel chevron for the drawer handle: five 2px squares, pointing up (opens) or down (closes).
+function Chevron({ up }) {
+  const y = up ? -1 : 1
+  const dots = [
+    [2, 2 * y],
+    [4, 4 * y],
+    [6, 2 * y],
+    [8, 0],
+  ]
+  const shadow = dots.map(([x, dy]) => `${x}px ${dy}px 0 currentColor`).join(', ')
+  return <i aria-hidden="true" className={`mr-2 block size-0.5 bg-current ${up ? 'translate-y-0.5' : '-translate-y-0.5'}`} style={{ boxShadow: shadow }} />
 }
