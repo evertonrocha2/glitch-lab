@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
+import { isEmbedded } from '../../../app/embed.js'
 import { useAuth } from '../../../lib/auth/auth-provider.jsx'
 import { useUnreadMessages } from '../../../lib/chat/unread.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
@@ -24,7 +25,16 @@ const COLUMN = 'mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12'
 // The bar and the corner widgets take no props and are memoized: a page re-rendering its own
 // content (opening a drawer, typing) doesn't redraw them.
 // The bar and the page run close to the screen's edges, with a side margin; ultra-wide screens stop at 120rem.
+// Inside the game's study window (embed mode, src/app/embed.js) the page shows alone.
 export default function AppShell({ children }) {
+  const { search } = useLocation()
+  if (isEmbedded(search)) {
+    return (
+      <div className="min-h-screen bg-mist">
+        <main className="px-3 pt-4 pb-10 sm:px-5">{children}</main>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-mist">
       <AppHeader />
