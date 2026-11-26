@@ -9,6 +9,18 @@ export const MESSAGES = {
   conflict: 'Your hero changed in another tab. Reload to continue.',
   zoneLocked: 'This zone is still locked.',
   bossLevel: 'Your hero needs a higher level for this boss.',
+  badItem: "That item can't be used for this.",
+  bagFull: 'Your bag is full.',
+  noGold: 'Not enough gold.',
+  noFragments: 'Not enough knowledge fragments.',
+  noScrap: 'Not enough scrap.',
+  noChest: 'You have no chest to open.',
+  skillLocked: 'Your hero needs a higher level for this skill.',
+  notOwned: "Your hero doesn't have this skill yet.",
+  owned: 'Your hero already has this skill.',
+  badLoadout: 'Pick skills your hero has, each one once.',
+  maxLevel: 'This is already at its max level.',
+  talent: "You can't take that talent.",
 }
 
 // A new player's hero. Only the server writes it: the client sends intents, never results.

@@ -34,7 +34,7 @@ export async function mutate(store, userId, fn) {
   return { hero: withDefaults(saved.data), extra }
 }
 
-const bagFree = (hero) => Math.max(0, BAG_SIZE - hero.items.filter((item) => !item.equipped).length)
+export const bagFree = (hero) => Math.max(0, BAG_SIZE - hero.items.filter((item) => !item.equipped).length)
 
 // Known world, zone and difficulty only: the zone table is looked up with own keys, never the prototype.
 function parseTarget(body) {
@@ -75,7 +75,7 @@ const previewOf = (result) => (result ? { elapsedMs: result.elapsedMs, kills: re
 
 // Pays the running hunt into the hero and answers the AwaySummary when it ran long enough to show.
 // keep: the hunt goes on from now (sync); otherwise it ends (stop, or a new hunt).
-function settle(hero, level, now, { keep }) {
+export function settle(hero, level, now, { keep }) {
   if (!hero.hunt) return undefined
   const result = huntResult(hero, level, now)
   if (!result) {
@@ -132,6 +132,44 @@ const viewOf = (hero, ctx) => toView(hero, { ...ctx, huntPreview: previewOf(hunt
 // Fields left undefined drop out of the JSON.
 const withExtra = (view, extra) => ({ ...view, ...extra })
 
+// Every build and economy action (game.build.js, game.forge.js): in one save, pay the running hunt
+// with the build as it was (whatever its length), let fn change the hero, and keep the hunt going from
+// now with the new build. Actions that leave the build alone (potions, look, chests, salvage) settle
+// too, so the hunt is always paid with the bag and stock it ran with. When fn throws, nothing is saved,
+// not even the settlement. fn gets the hero and { fuel, today, now, level } and answers extra fields.
+export async function act(store, user, today, fn) {
+  const ctx = await context(store, user, today)
+  const level = ctx.fuel.level.level
+  const { hero, extra } = await mutate(store, user.id, (draft) => {
+    const away = settle(draft, level, ctx.now, { keep: true })
+    return { away, ...fn(draft, { ...ctx, level }) }
+  })
+  return withExtra(viewOf(hero, ctx), extra)
+}
+
+// The hero's item with this id (a gem or gear), or a 400.
+export function itemOf(hero, id) {
+  if (!isId(id)) throw badRequest()
+  const item = hero.items.find((each) => each.id === id)
+  if (!item) throw badRequest(MESSAGES.badItem)
+  return item
+}
+
+export function gearOf(hero, id) {
+  const item = itemOf(hero, id)
+  if (item.kind !== 'gear') throw badRequest(MESSAGES.badItem)
+  return item
+}
+
+// Whole numbers from min to max, both included.
+export const isIntIn = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max
+
+// Takes a price in one currency, or a 400 with its message when the hero can't pay.
+export function spend(hero, field, amount, message) {
+  if (hero[field] < amount) throw badRequest(message)
+  hero[field] -= amount
+}
+
 // Read only: a new player sees a new hero, and the running hunt is previewed, not paid.
 export async function getGame(store, user, today) {
   const ctx = await context(store, user, today)
@@ -181,7 +219,7 @@ export async function stopHunt(store, user, today) {
 }
 
 // Puts a drop in the bag, or salvages it to scrap when the bag is full.
-function stash(hero, drop) {
+export function stash(hero, drop) {
   if (bagFree(hero) > 0) {
     hero.items.push(drop)
     return true
