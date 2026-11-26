@@ -4,8 +4,9 @@ import { BAG_SIZE, MAX_POTION_BUY, POTION_PRICE, RARITIES, SLOTS, salvageValue }
 import GameIcon from '../icons/game-icon.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
+import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
 import ItemCell, { EmptyCell } from './item-cell.jsx'
-import { ActionButton, BlockTitle, ConfirmButton } from './panel-ui.jsx'
+import { ActionButton, ConfirmButton } from './panel-ui.jsx'
 
 // Scrap one bag item gives back (gear by rarity and upgrade, a gem a flat amount), as the server pays.
 export const scrapOf = (item) => (item.kind === 'gem' ? GEM_SALVAGE_SCRAP : salvageValue(item).scrap)
@@ -47,13 +48,16 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <BlockTitle id={gridId}>
-          {t('game.bag.title')} <span className="font-normal normal-case text-[#9a93b8]">{t('game.bag.count', { used: items.length, size: BAG_SIZE })}</span>
-        </BlockTitle>
-        <fieldset className="m-0 flex items-center gap-1 border-0 p-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <SectionTitle id={gridId} className="min-w-40 flex-1">
+          {t('game.bag.title')}{' '}
+          <Chip tone="ink" className="ml-1 align-middle normal-case tracking-normal">
+            {t('game.bag.count', { used: items.length, size: BAG_SIZE })}
+          </Chip>
+        </SectionTitle>
+        <fieldset className="m-0 flex items-center gap-1.5 border-0 p-0">
           <legend className="sr-only">{t('game.bag.sort')}</legend>
-          <span aria-hidden="true" className="text-[10px] text-[#9a93b8]">
+          <span aria-hidden="true" className="font-pixel text-[9px] text-[#a89fd0]">
             {t('game.bag.sort')}
           </span>
           {['rarity', 'slot'].map((id) => (
@@ -102,7 +106,7 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
               {t('game.bag.salvageMany', manyVars)}
             </ConfirmButton>
           ) : (
-            <small className="self-center text-[10px] text-[#9a93b8]">{t('game.bag.pickMany')}</small>
+            <small className="self-center text-[10px] text-[#a89fd0]">{t('game.bag.pickMany')}</small>
           ))}
       </div>
 
@@ -154,15 +158,15 @@ function Chests({ view, actions, runner, text, onSelect }) {
       },
     )
   return (
-    <div className="flex items-center gap-2 border-2 border-[#2e2650] bg-[#160f2e] p-1.5">
-      <GameIcon name="chest" size={2} />
-      <b className="text-white">{t('game.bag.chests', { count })}</b>
+    <Frame className="flex items-center gap-2.5 p-2">
+      <GameIcon name="chest" size={2} className="shrink-0" />
+      <b className="font-pixel text-[11px] font-normal text-white">{t('game.bag.chests', { count })}</b>
       <span className="ml-auto">
         <ActionButton tone="gold" busy={runner.busy} why={count === 0 ? t('game.why.noChest') : null} onClick={open}>
           {t('game.bag.open')}
         </ActionButton>
       </span>
-    </div>
+    </Frame>
   )
 }
 
@@ -177,8 +181,8 @@ function PotionShop({ view, actions, runner, text }) {
   const cost = POTION_PRICE * count
   const short = view.hero.gold < cost
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-1.5 border-2 border-[#2e2650] bg-[#160f2e] p-1.5">
-      <BlockTitle id={titleId}>{t('game.shop.title')}</BlockTitle>
+    <Frame as="section" aria-labelledby={titleId} className="flex flex-col gap-2 p-2.5">
+      <SectionTitle id={titleId}>{t('game.shop.title')}</SectionTitle>
       <fieldset className="m-0 flex gap-1.5 border-0 p-0">
         <legend className="sr-only">{t('game.shop.kind')}</legend>
         {['hp', 'mp'].map((id) => (
@@ -191,7 +195,7 @@ function PotionShop({ view, actions, runner, text }) {
         ))}
       </fieldset>
       <div className="flex flex-wrap items-start gap-1.5">
-        <label htmlFor={countId} className="flex min-h-11 items-center gap-1.5">
+        <label htmlFor={countId} className="flex min-h-11 items-center gap-1.5 text-[#a89fd0]">
           {t('game.shop.count')}
           <input
             id={countId}
@@ -201,7 +205,7 @@ function PotionShop({ view, actions, runner, text }) {
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             onBlur={() => setTyped(String(count))}
-            className="h-11 w-16 border-2 border-[#4a4266] bg-[#0d0a1c] px-1.5 text-white"
+            className="h-11 w-16 border-2 border-[#120c22] bg-[#100c20] px-2 font-pixel text-[11px] text-white shadow-[inset_2px_2px_0_#0a0818,inset_-2px_-2px_0_#2a2250] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2c14e]"
           />
         </label>
         <ActionButton
@@ -213,6 +217,6 @@ function PotionShop({ view, actions, runner, text }) {
           {t('game.shop.buy', { gold: text.number(cost) })}
         </ActionButton>
       </div>
-    </section>
+    </Frame>
   )
 }
