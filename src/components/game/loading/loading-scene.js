@@ -327,6 +327,8 @@ export function paintScene(ctx, size, layers, hero, t, { still = false } = {}) {
     }
   }
   strip(ctx, layers.clouds, scroll * SPEED.clouds, w)
+  // The gate stands in front of the mountains, behind the forest.
+  strip(ctx, layers.mountains, scroll * SPEED.mountains, w)
 
   // The rift and its light, with motes drawn into it.
   ctx.globalCompositeOperation = 'lighter'
@@ -354,7 +356,6 @@ export function paintScene(ctx, size, layers, hero, t, { still = false } = {}) {
   }
   ctx.globalAlpha = 1
 
-  strip(ctx, layers.mountains, scroll * SPEED.mountains, w)
   strip(ctx, layers.far, scroll * SPEED.far, w)
   // The rift lights the far side of the forest.
   ctx.globalCompositeOperation = 'lighter'
