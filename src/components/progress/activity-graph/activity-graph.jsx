@@ -3,10 +3,10 @@ import { activityLevel, calendarDay, WEEKS } from '../../../../shared/activity.j
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { useFormat } from '../../../lib/i18n/format.js'
 
-// One purple, dark to light on the night (more activity glows brighter; each step's lightness rises,
+// One steel blue, dark to light on the night (more activity glows brighter; each step's lightness rises,
 // and the first one still stands out from an empty day). Empty days are a flat dark slot, so
 // "nothing" never reads as a level.
-const LEVEL_FILL = ['#2a2250', '#4f2fb0', '#6f45f0', '#9a74ff', '#d2bcff']
+const LEVEL_FILL = ['#262c37', '#2c4560', '#3f6890', '#6f9bc6', '#b5cde4']
 const CELL = 11
 const GAP = 3
 const STEP = CELL + GAP
