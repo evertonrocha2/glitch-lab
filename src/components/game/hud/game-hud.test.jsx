@@ -159,7 +159,7 @@ it('draws 4 skill slots and 2 potion slots with counts and cooldown', () => {
 it('marks each slot with its key chip and the empty ones with a plus', () => {
   ui({})
   const slots = screen.getAllByTestId('slot')
-  expect(slots.map((s) => s.querySelector('kbd')?.textContent)).toEqual(['Q', 'W', 'E', 'R', '1', '2'])
+  expect(slots.map((s) => s.querySelector('kbd')?.textContent)).toEqual(['1', '2', '3', '4', '5', '6'])
   expect(slots.filter((s) => s.hasAttribute('data-empty'))).toHaveLength(2)
   expect(screen.getAllByLabelText('Empty skill slot')).toHaveLength(2)
 })

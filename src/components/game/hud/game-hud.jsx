@@ -35,7 +35,8 @@ const LOG_FADE = [1, 0.78, 0.6, 0.46, 0.34]
 // The log's fill lets the scene show through; outline and bevel stay solid.
 const LOG_BG = 'rgba(16, 12, 32, 0.72)'
 const KEYS = { m: 'world', i: 'bag', k: 'tree' }
-const SKILL_KEYS = ['Q', 'W', 'E', 'R']
+// Number chips, so nothing reads like WASD (the hero walks with those). Skills cast on their own.
+const SKILL_KEYS = ['1', '2', '3', '4']
 const LOG_SIZE = 5
 const SKILL_BY_ID = Object.fromEntries(SKILLS.map((s) => [s.id, s]))
 
@@ -322,8 +323,8 @@ export default function GameHud({
           )
         })}
         <i aria-hidden="true" className="mx-0.5 block w-0.5 self-stretch bg-[#0a0818] shadow-[1px_0_0_#3e3170]" />
-        <Slot label={t('game.hud.potionHp', { count: hero.potions.hp })} icon="hppot" keyHint="1" count={fmt.format(hero.potions.hp)} />
-        <Slot label={t('game.hud.potionMp', { count: hero.potions.mp })} icon="mppot" keyHint="2" count={fmt.format(hero.potions.mp)} />
+        <Slot label={t('game.hud.potionHp', { count: hero.potions.hp })} icon="hppot" keyHint="5" count={fmt.format(hero.potions.hp)} />
+        <Slot label={t('game.hud.potionMp', { count: hero.potions.mp })} icon="mppot" keyHint="6" count={fmt.format(hero.potions.mp)} />
       </Frame>
 
       {onZoom && (
