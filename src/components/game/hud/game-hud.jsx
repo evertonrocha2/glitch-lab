@@ -136,9 +136,11 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         </div>
       </Frame>
 
+      {/* On a phone the boss bar spans the scene under the unit frame, where the difficulty chips were
+          (they step aside for the fight); from sm it sits at the top, right of center. */}
       {boss && (
-        <Frame className="pointer-events-auto absolute inset-x-2 top-[160px] p-1.5 sm:inset-x-auto sm:left-1/2 sm:top-2 sm:w-[250px] sm:-translate-x-[30%]">
-          <div className="mb-1 flex items-center gap-1.5 text-[11px]">
+        <Frame className="pointer-events-auto absolute inset-x-2 top-[80px] p-1 sm:inset-x-auto sm:left-1/2 sm:top-2 sm:w-[250px] sm:-translate-x-[30%] sm:p-1.5">
+          <div className="mb-0.5 flex items-center gap-1.5 text-[11px]">
             <GameIcon name="skull" size={1} />
             <b className="truncate">{boss.name}</b>
             <span className="shrink-0 text-[10px] text-[#a89fd0]">{t('game.hud.phase', { phase: boss.phase, phases: boss.phases })}</span>
@@ -148,7 +150,7 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         </Frame>
       )}
 
-      <Frame as="ul" aria-label={t('game.hud.difficulties')} className="pointer-events-auto absolute right-2 top-[92px] flex gap-1 p-1 sm:top-[68px]">
+      <Frame as="ul" aria-label={t('game.hud.difficulties')} className={`pointer-events-auto absolute right-2 top-[92px] gap-1 p-1 sm:top-[68px] ${boss ? 'hidden sm:flex' : 'flex'}`}>
         {Object.entries(DIFFICULTIES).map(([id, d]) => {
           const locked = level.level < d.minLevel
           const name = t(`game.diff.${id}`)
