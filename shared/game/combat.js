@@ -25,6 +25,11 @@
 // - Potions: hp when hp < thresholds.hp x max hp, mp when mana < thresholds.mp x max mana.
 // - opts.cooldowns ({ skillId: ms left }) starts skills mid cooldown; result.cooldowns says what is
 //   left at the end, so a hunt carries cooldowns from one pack to the next.
+// - Fase 2c: each loadout skill fights as tuneSkill (skill-mods.js) makes it, from the hero's effects
+//   (skill passives ride there) and hero.supports (support gem ids). Extra areas or lines land where
+//   foes no earlier one hit stand (an area a radius away from the others): one hit or burn per foe per
+//   cast. golpeTwice strikes again right away at its share; critBlast explodes on each crit target;
+//   vampiro heals once per cast; tryCatch answers each absorbed hit; garbageCollector heals every second.
 //
 // LOG FORMAT (the contract the scene draws from). Every event: { t, type, who, ... }
 //   t      ms since the fight began (a multiple of TICK_MS). Events at the same t keep their order.
@@ -48,11 +53,18 @@
 //           target (the main target's index), hits [{ target, amount, crit? }] (cast: [{ target }]),
 //           amount (sum of the hits),
 //           at? { x, y } (area: the center; pierce: the far end of the line), radius? (around, area),
-//           slow? { pct, ms } (every target hit is slowed), dot? { ms } (cast), recast? (a free
-//           recast from recursion: no mana, no cooldown).
+//           width? (pierce: the line's width), slow? { pct, ms } (every target hit is slowed), dot?
+//           { ms } (cast), recast? (a free recast from recursion: no mana, no cooldown), extra? (1, 2..:
+//           one more area or line of the same cast, same t, right after the first), echo? (golpeTwice's
+//           second strike), added? ('fire': the hits carry the fogo support's fire).
+//   skill   who 'hero', skill 'critBlast', shape 'area', at, radius: a crit target exploding on the
+//           foes around it. skill 'tryCatch', shape 'single', target (the attacker): barreira answering
+//           a hit it absorbed.
 //   dot     who 'hero', skill, element, hits [{ target, amount }], amount: one tick of a burn on every
 //           enemy carrying it.
-//   heal    who 'hero', skill, shape 'self', amount. who 'enemy', src, skill 'regenera': an elite regen.
+//   heal    who 'hero', skill, shape 'self', amount, hot? (cura's garbageCollector tick, each second).
+//           skill 'vampiro': the life a cast's hits leeched. who 'enemy', src, skill 'regenera': an
+//           elite regen.
 //   shield  who 'hero', skill, shape 'self', amount (the shield it now has).
 //   buff    who 'hero', skill, shape 'self', amount (percent), ms (how long).
 //   potion  who 'hero', skill 'hp' | 'mp', amount.
@@ -64,6 +76,7 @@
 //   enrage  who 'enemy', src. The hero dies right after.
 //   death   who 'hero', or who 'enemy' with src.
 import { createRng } from './rng.js'
+import { tuneSkill } from './skill-mods.js'
 import { SKILLS, skillPower } from './skills.js'
 import { CHANCE, EFFECT, MOD, RATE, enemyArmor, heroHitMult, isImmune, mitigate } from './combat-effects.js'
 
@@ -105,7 +118,7 @@ const spot = (x, y) => ({ x: round2(x), y: round2(y) })
 const dist = (ax, ay, bx = 0, by = 0) => Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2)
 const EPS = 1e-9
 
-// hero: { stats, skills: [{ id, level }], potions, thresholds }. enemies: enemy defs from enemies.js
+// hero: { stats, skills: [{ id, level }], supports?: [support id], potions, thresholds }. enemies: enemy defs from enemies.js
 // (enemy: one def, as before). An enemy may carry spawn { x, y } (tests) and base.speed.
 export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   const root = createRng(seed)
@@ -116,9 +129,12 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   const effects = new Set(stats.effects ?? [])
   const stock = { hp: hero.potions?.hp ?? 0, mp: hero.potions?.mp ?? 0 }
   const thresholds = { hp: hero.thresholds?.hp ?? 0, mp: hero.thresholds?.mp ?? 0 }
+  const tuning = { effects: stats.effects ?? [], supports: hero.supports ?? [] }
   const loadout = (hero.skills ?? [])
     .filter((s) => s && SKILL_BY_ID[s.id])
-    .map((s) => ({ def: SKILL_BY_ID[s.id], level: s.level ?? 1, readyAt: Math.max(0, cooldowns[s.id] ?? 0) }))
+    .map((s) => ({ def: tuneSkill(SKILL_BY_ID[s.id], tuning), level: s.level ?? 1, readyAt: Math.max(0, cooldowns[s.id] ?? 0) }))
+  // tryCatch: the share of each absorbed hit barreira sends back.
+  const reflectShare = loadout.find((slot) => slot.def.reflect)?.def.reflect ?? 0
   const manaCost = (def) => def.mana * (effects.has(EFFECT.recursion) ? 2 : 1)
   const defs = enemies ?? (enemy ? [enemy] : [])
   const bossFight = defs.some((d) => d.boss)
@@ -126,7 +142,10 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   const limit = bossFight ? (boss.enrageMs ?? DEFAULT_ENRAGE_MS) : TRASH_TIMEOUT_MS
 
   const log = []
-  const h = { hp: stats.hp, mana: stats.mana, shield: 0, next: interval(stats.attackSpeed), buff: 0, buffUntil: 0, stunUntil: 0 }
+  const h = {
+    hp: stats.hp, mana: stats.mana, shield: 0, next: interval(stats.attackSpeed), buff: 0, buffUntil: 0, stunUntil: 0,
+    hotAmount: 0, hotNext: 0, hotUntil: -1,
+  }
   const used = { hp: 0, mp: 0 }
   const potionAt = { hp: 0, mp: 0 }
   const foes = []
@@ -189,6 +208,10 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
     h.hp -= left
     push({ who: 'enemy', src, ...event, amount: left, ...(absorbed > 0 ? { absorbed } : {}) })
     if (h.hp <= 0) heroDies()
+    else if (absorbed > 0 && reflectShare > 0 && event.skill !== MOD.reflect && foes[src]?.alive) {
+      const hits = strike([{ e: foes[src], raw: absorbed * reflectShare, crit: false }], 'physical')
+      land({ who: 'hero', type: 'skill', skill: 'tryCatch', shape: 'single', element: 'physical', target: src, hits, amount: sum(hits) })
+    }
   }
 
   const enterPhases = (e) => {
@@ -215,9 +238,11 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   }
 
   // One hero action's damage: list [{ e, raw, crit }]. Answers the hits for the log.
+  // fire: the fogo support's added fire, mitigated on its own.
   const strike = (list, element) =>
-    list.map(({ e, raw, crit }) => {
-      const amount = Math.max(0, Math.round(mitigate(raw, element, { armor: e.armor, res: e.base.res?.[element], immune: isImmune(element, e.mods) })))
+    list.map(({ e, raw, crit, fire = 0 }) => {
+      let amount = Math.max(0, Math.round(mitigate(raw, element, { armor: e.armor, res: e.base.res?.[element], immune: isImmune(element, e.mods) })))
+      if (fire > 0) amount += Math.max(0, Math.round(mitigate(fire, 'fire', { res: e.base.res?.fire, immune: isImmune('fire', e.mods) })))
       e.hp -= amount
       return { target: e.i, amount, ...(crit ? { crit: true } : {}) }
     })
@@ -255,20 +280,66 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
   }
   const within = (x, y, radius) => alive().filter((e) => dist(e.x, e.y, x, y) <= radius + EPS)
 
-  // Who a skill would hit right now, or null when it has no useful target.
+  // The best spot (area) or line (pierce) for each of 1 + def.extra throws. The first is the one that
+  // covers the most foes (ties: the nearer main target). Each extra one lands on the most foes no earlier
+  // throw hit (at least one, its main target among them), an area a radius away from the earlier
+  // centers; when none fits there are no more throws. Each plan lists only foes not hit before.
+  const throws = (def) => {
+    const candidates = alive().filter((e) => away(e) <= def.range + EPS)
+    const hit = new Set()
+    const centers = []
+    const plans = []
+    for (let k = 0; k <= def.extra; k++) {
+      let best = null
+      for (const c of candidates) {
+        if (hit.has(c)) continue
+        let targets
+        let at
+        if (def.shape === 'area') {
+          if (centers.some((p) => dist(c.x, c.y, p.x, p.y) <= def.radius + EPS)) continue
+          targets = within(c.x, c.y, def.radius)
+          at = spot(c.x, c.y)
+        } else {
+          // pierce: a line from the hero through c, def.range long.
+          const d = away(c) || 1
+          const ux = c.x / d
+          const uy = c.y / d
+          targets = alive().filter((e) => {
+            const along = e.x * ux + e.y * uy
+            const off = Math.abs(e.x * uy - e.y * ux)
+            return along >= 0 && along <= def.range + EPS && off <= def.width / 2 + EPS
+          })
+          at = spot(ux * def.range, uy * def.range)
+        }
+        const fresh = targets.filter((e) => !hit.has(e))
+        const better = !best || fresh.length > best.fresh.length || (fresh.length === best.fresh.length && away(c) < away(best.main) - EPS)
+        if (better) best = { main: c, fresh, at, center: { x: c.x, y: c.y } }
+      }
+      if (!best) break
+      for (const e of best.fresh) hit.add(e)
+      centers.push(best.center)
+      // The main target leads the hits.
+      const shape = def.shape === 'area' ? { radius: def.radius } : { width: def.width }
+      plans.push({ targets: [best.main, ...best.fresh.filter((e) => e !== best.main)], extra: { at: best.at, ...shape, ...(k > 0 ? { extra: k } : {}) } })
+    }
+    return plans.length ? plans : null
+  }
+
+  // Who a skill would hit right now, as a list of plans (one per area or line; one for the other
+  // shapes), or null when it has no useful target.
   const aim = (def) => {
     if (def.shape === 'self') {
-      if (def.kind === 'heal') return h.hp < stats.hp ? {} : null
-      if (def.kind === 'shield') return h.shield <= 0 && alive().length > 0 ? {} : null
-      return nearest(HERO_REACH) ? {} : null
+      if (def.kind === 'heal') return h.hp < stats.hp ? [{}] : null
+      if (def.kind === 'shield') return h.shield <= 0 && alive().length > 0 ? [{}] : null
+      return nearest(HERO_REACH) ? [{}] : null
     }
     if (def.shape === 'around') {
       const targets = within(0, 0, def.radius)
-      return targets.length ? { targets, extra: { radius: def.radius } } : null
+      return targets.length ? [{ targets, extra: { radius: def.radius } }] : null
     }
     if (def.shape === 'single') {
       const first = nearest(def.range)
-      return first ? { targets: [first] } : null
+      return first ? [{ targets: [first] }] : null
     }
     if (def.shape === 'chain') {
       const first = nearest(def.range)
@@ -283,66 +354,86 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
         targets.push(next)
         hit.add(next)
       }
-      return { targets }
+      return [{ targets }]
     }
-    const candidates = alive().filter((e) => away(e) <= def.range + EPS)
-    let best = null
-    for (const c of candidates) {
-      let targets
-      let at
-      if (def.shape === 'area') {
-        targets = within(c.x, c.y, def.radius)
-        at = spot(c.x, c.y)
-      } else {
-        // pierce: a line from the hero through c, def.range long.
-        const d = away(c) || 1
-        const ux = c.x / d
-        const uy = c.y / d
-        targets = alive().filter((e) => {
-          const along = e.x * ux + e.y * uy
-          const off = Math.abs(e.x * uy - e.y * ux)
-          return along >= 0 && along <= def.range + EPS && off <= def.width / 2 + EPS
-        })
-        at = spot(ux * def.range, uy * def.range)
-      }
-      const better = !best || targets.length > best.targets.length || (targets.length === best.targets.length && away(c) < away(best.main) - EPS)
-      if (better) best = { main: c, targets, at }
-    }
-    if (!best) return null
-    // The main target leads the hits.
-    const targets = [best.main, ...best.targets.filter((e) => e !== best.main)]
-    return { targets, extra: { at: best.at, ...(def.shape === 'area' ? { radius: def.radius } : {}) } }
+    return throws(def)
   }
 
-  const cast = (slot, plan, recast) => {
+  // A slow never cuts short a stronger one still running.
+  const slowFoe = (e, pct, ms) => {
+    if (t >= e.slowUntil || pct >= e.slow) {
+      e.slow = pct
+      e.slowUntil = t + ms
+    }
+  }
+
+  // critBlast: each crit target explodes on the living foes around it (not itself).
+  const blast = (def, hits) => {
+    for (const hit of hits) {
+      if (outcome) return
+      if (!hit.crit) continue
+      const center = foes[hit.target]
+      const around = within(center.x, center.y, def.blast.radius).filter((e) => e !== center)
+      if (!around.length) continue
+      const list = strike(around.map((e) => ({ e, raw: hit.amount * def.blast.pct, crit: false })), def.element)
+      land({
+        who: 'hero', type: 'skill', skill: 'critBlast', shape: 'area', element: def.element, target: around[0].i,
+        at: spot(center.x, center.y), radius: def.blast.radius, hits: list, amount: sum(list),
+      })
+    }
+  }
+
+  // One plan of a hit skill: rolls crit per target, logs the event, then any crit blasts. share scales
+  // the power (golpeTwice's echo). Answers the damage dealt.
+  const strikePlan = (slot, plan, tag, share) => {
+    const { def } = slot
+    const magic = def.element === 'physical' ? 1 : 1 + (stats.magicPct ?? 0) / 100
+    const mult = stats.attack * skillPower(def, slot.level) * magic * heroHitMult(def.id, effects) * def.more * share
+    const list = plan.targets.map((e, k) => {
+      const isCrit = crit()
+      const falloff = def.shape === 'chain' ? (1 - def.falloff) ** k : 1
+      const raw = mult * falloff * critMult(isCrit)
+      return { e, raw, crit: isCrit, ...(def.addedFire ? { fire: raw * def.addedFire } : {}) }
+    })
+    const hits = strike(list, def.element)
+    const slow = def.slow ? { slow: { pct: def.slow, ms: def.slowMs } } : {}
+    if (def.slow) for (const e of plan.targets) slowFoe(e, def.slow, def.slowMs)
+    const anyCrit = hits.some((hit) => hit.crit) ? { crit: true } : {}
+    const added = def.addedFire ? { added: 'fire' } : {}
+    land({ who: 'hero', type: 'skill', ...tag, element: def.element, target: plan.targets[0].i, ...plan.extra, hits, amount: sum(hits), ...anyCrit, ...slow, ...added })
+    if (def.blast) blast(def, hits)
+    return sum(hits)
+  }
+
+  const cast = (slot, plans, recast) => {
     const { def } = slot
     const strength = skillPower(def, slot.level)
     const tag = { skill: def.id, shape: def.shape, ...(recast ? { recast: true } : {}) }
     const magic = def.element === 'physical' ? 1 : 1 + (stats.magicPct ?? 0) / 100
     if (def.kind === 'hit') {
-      const mult = stats.attack * strength * magic * heroHitMult(def.id, effects)
-      const list = plan.targets.map((e, k) => {
-        const isCrit = crit()
-        const falloff = def.shape === 'chain' ? (1 - def.falloff) ** k : 1
-        return { e, raw: mult * falloff * critMult(isCrit), crit: isCrit }
-      })
-      const hits = strike(list, def.element)
-      const slow = def.slow ? { slow: { pct: def.slow, ms: def.slowMs } } : {}
-      if (def.slow) {
-        for (const e of plan.targets) {
-          e.slow = def.slow
-          e.slowUntil = t + def.slowMs
+      let dealt = 0
+      for (const plan of plans) if (!outcome) dealt += strikePlan(slot, plan, tag, 1)
+      if (def.echo && !outcome) {
+        for (const plan of aim(def) ?? []) if (!outcome) dealt += strikePlan(slot, plan, { ...tag, echo: true }, def.echo)
+      }
+      if (def.leech && !outcome) {
+        const amount = Math.round(Math.min(stats.hp - h.hp, dealt * def.leech))
+        if (amount > 0) {
+          h.hp += amount
+          push({ who: 'hero', type: 'heal', skill: 'vampiro', shape: 'self', amount })
         }
       }
-      const anyCrit = hits.some((hit) => hit.crit) ? { crit: true } : {}
-      land({ who: 'hero', type: 'skill', ...tag, element: def.element, target: plan.targets[0].i, ...plan.extra, hits, amount: sum(hits), ...anyCrit, ...slow })
     } else if (def.kind === 'dot') {
-      for (const e of plan.targets) {
-        e.dots = e.dots.filter((d) => d.skill !== def.id)
-        e.dots.push({ skill: def.id, element: def.element, perTick: stats.attack * strength * magic, nextAt: t + 1000, until: t + def.durationMs })
+      const slow = def.slow ? { slow: { pct: def.slow, ms: def.slowMs } } : {}
+      for (const plan of plans) {
+        for (const e of plan.targets) {
+          e.dots = e.dots.filter((d) => d.skill !== def.id)
+          e.dots.push({ skill: def.id, element: def.element, perTick: stats.attack * strength * magic * def.more, nextAt: t + 1000, until: t + def.durationMs })
+          if (def.slow) slowFoe(e, def.slow, def.slowMs)
+        }
+        const hits = plan.targets.map((e) => ({ target: e.i }))
+        push({ who: 'hero', type: 'cast', ...tag, element: def.element, target: plan.targets[0].i, ...plan.extra, hits, amount: 0, dot: { ms: def.durationMs }, ...slow })
       }
-      const hits = plan.targets.map((e) => ({ target: e.i }))
-      push({ who: 'hero', type: 'cast', ...tag, element: def.element, target: plan.targets[0].i, ...plan.extra, hits, amount: 0, dot: { ms: def.durationMs } })
     } else if (def.kind === 'shield') {
       h.shield = Math.max(h.shield, Math.round(stats.hp * strength))
       push({ who: 'hero', type: 'shield', ...tag, amount: h.shield })
@@ -350,6 +441,11 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
       const amount = Math.round(Math.min(stats.hp - h.hp, stats.hp * strength))
       h.hp += amount
       push({ who: 'hero', type: 'heal', ...tag, amount })
+      if (def.hot) {
+        h.hotAmount = Math.round(stats.hp * def.hot.pct)
+        h.hotNext = t + 1000
+        h.hotUntil = t + def.hot.ms
+      }
     } else if (def.kind === 'buff') {
       h.buff = strength
       h.buffUntil = t + def.durationMs
@@ -357,16 +453,26 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
     }
   }
 
+  // garbageCollector: cura's heal over time, one tick a second.
+  const healOverTime = () => {
+    if (t < h.hotNext || h.hotNext > h.hotUntil) return
+    h.hotNext += 1000
+    const amount = Math.round(Math.min(stats.hp - h.hp, h.hotAmount))
+    if (amount <= 0) return
+    h.hp += amount
+    push({ who: 'hero', type: 'heal', skill: 'cura', shape: 'self', amount, hot: true })
+  }
+
   const castSkills = () => {
     if (t < h.stunUntil) return
     for (const slot of loadout) {
       if (outcome) return
       if (t < slot.readyAt || h.mana + EPS < manaCost(slot.def)) continue
-      const plan = aim(slot.def)
-      if (!plan) continue
+      const plans = aim(slot.def)
+      if (!plans) continue
       h.mana -= manaCost(slot.def)
       slot.readyAt = t + slot.def.cooldownMs
-      cast(slot, plan, false)
+      cast(slot, plans, false)
       if (outcome || !effects.has(EFFECT.recursion) || !heroRng.chance(CHANCE.recursion)) continue
       const again = aim(slot.def)
       if (again) cast(slot, again, true)
@@ -484,6 +590,7 @@ export function simulateFight({ hero, enemies, enemy, seed, cooldowns = {} }) {
       break
     }
     h.mana = Math.min(stats.mana, h.mana + stats.mana * MANA_REGEN * (TICK_MS / 1000))
+    healOverTime()
     if (t % 1000 === 0) {
       for (const e of foes) {
         if (!e.alive || !e.mods.has(MOD.regen)) continue
