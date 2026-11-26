@@ -284,7 +284,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       }
 
       // A new fight: the idle monsters nearest the hero become the pack and walk in from where they
-      // stood (the rest come in as logged), around the hero's tile, turned to fit the ground there.
+      // stood; the rest walk in from just off screen when they can, else as logged (a portal). Around
+      // the hero's tile, turned to fit the ground there.
       let pack = null
       if (inFight) {
         const key = `${state.cycle}:${state.index}`
@@ -293,7 +294,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           fight.key = key
           fight.anchor.x = tile.x
           fight.anchor.y = tile.y
-          const made = claimFight({ ambient, pack: state.run.pack, world, rect, tile, spread: SPREAD })
+          const made = claimFight({ ambient, pack: state.run.pack, world, rect, tile, spread: SPREAD, view: live.current.viewOf?.(pos) ?? null })
           fight.pack = made.pack
           fight.rot = made.rot
           fight.spots = made.pack.foes.map(() => null)
