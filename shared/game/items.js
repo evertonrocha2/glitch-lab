@@ -112,6 +112,33 @@ export const GEMS = {
   algoritmos: { critChance: 3 },
 }
 
+// Gem tiers (fase 3, the Joalheiro): 3 gems of one kind and tier combine into 1 a tier up. A gem with no
+// tier (every gem saved before tiers) is tier 1. Each tier scales the gem's stats by gemTierScale, less
+// than the 3 gems a combine eats, so combining packs more into one socket but never adds stat in total.
+export const GEM_MAX_TIER = 5
+const GEM_TIER_STEP = 1.2
+export const gemTierScale = (tier) => 1 + GEM_TIER_STEP * (tier - 1)
+const isGemTier = (tier) => Number.isSafeInteger(tier) && tier >= 1 && tier <= GEM_MAX_TIER
+export const gemTierOf = (gem) => (isGemTier(gem?.tier) ? gem.tier : 1)
+
+// A gem's stats at a tier, from the gem table (own keys only: 'constructor' is no gem).
+export const gemStats = (gemId, tier = 1, gems = GEMS) => {
+  if (!Object.hasOwn(gems, gemId)) return {}
+  const scale = gemTierScale(tier)
+  return Object.fromEntries(Object.entries(gems[gemId]).map(([stat, value]) => [stat, tidy(stat, value * scale)]))
+}
+
+// What a gear socket holds: the gem id for tier 1 (as before tiers, so old items read the same), or
+// 'gem:tier' above it. parseSocket answers { gem, tier } or null for an empty socket or junk.
+export const socketValue = (gem) => (gemTierOf(gem) === 1 ? gem.gem : `${gem.gem}:${gemTierOf(gem)}`)
+export const parseSocket = (value, gems = GEMS) => {
+  if (typeof value !== 'string') return null
+  const [gem, tierText, ...rest] = value.split(':')
+  const tier = tierText === undefined ? 1 : Number(tierText)
+  if (rest.length > 0 || !Object.hasOwn(gems, gem) || !isGemTier(tier) || (tierText !== undefined && tierText !== String(tier))) return null
+  return { gem, tier }
+}
+
 const hexId = (rng) => Array.from({ length: 12 }, () => rng.int(16).toString(16)).join('')
 
 const rollRarity = (rng, boost) => {
@@ -204,8 +231,11 @@ export const itemStats = (item, gems = GEMS, bases = BASES) => {
     const def = AFFIXES.find((x) => x.id === a.id)
     if (def) add(def.stat, a.value)
   }
-  for (const gemId of item.sockets ?? []) {
-    for (const [stat, value] of Object.entries(gems[gemId] ?? {})) add(stat, value)
+  for (const socket of item.sockets ?? []) {
+    const gem = parseSocket(socket, gems)
+    if (!gem) continue
+    const scale = gemTierScale(gem.tier)
+    for (const [stat, value] of Object.entries(gems[gem.gem])) add(stat, value * scale)
   }
   return Object.fromEntries(Object.entries(total).map(([stat, value]) => [stat, tidy(stat, value)]))
 }
