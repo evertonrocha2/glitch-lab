@@ -2,6 +2,7 @@ import { clientDay, serverDay } from '../../core/days.js'
 import { queryText, requireBody } from '../../core/validation.js'
 import * as build from './game.build.js'
 import * as forge from './game.forge.js'
+import * as npc from './game.npc.js'
 import * as game from './game.service.js'
 
 const todayOf = (req) => clientDay(queryText(req, 'today')) ?? serverDay()
@@ -47,3 +48,15 @@ export const forgeReroll = action(forge.rerollAffix)
 export const forgeSocket = action(forge.socketGem)
 export const openChest = action(forge.openChest, { body: false })
 export const buyPotions = action(forge.buyPotions)
+
+// The town's NPCs (fase 3). The alchemist sells potions through forge.buyPotions too.
+export async function market(req, res) {
+  res.json(await npc.getMarket(req.deps.store, req.user, todayOf(req), queryText(req, 'tier')))
+}
+export const marketBuy = action(npc.buyMarketItem)
+export const marketSell = action(npc.sellItems)
+export const marketReroll = action(npc.rerollMarket)
+export const buyElixir = action(npc.buyElixir)
+export const jewelerBuy = action(npc.buyJewel)
+export const jewelerCombine = action(npc.combineGems)
+export const claimQuest = action(npc.claimQuest)
