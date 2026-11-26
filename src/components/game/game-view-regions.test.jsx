@@ -91,7 +91,7 @@ describe('roads', () => {
     await screen.findByRole('tablist')
     await tap('ArrowRight')
     await act(() => vi.advanceTimersByTimeAsync(FADE_MS))
-    expect(place()).toBe('biblioteca-linguagens 1 10')
+    expect(place()).toBe('biblioteca-linguagens 1 15')
   })
 
   it('walks with the on-screen pad too', async () => {
