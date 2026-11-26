@@ -101,7 +101,7 @@ export default function Modes() {
     <section id="modes" aria-labelledby="modes-title" className="relative scroll-mt-16 py-20 sm:py-28">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_45%_at_80%_60%,rgb(255_154_31/0.07),transparent_70%),radial-gradient(45%_50%_at_15%_55%,rgb(138_92_255/0.1),transparent_70%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_45%_at_80%_60%,rgb(255_154_31/0.12),transparent_70%),radial-gradient(45%_50%_at_15%_55%,rgb(138_92_255/0.2),transparent_70%)]"
       />
       <div className={`${WRAP} relative`}>
         <SectionHead id="modes-title" kicker={t('landing.v2.modes.kicker')} title={t('landing.v2.modes.title')} body={t('landing.v2.modes.body')} />

@@ -11,7 +11,7 @@ export default function CtaBand() {
   return (
     <section
       aria-labelledby="cta-title"
-      className="relative overflow-hidden border-y-2 border-(--lp-void) py-28 text-center sm:pt-[150px] sm:pb-[140px]"
+      className="relative overflow-hidden border-y border-[rgb(195_166_255/0.18)] py-28 text-center sm:pt-[150px] sm:pb-[140px]"
     >
       <ShaderBackdrop kind="embers" />
       <div aria-hidden="true" className="lp-cta-scrim pointer-events-none absolute inset-0 z-1" />

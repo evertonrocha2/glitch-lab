@@ -8,7 +8,7 @@ const QUESTIONS = ['free', 'languages', 'answer', 'judge', 'upload', 'safe', 'ex
 function Question({ q, a, open, onToggle }) {
   const id = useId()
   return (
-    <div className={`border-2 border-(--lp-void) transition-colors duration-200 ${open ? 'bg-(--lp-raised) shadow-[inset_2px_2px_0_var(--lp-gold-dark),4px_4px_0_0_rgb(5_3_14/0.9)]' : 'bg-(--lp-panel) shadow-[inset_2px_2px_0_var(--lp-line),4px_4px_0_0_rgb(5_3_14/0.9)]'}`}>
+    <div className={`border-2 border-(--lp-void) transition-colors duration-200 ${open ? 'bg-(--lp-raised) shadow-[inset_2px_2px_0_var(--lp-gold-dark),4px_4px_0_0_rgb(8_5_24/0.5)]' : 'bg-(--lp-panel) shadow-[inset_2px_2px_0_var(--lp-line),4px_4px_0_0_rgb(8_5_24/0.5)]'}`}>
       <h3>
         <button
           type="button"

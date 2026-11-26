@@ -2,7 +2,9 @@
    Layout lives in Tailwind classes; the pieces Tailwind can't say well (pixel bevels, the item
    cards' foil, the shader scrims) live here, in the components layer so utilities still win.
    Colors are the site's noite arcana tokens (src/index.css), aliased here as --lp-*.
-   Tailwind only emits the theme variables something uses, so each keeps the spec value as a fallback. */
+   Tailwind only emits the theme variables something uses, so each keeps the spec value as a fallback.
+   The landing is a night sky lit by aurora, not a black page: its surfaces (page, panel, raised,
+   inset, lines, muted text) sit one step lighter than the app's, same hues. */
 
 /* main.jsx imports the app (and so this file) before index.css: name Tailwind's layer order here
    too, or "components" would come first and the base reset would beat these rules. */
@@ -10,14 +12,15 @@
 
 .lp {
   --lp-void: var(--color-void, #0a0818);
-  --lp-night: var(--color-night, #120c22);
-  --lp-panel: var(--color-panel, #1b1433);
-  --lp-raised: var(--color-raised, #241c44);
-  --lp-inset: var(--color-inset, #100c20);
-  --lp-line: var(--color-line, #3e3170);
-  --lp-line-hi: var(--color-line-hi, #574a96);
+  --lp-night: #1e1642;
+  --lp-panel: #2a2054;
+  --lp-raised: #362a68;
+  --lp-inset: #1f1844;
+  --lp-line: #4f4192;
+  --lp-line-hi: #7465c4;
   --lp-text: var(--color-text, #e9e4ff);
-  --lp-muted: var(--color-muted, #a89fd0);
+  --lp-muted: #c4bbec;
+  --lp-drop: rgb(8 5 24 / 0.5);
   --lp-arcane: var(--color-arcane, #8a5cff);
   --lp-arcane-hi: var(--color-arcane-hi, #c3a6ff);
   --lp-arcane-deep: var(--color-arcane-deep, #5a2fd9);
@@ -35,7 +38,12 @@
   --lp-legendary: var(--color-rarity-legendary, #ffc04a);
   --lp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  background: var(--lp-night);
+  /* A violet wash: lighter up top where the hero ends, glows drifting down the page. */
+  background:
+    radial-gradient(60% 1400px at 85% 1200px, rgb(138 92 255 / 0.16), transparent 70%),
+    radial-gradient(55% 1400px at 10% 3000px, rgb(79 163 255 / 0.1), transparent 70%),
+    radial-gradient(60% 1400px at 90% 5200px, rgb(195 166 255 / 0.12), transparent 70%),
+    linear-gradient(180deg, #241a4e 0%, var(--lp-night) 40%, #221950 100%);
   color: var(--lp-text);
   color-scheme: dark;
 }
@@ -59,38 +67,39 @@
     color: var(--lp-gold);
   }
 
-  /* A darker band with a faint pixel star grid, so the reading sections alternate. */
+  /* A lighter band with a pixel star grid, so the reading sections alternate. */
   .lp-band {
     background:
-      radial-gradient(rgb(195 166 255 / 0.08) 1px, transparent 1.5px) 0 0 / 24px 24px,
-      linear-gradient(180deg, #0d0a1c, #110c24);
-    border-block: 2px solid var(--lp-void);
-    box-shadow: inset 0 2px 0 #1b1433;
+      radial-gradient(rgb(225 210 255 / 0.16) 1px, transparent 1.5px) 0 0 / 24px 24px,
+      radial-gradient(70% 90% at 50% 0%, rgb(138 92 255 / 0.18), transparent 70%),
+      linear-gradient(180deg, #2b2058, #261c50);
+    border-block: 1px solid rgb(195 166 255 / 0.16);
   }
 
   /* Pixel bevel panels. */
   .lp-frame {
     position: relative;
-    background: var(--lp-panel);
+    background: linear-gradient(180deg, #30255e, var(--lp-panel) 70%);
     border: 2px solid var(--lp-void);
     box-shadow:
-      inset 2px 2px 0 var(--lp-line),
-      inset -2px -2px 0 var(--lp-void),
-      6px 6px 0 0 rgb(5 3 14 / 0.9);
+      inset 2px 2px 0 var(--lp-line-hi),
+      inset -2px -2px 0 #1a1438,
+      6px 6px 0 0 var(--lp-drop),
+      0 0 40px -12px rgb(138 92 255 / 0.35);
   }
   .lp-inset {
     background: var(--lp-inset);
     border: 2px solid var(--lp-void);
     box-shadow:
       inset 2px 2px 0 var(--lp-void),
-      inset -2px -2px 0 #2a2250;
+      inset -2px -2px 0 #3b3072;
   }
   .lp-frame-gold {
-    background: #231a2e;
+    background: #3b2c45;
     box-shadow:
       inset 2px 2px 0 var(--lp-gold),
       inset -2px -2px 0 var(--lp-gold-dark),
-      6px 6px 0 0 rgb(5 3 14 / 0.9);
+      0 0 24px -6px rgb(242 193 78 / 0.45);
   }
 
   /* Buttons: a raised pixel slab that lifts on hover and sinks when pressed. */
@@ -158,8 +167,8 @@
     animation: lp-sweep 4.2s 1.2s var(--lp-ease) infinite;
   }
   .lp-btn-ghost {
-    --bg: rgb(18 12 34 / 0.6);
-    --hi: rgb(255 255 255 / 0.12);
+    --bg: rgb(52 40 106 / 0.7);
+    --hi: rgb(255 255 255 / 0.2);
     --lo: rgb(0 0 0 / 0.5);
     --glow: rgb(138 92 255 / 0.6);
     backdrop-filter: blur(6px);
@@ -173,13 +182,13 @@
   /* Hero scrim: darker behind the copy, open behind the hero card, fading into the page below. */
   .lp-hero-scrim {
     background:
-      linear-gradient(90deg, rgb(10 8 24 / 0.6) 0%, rgb(10 8 24 / 0.34) 38%, rgb(10 8 24 / 0) 60%),
-      linear-gradient(180deg, rgb(10 8 24 / 0.1) 0%, transparent 24%, transparent 72%, var(--lp-night) 100%);
+      linear-gradient(90deg, rgb(20 14 46 / 0.42) 0%, rgb(20 14 46 / 0.2) 38%, rgb(20 14 46 / 0) 60%),
+      linear-gradient(180deg, transparent 0%, transparent 74%, #241a4e 100%);
   }
   .lp-cta-scrim {
     background:
-      radial-gradient(46% 60% at 50% 46%, rgb(18 12 34 / 0.72), rgb(18 12 34 / 0.25) 70%, transparent),
-      linear-gradient(180deg, var(--lp-night) 0%, transparent 22%, transparent 88%, rgb(18 12 34 / 0.7) 100%);
+      radial-gradient(46% 60% at 50% 46%, rgb(30 22 66 / 0.6), rgb(30 22 66 / 0.18) 70%, transparent),
+      linear-gradient(180deg, #221950 0%, transparent 22%, transparent 90%, rgb(30 22 66 / 0.5) 100%);
   }
 
   .lp-h1-gold {
@@ -195,7 +204,7 @@
     height: 18px;
     background: var(--lp-inset);
     border: 2px solid var(--lp-void);
-    box-shadow: inset 0 0 0 1px #2a2250;
+    box-shadow: inset 0 0 0 1px #3b3072;
   }
   .lp-bar > i {
     position: absolute;
@@ -282,12 +291,15 @@
     transition:
       transform 0.6s var(--lp-ease),
       box-shadow 0.3s;
-    background: linear-gradient(180deg, #221a40, #17112c 60%);
+    background:
+      radial-gradient(90% 50% at 50% 0%, color-mix(in srgb, var(--rc) 16%, transparent), transparent 70%),
+      linear-gradient(180deg, #34295f, #261d4c 60%);
     border: 2px solid var(--lp-void);
     box-shadow:
-      inset 2px 2px 0 color-mix(in srgb, var(--rc) 70%, transparent),
+      inset 2px 2px 0 color-mix(in srgb, var(--rc) 85%, transparent),
       inset -2px -2px 0 color-mix(in srgb, var(--rc2) 60%, #000),
-      8px 10px 0 0 rgb(5 3 14 / 0.85);
+      8px 10px 0 0 var(--lp-drop),
+      0 0 44px -14px color-mix(in srgb, var(--rc) 45%, transparent);
   }
   .lp-item[data-hover] .lp-item-inner {
     transition:
@@ -296,15 +308,15 @@
     box-shadow:
       inset 2px 2px 0 var(--rc),
       inset -2px -2px 0 var(--rc2),
-      14px 20px 0 0 rgb(5 3 14 / 0.7),
+      14px 20px 0 0 var(--lp-drop),
       0 0 60px -10px color-mix(in srgb, var(--rc) 55%, transparent);
   }
   .lp-item[data-rarity="legendary"]:not([data-hover]) .lp-item-inner {
     box-shadow:
       inset 2px 2px 0 var(--rc),
       inset -2px -2px 0 var(--rc2),
-      8px 10px 0 0 rgb(5 3 14 / 0.85),
-      0 0 50px -16px rgb(255 154 31 / 0.6);
+      8px 10px 0 0 var(--lp-drop),
+      0 0 56px -12px rgb(255 154 31 / 0.7);
   }
   /* Gold rivets on the legendary corners. */
   .lp-item[data-rarity="legendary"] .lp-item-inner::before,
@@ -348,7 +360,7 @@
     border: 2px solid var(--lp-void);
     box-shadow:
       inset 2px 2px 0 var(--lp-void),
-      inset -2px -2px 0 color-mix(in srgb, var(--rc) 35%, #2a2250);
+      inset -2px -2px 0 color-mix(in srgb, var(--rc) 35%, #3b3072);
     transform: translateZ(24px);
   }
   .lp-icon-slot > * {
@@ -396,14 +408,14 @@
     background: var(--lp-raised);
     border: 2px solid var(--lp-void);
     box-shadow:
-      inset 2px 2px 0 #362a66,
-      inset -2px -2px 0 #140f2a;
+      inset 2px 2px 0 #5a4ba6,
+      inset -2px -2px 0 #221a48;
     transition:
       background-color 0.2s,
       transform 0.15s var(--lp-ease);
   }
   .lp-quest:hover {
-    background: #2a2150;
+    background: #403276;
   }
   .lp-quest:active {
     transform: scale(0.995);
@@ -445,7 +457,7 @@
     overflow: hidden;
     background: var(--lp-inset);
     border: 2px solid var(--lp-void);
-    box-shadow: inset 0 0 0 1px #2a2250;
+    box-shadow: inset 0 0 0 1px #3b3072;
   }
   .lp-xptrack > i {
     position: absolute;
@@ -543,12 +555,12 @@
 /* The shared language picker, dressed for the dark header. */
 .lp-lang select {
   border-color: var(--lp-void);
-  background: var(--lp-inset);
+  background: var(--lp-raised);
   color: var(--lp-text);
-  box-shadow: inset 1px 1px 0 #2a2250;
+  box-shadow: inset 1px 1px 0 #3b3072;
 }
 .lp-lang select:hover {
-  background: var(--lp-raised);
+  background: #403276;
 }
 .lp-lang svg {
   fill: var(--lp-muted);

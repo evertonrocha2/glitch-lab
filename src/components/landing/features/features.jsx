@@ -198,7 +198,7 @@ export default function Features() {
         <ul aria-label={t('landing.features.list')} className="mt-12 grid gap-6 sm:mt-14 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ id, visual: Visual, span = '' }) => (
             <li key={id} className={`lp-frame flex flex-col p-6 ${span}`}>
-              <div aria-hidden="true" className="relative mb-6 overflow-hidden border border-dashed border-(--lp-line) bg-[rgb(10_8_24/0.35)] p-4">
+              <div aria-hidden="true" className="relative mb-6 overflow-hidden border border-dashed border-(--lp-line) bg-[rgb(24_18_51/0.5)] p-4">
                 <Visual />
               </div>
               <h3 className="font-pixel text-xl leading-tight">{t(`landing.features.${id}.title`)}</h3>

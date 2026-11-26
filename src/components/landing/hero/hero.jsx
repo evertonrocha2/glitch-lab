@@ -31,7 +31,7 @@ export default function Hero() {
       <div aria-hidden="true" className="lp-hero-scrim pointer-events-none absolute inset-0 z-1" />
       <div className={`${WRAP} relative z-2 grid items-center gap-10 pt-8 pb-16 sm:pt-10 lg:grid-cols-[1.3fr_0.7fr] lg:pb-24`}>
         <div>
-          <p className="mb-6 inline-flex items-center gap-2.5 border border-[rgb(242_193_78/0.35)] bg-[rgb(18_12_34/0.6)] py-[7px] pr-3 pl-2 font-mono text-xs uppercase leading-none tracking-[0.08em] text-(--lp-gold-hi) backdrop-blur-sm">
+          <p className="mb-6 inline-flex items-center gap-2.5 border border-[rgb(242_193_78/0.35)] bg-[rgb(36_27_74/0.6)] py-[7px] pr-3 pl-2 font-mono text-xs uppercase leading-none tracking-[0.08em] text-(--lp-gold-hi) backdrop-blur-sm">
             <span className="bg-(--lp-gold) px-1.5 pt-1 pb-[3px] font-pixel tracking-[0.04em] text-[#2a1606]">{t('landing.v2.hero.tag')}</span>
             {t('landing.v2.hero.season')}
           </p>

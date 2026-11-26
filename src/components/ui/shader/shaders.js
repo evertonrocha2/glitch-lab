@@ -34,7 +34,7 @@ vec3 curtain(vec2 uv, float t, float fi, vec3 edgeCol, vec3 topCol){
     + .09*(fbm3(vec2(x*1.15, t*.11 + fi*4.)) - .5)
     + u_scroll*.12;
   float d = uv.y - edge;
-  float body = smoothstep(-.014, .0, d) * exp(-max(d, 0.) * (10. - fi*2.2));
+  float body = smoothstep(-.016, .0, d) * exp(-max(d, 0.) * (7.5 - fi*1.8));
   float rays = mix(.25, 1., noise(vec2(x*30., t*.35 + fi*7.)));
   rays *= mix(.55, 1., noise(vec2(x*8., t*.2 - fi)));
   float sway = .55 + .45*sin(x*1.6 - t*.8 + fi*2.4);
@@ -53,11 +53,12 @@ void main(){
   vec2 r = vec2(fbm(p*1.5 + 3.2*q + vec2(1.7, 9.2) + t*1.6), fbm(p*1.5 + 3.2*q + vec2(8.3, 2.8) - t*1.3));
   float f = fbm(p*1.25 + 2.6*r);
 
-  vec3 deep   = vec3(.055, .036, .125);
-  vec3 indigo = vec3(.135, .090, .400);
-  vec3 violet = vec3(.440, .250, .930);
-  vec3 lilac  = vec3(.820, .680, 1.00);
-  vec3 mana   = vec3(.140, .330, .860);
+  // Lifted for a night lit by aurora: the darkest fog is a deep violet, never black.
+  vec3 deep   = vec3(.120, .080, .260);
+  vec3 indigo = vec3(.220, .150, .560);
+  vec3 violet = vec3(.520, .320, 1.00);
+  vec3 lilac  = vec3(.860, .730, 1.00);
+  vec3 mana   = vec3(.180, .400, .950);
 
   vec3 col = mix(deep, indigo, smoothstep(.18, .70, f));
   col = mix(col, mana, .32 * smoothstep(.45, .95, q.x) * smoothstep(.3, .8, f));
@@ -68,7 +69,7 @@ void main(){
   vec2 pc = vec2(.74, .50) + lean * vec2(.10, .08);
   float pool = smoothstep(1.1, .0, length((uv - pc) * vec2(1.3, 1.)));
   float pool2 = smoothstep(.9, .0, length((uv - vec2(.12, 1.05)) * vec2(1.1, 1.6)));
-  col *= .84 + .52*pool + .35*pool2;
+  col *= .95 + .6*pool + .4*pool2;
   // Molten gold low on the left, under the copy.
   float warm = smoothstep(.85, .0, length((uv - vec2(.18, -.12)) * vec2(.9, 1.5)));
   col += vec3(.62, .34, .08) * warm * (.35 + .65*smoothstep(.3, .8, f)) * .55;
@@ -76,16 +77,18 @@ void main(){
 
   // Aurora across the top: three curtains, teal into mana, lilac into magenta, a faint gold one.
   float ta = u_time * .6;
-  vec3 aur = curtain(uv, ta, 0., vec3(.20, 1.0, .74), vec3(.18, .42, 1.0)) * 1.2;
-  aur += curtain(uv, ta*1.13, 1., vec3(.72, .52, 1.0), vec3(.80, .26, .90)) * 1.35;
-  aur += curtain(uv, ta*.87, 2., vec3(1.0, .78, .40), vec3(.95, .38, .55)) * .7;
+  vec3 aur = curtain(uv, ta, 0., vec3(.20, 1.0, .74), vec3(.18, .42, 1.0)) * 1.6;
+  aur += curtain(uv, ta*1.13, 1., vec3(.72, .52, 1.0), vec3(.80, .26, .90)) * 1.8;
+  aur += curtain(uv, ta*.87, 2., vec3(1.0, .78, .40), vec3(.95, .38, .55)) * 1.0;
   // Softer at the far edges, and never down in the lower half.
   aur *= smoothstep(-.1, .3, uv.x) * smoothstep(1.15, .75, uv.x) * .8 + .2;
-  aur *= smoothstep(.42, .66, uv.y);
+  aur *= smoothstep(.38, .64, uv.y);
   col += aur * (.8 + .4*f);
 
-  // Vignette.
-  col *= mix(.55, 1., smoothstep(1.25, .35, length((uv-.5)*vec2(1.2, 1.))));
+  // A soft sky glow from the top, then a light vignette and a touch more exposure.
+  col += vec3(.10, .07, .22) * smoothstep(.3, 1., uv.y);
+  col *= mix(.8, 1., smoothstep(1.25, .35, length((uv-.5)*vec2(1.2, 1.))));
+  col = col * 1.1 + vec3(.012, .008, .03);
 
   // Gold motes drifting up.
   vec3 gold = vec3(1., .78, .32);
@@ -136,18 +139,18 @@ void main(){
   float flame = fbm(vec2(ps.x*1.8, ps.y*1.2 - t*.35));
   float flame2 = fbm(vec2(ps.x*3.2 + 7., ps.y*2.4 - t*.7));
   float heat = smoothstep(.95, -.1, uv.y + (flame - .5)*.55 + (flame2 - .5)*.25);
-  vec3 night = vec3(.071, .047, .133);
+  vec3 night = vec3(.130, .090, .270);
   vec3 maroon = vec3(.30, .06, .08);
   vec3 ember = vec3(1., .40, .16);
   vec3 gold = vec3(1., .74, .30);
   vec3 col = mix(night, maroon, smoothstep(.0, .55, heat));
   col = mix(col, ember, smoothstep(.55, .95, heat) * .85);
   col = mix(col, gold, smoothstep(.88, 1.05, heat) * .7);
-  col = mix(col, vec3(.16, .09, .32), smoothstep(.55, 1., uv.y) * .45 * (.6 + .4*fbm(p*2. + t*.05)));
+  col = mix(col, vec3(.25, .16, .50), smoothstep(.55, 1., uv.y) * .55 * (.6 + .4*fbm(p*2. + t*.05)));
   col += emberLayer(ps, 7., .55, 1., t) * (.35 + .65*(1. - uv.y));
   col += emberLayer(ps + 3.3, 4.2, .42, 7., t) * (.4 + .6*(1. - uv.y));
   col += emberLayer(ps + 9.1, 13., .85, 4., t) * .45 * (1. - uv.y);
-  col *= mix(.65, 1., smoothstep(1.3, .3, abs(uv.x - .5)*2.));
+  col *= mix(.8, 1., smoothstep(1.3, .3, abs(uv.x - .5)*2.));
   float g = hash(gl_FragCoord.xy + fract(t*7.13)*vec2(97.1, 41.3)) - .5;
   col += g * .05;
   gl_FragColor = vec4(col, 1.);
@@ -160,11 +163,11 @@ export const SHADERS = {
     fragment: ARCANA,
     t0: 18,
     fallback:
-      'radial-gradient(70% 38% at 50% 0%, rgba(120, 140, 255, .32), transparent 70%), radial-gradient(60% 70% at 72% 42%, #4a2a9e 0%, transparent 60%), radial-gradient(50% 60% at 18% 88%, rgba(150, 82, 20, .45) 0%, transparent 60%), linear-gradient(180deg, #160f34, #120c22)',
+      'radial-gradient(70% 38% at 50% 0%, rgba(140, 160, 255, .45), transparent 70%), radial-gradient(60% 70% at 72% 42%, #5f38c4 0%, transparent 60%), radial-gradient(50% 60% at 18% 88%, rgba(170, 96, 26, .5) 0%, transparent 60%), linear-gradient(180deg, #2a1d5e, #221950)',
   },
   embers: {
     fragment: EMBERS,
     t0: 9,
-    fallback: 'radial-gradient(80% 90% at 50% 120%, #c4431a 0%, #5a1408 35%, transparent 70%), linear-gradient(180deg, #1a1030, #1e0c16)',
+    fallback: 'radial-gradient(80% 90% at 50% 120%, #d4521f 0%, #6e1c10 35%, transparent 70%), linear-gradient(180deg, #2a1d5e, #2a1430)',
   },
 }

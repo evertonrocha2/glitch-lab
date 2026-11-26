@@ -34,7 +34,7 @@ function Row({ hidden = false }) {
 export default function Marquee() {
   const t = useT()
   return (
-    <section aria-label={t('landing.marquee.label')} className="overflow-hidden border-y-2 border-(--lp-void) bg-(--lp-inset) py-3.5 shadow-[inset_0_2px_0_#1b1433]">
+    <section aria-label={t('landing.marquee.label')} className="overflow-hidden border-y-2 border-(--lp-void) bg-[linear-gradient(90deg,#2a2056,#33276a_50%,#2a2056)] py-3.5 shadow-[inset_0_2px_0_#3b3072]">
       <div className="lp-marquee flex w-max">
         <Row />
         <Row hidden />

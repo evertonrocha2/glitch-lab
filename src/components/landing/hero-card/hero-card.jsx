@@ -88,7 +88,7 @@ export default function HeroCard() {
 
   return (
     <aside ref={ref} aria-label={t('landing.v2.card.label')} className="lp-bob w-full max-w-[420px] justify-self-start lg:justify-self-end">
-      <div className="lp-frame bg-[rgb(27_20_51/0.74)] p-4 backdrop-blur-md sm:p-[18px]">
+      <div className="lp-frame bg-[rgb(46_35_92/0.72)] p-4 backdrop-blur-md sm:p-[18px]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-pixel text-[22px] leading-none">Lia</p>
@@ -101,7 +101,7 @@ export default function HeroCard() {
           </span>
         </div>
 
-        <div className="lp-inset relative mt-3.5 mb-3 grid h-[250px] items-end justify-items-center overflow-hidden bg-[radial-gradient(50%_55%_at_50%_55%,rgb(138_92_255/0.35),transparent_70%),linear-gradient(180deg,rgb(16_12_32/0.2),rgb(16_12_32/0.65))] sm:h-[300px]">
+        <div className="lp-inset relative mt-3.5 mb-3 grid h-[250px] items-end justify-items-center overflow-hidden bg-[radial-gradient(50%_55%_at_50%_55%,rgb(170_130_255/0.6),transparent_72%),linear-gradient(180deg,rgb(58_44_112/0.55),rgb(40_30_84/0.85))] sm:h-[300px]">
           <div
             aria-hidden="true"
             className="absolute bottom-3 left-1/2 z-1 h-[18px] w-[210px] -translate-x-1/2 bg-[#2b2152] shadow-[inset_0_3px_0_#574a96,0_4px_0_#0a0818] before:absolute before:inset-x-3.5 before:-top-2.5 before:h-2.5 before:bg-[#3e3170] before:shadow-[inset_0_2px_0_#6e5fb8] before:content-['']"

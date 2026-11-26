@@ -76,7 +76,7 @@ export default function Quests() {
         <SectionHead id="quests-title" kicker={t('landing.v2.quests.kicker')} title={t('landing.v2.quests.title')} body={t('landing.levels.body')} />
         <div className="mt-12 grid items-start gap-7 sm:mt-14 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="lp-frame">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-(--lp-void) px-5 py-4 shadow-[0_2px_0_#2a2250]">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-(--lp-void) px-5 py-4 shadow-[0_2px_0_#3b3072]">
               <h3 className="font-pixel text-xl">{t('landing.v2.quests.panel')}</h3>
               <p className="font-mono text-xs tracking-[0.04em] text-(--lp-muted)">{t('landing.v2.quests.hint')}</p>
             </div>
@@ -98,7 +98,7 @@ export default function Quests() {
                           <span className="border border-(--lp-line) px-1.5 py-[3px] tracking-[0.04em] text-(--lp-arcane-hi)">
                             {t(`landing.v2.quests.tag.${quest.tag}`)}
                           </span>
-                          <span aria-hidden="true" className="h-1.5 w-[70px] bg-(--lp-inset) shadow-[0_0_0_1px_#2a2250] sm:w-[120px]">
+                          <span aria-hidden="true" className="h-1.5 w-[70px] bg-(--lp-inset) shadow-[0_0_0_1px_#3b3072] sm:w-[120px]">
                             <i className="block h-full bg-(--lp-ok) transition-[width] duration-500" style={{ width: checked ? '100%' : '0%' }} />
                           </span>
                           <span>{checked ? '1/1' : '0/1'}</span>
