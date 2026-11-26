@@ -108,8 +108,25 @@ export function ItemPopover({ label, anchor, onClose, closeLabel, children }) {
   const anchorRef = useRef(anchor)
   anchorRef.current = anchor
 
+  // Focus moves in once the box is placed: a hidden box (still being measured) can't take it.
+  const ready = !wide || Boolean(side)
+  const focused = useRef(false)
   useEffect(() => {
+    if (!ready || focused.current) return
+    focused.current = true
     box.current?.focus({ preventScroll: true })
+  }, [ready])
+
+  // Escape closes it from anywhere: the popover's own keys stop there, so this one only hears an
+  // Escape pressed while focus is out of it (on the cell, say).
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key !== 'Escape' || box.current?.contains(event.target)) return
+      anchorRef.current()?.focus()
+      closeRef.current()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
   }, [])
 
   // A press anywhere else closes it; the cell itself toggles it on its own click.
