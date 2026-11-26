@@ -473,3 +473,141 @@ export function enemyLight(x, y, { sprite: id, elite = false } = {}) {
     ? { x: x + 8, y: y + 8, r: art.boss ? 34 : 24, rgb: '255,190,80', a: 0.35 }
     : { x: x + 8, y: y + 8, r: art.boss ? 30 : 18, rgb: `${r},${g},${bl}`, a: 0.25 }
 }
+
+// ---------- packs: enemies at 2x from cached frames ----------
+// The pack scene draws up to a dozen enemies a frame, twice the size of their 16px art so they stand
+// as tall as the 32px hero. Painting the pixel buffers each frame would cost thousands of fillRects,
+// so each frame of each sprite is painted once to a small canvas and scaled up with nearest neighbor.
+// Frames are cached by sprite, time step (20 a second over a 6 s loop) and whether it walks or lies
+// dead; the white flash, the elite rim and the frost tint are cached copies of the same frame.
+
+export const FOE_SCALE = 2
+const FRAME_RATE = 20
+const LOOP_FRAMES = FRAME_RATE * 6
+const frames = new Map()
+
+function makeCanvas(w, h) {
+  if (typeof document === 'undefined') return null
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  let c = null
+  try {
+    c = canvas.getContext?.('2d') ?? null
+  } catch {
+    c = null
+  }
+  return c ? { canvas, ctx: c } : null
+}
+
+// One frame painted to a canvas: { canvas, minX, minY } (local art coordinates of its top left,
+// with a 1px margin for the rim), or null without canvas support.
+function paintFrame(id, step, walking, dead, variant) {
+  const art = ENEMY_ART[id] ?? ENEMY_ART.slime
+  const t = step / FRAME_RATE
+  const bob = dead ? 0 : Math.round(Math.sin(t * 4 * (walking ? 2 : 1) + (art.fly ? 1 : 0)) * (art.fly ? 1.5 : 1.2))
+  const b = buffer()
+  art.draw(b, { t, bob })
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const { x, y } of b.px.values()) {
+    if (x < minX) minX = x
+    if (y < minY) minY = y
+    if (x > maxX) maxX = x
+    if (y > maxY) maxY = y
+  }
+  if (minX === Infinity) return null
+  minX -= 1
+  minY -= 1
+  const made = makeCanvas(maxX - minX + 2, maxY - minY + 2)
+  if (!made) return null
+  const { ctx } = made
+  const color = variant === 'white' ? '#ffffff' : variant === 'frost' ? '#8fe3ff' : null
+  if (variant === 'rim') {
+    ctx.fillStyle = '#ffcf4a'
+    for (const { x, y } of b.px.values()) {
+      for (const [dx, dy] of RIM_STEPS) {
+        if (!b.px.has(`${x + dx},${y + dy}`)) ctx.fillRect(x + dx - minX, y + dy - minY, 1, 1)
+      }
+    }
+  }
+  for (const { x, y, c } of b.px.values()) {
+    ctx.fillStyle = color ?? c
+    ctx.fillRect(x - minX, y - minY, 1, 1)
+  }
+  return { canvas: made.canvas, minX, minY }
+}
+const RIM_STEPS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+]
+
+export function foeFrame(id, t, { walking = false, dead = false, variant = 'plain' } = {}) {
+  const step = dead ? 0 : Math.floor(Math.max(0, t) * FRAME_RATE) % LOOP_FRAMES
+  const key = `${id}|${step}|${walking ? 1 : 0}|${dead ? 1 : 0}|${variant}`
+  if (!frames.has(key)) frames.set(key, paintFrame(id, step, walking, dead, variant))
+  return frames.get(key)
+}
+export const clearFoeFrames = () => frames.clear()
+
+const shadows = new Map()
+// A cached ground ellipse.
+function shadowOf(rx, ry, color) {
+  const key = `${rx}|${ry}|${color}`
+  if (!shadows.has(key)) {
+    const made = makeCanvas(rx * 2 + 1, ry * 2 + 1)
+    if (made) ellipse(made.ctx, rx, ry, rx, ry, color)
+    shadows.set(key, made?.canvas ?? null)
+  }
+  return shadows.get(key)
+}
+
+// The colors an enemy breaks into, and how tall it stands in px at pack scale (for its hp bar).
+export const foeColors = (id) => (ENEMY_ART[id] ?? ENEMY_ART.slime).colors
+export const foeHeight = (id) => (16 - (ENEMY_ART[id] ?? ENEMY_ART.slime).top) * FOE_SCALE
+
+// Draws a pack enemy with its feet at (gx, gy) canvas px. o: { sprite, anim, p, t, elite, facing,
+// slowed, scale }. Falls back to the 16px painter when canvases can't be made (tests without one).
+export function drawFoe(ctx, gx, gy, { sprite: id, anim = 'idle', p = 0, t = 0, elite = false, facing = -1, slowed = false, scale = FOE_SCALE } = {}) {
+  const art = ENEMY_ART[id] ?? ENEMY_ART.slime
+  const s = motion(anim, p, facing)
+  const dead = anim === 'death'
+  const walking = anim === 'walk'
+  const base = foeFrame(id, t, { walking, dead })
+  if (!base) {
+    drawEnemy(ctx, Math.round(gx - 8), Math.round(gy - 15), { sprite: id, anim, p, t, elite, facing })
+    return
+  }
+  const [rx, ry] = art.shadow
+  const x = Math.round(gx + s.dx * scale)
+  const y = Math.round(gy)
+  if (elite && !dead) {
+    const ring = shadowOf((rx + 2) * scale, (ry + 1) * scale, 'rgb(255,190,60)')
+    if (ring) {
+      const prev = ctx.globalAlpha
+      ctx.globalAlpha = prev * (0.3 + 0.2 * Math.sin(t * 4))
+      ctx.drawImage(ring, x - (rx + 2) * scale, y - (ry + 1) * scale)
+      ctx.globalAlpha = prev
+    }
+  }
+  const shadow = shadowOf(Math.max(2, Math.round(rx * s.sx)) * scale, ry * scale, SHADOW)
+  if (shadow) ctx.drawImage(shadow, x - Math.max(2, Math.round(rx * s.sx)) * scale, y - ry * scale)
+  const pick = s.flash ? foeFrame(id, t, { walking, dead, variant: 'white' }) : elite && !dead ? foeFrame(id, t, { walking, dead, variant: 'rim' }) : base
+  const prev = ctx.globalAlpha
+  ctx.globalAlpha = prev * s.alpha
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale((facing > 0 ? -1 : 1) * s.sx * scale, s.sy * scale)
+  ctx.drawImage(pick.canvas, pick.minX - 8, pick.minY - 15)
+  if (slowed && !s.flash) {
+    const frost = foeFrame(id, t, { walking, dead, variant: 'frost' })
+    ctx.globalAlpha = prev * s.alpha * 0.45
+    ctx.drawImage(frost.canvas, frost.minX - 8, frost.minY - 15)
+  }
+  ctx.restore()
+  ctx.globalAlpha = prev
+}

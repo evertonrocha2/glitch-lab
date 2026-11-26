@@ -62,16 +62,16 @@ export function fxFor(ev) {
   const base = { target, targets, element: ev.element ?? 'physical', crit: Boolean(ev.crit) }
   if (skill === 'golpe') return [{ kind: 'cleave', ...base, radius: ev.radius ?? 1.8 }]
   if (skill === 'raio') return [{ kind: 'chain', ...base }]
-  if (skill === 'chama') return [{ kind: 'fireball', ...base, at: ev.at, radius: ev.radius ?? 1.6, span: ev.dot?.ms ?? 0 }]
-  if (skill === 'veneno') return [{ kind: 'venom', ...base, at: ev.at, width: 1.2 }]
+  if (skill === 'chama') return [{ kind: 'fireball', ...base, spot: ev.at, radius: ev.radius ?? 1.6, span: ev.dot?.ms ?? 0 }]
+  if (skill === 'veneno') return [{ kind: 'venom', ...base, spot: ev.at, width: 1.2 }]
   if (skill === 'nevasca') return [{ kind: 'frost', ...base, radius: ev.radius ?? 3 }]
-  if (skill === 'bugSplash') return [{ kind: 'splash', ...base, at: ev.at, radius: ev.radius ?? 1.5 }]
+  if (skill === 'bugSplash') return [{ kind: 'splash', ...base, spot: ev.at, radius: ev.radius ?? 1.5 }]
   // A skill this file does not know yet: drawn by its shape.
   const shape = ev.shape
   if (shape === 'chain') return [{ kind: 'chain', ...base }]
   if (shape === 'around') return [{ kind: 'cleave', ...base, radius: ev.radius ?? 1.8 }]
-  if (shape === 'area') return [{ kind: 'splash', ...base, at: ev.at, radius: ev.radius ?? 1.5 }]
-  if (shape === 'pierce') return [{ kind: 'venom', ...base, at: ev.at, width: 1.2 }]
+  if (shape === 'area') return [{ kind: 'splash', ...base, spot: ev.at, radius: ev.radius ?? 1.5 }]
+  if (shape === 'pierce') return [{ kind: 'venom', ...base, spot: ev.at, width: 1.2 }]
   if (DAMAGE.has(type) || type === 'cast') return [{ kind: 'zap', ...base }]
   return []
 }
