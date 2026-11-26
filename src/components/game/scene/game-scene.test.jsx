@@ -418,3 +418,20 @@ it('makes the pack of the idle monsters nearest the hero: they stop being drawn 
   // Two monsters left the idle set to become the pack (drawn at full alpha now).
   expect(fighting).toBeLessThan(walking)
 })
+
+it('hands the walker the idle monsters as lures, so its strolls between packs head for them', () => {
+  dimDraws()
+  let tick = null
+  vi.stubGlobal('requestAnimationFrame', vi.fn((cb) => {
+    tick = cb
+    return 1
+  }))
+  const calls = []
+  const walker = { tile: { x: 40, y: 16 }, pos: { x: 40, y: 16 }, side: 1, moving: false, update: (now, opts) => calls.push(opts), walkTo() {} }
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} walker={walker} />)
+  tick(performance.now() + 100)
+  const last = calls.at(-1)
+  expect(Array.isArray(last.lures)).toBe(true)
+  expect(last.lures.length).toBeGreaterThan(0)
+  for (const m of last.lures) expect(Number.isFinite(m.x) && Number.isFinite(m.y)).toBe(true)
+})

@@ -272,7 +272,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       const { look: heroLook, gear: heroGear, walker: w, onCamera: report } = live.current
       const state = play(time)
       const inFight = state && !state.walking
-      w?.update(clock, { roam: Boolean(live.current.playback?.loop) && (!state || state.walking) })
+      // Strolls between packs head for the idle monsters, so the next pack is made of ones on screen.
+      w?.update(clock, { roam: Boolean(live.current.playback?.loop) && (!state || state.walking), lures: ambient.monsters() })
       const pos = w ? w.pos : spot.hero
       heroPx.x = Math.round(pos.x * TS + 8)
       heroPx.y = Math.round(pos.y * TS + 15)
