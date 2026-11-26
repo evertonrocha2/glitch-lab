@@ -1,6 +1,7 @@
 import { ACERTO_POINTS_CAP, ACERTOS_PER_POINT, heroLevel, pendingStudy, studyRewards, talentPoints } from '../../../shared/game/fuel.js'
 import { DEFAULT_LOOK, normalizeLook } from '../../../shared/game/look.js'
 import { heroStats, power } from '../../../shared/game/stats.js'
+import { socketedSupports } from '../../../shared/game/talents.js'
 import { HUNT_WORLDS, zoneState } from '../../../shared/game/zones.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { correctToday, studyMultiplier } from '../../../shared/game/xp.js'
@@ -70,13 +71,7 @@ export const statsOf = (hero, level) =>
   heroStats({ level, items: equippedOf(hero), talents: hero.talents })
 
 // The support gem ids in the tree's sockets the hero has taken, each kind once.
-export const supportsOf = (hero) => [
-  ...new Set(
-    Object.entries(hero.treeSockets ?? {})
-      .filter(([node, gem]) => hero.talents.includes(node) && typeof gem?.support === 'string')
-      .map(([, gem]) => gem.support),
-  ),
-]
+export const supportsOf = (hero) => socketedSupports(hero.talents, hero.treeSockets)
 
 // What combat and the hunt read: final stats, the loadout with its levels, the support gems, potions
 // and thresholds.
