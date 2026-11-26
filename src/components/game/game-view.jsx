@@ -335,6 +335,15 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
     return () => root.style.removeProperty('--dock-h')
   }, [docked])
 
+  // On a phone the study sheet covers the lower 3/4: the drawer closes and the scene moves to the
+  // top, so the hunt stays in sight above the page being studied.
+  const stageRef = useRef(null)
+  useEffect(() => {
+    if (!studyOpen || wide) return
+    setDrawer(false)
+    stageRef.current?.scrollIntoView?.({ block: 'start' })
+  }, [studyOpen, wide])
+
   const openTab = useCallback((id) => {
     setTab(id)
     setDrawer(true)
@@ -401,7 +410,7 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   )
 
   const stage = (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div ref={stageRef} className="flex min-w-0 flex-col gap-2">
       {conflict && <Conflict t={t} />}
       <StageFrame>
         {(fullscreen) => (
@@ -469,7 +478,8 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
   )
 
   return (
-    <div className="mt-6 pb-16 lg:pb-0">
+    // On a phone with the study sheet open, room below lets the scene scroll up to the top.
+    <div className={`mt-6 lg:pb-0 ${studyOpen && !wide ? 'pb-[75dvh]' : 'pb-16'}`}>
       {wide ? (
         // The console: scene, status line and panel in one dark frame, so the game reads as one screen.
         // The scene column sets the height; the panel fills it and scrolls its tab inside.

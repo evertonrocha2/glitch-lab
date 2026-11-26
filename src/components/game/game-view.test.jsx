@@ -125,6 +125,24 @@ it('syncs every 20 s while the study window is open and once when it closes', as
   expect(api.syncGame).toHaveBeenCalledTimes(5)
 })
 
+it('on a phone, opening study closes the panel drawer and brings the scene up above the sheet', async () => {
+  window.matchMedia = (query) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} })
+  const scrolled = vi.fn()
+  Element.prototype.scrollIntoView = scrolled
+  try {
+    const api = makeApi()
+    ui(api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir o painel' }))
+    fireEvent.click(screen.getByRole('button', { name: /Estudar pra ficar mais forte/ }))
+    expect(screen.getByRole('region', { name: 'Estudo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir o painel' })).toHaveAttribute('aria-expanded', 'false')
+    expect(scrolled).toHaveBeenCalledWith({ block: 'start' })
+  } finally {
+    delete window.matchMedia
+    delete Element.prototype.scrollIntoView
+  }
+})
+
 it('offers more study from the away summary, in the study window', async () => {
   const api = makeApi()
   api.syncGame.mockResolvedValueOnce({ ...makeView(), studyClaimed: CLAIMED })
