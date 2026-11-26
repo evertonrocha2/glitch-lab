@@ -14,12 +14,12 @@ export const ROTATIONS = [0, 180, 90, -90, 45, -45, 135, -135].map(turn)
 
 const inside = (rect, x, y) => !rect || (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h)
 
-// Whether an actor can stand on tile (x, y): floor inside the hunted rect, never a portal.
+// Whether an actor can stand on tile (x, y): floor inside the rect, never a town NPC's tile.
 export function canStand(world, rect, x, y) {
   if (!Number.isInteger(x) || !Number.isInteger(y) || !inside(rect, x, y)) return false
   const row = world.rows[y]
   if (row === undefined || x < 0 || x >= row.length || isSolid(row[x])) return false
-  return !world.portals?.some((portal) => portal.x === x && portal.y === y)
+  return !world.npcs?.some((npc) => npc.x === x && npc.y === y)
 }
 
 // p turned by rot, written into out (no allocation).

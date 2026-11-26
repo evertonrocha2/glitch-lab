@@ -5,7 +5,7 @@ import { STEP_MS } from './walk.js'
 // 10x7 room with a wall pillar at (4,2)..(4,4).
 const world = {
   rows: ['TTTTTTTTTT', 'T........T', 'T...T....T', 'T...T....T', 'T...T....T', 'T........T', 'TTTTTTTTTT'],
-  portals: [],
+  npcs: [],
 }
 const rect = { x: 0, y: 0, w: 10, h: 7 }
 
@@ -37,7 +37,7 @@ describe('roamTarget', () => {
     expect(a).not.toEqual(b)
   })
   it('is null in a closet with nowhere to go', () => {
-    const closet = { rows: ['TTT', 'T.T', 'TTT'], portals: [] }
+    const closet = { rows: ['TTT', 'T.T', 'TTT'], npcs: [] }
     expect(roamTarget(closet, { x: 0, y: 0, w: 3, h: 3 }, { x: 1, y: 1 }, () => 0.5)).toBe(null)
   })
 })
@@ -115,5 +115,67 @@ describe('createWalker', () => {
     const here = { ...w.tile }
     for (let t = at; t < at + IDLE_MS - 100; t += 50) w.update(t, { roam: true })
     expect(w.tile).toEqual(here)
+  })
+
+  it('tells onStep each tile it steps onto, with the way it walked, and never a blocked step', () => {
+    const steps = []
+    const w = make({ onStep: (tile, dir) => steps.push([tile.x, tile.y, dir]) })
+    w.update(0)
+    w.press('right', 0)
+    w.update(STEP_MS)
+    w.release()
+    w.tap('down', STEP_MS * 2)
+    expect(steps).toEqual([
+      [3, 3, 'right'],
+      [3, 4, 'down'],
+    ])
+  })
+
+  it('faces the last way it tried to walk, for the terminal or NPC in front of it', () => {
+    const w = make({ facing: 'left' })
+    expect(w.facing).toBe('left')
+    w.update(0)
+    w.tap('up', 0)
+    expect(w.facing).toBe('up')
+    // The pillar at (4,3) stops a step right from (3,3), but the hero still turns to it.
+    w.tap('right', 10)
+    w.tap('right', 20)
+    expect(w.tile).toEqual({ x: 3, y: 2 })
+    expect(w.facing).toBe('right')
+  })
+
+  it('walks on to a clicked tile it cannot stand on and turns to face it', () => {
+    const w = make()
+    w.update(0)
+    w.walkTo(4, 3, 0)
+    for (let t = 0; t <= STEP_MS * 6; t += 16) w.update(t)
+    expect(w.tile).toEqual({ x: 3, y: 3 })
+    expect(w.facing).toBe('right')
+  })
+
+  it('roams only inside roamIn when it is set', () => {
+    const w = make()
+    w.roamIn = { x: 1, y: 3, w: 3, h: 2 }
+    w.update(0, { roam: true })
+    for (let t = IDLE_MS; t < IDLE_MS * 6; t += 16) {
+      w.update(t, { roam: true })
+      expect(w.tile.x, `${t}`).toBeLessThan(4)
+      expect(w.tile.y, `${t}`).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('holds a direction without stepping, stepping on only if it is still held a step later', () => {
+    const w = make()
+    w.update(0)
+    w.hold('down', 0)
+    expect(w.tile).toEqual({ x: 2, y: 3 })
+    w.update(STEP_MS)
+    expect(w.tile).toEqual({ x: 2, y: 4 })
+    const quick = make()
+    quick.update(0)
+    quick.hold('down', 0)
+    quick.release('down')
+    quick.update(STEP_MS * 3)
+    expect(quick.tile).toEqual({ x: 2, y: 3 })
   })
 })

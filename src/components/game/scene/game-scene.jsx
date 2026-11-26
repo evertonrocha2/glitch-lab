@@ -11,14 +11,15 @@ import { nudge, orient, rotate } from './placement.js'
 import { BOSS_SPEED, duration, HUNT_SPEED, WALK_MS } from './playback.js'
 import { ellipse, SHADOW } from './pixels.js'
 import { mapLights, paintAnimated, paintBase, readMap, TS } from './tiles.js'
+import { drawNpc, nameTag, npcLights, roadSign } from './town.js'
 import { drawAilment, drawFx, fxLight, fxProgress } from './vfx.js'
 
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
 
-// Zone 1 is everything outside the world's lockable zones; z2, z3 follow in world.zones order.
+// The zone's number from its id (z1, z2, z3), 1 when the rect is no zone of the world.
 function zoneNumber(world, rect) {
-  const at = (world.zones ?? []).findIndex((zone) => sameRect(zone.rect, rect))
-  return at < 0 ? 1 : at + 2
+  const zone = (world.zones ?? []).find((each) => sameRect(each.rect, rect))
+  return zone ? Number(zone.id.slice(1)) : 1
 }
 
 // Where the hero starts in a zone: the walkable tile nearest the zone's middle with room two tiles right.
@@ -116,12 +117,13 @@ export const SPREAD = 1.6
 const SLIDE = 10
 const LEVEL_UP_MS = 1800
 
-// The hunting map in lit 16px pixel art, one canvas pixel per art pixel, scaled up by CSS to fit the width.
-// Static art goes to an offscreen layer once; water, portals, actors, effects and the light pass are
-// drawn each frame. With prefers-reduced-motion: still water, no fireflies, no shake, effects as short
-// still flashes.
-//   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (actors stand in it).
-//   Every zone is open (shared/game/zones.js), so nothing is fogged. look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
+// A region in lit 16px pixel art, one canvas pixel per art pixel, scaled up by CSS to fit the width.
+// Static art goes to an offscreen layer once per region; water, actors, the town's keepers, road signs,
+// effects and the light pass are drawn each frame. With prefers-reduced-motion: still water, no
+// fireflies, no shake, effects as short still flashes.
+//   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (packs stand in it;
+//   the whole map when null). Changing it never repaints the map. Nothing is locked or fogged.
+//   look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
 //   playback: { fights, loop, speed? } plays pack fight logs (pack.js): a loop walks 1.5 s between fights,
 //   and each pack spawns around wherever the hero stands. enemy: { sprite, elite } for a log without spawns.
 //   walker: a hunt-walker.js walker (the player walks the hero; it strolls on its own between packs).
@@ -139,11 +141,10 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
   const live = useRef({})
   const tr = useRef(t)
   tr.current = t
-  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level }
+  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level, zoneRect }
   const ready = useRef(false)
   const levelRef = useRef({ from: null, at: -1, n: 0 })
 
-  const zoneKey = JSON.stringify(zoneRect ?? null)
   const playing = Boolean(playback?.fights?.length)
   const walking = Boolean(walker)
 
@@ -165,10 +166,12 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       markReady()
       return undefined
     }
-    const rect = JSON.parse(zoneKey)
+    const map = readMap(world)
+    const whole = { x: 0, y: 0, w: map.W, h: map.H }
+    // Packs stand in the hunted zone, read each frame so a new zone never repaints the map.
+    let rect = live.current.zoneRect ?? whole
     const spot = fightSpot(world, rect)
     const base = layer(canvas.width, canvas.height, (c) => paintBase(c, world))
-    const map = readMap(world)
     const motes = map.outdoor ? 'fireflies' : 'dust'
     const tint = world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
 
@@ -232,7 +235,9 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
 
     // time: seconds since the scene started; clock: the same moment in performance.now() ms, the
     // walker's clock (input handlers stamp with performance.now()).
+    const npcs = world.npcs ?? []
     const draw = (time, clock) => {
+      rect = live.current.zoneRect ?? whole
       const te = reduced ? 0 : time
       const dt = Math.max(0, Math.min(0.1, time - lastTime))
       lastTime = time
@@ -295,9 +300,11 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       else paintBase(ctx, world)
       paintAnimated(ctx, world, te)
 
-      // Actors back to front: the hero and every enemy standing, sorted by their feet.
+      // Actors back to front: the hero, the town's keepers (-2, -3, ...) and every enemy standing,
+      // sorted by their feet.
       order.length = 0
       order.push(-1)
+      for (let i = 0; i < npcs.length; i++) order.push(-2 - i)
       if (pack) {
         for (let i = 0; i < pack.foes.length; i++) if (fight.state.foes[i].visible && fight.spots[i]) order.push(i)
       }
@@ -305,13 +312,15 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
 
       const heroAnim = pack ? fight.state.hero : null
       for (const who of order) {
-        if (who < 0) drawHero(heroAnim)
+        if (who === -1) drawHero(heroAnim)
+        else if (who < -1) drawNpc(ctx, npcs[-2 - who], { t: te, reduced, side: npcs[-2 - who].x * TS + 8 > heroPx.x ? -1 : 1 })
         else drawEnemyAt(who)
       }
 
       // The light pass, then the effects over it so they glow.
       lightOut.length = 0
       for (const l of mapLights(world, te)) lightOut.push(l)
+      for (const l of npcLights(world)) lightOut.push(l)
       lightOut.push(heroLight(heroPx.x - 8, heroPx.y - 15))
       if (pack) {
         for (const i of order) {
@@ -332,6 +341,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
         }
       }
       paintLight(ctx, te, { lights: lightOut, reduced, motes, tint })
+      paintLabels()
 
       let overlay = null
       if (pack) {
@@ -371,8 +381,19 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
         return feetY(a) - feetY(b)
       }
       function feetY(i) {
-        if (i < 0) return heroPx.y
+        if (i === -1) return heroPx.y
+        if (i < -1) return npcs[-2 - i].y * TS + 15
         return Math.round(fight.spots[i].y * TS + 15)
+      }
+
+      // Over the light: each keeper's name and, at each road, where it leads.
+      function paintLabels() {
+        const say = tr.current
+        for (const npc of npcs) nameTag(ctx, say(`world.npc.${npc.id}`), npc.x * TS + 8, npc.y * TS - (npc.id === 'quests' ? 7 : 19), { tone: 'gold' })
+        for (const road of world.roads ?? []) {
+          const sign = roadSign(world, road)
+          nameTag(ctx, say('world.road.sign', { arrow: sign.arrow, world: say(`world.name.${road.to}`) }), sign.x, sign.y)
+        }
       }
 
       function drawHero(anim) {
@@ -513,7 +534,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
     return () => {
       if (frame) cancelAnimationFrame(frame)
     }
-  }, [world, zoneKey, reduced, playing, walking])
+  }, [world, reduced, playing, walking])
 
   // A click on the map walks the hero there (the canvas is the whole map, so no camera math).
   function onClick(event) {
