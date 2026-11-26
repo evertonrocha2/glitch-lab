@@ -173,7 +173,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
     const spot = fightSpot(world, rect)
     const base = layer(canvas.width, canvas.height, (c) => paintBase(c, world))
     const motes = map.outdoor ? 'fireflies' : 'dust'
-    const tint = world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
+    // The dusk over the map: the town under a steel slate evening (Ardósia), the regions as before.
+    const tint = world.kind === 'town' ? '#aab4c8' : world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
 
     // Playback keeps its own clock, so it still runs with reduced motion (the environment stays frozen).
     let plan = null
@@ -389,10 +390,11 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       // Over the light: each keeper's name and, at each road, where it leads.
       function paintLabels() {
         const say = tr.current
-        for (const npc of npcs) nameTag(ctx, say(`world.npc.${npc.id}`), npc.x * TS + 8, npc.y * TS - (npc.id === 'quests' ? 7 : 19), { tone: 'gold' })
+        const width = map.W * TS
+        for (const npc of npcs) nameTag(ctx, say(`world.npc.${npc.id}`), npc.x * TS + 8, npc.y * TS - (npc.id === 'quests' ? 7 : 19), { tone: 'gold', width })
         for (const road of world.roads ?? []) {
           const sign = roadSign(world, road)
-          nameTag(ctx, say('world.road.sign', { arrow: sign.arrow, world: say(`world.name.${road.to}`) }), sign.x, sign.y)
+          nameTag(ctx, say('world.road.sign', { arrow: sign.arrow, world: say(`world.name.${road.to}`) }), sign.x, sign.y, { width })
         }
       }
 
