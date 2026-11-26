@@ -2,6 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { getExam, joinTrack } from '../../lib/api.js'
+import { loadLessons } from '../../lib/exams/lessons.js'
 import { renderAt } from '../../test/render.jsx'
 
 vi.mock('../../lib/api.js', () => ({
@@ -13,6 +14,10 @@ vi.mock('../../lib/api.js', () => ({
   getExam: vi.fn(),
   joinTrack: vi.fn(),
 }))
+
+vi.mock('../../lib/exams/lessons.js', () => ({ loadLessons: vi.fn() }))
+
+const lessons = (ids = []) => ({ lessonFor: (id) => (ids.includes(id) ? { topic: id } : null) })
 
 const topic = (id, name, stats = {}) => ({ id, name, questions: 0, answered: 0, correct: 0, ...stats })
 
@@ -34,6 +39,7 @@ const examWith = (overrides = {}) => ({
 })
 
 beforeEach(() => {
+  vi.mocked(loadLessons).mockReset().mockResolvedValue(lessons())
   vi.mocked(getExam).mockReset().mockResolvedValue(examWith())
   vi.mocked(joinTrack).mockReset().mockResolvedValue({ id: 'enem', examDate: '2027-11-07' })
 })
@@ -85,4 +91,24 @@ it('has a link in the menu', async () => {
   renderAt('/exams/enem', { user: 'ana', locale: 'pt-BR' })
   const nav = await screen.findByRole('navigation', { name: /principal|main/i })
   expect(within(nav).getByRole('link', { name: 'ENEM' })).toHaveAttribute('href', '/exams/enem')
+})
+
+it('marks the topics that have a lesson', async () => {
+  vi.mocked(loadLessons).mockResolvedValue(lessons(['literatura', 'trigonometria']))
+  renderAt('/exams/enem', { user: 'ana', locale: 'pt-BR' })
+  const literatura = await screen.findByRole('link', { name: /Literatura/ })
+  expect(await within(literatura).findByText('Aula')).toBeInTheDocument()
+  expect(within(screen.getByRole('link', { name: /Funções/ })).queryByText('Aula')).not.toBeInTheDocument()
+  // A lesson is worth opening even before the topic has questions.
+  const trigonometria = screen.getByRole('link', { name: /Trigonometria/ })
+  expect(trigonometria).toHaveAttribute('href', '/exams/enem/trigonometria')
+  expect(within(trigonometria).getByText('questões em breve')).toBeInTheDocument()
+})
+
+it('shows the topics without badges when the lessons fail to load', async () => {
+  vi.mocked(loadLessons).mockRejectedValue(new Error('offline'))
+  renderAt('/exams/enem', { user: 'ana', locale: 'pt-BR' })
+  const link = await screen.findByRole('link', { name: /Funções/ })
+  expect(within(link).queryByText('Aula')).not.toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 })

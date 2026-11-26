@@ -8,6 +8,7 @@ import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import { AuthError, getExam, joinTrack } from '../../lib/api.js'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { localDay } from '../../lib/day.js'
+import { loadLessons } from '../../lib/exams/lessons.js'
 import { useFormat } from '../../lib/i18n/format.js'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import ExamPageSkeleton from './exam-page-skeleton.jsx'
@@ -22,6 +23,9 @@ export default function ExamPage() {
   const [today] = useState(() => localDay())
   const [exam, setExam] = useState(null)
   const [message, setMessage] = useState('')
+  // Which topics have a lesson (ENEM only), from the lessons chunk. Until it loads, or if it can't,
+  // the rows just show no badge.
+  const [hasLesson, setHasLesson] = useState(() => () => false)
 
   const handleError = useCallback(
     async (err) => {
@@ -47,6 +51,18 @@ export default function ExamPage() {
       live = false
     }
   }, [examId, getToken, handleError])
+
+  useEffect(() => {
+    if (examId !== 'enem') return
+    let live = true
+    loadLessons().then(
+      ({ lessonFor }) => live && setHasLesson(() => (topicId) => lessonFor(topicId) !== null),
+      () => {},
+    )
+    return () => {
+      live = false
+    }
+  }, [examId])
 
   async function join({ examDate }) {
     try {
@@ -89,7 +105,7 @@ export default function ExamPage() {
                 </h2>
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                   {area.topics.map((topic) => (
-                    <TopicRow key={topic.id} examId={exam.id} topic={topic} />
+                    <TopicRow key={topic.id} examId={exam.id} topic={topic} lesson={hasLesson(topic.id)} />
                   ))}
                 </ul>
               </section>
