@@ -111,8 +111,8 @@ describe('arrival', () => {
   })
 
   it('climbs from the Forest north road into the Cave south road', () => {
-    expect(arrival(worldById('floresta-js'), 7, 0)).toEqual({ world: 'caverna-sql', x: 5, y: 18, facing: 'up' })
-    expect(arrival(worldById('caverna-sql'), 6, 19)).toEqual({ world: 'floresta-js', x: 8, y: 1, facing: 'down' })
+    expect(arrival(worldById('floresta-js'), 7, 0)).toEqual({ world: 'caverna-sql', x: 9, y: 30, facing: 'up' })
+    expect(arrival(worldById('caverna-sql'), 10, 31)).toEqual({ world: 'floresta-js', x: 8, y: 1, facing: 'down' })
   })
 
   it('lands on a walkable tile that is not itself a road, for every road and offset', () => {
