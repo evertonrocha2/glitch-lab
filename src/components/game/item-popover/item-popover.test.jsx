@@ -80,6 +80,15 @@ it('opens a popover with the full card and its actions on click, and Escape give
   expect(relicCell()).toHaveFocus()
 })
 
+it('closes on an Escape pressed while focus is back on the cell', () => {
+  ui()
+  fireEvent.click(relicCell())
+  act(() => relicCell().focus())
+  fireEvent.keyDown(relicCell(), { key: 'Escape' })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(relicCell()).toHaveFocus()
+})
+
 it('keeps one popover open at a time, and a second click on the cell closes it', () => {
   ui()
   fireEvent.click(relicCell())
