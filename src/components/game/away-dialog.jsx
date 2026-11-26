@@ -28,8 +28,8 @@ export function useCounts() {
 }
 
 // What a sync paid: the hunt while the student was away (AwaySummary) and the study rewards claimed.
-// Either may be missing. onClose hides it.
-export default function AwayDialog({ away, studyClaimed, onClose }) {
+// Either may be missing. onClose hides it. onStudy (optional): "Study more" opens the study window.
+export default function AwayDialog({ away, studyClaimed, onClose, onStudy }) {
   const { t, list, time } = useCounts()
   const titleId = useId()
   const hunt = away ? list([['kills', away.kills], ['gold', away.gold], ['items', away.items], ['gems', away.gems], ['scrap', away.scrap], ['deaths', away.deaths]]) : ''
@@ -53,7 +53,8 @@ export default function AwayDialog({ away, studyClaimed, onClose }) {
             {t('game.away.study', { list: study })}
           </Line>
         )}
-        <span className="self-end">
+        <span className="flex flex-wrap justify-end gap-1.5">
+          {onStudy && <ActionButton onClick={onStudy}>{t('studyWindow.awayStudy')}</ActionButton>}
           <ActionButton tone="gold" onClick={onClose}>
             {t('game.away.close')}
           </ActionButton>

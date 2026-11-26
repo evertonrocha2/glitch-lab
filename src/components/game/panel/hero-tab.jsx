@@ -7,6 +7,7 @@ import { gearOf } from '../hero/gear.js'
 import { HeroCanvas } from '../hero/hero-canvas.jsx'
 import GameIcon from '../icons/game-icon.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
+import { useStudyWindow } from '../study-window/study-window-provider.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
 import Bar from '../ui/bar.jsx'
 import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
@@ -236,14 +237,23 @@ function StatGroups({ stats, text }) {
 }
 
 // The study call to action as a quest card: a gold frame, the book, today's answers and a meter
-// filling toward the next tree point (gone once those points are maxed out). Task 20 passes its link.
+// filling toward the next tree point (gone once those points are maxed out). Inside the game (a
+// StudyWindowProvider above) it opens the study page in the study window, so the game stays on
+// screen; elsewhere it is a plain link to it.
 function StudyQuest({ study, href, text }) {
   const { t } = text
+  const studyWindow = useStudyWindow()
   const next = study?.today?.toNextPoint
   const done = next == null ? 0 : ACERTOS_PER_POINT - next
-  const link = href ? { as: 'a', href } : {}
+  let target = {}
+  if (href && studyWindow) target = { as: 'button', type: 'button', onClick: () => studyWindow.open(href) }
+  else if (href) target = { as: 'a', href }
   return (
-    <Frame {...link} tone="gold" className="flex flex-col gap-2 p-2.5 text-[#e9e4ff] no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+    <Frame
+      {...target}
+      tone="gold"
+      className={`flex flex-col gap-2 p-2.5 text-left text-[#e9e4ff] no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${href ? 'cursor-pointer' : ''}`}
+    >
       <span className="flex items-center gap-2">
         <GameIcon name="book" size={2} className="shrink-0" />
         <span className="flex min-w-0 flex-col items-start gap-1">

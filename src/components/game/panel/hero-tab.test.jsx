@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeAll, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
+import { StudyWindowProvider } from '../study-window/study-window-provider.jsx'
 import { RARITY_TRIM } from '../ui/tokens.js'
 import { makeActions, makeView, wornRelic } from './fixtures.js'
 import GamePanel from './game-panel.jsx'
@@ -120,6 +121,22 @@ it('shows the study quest card with today, the next point and its meter', () => 
   const meter = within(link).getByRole('meter', { name: 'Correct answers toward the next tree point' })
   expect(meter).toHaveAttribute('aria-valuenow', '4')
   expect(meter).toHaveAttribute('aria-valuemax', '10')
+})
+
+it('opens the study window from the quest card, when the game has one, instead of leaving', () => {
+  const view = makeView()
+  render(
+    <I18nProvider locale="en">
+      <StudyWindowProvider>
+        <GamePanel view={view} tab="hero" onTab={() => {}} actions={makeActions(vi, view)} studyHref="/hunt" />
+      </StudyWindowProvider>
+    </I18nProvider>,
+  )
+  expect(screen.queryByRole('link', { name: /Study to get stronger/ })).toBeNull()
+  const card = screen.getByRole('button', { name: /Study to get stronger/ })
+  expect(within(card).getByText('Today: 14 correct answers.')).toBeInTheDocument()
+  fireEvent.click(card)
+  expect(screen.getByRole('region', { name: 'Study' }).querySelector('iframe')).toHaveAttribute('src', '/hunt?embed=1')
 })
 
 it('drops the quest meter once tree points from answers are maxed out', () => {

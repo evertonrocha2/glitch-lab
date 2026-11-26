@@ -15,9 +15,13 @@ import { replayAt } from './replay.js'
 import GameScene, { fightSpot } from './scene/game-scene.jsx'
 import { duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
 import Frame from './ui/frame.jsx'
+import { StudyWindowProvider, useStudyWindow } from './study-window/study-window-provider.jsx'
 import { useFullscreen } from './use-fullscreen.js'
 
 export const SYNC_MS = 60_000
+// While the study window is open the View syncs this often, so new acertos show in the HUD and the
+// quest card while the student answers.
+export const STUDY_SYNC_MS = 20_000
 const TICK_MS = 200
 // The closed drawer's height when it can't be measured (handle 44 + tab row 52 + padding and frame).
 const DOCK_PX = 102
@@ -134,9 +138,20 @@ function shownZone(view, worldId, replay) {
 // shows the away summary, loops the hunt's sample fights and replays a boss fight before its result.
 //   worldId: the hunt world. api: the game calls bound to the token (syncGame, startHunt, stopHunt,
 //   fightBoss and the panel actions), each resolving to the server answer. onLeave: back to the Lab.
-//   studyHref: where the study box links.
-export default function GameView({ worldId, api, onLeave, studyHref }) {
+//   studyHref: the study page the "Estudar" entries open, in the study window over the game.
+// GameView carries its own StudyWindowProvider; a page that mounts one above it shares that one.
+export default function GameView(props) {
+  return (
+    <StudyWindowProvider>
+      <GameScreen {...props} />
+    </StudyWindowProvider>
+  )
+}
+
+function GameScreen({ worldId, api, onLeave, studyHref }) {
   const { t } = useI18n()
+  const studyWindow = useStudyWindow()
+  const studyOpen = studyWindow.isOpen
   const counts = useCounts()
   const world = worldById(worldId)
   const [view, setView] = useState(null)
@@ -219,6 +234,22 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
     }, SYNC_MS)
     return () => clearInterval(timer)
   }, [hunting, sync])
+
+  // The study window is open: sync every 20 s (also while hunting, on top of the minute's sync; a
+  // waiting sync is never doubled), and once more when it closes.
+  const studied = useRef(false)
+  useEffect(() => {
+    if (!studyOpen) {
+      if (studied.current) sync()
+      studied.current = false
+      return undefined
+    }
+    studied.current = true
+    const timer = setInterval(() => {
+      if (!document.hidden) sync()
+    }, STUDY_SYNC_MS)
+    return () => clearInterval(timer)
+  }, [studyOpen, sync])
 
   useEffect(() => {
     const onVisible = () => {
@@ -498,7 +529,17 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
           onLater={lookLater}
         />
       )}
-      {away && !lookOpen && <AwayDialog away={away.away} studyClaimed={away.studyClaimed} onClose={() => setAway(null)} />}
+      {away && !lookOpen && (
+        <AwayDialog
+          away={away.away}
+          studyClaimed={away.studyClaimed}
+          onClose={() => setAway(null)}
+          onStudy={() => {
+            setAway(null)
+            studyWindow.open(studyHref)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -94,6 +94,47 @@ it('does not poll when no hunt runs', async () => {
   expect(api.syncGame).toHaveBeenCalledTimes(1)
 })
 
+it('opens the study page in a window over the game from the quest card, the game still there', async () => {
+  const api = makeApi()
+  ui(api)
+  fireEvent.click(await screen.findByRole('button', { name: /Estudar pra ficar mais forte/ }))
+  const study = screen.getByRole('region', { name: 'Estudo' })
+  expect(study.querySelector('iframe')).toHaveAttribute('src', '/daily?embed=1')
+  expect(screen.getByRole('tablist')).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Cena da caça' })).toBeInTheDocument()
+})
+
+it('syncs every 20 s while the study window is open and once when it closes', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  const api = makeApi()
+  ui(api)
+  fireEvent.click(await screen.findByRole('button', { name: /Estudar pra ficar mais forte/ }))
+  expect(api.syncGame).toHaveBeenCalledTimes(1)
+  await act(() => vi.advanceTimersByTimeAsync(20_000))
+  expect(api.syncGame).toHaveBeenCalledTimes(2)
+  await act(() => vi.advanceTimersByTimeAsync(20_000))
+  expect(api.syncGame).toHaveBeenCalledTimes(3)
+  // Minimized still counts as open: the page may still be answering.
+  fireEvent.click(screen.getByRole('button', { name: 'Minimizar a janela de estudo' }))
+  await act(() => vi.advanceTimersByTimeAsync(20_000))
+  expect(api.syncGame).toHaveBeenCalledTimes(4)
+  fireEvent.click(screen.getAllByRole('button', { name: 'Fechar a janela de estudo' }).at(-1))
+  await act(() => vi.advanceTimersByTimeAsync(0))
+  expect(api.syncGame).toHaveBeenCalledTimes(5)
+  await act(() => vi.advanceTimersByTimeAsync(60_000))
+  expect(api.syncGame).toHaveBeenCalledTimes(5)
+})
+
+it('offers more study from the away summary, in the study window', async () => {
+  const api = makeApi()
+  api.syncGame.mockResolvedValueOnce({ ...makeView(), studyClaimed: CLAIMED })
+  ui(api)
+  const dialog = await screen.findByRole('dialog', { name: 'Bem-vindo de volta' })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Estudar mais' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(screen.getByRole('region', { name: 'Estudo' }).querySelector('iframe')).toHaveAttribute('src', '/daily?embed=1')
+})
+
 it('says the hero changed in another tab on a 409, with a reload button', async () => {
   const api = makeApi()
   api.syncGame.mockRejectedValue(Object.assign(new Error('Your hero changed in another tab. Reload to continue.'), { status: 409, code: 'GAME_CONFLICT' }))
