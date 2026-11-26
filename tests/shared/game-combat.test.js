@@ -266,11 +266,11 @@ describe('balance', () => {
     z2: { strong: [10, { attack: 18, hp: 180, armor: 22 }], weak: [10, {}] },
     z3: { strong: [14, { attack: 35, hp: 350, armor: 45 }], weak: [14, { attack: 9, hp: 90, armor: 9 }] },
   }
-  const wins = (stats, zone) => {
+  const wins = (stats, zone, skills = [{ id: 'golpe', level: 1 }]) => {
     let count = 0
     for (let i = 0; i < 10; i++) {
       const r = simulateFight({
-        hero: hero(stats, { potions: { hp: 3, mp: 0 }, thresholds: { hp: 0.4, mp: 0.25 } }),
+        hero: hero(stats, { skills, potions: { hp: 3, mp: 0 }, thresholds: { hp: 0.4, mp: 0.25 } }),
         enemy: bossOf(zone),
         seed: `${zone.id}-boss-${i}`,
       })
@@ -286,6 +286,16 @@ describe('balance', () => {
       expect(power(weak)).toBeLessThanOrEqual(0.7 * zone.suggestedPower)
       expect(wins(strong, zone)).toBeGreaterThanOrEqual(6)
       expect(wins(weak, zone)).toBeLessThanOrEqual(2)
+    })
+  }
+
+  // Fase 2b: area skills hit the adds too, yet a weak hero with the skills its level allows still loses.
+  const KITS = { z1: ['golpe', 'raio'], z2: ['golpe', 'raio', 'chama', 'veneno'], z3: ['golpe', 'raio', 'chama', 'cura'] }
+  for (const zone of Object.values(FOREST)) {
+    it(`gates the ${zone.id} boss by suggestedPower with a full skill kit too`, () => {
+      const kit = KITS[zone.id].map((id) => ({ id, level: 1 }))
+      expect(wins(geared(...GATE[zone.id].strong), zone, kit)).toBeGreaterThanOrEqual(8)
+      expect(wins(geared(...GATE[zone.id].weak), zone, kit)).toBeLessThanOrEqual(2)
     })
   }
 
