@@ -31,6 +31,15 @@ export function rotate(rot, p, out) {
   return out
 }
 
+// p turned back by rot (the inverse of rotate), written into out.
+export function unrotate(rot, p, out) {
+  const x = p.x * rot.cos + p.y * rot.sin
+  const y = -p.x * rot.sin + p.y * rot.cos
+  out.x = x
+  out.y = y
+  return out
+}
+
 const spot = { x: 0, y: 0 }
 const standsAt = (world, rect, tile, rot, p) => {
   rotate(rot, p, spot)
@@ -38,19 +47,28 @@ const standsAt = (world, rect, tile, rot, p) => {
 }
 
 // The turn that puts the most of the pack on floor around `tile`: where each enemy stops (to) counts
-// twice, where it appears (from) once. Ties keep the earlier turn. spots: [{ from, to }].
+// twice, where it appears (from) once. spots: [{ from?, to?, near? }]. near: where a claimed ambient
+// monster stands (tile offset from `tile`, not turned); among turns as good on floor, the one stopping
+// those foes nearest their monsters wins. Further ties keep the earlier turn.
 export function orient(world, rect, tile, spots) {
   let best = ROTATIONS[0]
   let bestScore = -1
+  let bestCost = Infinity
   for (const rot of ROTATIONS) {
     let score = 0
+    let cost = 0
     for (const s of spots) {
       if (s.to && standsAt(world, rect, tile, rot, s.to)) score += 2
       if (s.from && standsAt(world, rect, tile, rot, s.from)) score += 1
+      if (s.near && s.to) {
+        rotate(rot, s.to, spot)
+        cost += Math.hypot(spot.x - s.near.x, spot.y - s.near.y)
+      }
     }
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && cost < bestCost - 1e-9)) {
       best = rot
       bestScore = score
+      bestCost = cost
     }
   }
   return best

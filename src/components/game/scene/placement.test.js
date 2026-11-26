@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canStand, nudge, orient, ROTATIONS, rotate } from './placement.js'
+import { canStand, nudge, orient, ROTATIONS, rotate, unrotate } from './placement.js'
 
 // 8x5 room: walls around, water at (2,2) and (6,2), a town NPC at (1,3).
 const world = {
@@ -29,6 +29,18 @@ describe('rotate', () => {
   })
 })
 
+describe('unrotate', () => {
+  it('undoes rotate for every turn', () => {
+    const out = { x: 0, y: 0 }
+    for (const rot of ROTATIONS) {
+      const turned = rotate(rot, { x: 2.5, y: -1 }, { x: 0, y: 0 })
+      const back = unrotate(rot, turned, out)
+      expect(back.x).toBeCloseTo(2.5)
+      expect(back.y).toBeCloseTo(-1)
+    }
+  })
+})
+
 describe('orient', () => {
   const pack = [
     { from: { x: 4, y: 0 }, to: { x: 1.3, y: 0 } },
@@ -42,6 +54,28 @@ describe('orient', () => {
     expect(rot).not.toBe(ROTATIONS[0])
     const to = rotate(rot, pack[0].to, { x: 0, y: 0 })
     expect(canStand(world, rect, Math.round(6 + to.x), Math.round(1 + to.y))).toBe(true)
+  })
+})
+
+describe('orient toward claimed monsters', () => {
+  const open = { rows: Array.from({ length: 20 }, () => '.'.repeat(20)), npcs: [] }
+  const all = { x: 0, y: 0, w: 20, h: 20 }
+  const pack = [
+    { to: { x: 1.3, y: 0 }, near: { x: -6, y: 0 } },
+    { to: { x: 1.1, y: 0.7 }, near: { x: -5, y: -1 } },
+  ]
+  it('on open ground, turns the pack so each foe stops on the side its monster stands', () => {
+    const rot = orient(open, all, { x: 10, y: 10 }, pack)
+    expect(rot).toBe(ROTATIONS[1])
+    const down = orient(open, all, { x: 10, y: 10 }, pack.map((s) => ({ ...s, near: { x: 0, y: 6 } })))
+    expect(rotate(down, { x: 1, y: 0 }, { x: 0, y: 0 }).y).toBeCloseTo(1)
+  })
+  it('still puts floor first', () => {
+    // The hero by the left wall: the monsters' side is wall, so the foes still stop on floor.
+    const rot = orient(world, rect, { x: 1, y: 1 }, [pack[0]])
+    expect(rot).not.toBe(ROTATIONS[1])
+    const to = rotate(rot, pack[0].to, { x: 0, y: 0 })
+    expect(canStand(world, rect, Math.round(1 + to.x), Math.round(1 + to.y))).toBe(true)
   })
 })
 
