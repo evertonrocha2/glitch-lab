@@ -322,6 +322,9 @@ export const equipItem = (itemId, token) => game('/equip', 'POST', token, { item
 export const unequipSlot = (slot, token) => game('/unequip', 'POST', token, { slot })
 export const allocateTalents = (add, token) => game('/talents', 'POST', token, { add })
 export const respecTalents = (token) => game('/talents/respec', 'POST', token)
+// A support gem from the bag into a socket node of the tree (a filled one swaps), and back out.
+export const socketSupport = (node, gemId, token) => game('/talents/socket', 'POST', token, { node, gemId })
+export const unsocketSupport = (node, token) => game('/talents/unsocket', 'POST', token, { node })
 export const buySkill = (skillId, token) => game('/skills/buy', 'POST', token, { skillId })
 export const upgradeSkill = (skillId, token) => game('/skills/upgrade', 'POST', token, { skillId })
 export const saveLoadout = ({ skills, thresholds }, token) => game('/loadout', 'PUT', token, { skills, thresholds })
