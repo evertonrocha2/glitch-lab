@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { KIND_COLORS } from './floaters.js'
-import { activeFloaters, buildPack, FX_KINDS, fxFor, packAt, shakeAt, stackFloaters } from './pack.js'
+import { activeFloaters, buildPack, claimSpawns, FX_KINDS, fxFor, packAt, shakeAt, stackFloaters } from './pack.js'
 
 const fight = (log, extra = {}) => ({ won: true, reason: 'killed', ms: 3000, heroHpLeft: 10, potionsUsed: { hp: 0, mp: 0 }, log, ...extra })
 const spawn = (src, extra = {}) => ({ t: 0, who: 'enemy', src, type: 'spawn', id: 'slime', sprite: 'slime', element: 'poison', hp: 100, from: { x: 4, y: 0 }, to: { x: 1.3, y: 0 }, speed: 2.5, ...extra })
@@ -216,5 +216,46 @@ describe('knowledge fragments (fase 4)', () => {
     const drop = pack.floaters.find((f) => f.kind === 'fragment')
     expect(drop).toMatchObject({ target: 0, text: '+2', color: KIND_COLORS.fragment })
     expect(pack.floaters.filter((f) => f.kind === 'hurt')).toEqual([])
+  })
+})
+
+describe('claimSpawns: a pack walking in from claimed ambient monsters', () => {
+  const log = [
+    spawn(0, { id: 'slime-select' }),
+    spawn(1, { id: 'cogumelo-verbo', sprite: 'cogumelo', from: { x: 3, y: 2 }, to: { x: 1, y: 0.7 } }),
+    { t: 1000, who: 'enemy', src: 0, type: 'arrive' },
+    { t: 1000, who: 'enemy', src: 1, type: 'arrive' },
+    { t: 2000, who: 'enemy', src: 0, type: 'death' },
+  ]
+  const pack = buildPack(fight(log), { speed: 1 })
+
+  it('keeps each foe enemy id from its spawn', () => {
+    expect(pack.foes.map((f) => f.id)).toEqual(['slime-select', 'cogumelo-verbo'])
+  })
+
+  it('starts a claimed foe at its monster spot, keeps where it stops and when it arrives', () => {
+    const claimed = claimSpawns(pack, [null, { x: -5, y: 3 }])
+    expect(claimed.foes[0]).toEqual(pack.foes[0])
+    expect(claimed.foes[1]).toMatchObject({ from: { x: -5, y: 3 }, to: { x: 1, y: 0.7 }, spawnAt: 0, arriveAt: 1000, claimed: true })
+    const at0 = packAt(claimed, 0).foes[1]
+    expect({ x: at0.x, y: at0.y, visible: at0.visible }).toEqual({ x: -5, y: 3, visible: true })
+    const at1 = packAt(claimed, 1000).foes[1]
+    expect(at1.x).toBeCloseTo(1)
+    expect(at1.y).toBeCloseTo(0.7)
+    // The fight itself is the same: hp, deaths, effects of hits.
+    expect(claimed.foes[1].hp).toEqual(pack.foes[1].hp)
+    expect(claimed.len).toBe(pack.len)
+  })
+
+  it('drops the spawn portal of a claimed foe only, and never changes the pack it came from', () => {
+    const before = JSON.stringify(pack)
+    const claimed = claimSpawns(pack, [null, { x: -5, y: 3 }])
+    const portals = (p) => p.fx.filter((fx) => fx.kind === 'spawn').map((fx) => fx.target)
+    expect(portals(pack)).toEqual([0, 1])
+    expect(portals(claimed)).toEqual([0])
+    expect(JSON.stringify(pack)).toBe(before)
+    // Nothing claimed: the pack as it was.
+    expect(claimSpawns(pack, [null, null])).toBe(pack)
+    expect(claimSpawns(pack, [])).toBe(pack)
   })
 })

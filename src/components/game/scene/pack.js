@@ -116,7 +116,7 @@ export function buildPack(fight, { speed = BOSS_SPEED, fallback = null } = {}) {
     const i = src ?? 0
     if (!foes[i]) {
       foes[i] = {
-        src: i, sprite: fallback?.sprite ?? 'slime', elite: Boolean(fallback?.elite), boss: false, add: false, maxHp: 0,
+        src: i, id: fallback?.id ?? null, sprite: fallback?.sprite ?? 'slime', elite: Boolean(fallback?.elite), boss: false, add: false, maxHp: 0,
         from: { x: 2, y: 0 }, to: { x: 2, y: 0 }, spawnAt: 0, arriveAt: 0, deathAt: null, hp: [], acts: [], slows: [], burns: [],
       }
     }
@@ -150,7 +150,7 @@ export function buildPack(fight, { speed = BOSS_SPEED, fallback = null } = {}) {
     if (type === 'spawn') {
       const f = foe(ev.src)
       Object.assign(f, {
-        sprite: ev.sprite ?? f.sprite, elite: Boolean(ev.elite), boss: Boolean(ev.boss), add: ev.summoner !== undefined,
+        id: ev.id ?? f.id, sprite: ev.sprite ?? f.sprite, elite: Boolean(ev.elite), boss: Boolean(ev.boss), add: ev.summoner !== undefined,
         maxHp: ev.hp ?? 0, from: ev.from ?? f.from, to: ev.to ?? ev.from ?? f.to, spawnAt: at(t),
       })
       const far = Math.hypot(f.from.x - f.to.x, f.from.y - f.to.y)
@@ -263,6 +263,17 @@ export function buildPack(fight, { speed = BOSS_SPEED, fallback = null } = {}) {
   floaters.sort((a, b) => a.at - b.at)
   shakes.sort((a, b) => a.at - b.at)
   return { k, len, foes: foes.filter(Boolean), hero, fx, floaters, shakes }
+}
+
+// The pack with some foes walking in from claimed ambient monsters (presentation only: the log and the
+// fight stay as they are). froms[i]: where foe i appears instead of its logged spawn, hero relative in
+// log tiles, or null to keep the log's. A claimed foe loses its spawn portal (it was already standing
+// there) and carries claimed: true. Answers the same pack when nothing is claimed; never changes it.
+export function claimSpawns(pack, froms) {
+  if (!froms?.some(Boolean)) return pack
+  const foes = pack.foes.map((f, i) => (froms[i] ? { ...f, from: { x: froms[i].x, y: froms[i].y }, claimed: true } : f))
+  const fx = pack.fx.filter((item) => item.kind !== 'spawn' || !froms[item.target])
+  return { ...pack, foes, fx }
 }
 
 // The anim an actor plays at ms from its sorted acts, written into out { anim, p }.
