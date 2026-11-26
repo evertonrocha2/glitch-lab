@@ -126,7 +126,7 @@ export default function HubScene({ world, hero, look, gear, crop, lockedPortals 
         ctx.restore()
       } else ctx.drawImage(img, doll.x, doll.y + bob)
       if (over) ctx.drawImage(over, 0, 0)
-      else if (rects.length || portals.length) paintOver(ctx)
+      else if (portals.length) paintOver(ctx)
       ctx.restore()
 
       const lights = [...mapLights(world, t), heroLight(hx, hy)].map((light) => ({ ...light, x: light.x - ox, y: light.y - oy }))
