@@ -2,7 +2,7 @@ import GameIcon from '../icons/game-icon.jsx'
 import { RARITY_COLORS, iconOf } from '../item-tooltip/item-text.js'
 
 const GEM_BORDER = '#4fd1c5'
-const CELL = 'relative grid aspect-square min-h-11 min-w-11 place-items-center border-2 bg-[radial-gradient(#2a2148,#140f28)]'
+const CELL = 'relative grid aspect-square w-full min-h-11 min-w-11 place-items-center border-2 bg-[radial-gradient(#2a2148,#140f28)]'
 
 // One item square (the mockup's .it): its icon on a border in the rarity color. A button, so the
 // whole grid is keyboard reachable. pressed: aria-pressed for multi-select; selected: the white ring.

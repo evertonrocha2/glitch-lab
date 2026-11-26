@@ -121,6 +121,7 @@ const en = {
 
   'game.forge.title': 'Forge',
   'game.forge.pick': 'Pick an item to forge.',
+  'game.forge.change': 'Pick another item',
   'game.forge.upgrade': 'Upgrade',
   'game.forge.upgradeCost': '{gold} gold, {scrap} scrap, {chance}% chance',
   'game.forge.up': 'Upgraded to +{level}',
@@ -379,6 +380,7 @@ const pt = {
 
   'game.forge.title': 'Forja',
   'game.forge.pick': 'Escolha um item pra forjar.',
+  'game.forge.change': 'Escolher outro item',
   'game.forge.upgrade': 'Melhorar',
   'game.forge.upgradeCost': '{gold} de ouro, {scrap} de sucata, {chance}% de chance',
   'game.forge.up': 'Melhorou pra +{level}',

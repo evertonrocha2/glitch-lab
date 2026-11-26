@@ -48,7 +48,7 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
     <>
       <div className="flex flex-wrap items-center justify-between gap-1.5">
         <BlockTitle id={gridId}>
-          {t('game.bag.title')} <span className="font-normal text-[#9a93b8]">{t('game.bag.count', { used: items.length, size: BAG_SIZE })}</span>
+          {t('game.bag.title')} <span className="font-normal normal-case text-[#9a93b8]">{t('game.bag.count', { used: items.length, size: BAG_SIZE })}</span>
         </BlockTitle>
         <fieldset className="m-0 flex items-center gap-1 border-0 p-0">
           <legend className="sr-only">{t('game.bag.sort')}</legend>

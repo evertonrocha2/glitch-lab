@@ -55,7 +55,7 @@ export default function ForgeTab({ view, actions, runner, selectedId, onSelect }
       <ItemTooltip item={selected} worn={worn} />
       <span>
         <ActionButton busy={runner.busy} onClick={() => setChoosing(true)}>
-          {t('game.forge.pick')}
+          {t('game.forge.change')}
         </ActionButton>
       </span>
       <Upgrade item={selected} view={view} actions={actions} runner={runner} text={text} />
