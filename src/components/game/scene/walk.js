@@ -1,9 +1,9 @@
 // Walking helpers for the one walking view (fase 3): steps, keys and the camera that follows the hero.
 // Pure, no DOM.
 
-// About 8 steps a second while a key, a pad button or a click path keeps the hero walking; the hero
+// 10 steps a second while a key, a pad button or a click path keeps the hero walking; the hero
 // also takes this long to slide from one tile to the next on screen.
-export const STEP_MS = 125
+export const STEP_MS = 100
 
 export const DIRECTIONS = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } }
 const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' }

@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { Link, useLocation } from 'react-router'
 import { isEmbedded } from '../../../app/embed.js'
 import { useAuth } from '../../../lib/auth/auth-provider.jsx'
@@ -17,6 +17,7 @@ import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
 import PixelLogo, { Wordmark } from '../../ui/pixel-logo/pixel-logo.jsx'
 import StudyTimer from '../study-timer/study-timer.jsx'
 import AppNav from '../app-nav/app-nav.jsx'
+import { prefetchWorld } from '../../world/world-prefetch.js'
 
 // The width every row of the signed-in pages shares: the header's two rows and the page.
 const COLUMN = 'mx-auto max-w-[88rem] px-5 sm:px-10 lg:px-16'
@@ -28,7 +29,9 @@ const COLUMN = 'mx-auto max-w-[88rem] px-5 sm:px-10 lg:px-16'
 // Inside the game's study window (embed mode, src/app/embed.js) the page shows alone.
 export default function AppShell({ children }) {
   const { search } = useLocation()
-  if (isEmbedded(search)) {
+  const embedded = isEmbedded(search)
+  useWorldPrefetch(!embedded)
+  if (embedded) {
     return (
       <div className="min-h-screen bg-mist">
         <main className="px-3 pt-4 pb-10 sm:px-5">{children}</main>
@@ -44,6 +47,21 @@ export default function AppShell({ children }) {
       <ShellWidgets />
     </div>
   )
+}
+
+// Starts loading the world page's first data (where the hero stands, the game View) once signed in, so
+// /mundo opens without waiting (world-prefetch.js). Inside the game's study window the world is open.
+function useWorldPrefetch(enabled) {
+  const { user, getToken } = useAuth()
+  const id = user?.id ?? null
+  useEffect(() => {
+    if (!enabled || !id || globalThis.navigator?.connection?.saveData) return
+    try {
+      prefetchWorld(id, getToken)
+    } catch {
+      // A prefetch is a bonus: the world page loads its own.
+    }
+  }, [enabled, id, getToken])
 }
 
 const ShellWidgets = memo(function ShellWidgets() {

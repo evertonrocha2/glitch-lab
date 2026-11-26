@@ -85,3 +85,7 @@ describe('useAutoHunt', () => {
     expect(start).toHaveBeenCalledTimes(1)
   })
 })
+
+it('starts hunting 0.8 s after the hero stops in a zone', () => {
+  expect(SETTLE_MS).toBe(800)
+})

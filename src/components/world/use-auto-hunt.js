@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 // server hunt starts there (or moves there, paying the last one); once it has stayed that long on safe
 // ground (the town), the hunt stops and pays. Walking through a zone on the way somewhere else changes
 // nothing. The server stays the judge: this only sends the same startHunt / stopHunt the panel did.
-export const SETTLE_MS = 1500
+export const SETTLE_MS = 800
 
 const same = (a, b) => Boolean(a && b) && a.world === b.world && a.zone === b.zone
 

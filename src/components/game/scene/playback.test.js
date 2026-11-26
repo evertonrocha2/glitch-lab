@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { duration, HUNT_SPEED } from './playback.js'
+import { BOSS_SPEED, duration, END_HOLD_MS, HUNT_SPEED, WALK_MS } from './playback.js'
 
 const fight = (log, extra = {}) => ({ won: true, reason: 'killed', ms: 3000, heroHpLeft: 10, potionsUsed: { hp: 0, mp: 0 }, log, ...extra })
 const three = fight([
@@ -21,4 +21,11 @@ it('handles empty logs and timeouts without a terminal event', () => {
 it('replays hunt packs a bit faster than real time', () => {
   expect(HUNT_SPEED).toBeGreaterThan(1)
   expect(HUNT_SPEED).toBeLessThanOrEqual(2)
+})
+
+it('keeps the hunt loop brisk: 2x packs, a short walk and a short beat, bosses at 1x', () => {
+  expect(HUNT_SPEED).toBe(2)
+  expect(WALK_MS).toBe(900)
+  expect(END_HOLD_MS).toBe(500)
+  expect(BOSS_SPEED).toBe(1)
 })
