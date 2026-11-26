@@ -44,8 +44,9 @@
 //           extra swing of Anel Recursivo.
 //   skill   who 'hero': a damage skill (or bugSplash).
 //   cast    who 'hero': a dot skill landing (no damage yet; its ticks come as dot events).
-//           hit, crit, skill and cast carry: skill (id), shape, element, target (the main target's
-//           index), hits [{ target, amount, crit? }] (cast: [{ target }]), amount (sum of the hits),
+//           hit, crit, skill and cast carry: skill (id; none on a plain basic attack), shape, element,
+//           target (the main target's index), hits [{ target, amount, crit? }] (cast: [{ target }]),
+//           amount (sum of the hits),
 //           at? { x, y } (area: the center; pierce: the far end of the line), radius? (around, area),
 //           slow? { pct, ms } (every target hit is slowed), dot? { ms } (cast), recast? (a free
 //           recast from recursion: no mana, no cooldown).
