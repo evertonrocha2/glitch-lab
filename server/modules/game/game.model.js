@@ -38,6 +38,7 @@ export const newHero = () => ({
   potions: { hp: 3, mp: 0 },
   thresholds: { hp: 0.4, mp: 0.25 },
   talents: ['root'],
+  treeSockets: {}, // { [socket node id]: support gem item } (fase 2c)
   skills: { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] },
   items: [], // gear and gems; equipped gear carries equipped: slot
   hunt: null, // { world, zone, difficulty, startedAt, seed, claims, xpMultiplier }
@@ -68,10 +69,21 @@ export const equippedOf = (hero) => hero.items.filter((item) => item.equipped)
 export const statsOf = (hero, level) =>
   heroStats({ level, items: equippedOf(hero), talents: hero.talents })
 
-// What combat and the hunt read: final stats, the loadout with its levels, potions and thresholds.
+// The support gem ids in the tree's sockets the hero has taken, each kind once.
+export const supportsOf = (hero) => [
+  ...new Set(
+    Object.entries(hero.treeSockets ?? {})
+      .filter(([node, gem]) => hero.talents.includes(node) && typeof gem?.support === 'string')
+      .map(([, gem]) => gem.support),
+  ),
+]
+
+// What combat and the hunt read: final stats, the loadout with its levels, the support gems, potions
+// and thresholds.
 export const fighterOf = (hero, level) => ({
   stats: statsOf(hero, level),
   skills: hero.skills.loadout.filter(Boolean).map((id) => ({ id, level: hero.skills.owned[id] ?? 1 })),
+  supports: supportsOf(hero),
   potions: hero.potions,
   thresholds: hero.thresholds,
 })
