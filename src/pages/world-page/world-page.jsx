@@ -28,6 +28,7 @@ import {
   openChest,
   respecTalents,
   saveLoadout,
+  saveLook,
   saveWorldPosition,
   startHunt,
   stopHunt,
@@ -60,6 +61,7 @@ const gameCalls = () => ({
   buySkill,
   upgradeSkill,
   saveLoadout,
+  saveLook,
 })
 const GAME_CALLS = [
   'syncGame',
@@ -79,6 +81,7 @@ const GAME_CALLS = [
   'buySkill',
   'upgradeSkill',
   'saveLoadout',
+  'saveLook',
 ]
 
 // What the student already finished today, for the study box's link. Unknown counts as not done.

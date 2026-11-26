@@ -33,6 +33,7 @@ vi.mock('../../lib/api.js', () => ({
   buySkill: vi.fn(),
   upgradeSkill: vi.fn(),
   saveLoadout: vi.fn(),
+  saveLook: vi.fn(),
 }))
 
 const stateAt = (position, { codeSolved = 0, ...areas } = {}) => {

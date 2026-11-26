@@ -34,6 +34,7 @@ function makeApi(view = makeView()) {
     buySkill: ok(),
     upgradeSkill: ok(),
     saveLoadout: ok(),
+    saveLook: ok(),
   }
 }
 
@@ -267,6 +268,66 @@ it('skips the minute sync while the tab is hidden', async () => {
   } finally {
     Object.defineProperty(document, 'hidden', { value: false, configurable: true })
   }
+})
+
+describe('the character creator', () => {
+  const fresh = (view = makeView()) => ({ ...view, hero: { ...view.hero, lookSet: false } })
+
+  it('opens by itself when the hero never picked a look', async () => {
+    ui(makeApi(fresh()))
+    const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
+    expect(within(dialog).getAllByRole('radiogroup')).toHaveLength(6)
+  })
+
+  it('stays closed when the look is already set', async () => {
+    ui(makeApi())
+    await screen.findByRole('tablist')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('Depois saves the current look, closes, and does not come back on the next sync', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const api = makeApi(fresh(makeView({ hunt: HUNT })))
+    api.saveLook.mockResolvedValue(makeView({ hunt: HUNT }))
+    ui(api)
+    const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await act(async () => fireEvent.click(within(dialog).getByRole('button', { name: 'Depois' })))
+    expect(api.saveLook).toHaveBeenCalledWith({ skin: 0, hairStyle: 0, hairColor: 0, eyeStyle: 0, eyeColor: 0, outfit: 0 })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await act(() => vi.advanceTimersByTimeAsync(60_000))
+    expect(api.syncGame).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('Salvar sends the six fields and closes', async () => {
+    const api = makeApi(fresh())
+    ui(api)
+    const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
+    fireEvent.click(within(within(dialog).getByRole('radiogroup', { name: 'Roupa' })).getByRole('radio', { name: 'laranja' }))
+    await act(async () => fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' })))
+    expect(api.saveLook).toHaveBeenCalledWith({ skin: 0, hairStyle: 0, hairColor: 0, eyeStyle: 0, eyeColor: 0, outfit: 6 })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('opens from the Aparência button and Escape closes it', async () => {
+    ui(makeApi())
+    fireEvent.click(await screen.findByRole('button', { name: 'Aparência' }))
+    const dialog = screen.getByRole('dialog', { name: 'Aparência' })
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('shows the away summary after the creator, not over it', async () => {
+    const api = makeApi(fresh())
+    api.syncGame.mockResolvedValue({ ...fresh(), away: AWAY })
+    ui(api)
+    const dialog = await screen.findByRole('dialog', { name: 'Crie seu herói' })
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    await act(async () => fireEvent.click(within(dialog).getByRole('button', { name: 'Depois' })))
+    expect(screen.getByRole('dialog', { name: 'Bem-vindo de volta' })).toBeInTheDocument()
+  })
 })
 
 describe('on a phone', () => {

@@ -6,6 +6,7 @@ import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
+import LookDialog from './look-dialog.jsx'
 import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
 import TreeTab from './panel/tree-tab.jsx'
@@ -41,6 +42,7 @@ const ACTIONS = [
   'buySkill',
   'upgradeSkill',
   'saveLoadout',
+  'saveLook',
 ]
 
 const isConflict = (err) => err?.status === 409 || err?.code === 'GAME_CONFLICT'
@@ -113,6 +115,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   const [conflict, setConflict] = useState(false)
   const [error, setError] = useState('')
   const [replay, setReplay] = useState(null)
+  const [lookOpen, setLookOpen] = useState(false)
   const wide = useMediaQuery(WIDE)
 
   const apiRef = useRef(api)
@@ -229,6 +232,25 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
     return bound
   }, [guard])
 
+  // A hero that never picked a look meets the creator once, on the first View of the visit. Later
+  // syncs never reopen it, even if the look is still unset (the save behind Depois failed).
+  const lookAsked = useRef(false)
+  useEffect(() => {
+    if (!view || lookAsked.current) return
+    lookAsked.current = true
+    if (view.hero.lookSet === false) setLookOpen(true)
+  }, [view])
+
+  // Depois: close now and save the look the hero has, so the creator does not ask again next visit.
+  // A failed save only shows in the status line; the creator stays reachable from the Hero tab.
+  const lookLater = useCallback(() => {
+    setLookOpen(false)
+    const look = viewRef.current?.hero.look
+    actions.saveLook(look).catch((err) => {
+      if (!isConflict(err) && mounted.current) setError(err?.message || String(err))
+    })
+  }, [actions])
+
   // GameScene compares playback.fights by identity: a new array would restart the fight.
   const replayFight = replay?.fight
   const gear = useMemo(() => gearOf(view?.hero.items), [view?.hero.items])
@@ -311,6 +333,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
       treeTab={(shared) => <TreeTab {...shared} />}
       worldTab={(shared) => <WorldTab {...shared} replaying={Boolean(replay && !replay.done)} onLeave={onLeave} />}
       fill={wide}
+      onEditLook={() => setLookOpen(true)}
     />
   )
 
@@ -431,7 +454,17 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
         </>
       )}
 
-      {away && <AwayDialog away={away.away} studyClaimed={away.studyClaimed} onClose={() => setAway(null)} />}
+      {lookOpen && (
+        <LookDialog
+          look={view.hero.look}
+          gear={gear}
+          first={view.hero.lookSet === false}
+          onSave={actions.saveLook}
+          onClose={() => setLookOpen(false)}
+          onLater={lookLater}
+        />
+      )}
+      {away && !lookOpen && <AwayDialog away={away.away} studyClaimed={away.studyClaimed} onClose={() => setAway(null)} />}
     </div>
   )
 }
