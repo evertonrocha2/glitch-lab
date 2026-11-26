@@ -1,11 +1,12 @@
 import { SLOTS } from '../../../shared/game/items.js'
+import { SUPPORTS } from '../../../shared/game/skill-mods.js'
 import { isLook, normalizeLook } from '../../../shared/game/look.js'
 import { LOADOUT_SIZE, MAX_THRESHOLD, SKILLS, skillUpgradeCost } from '../../../shared/game/skills.js'
-import { RESPEC_GOLD_PER_POINT, TALENTS, canAllocate } from '../../../shared/game/talents.js'
+import { RESPEC_GOLD_PER_POINT, SOCKET_NODES, TALENTS, canAllocate } from '../../../shared/game/talents.js'
 import { badRequest, detailedBadRequest } from '../../core/errors.js'
 import { isId } from '../../core/validation.js'
 import { MESSAGES } from './game.model.js'
-import { act, bagFree, gearOf, spend } from './game.service.js'
+import { act, bagFree, gearOf, itemOf, spend } from './game.service.js'
 
 // The hero's build: gear, talents, skills, loadout and look. Every action runs through act, so a
 // running hunt is paid with the old build first and goes on with the new one.
@@ -53,11 +54,51 @@ export const allocateTalents = (store, user, today, body) =>
     return {}
   })
 
-// Every point comes back, for RESPEC_GOLD_PER_POINT gold each.
+// Every point comes back, for RESPEC_GOLD_PER_POINT gold each, and every support gem in the tree goes
+// back to the bag (refused when the bag has no room for them all).
 export const respecTalents = (store, user, today) =>
   act(store, user, today, (hero) => {
+    const socketed = Object.values(hero.treeSockets)
+    if (socketed.length > bagFree(hero)) throw badRequest(MESSAGES.bagFull)
     spend(hero, 'gold', RESPEC_GOLD_PER_POINT * spentPoints(hero), MESSAGES.noGold)
     hero.talents = ['root']
+    hero.items.push(...socketed)
+    hero.treeSockets = {}
+    return {}
+  })
+
+// A socket node of the tree the hero has taken, or a 400.
+function socketOf(hero, node) {
+  if (!isId(node)) throw badRequest()
+  if (!SOCKET_NODES.includes(node) || !hero.talents.includes(node)) throw badRequest(MESSAGES.badItem)
+  return node
+}
+
+// A support gem from the bag into a socket node the hero has taken. A filled socket swaps: its gem goes
+// back to the bag. A kind already in another socket is refused (each kind counts once).
+export const socketSupport = (store, user, today, body) =>
+  act(store, user, today, (hero) => {
+    const node = socketOf(hero, body.node)
+    const gem = itemOf(hero, body.gemId)
+    if (gem.kind !== 'support' || !Object.hasOwn(SUPPORTS, gem.support)) throw badRequest(MESSAGES.badItem)
+    const elsewhere = Object.entries(hero.treeSockets).some(([at, held]) => at !== node && held.support === gem.support)
+    if (elsewhere) throw badRequest(MESSAGES.badItem)
+    const old = hero.treeSockets[node]
+    hero.items = hero.items.filter((each) => each !== gem)
+    if (old) hero.items.push(old)
+    hero.treeSockets[node] = gem
+    return {}
+  })
+
+// The gem in a socket back to the bag.
+export const unsocketSupport = (store, user, today, body) =>
+  act(store, user, today, (hero) => {
+    if (!isId(body.node)) throw badRequest()
+    const gem = Object.hasOwn(hero.treeSockets, body.node) ? hero.treeSockets[body.node] : null
+    if (!gem) throw badRequest(MESSAGES.badItem)
+    if (bagFree(hero) === 0) throw badRequest(MESSAGES.bagFull)
+    delete hero.treeSockets[body.node]
+    hero.items.push(gem)
     return {}
   })
 
