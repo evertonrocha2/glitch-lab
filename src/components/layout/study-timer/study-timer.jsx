@@ -27,10 +27,10 @@ function ClockFace({ running, paused }) {
   const today = (progress?.todaySeconds ?? 0) + unsentSeconds
   return (
     <>
-      <span aria-hidden="true" className={`size-2.5 shrink-0 border border-ink ${running ? 'bg-primary motion-safe:animate-blink' : 'bg-white'}`} />
+      <span aria-hidden="true" className={`size-2.5 shrink-0 border border-ink ${running ? 'bg-ok motion-safe:animate-blink' : 'bg-inset'}`} />
       <span className="flex flex-col">
-        <span className="font-label text-[10px] leading-tight text-secondary">{running ? t('app.timer.studying') : paused ? t('app.timer.paused') : t('app.timer.label')}</span>
-        <span className="font-pixel font-bold text-lg leading-tight text-ink tabular-nums" data-testid="timer-clock">
+        <span className="font-label text-[10px] leading-tight text-arcane-hi">{running ? t('app.timer.studying') : paused ? t('app.timer.paused') : t('app.timer.label')}</span>
+        <span className="font-pixel text-lg leading-tight text-gold tabular-nums" data-testid="timer-clock">
           {formatClock(seconds)}
         </span>
       </span>
@@ -83,7 +83,7 @@ export default function StudyTimer() {
     <section
       aria-label={t('app.timer.label')}
       style={{ bottom: 'calc(1rem + var(--dock-h, 0px))' }}
-      className="fixed left-4 z-30 w-max max-w-[calc(100vw-2rem)] border-2 border-ink bg-white shadow-pixel-secondary"
+      className="kit-frame fixed left-4 z-30 w-max max-w-[calc(100vw-2rem)]"
     >
       {form && (
         <div className="w-[min(20rem,calc(100vw-2rem-4px))] border-b-2 border-dashed border-line p-3">

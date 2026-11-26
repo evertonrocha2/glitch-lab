@@ -14,7 +14,7 @@ import CommunityIcon from '../../community/community-icon/community-icon.jsx'
 import NotificationBell from '../../community/notification-bell/notification-bell.jsx'
 import PixelAvatar from '../../ui/pixel-avatar/pixel-avatar.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
-import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import PixelLogo, { Wordmark } from '../../ui/pixel-logo/pixel-logo.jsx'
 import StudyTimer from '../study-timer/study-timer.jsx'
 import AppNav from '../app-nav/app-nav.jsx'
 
@@ -60,6 +60,32 @@ const ShellWidgets = memo(function ShellWidgets() {
   )
 })
 
+// The level chip (the spike's): your avatar, the level in gold and a thin XP bar toward the next one.
+// It leads to your profile; its name stays "Your profile" for screen readers.
+function LevelChip({ avatar, progress }) {
+  const t = useT()
+  const share = progress?.nextLevelXp ? Math.min(1, Math.max(0, (progress.xp - progress.levelXp) / (progress.nextLevelXp - progress.levelXp))) : progress ? 1 : 0
+  return (
+    <Link
+      to="/profile"
+      aria-label={t('app.shell.profile')}
+      className="kit-inset flex shrink-0 items-center gap-2.5 p-1 transition-transform hover:-translate-y-0.5 sm:pr-2.5"
+    >
+      {avatar ? (
+        <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-8" />
+      ) : (
+        <span aria-hidden="true" className="block size-8 border-2 border-ink bg-line motion-safe:animate-skeleton" />
+      )}
+      <span aria-hidden="true" className="hidden gap-1.5 sm:grid">
+        <span className="font-pixel text-xs leading-none text-gold">{progress ? t('app.nav.levelChip', { level: progress.level }) : ' '}</span>
+        <span className="block h-[5px] w-[72px] bg-void shadow-[0_0_0_1px_#2a2250]">
+          <span className="block h-full bg-linear-to-r from-arcane to-arcane-hi" style={{ width: `${Math.round(share * 100)}%` }} />
+        </span>
+      </span>
+    </Link>
+  )
+}
+
 const AppHeader = memo(function AppHeader() {
   const { signOut } = useAuth()
   const progress = useProgressData()
@@ -67,25 +93,19 @@ const AppHeader = memo(function AppHeader() {
   const unread = useUnreadMessages()
   const t = useT()
   return (
-    <header className="border-b-2 border-ink bg-white">
+    <header className="border-b border-arcane-hi/15 bg-[#0c081a]">
       {/* Top row: the brand on the left; the language, the assistant, notifications and your account on the right. */}
       <div className={`${COLUMN} flex items-center justify-between gap-2 py-3 sm:gap-3`}>
-        <Link to="/" className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-pixel text-base font-bold text-ink sm:gap-2.5 sm:text-xl">
-          <PixelLogo className="size-5 shrink-0 sm:size-7" />
+        <Link to="/" className="flex min-w-0 items-center gap-2 whitespace-nowrap font-pixel text-lg text-ink sm:gap-2.5 sm:text-[22px]">
+          <PixelLogo className="size-7 shrink-0 sm:size-8" />
           {/* On narrow phones the right side fills the row, so only the logo shows; the name stays for screen readers. */}
-          <span className="sr-only min-[440px]:not-sr-only min-[440px]:truncate">StudyQuest</span>
+          <Wordmark className="sr-only min-[440px]:not-sr-only min-[440px]:truncate" />
         </Link>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <LanguageSelect compact className="shrink-0" />
           <AssistantButton />
           <NotificationBell />
-          <Link to="/profile" aria-label={t('app.shell.profile')} className="flex shrink-0 transition-transform hover:-translate-y-0.5">
-            {avatar ? (
-              <PixelAvatar seed={avatar.seed} color={avatar.color} className="size-10" />
-            ) : (
-              <span aria-hidden="true" className="block size-10 border-2 border-ink bg-line motion-safe:animate-skeleton" />
-            )}
-          </Link>
+          <LevelChip avatar={avatar} progress={progress} />
           {/* Phones show just an exit icon; the name stays "Sign out". */}
           <PixelButton variant="ghost" onClick={signOut} aria-label={t('app.shell.signOut')} className="min-w-10 px-1.5 py-1.5 sm:px-3 sm:py-2">
             <CommunityIcon name="exit" className="size-4 sm:hidden" />
@@ -94,7 +114,7 @@ const AppHeader = memo(function AppHeader() {
         </div>
       </div>
       {/* Second row: the pages, on one line; the ones that don't fit go in a "More" menu. */}
-      <div className="border-t-2 border-dashed border-line">
+      <div className="border-t border-arcane-hi/10">
         <div className={`${COLUMN} flex items-center`}>
           <AppNav level={progress?.level ?? null} unread={unread} />
         </div>

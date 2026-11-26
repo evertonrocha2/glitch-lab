@@ -304,8 +304,8 @@ export function AssistantButton() {
   const { open } = useAssistant()
   const t = useT()
   return (
-    <PixelButton variant="primary" onClick={open} aria-label={t('app.assistant.open')} aria-keyshortcuts="Alt+A Control+/" className="min-w-10 px-1.5 py-1.5 sm:px-3 sm:py-2">
-      <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-ink bg-white">
+    <PixelButton variant="secondary" onClick={open} aria-label={t('app.assistant.open')} aria-keyshortcuts="Alt+A Control+/" className="min-w-10 px-1.5 py-1.5 sm:px-3 sm:py-2">
+      <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center border border-void bg-night">
         <PixelLogo className="size-3.5" />
       </span>
       {/* Phones and tablets show just the icon so the top row fits; the name stays "Lab assistant". */}

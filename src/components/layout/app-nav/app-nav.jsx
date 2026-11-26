@@ -41,14 +41,18 @@ const isAt = (to, pathname) => Boolean(matchPath({ path: to, end: false }, pathn
 
 // Shown links sit in the row; the ones that don't fit stay in it, invisible and out of the flow,
 // so they can still be measured. The wide `before:` box is a bigger tap target.
+// Mono, uppercase and muted; the current page lights up with a gold underline (the spike's nav).
+const LINK = 'border-b-2 py-1.5 font-mono text-[13px] uppercase tracking-[0.06em] transition-colors'
+const linkTone = (isActive) => (isActive ? 'border-gold text-ink' : 'border-transparent text-muted hover:text-ink')
+
 const rowLinkClass = (isActive, shown) =>
-  `flex shrink-0 items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors before:absolute before:inset-x-0 before:-inset-y-2 ${
+  `flex shrink-0 items-center gap-1.5 ${LINK} before:absolute before:inset-x-0 before:-inset-y-2 ${
     shown ? 'relative' : 'invisible absolute top-0 left-0'
-  } ${isActive ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'}`
+  } ${linkTone(isActive)}`
 
 const menuLinkClass = ({ isActive }) =>
-  `flex items-center gap-1.5 px-3 py-2 font-label text-xs whitespace-nowrap focus:bg-mist ${
-    isActive ? 'bg-primary-soft text-primary' : 'text-ink hover:bg-mist'
+  `flex items-center gap-1.5 border-l-2 px-3 py-2 font-mono text-[13px] uppercase tracking-[0.06em] whitespace-nowrap focus:bg-raised ${
+    isActive ? 'border-gold bg-raised text-ink' : 'border-transparent text-muted hover:bg-raised hover:text-ink'
   }`
 
 function ItemLabel({ item, level, unread }) {
@@ -60,14 +64,14 @@ function ItemLabel({ item, level, unread }) {
       {t(item.label)}{' '}
       {level != null ? (
         <>
-          <span aria-hidden="true" className="bg-secondary px-1 py-0.5 text-[10px] leading-none text-white">
+          <span aria-hidden="true" className="bg-gold px-1 py-0.5 font-pixel text-[10px] leading-none tracking-normal text-gold-ink normal-case">
             {t('app.nav.levelChip', { level })}
           </span>
           <span className="sr-only">{t('app.nav.levelSr', { level })}</span>
         </>
       ) : (
         // Until the level loads, a gray chip of the same size holds its place in the row.
-        <span aria-hidden="true" className="bg-line px-1 py-0.5 text-[10px] leading-none text-transparent motion-safe:animate-skeleton">
+        <span aria-hidden="true" className="bg-line px-1 py-0.5 font-pixel text-[10px] leading-none tracking-normal text-transparent normal-case motion-safe:animate-skeleton">
           {t('app.nav.levelChip', { level: 1 })}
         </span>
       )}
@@ -181,7 +185,7 @@ export default function AppNav({ level = null, unread = 0 }) {
     <nav
       ref={navRef}
       aria-label={t('app.nav.main')}
-      className={`relative flex min-w-0 flex-1 items-center gap-4 py-2 whitespace-nowrap sm:gap-7 ${measured ? '' : 'invisible'}`}
+      className={`relative flex min-w-0 flex-1 items-center gap-4 py-2 whitespace-nowrap sm:gap-6 ${measured ? '' : 'invisible'}`}
     >
       {NAV_ITEMS.map((item, index) => {
         const shown = index < count
@@ -212,14 +216,12 @@ export default function AppNav({ level = null, unread = 0 }) {
             setOpenAt(open ? null : pathname)
           }}
           onKeyDown={onButtonKey}
-          className={`relative flex items-center gap-1.5 border-b-2 py-1 font-label text-xs transition-colors before:absolute before:inset-x-0 before:-inset-y-2 ${
-            hiddenActive || open ? 'border-primary text-primary' : 'border-transparent text-ink hover:text-primary'
-          }`}
+          className={`relative flex items-center gap-1.5 ${LINK} before:absolute before:inset-x-0 before:-inset-y-2 ${linkTone(hiddenActive || open)}`}
         >
           {t('app.nav.more')}
           {hiddenUnread && (
             <>
-              <span aria-hidden="true" className="size-2 bg-primary" />
+              <span aria-hidden="true" className="size-2 bg-gold" />
               <span className="sr-only">{t('chat.nav.unread', { count: unread })}</span>
             </>
           )}
@@ -236,7 +238,7 @@ export default function AppNav({ level = null, unread = 0 }) {
             role="menu"
             aria-labelledby={buttonId}
             onKeyDown={onMenuKey}
-            className="absolute top-full right-0 z-40 mt-3 min-w-44 border-2 border-ink bg-white py-1 shadow-pixel"
+            className="kit-frame absolute top-full right-0 z-40 mt-3 min-w-48 p-1.5"
           >
             {hidden.map((item) => (
               <NavLink key={item.to} to={item.to} role="menuitem" tabIndex={-1} onClick={() => setOpenAt(null)} className={menuLinkClass}>

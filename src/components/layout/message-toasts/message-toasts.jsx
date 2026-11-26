@@ -24,7 +24,7 @@ function MessageToast({ toast, onDismiss }) {
       onMouseLeave={release}
       onFocus={hold}
       onBlur={release}
-      className="pointer-events-auto flex items-center gap-3 border-2 border-ink bg-white p-3 shadow-pixel motion-safe:animate-toast-in"
+      className="pointer-events-auto flex items-center gap-3 kit-frame p-3 motion-safe:animate-toast-in"
     >
       <PixelAvatar seed={toast.avatar.seed} color={toast.avatar.color} className="size-12 shrink-0" />
       <span className="min-w-0 flex-1">

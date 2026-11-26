@@ -20,7 +20,7 @@ function Toast({ id, onDismiss }) {
   const name = labels.badgeName(id)
 
   return (
-    <li className="pointer-events-auto flex items-center gap-3 border-2 border-ink bg-white p-3 shadow-pixel motion-safe:animate-toast-in">
+    <li className="pointer-events-auto flex items-center gap-3 kit-frame p-3 motion-safe:animate-toast-in">
       <span className="grid size-12 shrink-0 place-items-center border-2 border-ink bg-primary-soft">
         <BadgeIcon id={id} className="size-8" />
       </span>

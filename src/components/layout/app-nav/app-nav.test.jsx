@@ -101,13 +101,13 @@ it('leaves the menu with Tab', async () => {
 it('marks the More button when the current page, or unread messages, are inside it', () => {
   renderNav({ path: '/messages/abc', unread: 2, rowWidth: 400 })
   const more = screen.getByRole('button', { name: /More/ })
-  expect(more).toHaveClass('text-primary')
+  expect(more).toHaveClass('border-gold')
   expect(more).toHaveTextContent('(2 unread conversations)')
 })
 
 it('leaves the More button plain when the current page is in the row', () => {
   renderNav({ path: '/board', rowWidth: 400 })
   const more = screen.getByRole('button', { name: 'More' })
-  expect(more).not.toHaveClass('text-primary')
+  expect(more).not.toHaveClass('border-gold')
   expect(more).not.toHaveTextContent('unread')
 })

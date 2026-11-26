@@ -4,7 +4,7 @@ import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import AppShell from '../app-shell/app-shell.jsx'
 import LanguageSelect from '../../ui/language-select/language-select.jsx'
 import PixelButton from '../../ui/pixel-button/pixel-button.jsx'
-import PixelLogo from '../../ui/pixel-logo/pixel-logo.jsx'
+import PixelLogo, { Wordmark } from '../../ui/pixel-logo/pixel-logo.jsx'
 
 // The articles pages are public: signed in they sit in the app, signed out under a light header.
 export default function CommunityShell({ children }) {
@@ -15,20 +15,20 @@ export default function CommunityShell({ children }) {
   const next = encodeURIComponent(location.pathname + location.search)
   return (
     <div className="min-h-screen bg-mist">
-      <header className="border-b-2 border-ink bg-white">
+      <header className="border-b border-arcane-hi/15 bg-[#0c081a]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3.5 sm:px-8">
-          <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg font-bold text-ink sm:gap-2.5 sm:text-xl">
-            <PixelLogo className="size-6 sm:size-7" />
-            <span>StudyQuest</span>
+          <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg text-ink sm:gap-2.5 sm:text-[22px]">
+            <PixelLogo className="size-7 sm:size-8" />
+            <Wordmark />
           </Link>
           <nav aria-label={t('notes.articles.nav')} className="flex items-center gap-2 sm:gap-4">
-            <Link to="/articles" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
+            <Link to="/articles" className="hidden font-mono text-[13px] uppercase tracking-[0.06em] text-muted hover:text-ink sm:inline">
               {t('notes.articles.title')}
             </Link>
-            <Link to="/events" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
+            <Link to="/events" className="hidden font-mono text-[13px] uppercase tracking-[0.06em] text-muted hover:text-ink sm:inline">
               {t('events.nav')}
             </Link>
-            <Link to="/communities" className="hidden font-label text-xs text-ink hover:text-primary sm:inline">
+            <Link to="/communities" className="hidden font-mono text-[13px] uppercase tracking-[0.06em] text-muted hover:text-ink sm:inline">
               {t('chat.nav.communities')}
             </Link>
             <LanguageSelect compact />
