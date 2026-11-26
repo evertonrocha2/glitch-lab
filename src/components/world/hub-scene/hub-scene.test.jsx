@@ -156,7 +156,7 @@ it('copes with a canvas that has no 2D context', () => {
   expect(onTileClick).toHaveBeenCalledWith(2, 1)
 })
 
-it('puts a padlock on a locked world's portal only, never on a zone's door', () => {
+it("puts a padlock on a locked world's portal only, never on a zone's door", () => {
   vi.mocked(paintPadlock).mockClear()
   // Zones are open inside every world: a zone rect handed over by an old caller fogs nothing.
   draw({ lockedRects: cave.zones.map((zone) => zone.rect), lockedPortals: [{ x: 1, y: 10 }] })
