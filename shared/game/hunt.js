@@ -65,8 +65,10 @@ const potionFights = (perFight, stock) => {
   return fights
 }
 
-// xpMultiplier: the study multiplier that held for this stretch (1 without study).
-export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFree, xpMultiplier = 1 }) {
+// xpMultiplier: the study multiplier that held for this stretch (1 without study). dropLuck: the luck
+// elixir's bonus over the stretch (elixirs.js), raising the item, gem and support drop chances; each
+// roll still takes one draw, so 0 rolls exactly what it always did.
+export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFree, xpMultiplier = 1, dropLuck = 0 }) {
   const elapsedMs = Math.min(Math.max(now - startedAt, 0), MAX_HUNT_MS)
   const diff = DIFFICULTIES[difficulty]
   const stock = { hp: hero.potions?.hp ?? 0, mp: hero.potions?.mp ?? 0 }
@@ -98,6 +100,7 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
   const elites = Math.min(kills, Math.floor(eliteKills + 1e-9))
   const gold = Math.floor((kills - elites + elites * ELITE_GOLD) * zone.gold * diff.mult)
 
+  const luck = 1 + dropLuck
   const rng = createRng(seed).fork('drops')
   const ilvl = zone.ilvl + diff.ilvl
   const items = []
@@ -105,12 +108,12 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
   let scrapFromOverflow = 0
   for (let k = 0; k < kills; k++) {
     const elite = k < elites
-    if (elite || rng.chance(DROP_CHANCE)) {
+    if (elite || rng.chance(DROP_CHANCE * luck)) {
       const item = rollItem(rng, { ilvl, rarityBoost: diff.rarityBoost })
       if (items.length + gems.length < bagFree) items.push(item)
       else scrapFromOverflow += salvageValue(item).scrap
     }
-    if (rng.chance(GEM_CHANCE)) {
+    if (rng.chance(GEM_CHANCE * luck)) {
       const gem = rollGem(rng)
       if (items.length + gems.length < bagFree) gems.push(gem)
       else scrapFromOverflow += GEM_SALVAGE_SCRAP
@@ -120,7 +123,7 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
   const supportRng = createRng(seed).fork('supports')
   const supports = []
   for (let k = 0; k < kills; k++) {
-    if (!supportRng.chance(SUPPORT_CHANCE)) continue
+    if (!supportRng.chance(SUPPORT_CHANCE * luck)) continue
     const gem = rollSupport(supportRng)
     if (items.length + gems.length + supports.length < bagFree) supports.push(gem)
     else scrapFromOverflow += SUPPORT_SALVAGE_SCRAP
