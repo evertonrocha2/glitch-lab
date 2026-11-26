@@ -70,11 +70,11 @@ const INDOOR = new Set(['floor', 'carpet', 'mosaic', 'stairs'])
 // Dark ground: earthy under the trees, slate gravel in the cave.
 const DARK = { base: '#4f463b', dark: '#433b32', light: '#5d5345', speck: '#6b604f', root: '#3a3129' }
 const DARK_OF = { 'caverna-sql': { base: '#4a4858', dark: '#3f3d4c', light: '#575566', speck: '#6a6879', root: '#34323f' } }
-const MOSS = { base: '#868b99', dark: '#747987', light: '#9da2ae', grout: '#555a68', moss: '#6d8656', moss2: '#5b7348' }
+const MOSS = { base: '#979b8c', dark: '#82867a', light: '#b0b3a3', grout: '#5f6358', moss: '#6d8656', moss2: '#5b7348' }
 const CARPET = { base: '#6e3a44', dark: '#5f323b', pattern: '#7f4650', gold: '#b8995a', edge: '#3e2228' }
 const STAIRS = { top: '#aaa5b8', base: '#8d879f', dark: '#6b6680', shadow: '#4b4760' }
 const MOSAIC = { a: '#36415c', b: '#303a53', grout: '#262d40', gold: '#c9a85a', steel: '#7d93b8' }
-const MARSH = { base: '#3f5a55', dark: '#344b47', light: '#4d6a63', glint: '#7f9a93', mud: '#4a4238', bank: '#55604a' }
+const MARSH = { base: '#527566', dark: '#466658', light: '#648a78', glint: '#9fbcae', mud: '#4a4238', bank: '#5d6a4c' }
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
