@@ -78,7 +78,7 @@ export function heroFrame(anim, p, t, reduced) {
 
 // Where the doll's top left lands for a hero standing on the tile at (x, y): the feet on the tile's
 // last row, the 32x32 body box centered on the tile (as the old 16px hero was).
-const dollAt = (x, y) => ({ x: x + 8 - (SPRITE.ox + 16), y: y + 16 - (SPRITE.oy + 32) })
+export const dollAt = (x, y) => ({ x: x + 8 - (SPRITE.ox + 16), y: y + 16 - (SPRITE.oy + 32) })
 
 function layer(width, height, paint) {
   const canvas = document.createElement('canvas')

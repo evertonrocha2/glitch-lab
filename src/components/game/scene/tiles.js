@@ -444,6 +444,11 @@ function smooth(x, y, cell, s) {
 
 const inRect = (r, x, y) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h
 
+// The padlock on a locked door (or a portal to a locked world), centered on the tile at (tx, ty).
+export function paintPadlock(ctx, tx, ty) {
+  sprite(ctx, LOCK, LOCK_PAL, tx * TS + 4, ty * TS + 5)
+}
+
 // A dark, cloudy fog over each locked rect (in tiles), with a padlock on its doors.
 export function paintFog(ctx, world, lockedRects = []) {
   if (!lockedRects.length) return
@@ -471,7 +476,7 @@ export function paintFog(ctx, world, lockedRects = []) {
   }
   for (let ty = 0; ty < m.H; ty++) {
     for (let tx = 0; tx < m.W; tx++) {
-      if (m.charAt(tx, ty) === 'D' && locked(tx, ty)) sprite(ctx, LOCK, LOCK_PAL, tx * TS + 4, ty * TS + 5)
+      if (m.charAt(tx, ty) === 'D' && locked(tx, ty)) paintPadlock(ctx, tx, ty)
     }
   }
 }

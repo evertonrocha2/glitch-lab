@@ -9,9 +9,9 @@ import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
 import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
 import { clearHeroCache, heroSprite } from '../hero/hero-cache.js'
 import { ANIMS, drawEnemy } from './actors.js'
-import GameScene, { fightSpot, heroFrame } from './game-scene.jsx'
+import GameScene, { dollAt, fightSpot, heroFrame } from './game-scene.jsx'
 import { paintLight } from './light.js'
-import { paintMap, TS } from './tiles.js'
+import { paintMap, paintPadlock, TS } from './tiles.js'
 
 // A 2D context that records every fillRect and takes anything else silently.
 function recorder() {
@@ -310,4 +310,18 @@ it('puts the doll feet on the ground line of the 16px hero, body box centered on
   const hit = images.find((d) => d.img === heroSprite(look, {}, 'idle0'))
   expect(hit.rest[1] + 43).toBe(spot.hero.y * TS + 15)
   expect(hit.rest[0] + 10 + 16).toBe(spot.hero.x * TS + 8)
+})
+
+it('paints a gold padlock inside the tile it is given', () => {
+  const ctx = recorder()
+  paintPadlock(ctx, 3, 2)
+  expect(ctx.rects.length).toBeGreaterThan(20)
+  expect(ctx.rects.every((r) => r.x >= 3 * TS && r.x < 4 * TS && r.y >= 2 * TS && r.y < 3 * TS)).toBe(true)
+  expect(ctx.rects.some((r) => r.style === '#f2c14e')).toBe(true)
+})
+
+it('places the doll so its feet stand on the tile it is given', () => {
+  const at = dollAt(5 * TS, 4 * TS)
+  expect(at.y + 43).toBe(4 * TS + 15)
+  expect(at.x + 10 + 16).toBe(5 * TS + 8)
 })
