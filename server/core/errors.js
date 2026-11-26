@@ -16,6 +16,8 @@ export const unauthorized = (message = 'Sign in to continue.') => new AppError(4
 export const forbidden = (message) => new AppError(403, message)
 export const notFound = (message = 'Not found.') => new AppError(404, message)
 export const conflict = (message) => new AppError(409, message)
+// A 409 that also sends its code, for a client that reacts to this conflict in its own way.
+export const codedConflict = (message, code) => Object.assign(new AppError(409, message, code), { sendCode: true })
 export const tooLarge = (message) => new AppError(413, message)
 export const tooMany = (message) => new AppError(429, message)
 
