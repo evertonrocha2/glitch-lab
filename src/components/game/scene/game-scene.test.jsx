@@ -249,6 +249,27 @@ it('holds idle0 with no bob under reduced motion', () => {
   expect(heroFrame('hurt', 0.5, 0, true).pose).toBe('hurt')
 })
 
+it('lunges up to 3px toward the foe mid swing and knocks back 2px when hurt', () => {
+  const at = (p) => heroFrame('attack', p, 0, false).dx
+  expect(at(0)).toBe(0)
+  expect(at(0.5)).toBe(3)
+  expect(at(0.2)).toBeGreaterThan(0)
+  expect(at(0.2)).toBeLessThan(3)
+  expect(at(0.95)).toBeLessThan(3)
+  for (let p = 0; p <= 1; p += 0.05) expect(Math.abs(at(p))).toBeLessThanOrEqual(3)
+  expect(heroFrame('hurt', 0.1, 0, false).dx).toBe(-2)
+  expect(heroFrame('idle', 0, 0.6, false).dx).toBe(0)
+  expect(heroFrame('walk', 0.5, 0.6, false).dx).toBe(0)
+  expect(heroFrame('death', 0.5, 0, false).dx).toBe(0)
+})
+
+it('holds still under reduced motion: no lunge, no knockback', () => {
+  for (const p of [0.2, 0.5, 0.8]) {
+    expect(heroFrame('attack', p, 0, true).dx).toBe(0)
+    expect(heroFrame('hurt', p, 0, true).dx).toBe(0)
+  }
+})
+
 it('draws the hero from heroSprite, not the 16px art', () => {
   clearHeroCache()
   const images = drawing()

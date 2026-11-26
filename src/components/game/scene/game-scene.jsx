@@ -59,14 +59,21 @@ function stateAt(plan, ms, loop) {
 }
 
 // The hero doll's pose for an anim: idle swaps frames every 500 ms, walking steps faster with a 1px bob,
-// attacks run wind up, slash, follow through. Reduced motion holds idle0 and no bob. t: seconds.
+// attacks run wind up, slash, follow through. dx: pixels toward the foe (an attack lunges up to 3px,
+// peaking mid swing; a hit knocks the hero 2px back). Reduced motion holds idle0, no bob, no dx. t: seconds.
+const LUNGE = 3
+const KNOCKBACK = 2
 export function heroFrame(anim, p, t, reduced) {
-  if (anim === 'death') return { pose: 'dead', bob: 0 }
-  if (anim === 'hurt') return { pose: 'hurt', bob: 0 }
-  if (anim === 'attack') return { pose: p < 0.33 ? 'atk1' : p < 0.66 ? 'atk2' : 'atk3', bob: 0 }
-  if (reduced) return { pose: 'idle0', bob: 0 }
+  const q = Math.min(Math.max(Number(p) || 0, 0), 1)
+  if (anim === 'death') return { pose: 'dead', bob: 0, dx: 0 }
+  if (anim === 'hurt') return { pose: 'hurt', bob: 0, dx: reduced ? 0 : q < 0.6 ? -KNOCKBACK : q < 0.85 ? -1 : 0 }
+  if (anim === 'attack') {
+    const dx = reduced ? 0 : Math.round(LUNGE * Math.sin(Math.PI * q))
+    return { pose: q < 0.33 ? 'atk1' : q < 0.66 ? 'atk2' : 'atk3', bob: 0, dx }
+  }
+  if (reduced) return { pose: 'idle0', bob: 0, dx: 0 }
   const step = Math.floor(t * (anim === 'walk' ? 5 : 2)) % 2 === 1
-  return { pose: step ? 'idle1' : 'idle0', bob: anim === 'walk' && step ? 1 : 0 }
+  return { pose: step ? 'idle1' : 'idle0', bob: anim === 'walk' && step ? 1 : 0, dx: 0 }
 }
 
 // Where the doll's top left lands for a hero standing on the tile at (x, y): the feet on the tile's
@@ -167,17 +174,19 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
       if (base) ctx.drawImage(base, 0, 0)
       else paintBase(ctx, world)
       paintAnimated(ctx, world, te)
-      const { pose, bob } = heroFrame(heroAnim.anim, heroAnim.p, te, reduced)
+      const { pose, bob, dx } = heroFrame(heroAnim.anim, heroAnim.p, te, reduced)
+      // The lunge goes the way the hero faces (toward the foe), the knockback the other way.
+      const shift = dx * (heroAnim.facing === -1 ? -1 : 1)
       const doll = dollAt(hx, hy)
-      ellipse(ctx, hx + 8, hy + 15, 8, 2, SHADOW)
+      ellipse(ctx, hx + 8 + shift, hy + 15, 8, 2, SHADOW)
       const img = heroSprite(heroLook, heroGear, pose)
       if (heroAnim.facing === -1) {
         ctx.save()
-        ctx.translate(hx + 8, 0)
+        ctx.translate(hx + 8 + shift, 0)
         ctx.scale(-1, 1)
         ctx.drawImage(img, doll.x - (hx + 8), doll.y + bob)
         ctx.restore()
-      } else ctx.drawImage(img, doll.x, doll.y + bob)
+      } else ctx.drawImage(img, doll.x + shift, doll.y + bob)
       if (showFoe) drawEnemy(ctx, ex, ey, { sprite: foe.sprite, elite: foe.elite, anim: flash ? 'idle' : foeAnim.anim, p: foeAnim.p, t: te })
       if (fog) ctx.drawImage(fog, 0, 0)
       else if (locked.length) paintFog(ctx, world, locked)
