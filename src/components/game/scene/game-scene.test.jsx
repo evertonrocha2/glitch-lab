@@ -202,3 +202,32 @@ it('draws one still frame and no loop with reduced motion', () => {
   expect(getContext).toHaveBeenCalled()
   expect(raf).not.toHaveBeenCalled()
 })
+
+it('plays a fight back: a loop runs under reduced motion and draws floating text', () => {
+  reduce = true
+  const texts = []
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function () {
+    const ctx = anyContext(this)
+    ctx.fillText = (text) => texts.push(text)
+    return ctx
+  })
+  let tick = null
+  const raf = vi.fn((cb) => {
+    tick = cb
+    return 3
+  })
+  vi.stubGlobal('requestAnimationFrame', raf)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const log = [
+    { t: 100, who: 'hero', type: 'hit', amount: 42, element: 'physical' },
+    { t: 600, who: 'hero', type: 'dodge' },
+  ]
+  const fights = [{ won: true, reason: 'killed', ms: 2000, heroHpLeft: 5, potionsUsed: { hp: 0, mp: 0 }, log }]
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} enemy={{ sprite: 'slime' }} playback={{ fights, loop: true, speed: 1 }} />)
+  expect(raf).toHaveBeenCalled()
+  const start = performance.now()
+  tick(start + 1500 + 400)
+  tick(start + 1500 + 800)
+  expect(texts).toContain('42')
+  expect(texts).toContain('Dodge')
+})
