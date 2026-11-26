@@ -23,11 +23,12 @@ export default function Frame({ as: Tag = 'div', tone = 'panel', className = '',
 const CHIP = {
   gold: 'bg-[#f2c14e] text-[#120c22]',
   danger: 'bg-[#ff5a6e] text-white',
+  ok: 'bg-[#6fe39a] text-[#120c22]',
   muted: 'bg-[#2a2250] text-[#e9e4ff]',
   ink: 'bg-[#120c22] text-[#e9e4ff]',
 }
 
-// A small pixel tag: a key hint, a count badge, a level. tone: 'gold' | 'danger' | 'muted' | 'ink'.
+// A small pixel tag: a key hint, a count badge, a level. tone: 'gold' | 'danger' | 'ok' | 'muted' | 'ink'.
 export function Chip({ tone = 'muted', className = '', children, ...rest }) {
   return (
     <span className={`inline-flex items-center border-2 border-[#120c22] px-1 py-px font-pixel text-[9px] font-bold leading-none ${CHIP[tone] ?? CHIP.muted} ${className}`} {...rest}>
