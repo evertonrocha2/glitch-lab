@@ -210,7 +210,7 @@ Atenção: o agendamento do GitHub pode atrasar alguns minutos em horário de pi
 
 ### Banco
 
-Postgres com 26 tabelas. A estrutura está em [supabase/schema.sql](../supabase/schema.sql) e pode ser aplicada de novo sem quebrar nada (tudo usa `if not exists`).
+Postgres com 44 tabelas. A estrutura está em [supabase/schema.sql](../supabase/schema.sql) e pode ser aplicada de novo sem quebrar nada (tudo usa `if not exists`).
 
 - **Row Level Security ligado em todas as tabelas, sem nenhuma política.** Na prática, ninguém consegue ler ou escrever direto do navegador. Só a API, com a chave secreta (`SUPABASE_SERVICE_ROLE_KEY`), entra no banco.
 - O código acessa o banco por uma interface única, o **store**. Existem duas implementações com o mesmo contrato: uma para o Supabase e outra que salva num arquivo JSON local (`.data/db.json`), usada no desenvolvimento e nos testes. Um conjunto de testes de contrato garante que as duas se comportam igual.
@@ -350,6 +350,9 @@ O `/mundo` é um RPG idle alimentado pelo estudo. O servidor decide tudo. O nave
 - **O nível vem só do estudo.** O XP do herói sai do que você já faz: ENEM, desafios do dia, bugs, Glitchdle, caça, x1 e revisão. A cada 10 acertos (até 30 pontos) você ganha 1 ponto de talento, fora o 1 de cada nível.
 - **Prêmio diário com teto.** Estudar dá fragmentos (até 150 por dia), poções pela revisão (até 6 por dia) e um baú do desafio do dia. O baú melhora com a sequência, até 7 dias.
 - **Caças, chefes e forja.** Na Floresta, o herói caça sozinho, até offline (no máximo 8 horas). Cada zona acaba num chefe. O equipamento cai, e a forja melhora, sorteia de novo, encaixa gema e desmonta.
+- **A cara do herói.** O herói é desenhado em pixel por código, em 32px, e veste o que você equipa. O visual tem seis campos: tom de pele (5), penteado (6), cor do cabelo (8), olhos (4), cor dos olhos (4) e roupa (8). O servidor só aceita esses seis números dentro da faixa. Herói antigo, com o visual velho, é convertido na leitura.
+- **Criador de personagem.** Abre sozinho uma vez, quando o herói ainda não tem visual escolhido. Depois, é o botão Aparência na aba Herói. Tem prévia ao vivo, um dado que sorteia tudo e uma chave pra ver o herói com ou sem o equipamento.
+- **Câmera.** A caça começa com a câmera longe, mostrando a floresta inteira. Os botões - e + do HUD (ou as teclas - e +) aproximam e afastam em três níveis. O navegador lembra o nível escolhido.
 
 ## Segurança
 
