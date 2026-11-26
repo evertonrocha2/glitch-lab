@@ -1,23 +1,24 @@
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import Frame from '../../game/ui/frame.jsx'
 
-// A solid pixel triangle pointing up; the other three are the same triangle turned. 8 art pixels drawn
-// at 24px keep every art pixel 3 screen pixels, so it reads as an arrow even on a small phone (a thin
+// A solid pixel triangle pointing up; the other three are the same triangle turned. 10 art pixels drawn
+// at 30px keep every art pixel 3 screen pixels, so it reads as an arrow even on a small phone (a thin
 // tip and stem used to round into a "+").
 const TURN = { up: 0, right: 90, down: 180, left: 270 }
 const ROWS = [
-  { y: 2, x: 3, w: 2 },
-  { y: 3, x: 2, w: 4 },
-  { y: 4, x: 1, w: 6 },
-  { y: 5, x: 0, w: 8 },
+  { y: 3, x: 4, w: 2 },
+  { y: 4, x: 3, w: 4 },
+  { y: 5, x: 2, w: 6 },
+  { y: 6, x: 1, w: 8 },
+  { y: 7, x: 0, w: 10 },
 ]
 
 function Arrow({ dir }) {
   return (
     <svg
-      viewBox="0 0 8 8"
-      width="24"
-      height="24"
+      viewBox="0 0 10 10"
+      width="30"
+      height="30"
       shapeRendering="crispEdges"
       aria-hidden="true"
       className="fill-[#e9e4ff]"
