@@ -9,6 +9,9 @@ export const AFFIX_COUNT = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary
 // An array is a random choice in that range, both ends included.
 export const SOCKETS = { common: 0, uncommon: 0, rare: [0, 1], epic: 1, legendary: 2 }
 export const BAG_SIZE = 60
+// The potion shop: gold per potion (hp or mp) and the most one purchase can buy.
+export const POTION_PRICE = 40
+export const MAX_POTION_BUY = 20
 
 export const STATS_KEYS = [
   'attack', 'magicPct', 'critChance', 'critDamage', 'attackSpeed', 'hp', 'mana', 'armor', 'dodge',

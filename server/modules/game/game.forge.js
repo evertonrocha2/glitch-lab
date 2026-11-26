@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { GEM_SALVAGE_SCRAP } from '../../../shared/game/hunt.js'
-import { AFFIXES, BAG_SIZE, GEMS, rerollCost, rollItem, salvageValue, upgradeCost } from '../../../shared/game/items.js'
+import { AFFIXES, BAG_SIZE, GEMS, MAX_POTION_BUY, POTION_PRICE, rerollCost, rollItem, salvageValue, upgradeCost } from '../../../shared/game/items.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { HUNT_WORLDS, ZONES } from '../../../shared/game/zones.js'
 import { badRequest } from '../../core/errors.js'
@@ -12,8 +12,6 @@ import { act, gearOf, isIntIn, itemOf, spend, stash } from './game.service.js'
 // The forge, chests and the potion shop. Every roll here uses a fresh server seed: the client never
 // picks or sees one. Every action runs through act, so a running hunt is paid first.
 
-const POTION_PRICE = 40
-const MAX_POTIONS = 20
 const MIN_CHEST_ILVL = 1
 
 // Each forge roll has its own seed.
@@ -121,7 +119,7 @@ export const openChest = (store, user, today) =>
 export const buyPotions = (store, user, today, body) =>
   act(store, user, today, (hero) => {
     const { kind, count } = body
-    if ((kind !== 'hp' && kind !== 'mp') || !isIntIn(count, 1, MAX_POTIONS)) throw badRequest()
+    if ((kind !== 'hp' && kind !== 'mp') || !isIntIn(count, 1, MAX_POTION_BUY)) throw badRequest()
     spend(hero, 'gold', POTION_PRICE * count, MESSAGES.noGold)
     hero.potions[kind] += count
     return {}
