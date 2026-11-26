@@ -1,14 +1,14 @@
-// StudyQuest's mark, "Grimório": an open quest book (cream pages on a violet cover) with a gold
+// StudyQuest's mark, "Grimório": an open quest book (cream pages on a steel-blue cover) with a gold
 // diamond rune glowing over the spine, on a 16x16 grid. Plain data, so both the React mark
 // (pixel-logo.jsx) and the icon script (scripts/make-icons.mjs) draw the same pixels.
 export const LOGO_PALETTE = {
-  k: '#120c22',
+  k: '#0e1116',
   w: '#efe3c2',
   s: '#c9b78f',
   S: '#a8916a',
-  v: '#8a5cff',
-  V: '#c3a6ff',
-  d: '#5a2fd9',
+  v: '#5b86b1',
+  V: '#a9c3dd',
+  d: '#3a5f86',
   y: '#f2c14e',
   Y: '#fff1b0',
   a: '#f2c14e55',
