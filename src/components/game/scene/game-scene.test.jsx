@@ -9,7 +9,7 @@ import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
 import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
 import { clearHeroCache, heroSprite } from '../hero/hero-cache.js'
 import { ANIMS, drawEnemy } from './actors.js'
-import GameScene, { dollAt, fightSpot, heroFrame } from './game-scene.jsx'
+import GameScene, { AMBIENT_ALPHA, dollAt, fightSpot, heroFrame } from './game-scene.jsx'
 import { paintLight } from './light.js'
 import * as tiles from './tiles.js'
 import { paintMap, paintPadlock, TS } from './tiles.js'
@@ -363,4 +363,34 @@ it('keeps the painted map when the hunted zone changes: only a new region repain
   expect(made).toBe(first)
   rerender(<GameScene world={WORLDS.find((world) => world.id === 'caverna-sql')} zoneRect={null} look={look} />)
   expect(made).toBeGreaterThan(first)
+})
+
+// Counts what the scene draws at the ambient monsters' dim alpha (fillRect or drawImage).
+function dimDraws() {
+  const seen = { count: 0 }
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function () {
+    const ctx = anyContext(this)
+    const mark = () => {
+      if (Math.abs(ctx.globalAlpha - AMBIENT_ALPHA) < 1e-9) seen.count++
+    }
+    ctx.globalAlpha = 1
+    ctx.drawImage = mark
+    ctx.fillRect = mark
+    return ctx
+  })
+  vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  return seen
+}
+
+it('draws idle monsters a little dimmer in every hunt region, and none in the town', () => {
+  expect(AMBIENT_ALPHA).toBeGreaterThan(0.5)
+  expect(AMBIENT_ALPHA).toBeLessThan(1)
+  const region = dimDraws()
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} />)
+  expect(region.count).toBeGreaterThan(0)
+  vi.restoreAllMocks()
+  const town = dimDraws()
+  render(<GameScene world={WORLDS.find((world) => world.kind === 'town')} zoneRect={null} look={look} />)
+  expect(town.count).toBe(0)
 })
