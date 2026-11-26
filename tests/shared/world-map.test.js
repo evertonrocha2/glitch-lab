@@ -1,20 +1,19 @@
 import { expect, it } from 'vitest'
-import { canEnter, findPath, pathTo, portalAt, reachableFrom, terminalNear, tileAt, zoneAt } from '../../shared/world/map.js'
+import { canEnter, npcAt, npcNear, reachableFrom, terminalNear, tileAt, zoneAt } from '../../shared/world/map.js'
 import { TILES } from '../../shared/world/tiles.js'
-import { worldById } from '../../shared/world/worlds.js'
+import { NPC_IDS, WORLDS, worldById } from '../../shared/world/worlds.js'
 
-// 5x4: water at (2,1), a closed zone z2 in the bottom right corner behind a door at (3,2),
-// a terminal at (0,3) and a portal at (4,0).
+// 5x4: water at (2,1), hunt zone z2 in the bottom right corner behind a door at (3,2), a terminal at
+// (0,3) and an NPC at (4,0).
 const TINY = {
   id: 'tiny',
-  rows: ['....O', '..~..', '...D.', 'C.##.'],
+  rows: ['.....', '..~..', '...D.', 'C.##.'],
   spawn: { x: 0, y: 0 },
-  portals: [{ x: 4, y: 0, to: 'laboratorio', at: { x: 1, y: 1 } }],
-  zones: [{ id: 'z2', rect: { x: 3, y: 2, w: 2, h: 2 }, requirement: { signal: 'codeSolved', count: 8 } }],
+  roads: [],
+  zones: [{ id: 'z2', rect: { x: 3, y: 2, w: 2, h: 2 } }],
+  npcs: [{ id: 'merchant', x: 4, y: 0 }],
   terminals: [{ x: 0, y: 3, kind: 'daily' }],
 }
-const NONE = new Set()
-const isNeighbor = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) === 1
 
 it('draws every tile as an 8x8 sprite in its own palette', () => {
   for (const tile of Object.values(TILES)) {
@@ -34,48 +33,21 @@ it('reads tiles and treats the outside as nothing', () => {
   expect(tileAt(TINY, 0, 4)).toBeNull()
 })
 
-it('finds the zone a tile is in, and none outside every zone', () => {
+it('finds the hunt zone a tile is in, and none on safe ground', () => {
   expect(zoneAt(TINY, 4, 3).id).toBe('z2')
   expect(zoneAt(TINY, 3, 2).id).toBe('z2')
   expect(zoneAt(TINY, 2, 2)).toBeNull()
+  expect(zoneAt({ ...TINY, zones: undefined }, 4, 3)).toBeNull()
 })
 
-it('blocks solid tiles, the outside and closed zones', () => {
-  expect(canEnter(TINY, 2, 1, NONE)).toBe(false)
-  expect(canEnter(TINY, 0, 3, NONE)).toBe(false)
-  expect(canEnter(TINY, -1, 0, NONE)).toBe(false)
-  expect(canEnter(TINY, 4, 3, NONE)).toBe(false)
-  expect(canEnter(TINY, 3, 2, NONE)).toBe(false)
-  expect(canEnter(TINY, 4, 3, new Set(['z2']))).toBe(true)
-  expect(canEnter(TINY, 0, 0, NONE)).toBe(true)
-})
-
-it('finds the shortest path around water', () => {
-  const path = findPath(TINY, { x: 0, y: 1 }, { x: 4, y: 1 }, NONE)
-  expect(path).toHaveLength(6)
-  expect(path.at(-1)).toEqual({ x: 4, y: 1 })
-  let previous = { x: 0, y: 1 }
-  for (const step of path) {
-    expect(isNeighbor(previous, step)).toBe(true)
-    expect(canEnter(TINY, step.x, step.y, NONE)).toBe(true)
-    previous = step
-  }
-})
-
-it('gives no path into a closed zone, and an empty one in place', () => {
-  expect(findPath(TINY, { x: 0, y: 0 }, { x: 4, y: 3 }, NONE)).toBeNull()
-  expect(findPath(TINY, { x: 0, y: 0 }, { x: 4, y: 3 }, new Set(['z2']))).not.toBeNull()
-  expect(findPath(TINY, { x: 1, y: 1 }, { x: 1, y: 1 }, NONE)).toEqual([])
-})
-
-it('walks next to a solid target, and nowhere when nothing next to it can be reached', () => {
-  const path = pathTo(TINY, { x: 4, y: 0 }, { x: 0, y: 3 }, NONE)
-  expect(isNeighbor(path.at(-1), { x: 0, y: 3 })).toBe(true)
-  expect(path).toHaveLength(Math.min(...[{ x: 0, y: 2 }, { x: 1, y: 3 }].map((to) => findPath(TINY, { x: 4, y: 0 }, to, NONE).length)))
-  expect(pathTo(TINY, { x: 0, y: 0 }, { x: 4, y: 1 }, NONE)).toEqual(findPath(TINY, { x: 0, y: 0 }, { x: 4, y: 1 }, NONE))
-  // (3,3) is a wall whose neighbors are a wall, the closed zone and the outside.
-  expect(pathTo(TINY, { x: 0, y: 0 }, { x: 3, y: 3 }, NONE)).toBeNull()
-  expect(isNeighbor(pathTo(TINY, { x: 0, y: 0 }, { x: 3, y: 3 }, new Set(['z2'])).at(-1), { x: 3, y: 3 })).toBe(true)
+it('blocks solid tiles, the outside and NPCs, and never a zone', () => {
+  expect(canEnter(TINY, 2, 1)).toBe(false)
+  expect(canEnter(TINY, 0, 3)).toBe(false)
+  expect(canEnter(TINY, -1, 0)).toBe(false)
+  expect(canEnter(TINY, 4, 0)).toBe(false)
+  expect(canEnter(TINY, 3, 2)).toBe(true)
+  expect(canEnter(TINY, 4, 3)).toBe(true)
+  expect(canEnter(TINY, 0, 0)).toBe(true)
 })
 
 it('finds a terminal next to the hero but not on a diagonal', () => {
@@ -84,31 +56,54 @@ it('finds a terminal next to the hero but not on a diagonal', () => {
   expect(terminalNear(TINY, 1, 2)).toBeNull()
 })
 
-it('finds the portal on a tile', () => {
-  expect(portalAt(TINY, 4, 0)).toEqual(TINY.portals[0])
-  expect(portalAt(TINY, 3, 0)).toBeNull()
+it('finds the NPC on a tile and the one next to the hero, never on a diagonal', () => {
+  expect(npcAt(TINY, 4, 0)).toEqual(TINY.npcs[0])
+  expect(npcAt(TINY, 3, 0)).toBeNull()
+  expect(npcNear(TINY, 3, 0)).toEqual(TINY.npcs[0])
+  expect(npcNear(TINY, 4, 1)).toEqual(TINY.npcs[0])
+  expect(npcNear(TINY, 3, 1)).toBeNull()
+  expect(npcNear({ ...TINY, npcs: undefined }, 3, 0)).toBeNull()
 })
 
-it('lists every tile reachable from a start', () => {
-  const closed = reachableFrom(TINY, { x: 0, y: 0 }, NONE)
-  expect(closed.has('4,1')).toBe(true)
-  expect(closed.has('4,3')).toBe(false)
-  expect(closed.has('2,1')).toBe(false)
-  expect(reachableFrom(TINY, { x: 0, y: 0 }, new Set(['z2'])).has('4,3')).toBe(true)
+it('lists every tile reachable from a start, zones included', () => {
+  const seen = reachableFrom(TINY, { x: 0, y: 0 })
+  expect(seen.has('4,1')).toBe(true)
+  expect(seen.has('4,3')).toBe(true)
+  expect(seen.has('2,1')).toBe(false)
+  expect(seen.has('4,0')).toBe(false)
 })
 
-it('never walks through a portal on the way somewhere else, but can walk onto one', () => {
-  const hub = worldById('laboratorio')
-  const path = findPath(hub, { x: 5, y: 1 }, { x: 9, y: 1 }, NONE)
-  expect(path.at(-1)).toEqual({ x: 9, y: 1 })
-  expect(path.some((step) => portalAt(hub, step.x, step.y))).toBe(false)
-  expect(findPath(hub, { x: 5, y: 1 }, { x: 7, y: 1 }, NONE).at(-1)).toEqual({ x: 7, y: 1 })
-})
-
-it('prefers the terminal the hero faces when two are next to it', () => {
-  const two = { ...TINY, rows: ['.....', '.....', 'C.C..'], zones: [], portals: [], terminals: [{ x: 0, y: 2, kind: 'daily' }, { x: 2, y: 2, kind: 'hunt' }] }
+it('prefers the terminal (and the NPC) the hero faces when two are next to it', () => {
+  const two = { ...TINY, rows: ['.....', '.....', 'C.C..'], zones: [], npcs: [], terminals: [{ x: 0, y: 2, kind: 'daily' }, { x: 2, y: 2, kind: 'hunt' }] }
   expect(terminalNear(two, 1, 2, 'right').kind).toBe('hunt')
   expect(terminalNear(two, 1, 2, 'left').kind).toBe('daily')
   expect(terminalNear(two, 1, 2, 'up').kind).toBe('daily')
   expect(terminalNear(two, 1, 2).kind).toBe('daily')
+  const pair = { ...TINY, npcs: [{ id: 'smith', x: 0, y: 1 }, { id: 'jeweler', x: 2, y: 1 }] }
+  expect(npcNear(pair, 1, 1, 'right').id).toBe('jeweler')
+  expect(npcNear(pair, 1, 1, 'left').id).toBe('smith')
+})
+
+it('stands every town NPC on its own reachable floor tile, with the five ids and room to talk', () => {
+  const town = worldById('laboratorio')
+  expect(town.npcs.map((npc) => npc.id).sort()).toEqual([...NPC_IDS].sort())
+  const seen = reachableFrom(town, town.spawn)
+  for (const npc of town.npcs) {
+    const char = tileAt(town, npc.x, npc.y)
+    expect(TILES[char].solid, npc.id).toBe(false)
+    const sides = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => seen.has(`${npc.x + dx},${npc.y + dy}`))
+    expect(sides.length, npc.id).toBeGreaterThan(0)
+  }
+})
+
+it('reaches every terminal from its region spawn, the town spreading at least six', () => {
+  expect(worldById('laboratorio').terminals.length).toBeGreaterThanOrEqual(6)
+  for (const world of WORLDS) {
+    const seen = reachableFrom(world, world.spawn)
+    for (const terminal of world.terminals) {
+      const sides = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => seen.has(`${terminal.x + dx},${terminal.y + dy}`))
+      expect(sides.length, `${world.id} ${terminal.x},${terminal.y}`).toBeGreaterThan(0)
+      expect(tileAt(world, terminal.x, terminal.y)).toBe('C')
+    }
+  }
 })

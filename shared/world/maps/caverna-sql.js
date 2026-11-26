@@ -1,10 +1,11 @@
-// Caverna do SQL: opens after 3 solved programming challenges. Terminals like the forest.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Caverna do SQL: tier 2, north of the Forest. The south road comes up from the Forest's deep woods
+// into z1; z3 is the far east hall, whose east road climbs to the Math Tower (an ENEM region).
+// Terminals like the Forest. Drawn on a 32x20 grid in three columns, one hunt zone each.
 export const CAVERNA_SQL = {
   id: 'caverna-sql',
   kind: 'tech',
   area: null,
-  requirement: { signal: 'codeSolved', count: 3 },
+  tier: 2,
   rows: [
     '################################',
     '#__________#__________#________#',
@@ -15,26 +16,29 @@ export const CAVERNA_SQL = {
     '#_C_C_C____#_C_C_C____#_C_C_C__#',
     '#_##__~~___#_##__~~___#_##__~~_#',
     '#_##__~~___#_##__~~___#_##__~~_#',
-    '#__________#__________#________#',
-    '#O_________D__________D________#',
-    '#__________#__________#________#',
+    '#__________#__________#_______::',
+    '#__________D__________D_______::',
+    '#__________#__________#_______::',
     '#___##__##_#___##__##_#___##___#',
     '#___##__##_#___##__##_#___##___#',
     '#__________#__________#________#',
     '#__________#__________#________#',
     '#__________#__________#________#',
     '#__________#__________#________#',
-    '#__________#__________#________#',
-    '################################',
+    '#___:::____#__________#________#',
+    '####:::#########################',
   ],
-  spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 7, y: 2 } },
+  spawn: { x: 5, y: 17 },
+  roads: [
+    { side: 'south', start: 4, to: 'floresta-js' },
+    { side: 'east', start: 9, to: 'torre-matematica' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 0, y: 0, w: 11, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
     { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
+  npcs: [],
   terminals: [
     { x: 2, y: 6, kind: 'daily' },
     { x: 4, y: 6, kind: 'glitchdle' },

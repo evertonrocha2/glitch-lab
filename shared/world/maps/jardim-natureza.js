@@ -1,10 +1,11 @@
-// Jardim da Natureza: ENEM Ciências da Natureza, one terminal per topic.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Jardim da Natureza: ENEM Ciências da Natureza, tier 2, north of the Library. The south road comes up
+// from the Library into z1 (east); the west road out of z3 leads to the Math Tower. One terminal per
+// topic. Drawn on a 32x20 grid in three columns, one hunt zone each: z3 west, z2 middle, z1 east.
 export const JARDIM_NATUREZA = {
   id: 'jardim-natureza',
   kind: 'enem',
   area: 'natureza',
-  requirement: { signal: 'enemCorrect', area: 'natureza', count: 5 },
+  tier: 2,
   rows: [
     'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
     'T..........T..........T........T',
@@ -15,26 +16,29 @@ export const JARDIM_NATUREZA = {
     'T.C.C.C.C..T.C.C.C.C..T.C.C.C.CT',
     'T.~~..TT...T.~~..TT...T.~~..TT.T',
     'T.~~..TT...T.~~..TT...T.~~..TT.T',
-    'T..........T..........T........T',
-    'TO:::::::::D::::::::::D::::::::T',
-    'T..........T..........T........T',
+    '::.........T..........T........T',
+    ':::::::::::D::::::::::D::::::::T',
+    '::.........T..........T........T',
     'T...~~..TT.T...~~..TT.T...~~...T',
     'T...~~..TT.T...~~..TT.T...~~...T',
     'T.C........T..........T........T',
     'T..........T..........T........T',
     'T..........T..........T........T',
     'T..........T..........T........T',
-    'T..........T..........T........T',
-    'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+    'T..........T..........T..:::...T',
+    'TTTTTTTTTTTTTTTTTTTTTTTTT:::TTTT',
   ],
-  spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 7, y: 7 } },
+  spawn: { x: 26, y: 17 },
+  roads: [
+    { side: 'south', start: 25, to: 'biblioteca-linguagens' },
+    { side: 'west', start: 9, to: 'torre-matematica' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 22, y: 0, w: 10, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
-    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
+    { id: 'z3', rect: { x: 0, y: 0, w: 11, h: 20 } },
   ],
+  npcs: [],
   terminals: [
     { x: 2, y: 6, kind: 'topic', topicId: 'fisica-mecanica' },
     { x: 4, y: 6, kind: 'topic', topicId: 'fisica-energia-termologia' },

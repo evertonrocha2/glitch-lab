@@ -1,13 +1,14 @@
-// Biblioteca das Linguagens: ENEM Linguagens, one terminal per topic.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Biblioteca das Linguagens: ENEM Linguagens, tier 1, east of the town. The west road comes from the
+// town into z1; the north road out of z3 leads to the Garden of Nature. One terminal per topic. Drawn on
+// a 32x20 grid in three columns, one hunt zone each.
 export const BIBLIOTECA_LINGUAGENS = {
   id: 'biblioteca-linguagens',
   kind: 'enem',
   area: 'linguagens',
-  requirement: { signal: 'enemCorrect', area: 'linguagens', count: 5 },
+  tier: 1,
   rows: [
-    '################################',
-    '#__________#__________#________#',
+    '#########################:::####',
+    '#__________#__________#__:::___#',
     '#__________#__________#________#',
     '#__________#__________#________#',
     '#__________#__________#________#',
@@ -15,9 +16,9 @@ export const BIBLIOTECA_LINGUAGENS = {
     '#_C_C_C_C__#_C_C_C____#_C_C_C__#',
     '#_BB__BB___#_BB__BB___#_BB__BB_#',
     '#_BB__BB___#_BB__BB___#_BB__BB_#',
-    '#__________#__________#________#',
-    '#O_________D__________D________#',
-    '#__________#__________#________#',
+    '::_________#__________#________#',
+    '::_________D__________D________#',
+    '::_________#__________#________#',
     '#___BB__BB_#___BB__BB_#___BB___#',
     '#___BB__BB_#___BB__BB_#___BB___#',
     '#__________#__________#________#',
@@ -28,13 +29,16 @@ export const BIBLIOTECA_LINGUAGENS = {
     '################################',
   ],
   spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 12, y: 2 } },
+  roads: [
+    { side: 'west', start: 9, to: 'laboratorio' },
+    { side: 'north', start: 25, to: 'jardim-natureza' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 0, y: 0, w: 11, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
     { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
+  npcs: [],
   terminals: [
     { x: 2, y: 6, kind: 'topic', topicId: 'interpretacao-texto' },
     { x: 4, y: 6, kind: 'topic', topicId: 'generos-textuais' },
