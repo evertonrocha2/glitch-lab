@@ -7,6 +7,7 @@ import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
+import HeroLoading from './loading/hero-loading.jsx'
 import LookDialog from './look-dialog.jsx'
 import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
@@ -454,9 +455,7 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
             {error}
           </p>
         ) : (
-          <div role="status" className="grid aspect-[16/10] place-items-center border-2 border-ink bg-[#120e26] font-pixel text-sm text-[#c3b2ff]">
-            {t('game.view.loading')}
-          </div>
+          <HeroLoading className="aspect-[16/10] border-2 border-ink" />
         )}
       </div>
     )
