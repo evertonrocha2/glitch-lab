@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
+import { ZONES } from '../../../../shared/game/zones.js'
 import { isSolid } from '../../../../shared/world/tiles.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import { SPRITE } from '../hero/draw-hero.js'
 import { heroSprite } from '../hero/hero-cache.js'
 import { useReducedMotion } from '../use-reduced-motion.js'
 import { drawFoe, drawHealthBar, enemyLight, foeColors, foeHeight, heroLight } from './actors.js'
+import { createAmbient } from './ambient.js'
 import { activeFloaters, buildPack, packAt, shakeAt, stackFloaters } from './pack.js'
 import { paintLight } from './light.js'
 import { nudge, orient, rotate } from './placement.js'
@@ -116,6 +118,10 @@ const FOLLOW = 3
 export const SPREAD = 1.6
 const SLIDE = 10
 const LEVEL_UP_MS = 1800
+// The idle monsters of a hunt region (ambient.js) are drawn this much fainter than the live pack, so
+// the fight still reads. In the draw order they are AMBIENT + their index.
+export const AMBIENT_ALPHA = 0.72
+const AMBIENT = 10000
 
 // A region in lit 16px pixel art, one canvas pixel per art pixel, scaled up by CSS to fit the width.
 // Static art goes to an offscreen layer once per region; water, actors, the town's keepers, road signs,
@@ -144,6 +150,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
   live.current = { look, gear, enemy, playback, onReady, walker, onCamera, level, zoneRect }
   const ready = useRef(false)
   const levelRef = useRef({ from: null, at: -1, n: 0 })
+  // Kept across effect runs of the same region, so starting a hunt never snaps them back.
+  const ambientRef = useRef({ key: null, ambient: null })
 
   const playing = Boolean(playback?.fights?.length)
   const walking = Boolean(walker)
@@ -205,6 +213,21 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
     let lastTime = 0
     let cameraX = Number.NaN
     let cameraY = Number.NaN
+    // Idle monsters (none in the town): cosmetic, not solid, never sent to the server.
+    const ambientKey = `${world.id}|${reduced}`
+    if (ambientRef.current.key !== ambientKey) {
+      ambientRef.current = { key: ambientKey, ambient: createAmbient({ world, zones: ZONES[world.id], seed: world.id, reducedMotion: reduced }) }
+    }
+    const ambient = ambientRef.current.ambient
+    // The tiles they keep clear of, rebuilt each frame from a pool (no garbage per frame).
+    const avoid = []
+    const avoidPool = []
+    const keep = (k, x, y) => {
+      const tile = avoidPool[k] ?? (avoidPool[k] = { x: 0, y: 0 })
+      tile.x = Math.round(x)
+      tile.y = Math.round(y)
+      avoid[k] = tile
+    }
 
     // Ground px of a hero relative tile offset in this fight (turned, anchored, kept on floor).
     const spotPx = (at, out) => {
@@ -292,6 +315,17 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           }
         }
       } else fight.key = null
+      // The idle monsters keep clear of the hero's tile and the live pack's.
+      avoid.length = 0
+      keep(0, pos.x, pos.y)
+      if (pack) {
+        for (let i = 0; i < pack.foes.length; i++) {
+          const s = fight.spots[i]
+          if (s && fight.state.foes[i].visible) keep(avoid.length, s.x, s.y)
+        }
+      }
+      ambient.update(clock, avoid)
+      const idle = ambient.monsters()
       const ms = inFight ? state.local : 0
       const shake = pack ? shakeAt(pack, ms, reduced) : null
 
@@ -306,6 +340,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       order.length = 0
       order.push(-1)
       for (let i = 0; i < npcs.length; i++) order.push(-2 - i)
+      for (let i = 0; i < idle.length; i++) order.push(AMBIENT + i)
       if (pack) {
         for (let i = 0; i < pack.foes.length; i++) if (fight.state.foes[i].visible && fight.spots[i]) order.push(i)
       }
@@ -315,6 +350,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       for (const who of order) {
         if (who === -1) drawHero(heroAnim)
         else if (who < -1) drawNpc(ctx, npcs[-2 - who], { t: te, reduced, side: npcs[-2 - who].x * TS + 8 > heroPx.x ? -1 : 1 })
+        else if (who >= AMBIENT) drawIdle(who - AMBIENT)
         else drawEnemyAt(who)
       }
 
@@ -325,7 +361,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       lightOut.push(heroLight(heroPx.x - 8, heroPx.y - 15))
       if (pack) {
         for (const i of order) {
-          if (i < 0) continue
+          if (i < 0 || i >= AMBIENT) continue
           const f = fight.state.foes[i]
           if ((f.elite || f.boss) && f.anim !== 'death') {
             env.foe(i, rel)
@@ -356,7 +392,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
         }
         // Hp bars and the floating numbers stay readable over everything.
         for (const i of order) {
-          if (i < 0) continue
+          if (i < 0 || i >= AMBIENT) continue
           const f = fight.state.foes[i]
           if (f.anim === 'death') continue
           env.foe(i, rel)
@@ -384,7 +420,16 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
       function feetY(i) {
         if (i === -1) return heroPx.y
         if (i < -1) return npcs[-2 - i].y * TS + 15
+        if (i >= AMBIENT) return Math.round(idle[i - AMBIENT].y * TS + 15)
         return Math.round(fight.spots[i].y * TS + 15)
+      }
+
+      // An idle monster: the live pack's drawing, a little fainter, facing where it last stepped.
+      function drawIdle(j) {
+        const m = idle[j]
+        ctx.globalAlpha = AMBIENT_ALPHA * m.fade
+        drawFoe(ctx, Math.round(m.x * TS + 8), Math.round(m.y * TS + 15) - 1, { sprite: m.enemy, anim: m.anim, t: te + j * 0.53, facing: m.facing })
+        ctx.globalAlpha = 1
       }
 
       // Over the light: each keeper's name and, at each road, where it leads.
