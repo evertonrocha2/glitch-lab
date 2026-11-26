@@ -5,7 +5,7 @@ import { LESSONS, lessonFor } from '../../shared/exams/lessons/index.js'
 import { validateLesson } from '../../shared/exams/lessons/validate.js'
 
 // The areas whose every topic already has its lesson. An area joins once all its lessons are in.
-const READY_AREAS = new Set([])
+const READY_AREAS = new Set(['linguagens', 'humanas', 'natureza', 'matematica'])
 
 const valid = () => ({
   topic: 'funcoes',
