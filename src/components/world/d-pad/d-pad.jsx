@@ -1,16 +1,31 @@
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
 import Frame from '../../game/ui/frame.jsx'
 
-// A pixel arrow pointing up; the other three are the same arrow turned.
+// A solid pixel triangle pointing up; the other three are the same triangle turned. 8 art pixels drawn
+// at 24px keep every art pixel 3 screen pixels, so it reads as an arrow even on a small phone (a thin
+// tip and stem used to round into a "+").
 const TURN = { up: 0, right: 90, down: 180, left: 270 }
+const ROWS = [
+  { y: 2, x: 3, w: 2 },
+  { y: 3, x: 2, w: 4 },
+  { y: 4, x: 1, w: 6 },
+  { y: 5, x: 0, w: 8 },
+]
 
 function Arrow({ dir }) {
   return (
-    <svg viewBox="0 0 5 5" shapeRendering="crispEdges" aria-hidden="true" className="size-4 fill-[#e9e4ff]" style={{ transform: `rotate(${TURN[dir]}deg)` }}>
-      <rect x="2" y="0" width="1" height="1" />
-      <rect x="1" y="1" width="3" height="1" />
-      <rect x="0" y="2" width="5" height="1" />
-      <rect x="2" y="3" width="1" height="2" />
+    <svg
+      viewBox="0 0 8 8"
+      width="24"
+      height="24"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      className="fill-[#e9e4ff]"
+      style={{ transform: `rotate(${TURN[dir]}deg)` }}
+    >
+      {ROWS.map((row) => (
+        <rect key={row.y} x={row.x} y={row.y} width={row.w} height="1" />
+      ))}
     </svg>
   )
 }
