@@ -43,11 +43,12 @@ const WALLET = [
 //   saveLoadout in actions.
 // - target (optional): { world, zone, difficulty } the power bar measures against. Defaults to the
 //   running hunt, else the first open zone not yet beaten on Normal.
-// - portrait (optional): the hero portrait and its "edit look" button, shown at the top of the Hero tab.
+// - onEditLook (optional): opens the character creator from the Hero tab's Appearance button (hidden
+//   without it).
 // - studyHref (optional): where the study call to action links.
 // - fill (optional): the panel takes its parent's height and the tab content scrolls inside the frame
 //   (the desktop console); off, it grows with its content (the phone drawer scrolls it).
-export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab = null, worldTab = null, target, portrait = null, studyHref, fill = false }) {
+export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab = null, worldTab = null, target, onEditLook, studyHref, fill = false }) {
   const { t, locale } = useI18n()
   const fmt = useMemo(() => new Intl.NumberFormat(locale), [locale])
   const baseId = useId()
@@ -88,7 +89,7 @@ export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab 
   const shared = { view, actions, runner, selectedId, onSelect: setSelectedId, onForge: forge }
 
   const content = {
-    hero: <HeroTab {...shared} target={target} portrait={portrait} studyHref={studyHref} />,
+    hero: <HeroTab {...shared} target={target} onEditLook={onEditLook} studyHref={studyHref} />,
     tree: slot(treeTab, shared),
     bag: <BagTab {...shared} />,
     forge: <ForgeTab {...shared} />,
