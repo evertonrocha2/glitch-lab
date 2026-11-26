@@ -245,6 +245,9 @@ const en = {
   'server.worldNotFound': 'World not found.',
   'server.worldLocked': 'This world is still locked.',
   'server.worldBadPosition': "Your hero can't stand there.",
+  'server.gameConflict': 'Your hero changed in another tab. Reload to continue.',
+  'server.gameZoneLocked': 'This zone is still locked.',
+  'server.gameBossLevel': 'Your hero needs a higher level for this boss.',
   'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
 
   // Community events.
@@ -520,6 +523,9 @@ const ptBR = {
   'server.worldNotFound': 'Mundo não encontrado.',
   'server.worldLocked': 'Esse mundo ainda está trancado.',
   'server.worldBadPosition': 'Seu personagem não pode ficar aí.',
+  'server.gameConflict': 'Seu herói mudou em outra aba. Recarregue para continuar.',
+  'server.gameZoneLocked': 'Essa zona ainda está trancada.',
+  'server.gameBossLevel': 'Seu herói precisa de um nível maior para este chefe.',
   'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',
