@@ -25,6 +25,44 @@ it('draws every tile as an 8x8 sprite in its own palette', () => {
   }
 })
 
+// Fase 4: the decoration tiles that give each hunt zone its own look. name -> solid.
+const DECORATIONS = {
+  flowers: false,
+  'tall grass': false,
+  'dark ground': false,
+  mushrooms: false,
+  bones: false,
+  rubble: false,
+  'moss stone': false,
+  carpet: false,
+  stairs: false,
+  mosaic: false,
+  stump: true,
+  log: true,
+  crystal: true,
+  'ruin wall': true,
+  column: true,
+  glassware: true,
+  'marsh water': true,
+  cabinet: true,
+  'market stall': true,
+  barrel: true,
+  planter: true,
+  telescope: true,
+  chalkboard: true,
+  bookshelf: true,
+}
+
+it('knows the fase 4 decoration tiles by name, each on its own character', () => {
+  const byName = new Map(Object.entries(TILES).map(([char, tile]) => [tile.name, char]))
+  expect(byName.size).toBe(Object.keys(TILES).length)
+  for (const [name, solid] of Object.entries(DECORATIONS)) {
+    expect(byName.has(name), name).toBe(true)
+    expect(TILES[byName.get(name)].solid, name).toBe(solid)
+    expect(byName.get(name), name).toHaveLength(1)
+  }
+})
+
 it('reads tiles and treats the outside as nothing', () => {
   expect(tileAt(TINY, 0, 0)).toBe('.')
   expect(tileAt(TINY, 2, 1)).toBe('~')
