@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { TALENTS } from '../../../../shared/game/talents.js'
 import TalentCanvas, { drawTree, nodeAt } from './talent-canvas.jsx'
+import { supportColor } from './support-gem.js'
 
 // A 2D context that records every call and accepts any property.
 function stubContext() {
@@ -73,4 +74,26 @@ it('draws one still frame with reduced motion', () => {
   render(<TalentCanvas {...empty} onSelect={() => {}} />)
   expect(raf).not.toHaveBeenCalled()
   expect(calls.filter(([name]) => name === 'fillRect').length).toBeGreaterThan(0)
+})
+
+it('draws socket nodes as gem slots, a filled one in its gem color', () => {
+  const fills = []
+  const { ctx } = stubContext()
+  const spy = new Proxy(ctx, {
+    set(target, key, value) {
+      if (key === 'fillStyle') fills.push(value)
+      target[key] = value
+      return true
+    },
+  })
+  drawTree(spy, { ...empty, sockets: { 'logica-f0-1': 'fogo' } }, null)
+  expect(fills).toContain(supportColor('fogo'))
+  fills.length = 0
+  drawTree(spy, empty, null)
+  expect(fills).not.toContain(supportColor('fogo'))
+})
+
+it('gives socket nodes a click target', () => {
+  const socket = TALENTS.nodes.find((node) => node.id === 'logica-f0-1')
+  expect(nodeAt(socket.x + 6, socket.y)?.id).toBe('logica-f0-1')
 })

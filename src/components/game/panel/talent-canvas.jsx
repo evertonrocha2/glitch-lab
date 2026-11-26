@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
+import { PASSIVES } from '../../../../shared/game/skill-mods.js'
 import { TALENTS, TREE_HEIGHT, TREE_WIDTH } from '../../../../shared/game/talents.js'
 import { iconCanvas } from '../icons/sprite.js'
 import { useReducedMotion } from '../use-reduced-motion.js'
+import { supportColor, supportIcon } from './support-gem.js'
 
 // The talent tree drawn like the approved mockup (game-depth.html, #tree): owned path in gold, nodes
 // you can take now glowing (a still white outline with reduced motion), queued nodes in cyan,
-// keystones octagonal with a 2x icon. The canvas is decoration plus a mouse target: the tab's hidden
-// node list is the accessible version, so the canvas is aria-hidden.
+// keystones octagonal with a 2x icon. Fase 2c: skill passives wear a second, cyan ring; sockets are
+// hexagonal gem slots, sunk and empty or filled with their support gem's color and icon. The canvas is
+// decoration plus a mouse target: the tab's hidden node list is the accessible version, so the canvas
+// is aria-hidden.
 
 export const BRANCH_COLORS = { logica: '#ff5a6e', sintaxe: '#5fd38a', algoritmos: '#a98bff', bridge: '#f2c14e', root: '#f2c14e' }
-const RADIUS = { root: 20, small: 8, notable: 15, keystone: 22 }
+const RADIUS = { root: 20, small: 8, notable: 15, keystone: 22, socket: 13 }
 const QUEUED = '#7fffe9'
+const PASSIVE_RING = '#7fe9ff'
 const NODE_BY_ID = new Map(TALENTS.nodes.map((node) => [node.id, node]))
 const ROOT = NODE_BY_ID.get('root')
 const KEYSTONES = TALENTS.nodes.filter((node) => node.kind === 'keystone')
@@ -30,20 +35,41 @@ export function nodeAt(x, y) {
   return best
 }
 
-function shape(ctx, node, r) {
-  ctx.beginPath()
-  if (node.kind === 'keystone') {
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + Math.PI / 8
-      ctx[i ? 'lineTo' : 'moveTo'](node.x + Math.cos(a) * r, node.y + Math.sin(a) * r)
-    }
-    ctx.closePath()
-  } else ctx.arc(node.x, node.y, r, 0, Math.PI * 2)
+// A regular polygon around the node: sides, turned by `turn` radians.
+function polygon(ctx, node, r, sides, turn) {
+  for (let i = 0; i < sides; i++) {
+    const a = (i / sides) * Math.PI * 2 + turn
+    ctx[i ? 'lineTo' : 'moveTo'](node.x + Math.cos(a) * r, node.y + Math.sin(a) * r)
+  }
+  ctx.closePath()
 }
 
-// One frame. state: { owned, queued, open (Sets of ids), selected, labels }. t: seconds, or null when
-// still (reduced motion). labelScale: how much bigger to draw the branch labels (1 at full size).
-export function drawTree(ctx, { owned, queued, open, selected, labels }, t, labelScale = 1) {
+function shape(ctx, node, r) {
+  ctx.beginPath()
+  if (node.kind === 'keystone') polygon(ctx, node, r, 8, Math.PI / 8)
+  else if (node.kind === 'socket') polygon(ctx, node, r, 6, Math.PI / 6)
+  else ctx.arc(node.x, node.y, r, 0, Math.PI * 2)
+}
+
+// A socket: a sunk slot, filled with its gem (color and icon) or showing a faint gem outline.
+function drawSocket(ctx, node, support, lit) {
+  const r = RADIUS.socket
+  ctx.beginPath()
+  polygon(ctx, node, r - 4, 6, Math.PI / 6)
+  ctx.fillStyle = support ? supportColor(support) : '#0a0818'
+  ctx.fill()
+  const sprite = iconCanvas(support ? supportIcon(support) : 'gem')
+  if (sprite) {
+    ctx.globalAlpha = support ? 1 : lit ? 0.35 : 0.2
+    ctx.drawImage(sprite, node.x - 9, node.y - 9, 18, 18)
+    ctx.globalAlpha = 1
+  }
+}
+
+// One frame. state: { owned, queued, open (Sets of ids), selected, labels, sockets ({ node id: support
+// id }) }. t: seconds, or null when still (reduced motion). labelScale: how much bigger to draw the
+// branch labels (1 at full size).
+export function drawTree(ctx, { owned, queued, open, selected, labels, sockets = {} }, t, labelScale = 1) {
   const pulse = t === null ? 0 : Math.sin(t * 4)
   const bg = ctx.createRadialGradient(380, 300, 20, 380, 260, 460)
   bg.addColorStop(0, '#1d1640')
@@ -99,7 +125,18 @@ export function drawTree(ctx, { owned, queued, open, selected, labels }, t, labe
     ctx.lineWidth = node.kind === 'small' ? 2 : 3
     ctx.strokeStyle = mine ? '#f2c14e' : inQueue ? QUEUED : can ? `rgba(255,255,255,${0.6 + 0.4 * pulse})` : '#4a4266'
     ctx.stroke()
-    if (node.kind !== 'small') {
+    if (PASSIVES[node.effect]) {
+      ctx.save()
+      ctx.globalAlpha = mine || inQueue ? 0.95 : 0.55
+      ctx.lineWidth = 1.5
+      ctx.strokeStyle = PASSIVE_RING
+      ctx.beginPath()
+      ctx.arc(node.x, node.y, r + 4, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+    }
+    if (node.kind === 'socket') drawSocket(ctx, node, Object.hasOwn(sockets, node.id) ? sockets[node.id] : null, mine || can)
+    else if (node.kind !== 'small') {
       const sprite = iconCanvas(node.icon)
       const size = node.kind === 'keystone' || node.kind === 'root' ? 36 : 18
       if (sprite) {
@@ -148,8 +185,8 @@ export function drawTree(ctx, { owned, queued, open, selected, labels }, t, labe
 }
 
 // Props: owned, queued, open (Sets of node ids), selected (id or null), labels ({ [branch]: { name, sub } }),
-// onSelect(id).
-export default function TalentCanvas({ owned, queued, open, selected, labels, onSelect }) {
+// sockets ({ [node id]: support id }), onSelect(id).
+export default function TalentCanvas({ owned, queued, open, selected, labels, sockets, onSelect }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const [shown, setShown] = useState(TREE_WIDTH)
@@ -168,7 +205,7 @@ export default function TalentCanvas({ owned, queued, open, selected, labels, on
     const ctx = ref.current?.getContext('2d')
     if (!ctx) return undefined
     ctx.imageSmoothingEnabled = false
-    const state = { owned, queued, open, selected, labels }
+    const state = { owned, queued, open, selected, labels, sockets }
     if (reduced) {
       drawTree(ctx, state, null, labelScale)
       return undefined
@@ -180,7 +217,7 @@ export default function TalentCanvas({ owned, queued, open, selected, labels, on
     }
     frame = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(frame)
-  }, [owned, queued, open, selected, labels, reduced, labelScale])
+  }, [owned, queued, open, selected, labels, sockets, reduced, labelScale])
 
   function onClick(event) {
     const rect = event.currentTarget.getBoundingClientRect()

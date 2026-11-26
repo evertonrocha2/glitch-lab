@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { CHANCE } from '../../../../shared/game/combat-effects.js'
+import { PASSIVES } from '../../../../shared/game/skill-mods.js'
 import { canAllocate, MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, TALENTS } from '../../../../shared/game/talents.js'
 import { capitalize } from '../../../lib/i18n/format.js'
 import GameIcon from '../icons/game-icon.jsx'
@@ -7,19 +8,26 @@ import { useItemText } from '../item-tooltip/item-text.js'
 import Frame, { Chip } from '../ui/frame.jsx'
 import { ActionButton, ConfirmButton, GameDialog } from './panel-ui.jsx'
 import SkillsView from './skills-view.jsx'
+import { modText, supportColor, supportIcon } from './support-gem.js'
 import TalentCanvas, { BRANCH_COLORS } from './talent-canvas.jsx'
 const VIEWS = ['talents', 'skills']
 const BRANCHES = ['logica', 'sintaxe', 'algoritmos']
 const NODE_BY_ID = new Map(TALENTS.nodes.map((node) => [node.id, node]))
 // Before the View carried branch counts: every requirement counts as unmet.
 const NO_BRANCH = {}
+const NO_SOCKETS = {}
+// A hexagon, the shape of a socket.
+const HEX = '[clip-path:polygon(25%_0,75%_0,100%_50%,75%_100%,25%_100%,0_50%)]'
 
 // Where a node sits, for nodes whose name and kind repeat (many small nodes share stats): how many
 // steps past the nearest named node (root, notable, keystone or bridge), and whether it is on a side path.
 const PARENT = new Map()
 for (const [from, to] of TALENTS.edges) if (!PARENT.has(to)) PARENT.set(to, from)
 const SAME_NAME = new Map()
-const nameKey = (node) => (node.kind === 'small' && node.branch !== 'bridge' ? `${node.branch}:${JSON.stringify(node.stats)}` : node.id)
+const nameKey = (node) => {
+  if (node.kind === 'socket') return 'socket'
+  return node.kind === 'small' && node.branch !== 'bridge' ? `${node.branch}:${JSON.stringify(node.stats)}` : node.id
+}
 for (const node of TALENTS.nodes) SAME_NAME.set(nameKey(node), (SAME_NAME.get(nameKey(node)) ?? 0) + 1)
 function placeOf(node) {
   if (SAME_NAME.get(nameKey(node)) < 2) return null
@@ -63,11 +71,18 @@ function useTalentText() {
   return useMemo(() => {
     const { t, locale } = text
     const branchName = (branch) => t(`game.branch.${branch}`)
-    const name = (node) => (node.kind === 'small' ? capitalize(text.statsLine(node.stats), locale) : t(`game.talent.${node.id}`))
+    const mods = modText(t, text.number)
+    const passive = (node) => Boolean(node.effect && PASSIVES[node.effect])
+    const name = (node) => {
+      if (node.kind === 'socket') return t('game.tree.socket.name')
+      if (passive(node)) return mods.name('passive', node.effect)
+      return node.kind === 'small' ? capitalize(text.statsLine(node.stats), locale) : t(`game.talent.${node.id}`)
+    }
     const kind = (node) => {
       if (node.kind === 'root') return t('game.tree.kind.root')
       if (node.branch === 'bridge') return t('game.tree.kind.bridge')
-      return t(`game.tree.kind.${node.kind}`, { branch: branchName(node.branch) })
+      const id = passive(node) ? 'passive' : node.kind
+      return t(`game.tree.kind.${id}`, { branch: branchName(node.branch) })
     }
     // The hidden list's label: unique even when two small nodes give the same bonus.
     const listLabel = (node, state) => {
@@ -80,6 +95,8 @@ function useTalentText() {
     const lines = (node) => [
       ...Object.entries(node.stats ?? {}).map(([stat, value]) => ({ text: text.statLine(stat, value), trend: value < 0 ? 'down' : 'up' })),
       ...(EFFECT_LINES[node.effect] ?? []).map(([key, trend]) => ({ text: t(key, EFFECT_VARS[node.effect]), trend })),
+      ...(passive(node) ? [{ text: mods.desc('passive', node.effect), trend: 'up' }] : []),
+      ...(node.kind === 'socket' ? [{ text: t('game.tree.socket.what'), trend: 'up' }] : []),
     ]
     // "Precisa: 40 acertos em questões de Algoritmos (12 de 40)".
     const requirement = (node, branch) => {
@@ -99,7 +116,7 @@ function useTalentText() {
       }
       return t(`game.talentWhy.${reason}`, { count: MAX_KEYSTONES })
     }
-    return { ...text, branchName, name, kind, listLabel, lines, requirement, why }
+    return { ...text, branchName, mods, name, kind, listLabel, lines, requirement, why }
   }, [text])
 }
 
@@ -163,6 +180,15 @@ function TalentsView({ view, actions, runner, text }) {
 
   const stateOf = (id) => (owned.has(id) ? 'owned' : queued.has(id) ? 'queued' : open.has(id) ? 'open' : 'locked')
   const selected = NODE_BY_ID.get(selectedId) ?? null
+  // The support gems in the tree (by node) and in the bag.
+  const treeSockets = view.hero.treeSockets ?? NO_SOCKETS
+  const socketed = useMemo(() => Object.fromEntries(Object.entries(treeSockets).map(([node, gem]) => [node, gem.support])), [treeSockets])
+  const bagSupports = view.hero.items.filter((item) => item.kind === 'support' && !item.equipped)
+  const supportName = (gem) => text.mods.name('support', gem.support)
+  const socketGem = (node, gem) =>
+    runner.run(() => actions.socketSupport(node, gem.id), () => t('game.tree.socket.socketed', { gem: supportName(gem) }))
+  const unsocketGem = (node, gem) =>
+    runner.run(() => actions.unsocketSupport(node), () => t('game.tree.socket.removed', { gem: supportName(gem) }))
 
   // A refusal from the server names canAllocate's reason; say that instead of the generic line.
   const withReason = (call) => () =>
@@ -187,7 +213,7 @@ function TalentsView({ view, actions, runner, text }) {
   // The pieces shown both in the tab and in the expanded dialog.
   const canvas = (
     <Frame tone="inset" className="p-1">
-      <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} onSelect={setSelectedId} />
+      <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} sockets={socketed} onSelect={setSelectedId} />
     </Frame>
   )
   const nodeList = (cardRef) => (
@@ -224,7 +250,20 @@ function TalentsView({ view, actions, runner, text }) {
         headingRef={cardRef}
         onTake={() => setQueue([...queue, selected.id])}
         onUnqueue={() => setQueue(queue.filter((id) => id !== selected.id))}
-      />
+      >
+        {selected.kind === 'socket' && (
+          <SocketPicker
+            taken={stateOf(selected.id) === 'owned'}
+            held={Object.hasOwn(treeSockets, selected.id) ? treeSockets[selected.id] : null}
+            socketed={socketed}
+            bag={bagSupports}
+            busy={runner.busy}
+            text={text}
+            onPut={(gem) => socketGem(selected.id, gem)}
+            onRemove={(gem) => unsocketGem(selected.id, gem)}
+          />
+        )}
+      </TalentCard>
     ) : (
       <p className="m-0 text-[11px] text-[#a89fd0]">{t('game.tree.pick')}</p>
     )
@@ -276,6 +315,12 @@ function TalentsView({ view, actions, runner, text }) {
         </Legend>
         <Legend shape="size-3 rotate-45" color="#4a4266">
           {t('game.tree.legend.keystone')}
+        </Legend>
+        <Legend shape="rounded-full size-3.5 outline outline-1 outline-offset-1 outline-[#7fe9ff]" color="#4a4266">
+          {t('game.tree.legend.passive')}
+        </Legend>
+        <Legend shape={`size-3 ${HEX}`} color="#4fd1c5">
+          {t('game.tree.legend.socket')}
         </Legend>
         <Legend shape="rounded-full size-2.5 shadow-[0_0_6px_#fff]" color="#ffffff">
           {t('game.tree.legend.open')}
@@ -330,8 +375,9 @@ function Legend({ shape, color, children }) {
   )
 }
 
-// The selected node: name, kind, what it gives, its requirement and Take / Remove from queue.
-function TalentCard({ node, state, why, requirement, busy, text, headingRef, onTake, onUnqueue }) {
+// The selected node: name, kind, what it gives, its requirement and Take / Remove from queue. children:
+// what follows (a socket's picker).
+function TalentCard({ node, state, why, requirement, busy, text, headingRef, onTake, onUnqueue, children }) {
   const { t } = text
   const titleId = useId()
   const color = BRANCH_COLORS[node.branch]
@@ -377,6 +423,77 @@ function TalentCard({ node, state, why, requirement, busy, text, headingRef, onT
           {t('game.tree.take')}
         </ActionButton>
       )}
+      {children}
     </Frame>
+  )
+}
+
+// A socket's gem (or Empty) and, once the node is taken, the support gems in the bag to put there (a
+// filled socket swaps) and Remove. A kind already in a socket can't go in twice.
+function SocketPicker({ taken, held, socketed, bag, busy, text, onPut, onRemove }) {
+  const { t } = text
+  const listId = useId()
+  const name = (gem) => text.mods.name('support', gem.support)
+  const inTree = new Set(Object.values(socketed))
+  // One row per kind: copies of a gem are the same choice.
+  const kinds = [...new Map(bag.map((gem) => [gem.support, gem])).values()]
+  return (
+    <div className="mt-2 flex flex-col gap-1.5 border-t-2 border-[#0a0818] pt-2 shadow-[inset_0_2px_0_#3e3170]">
+      <p className="m-0 flex items-center gap-2 text-white">
+        <SocketSlot support={held?.support} />
+        {held ? t('game.tree.socket.holds', { gem: name(held) }) : t('game.tree.socket.empty')}
+      </p>
+      {!taken ? (
+        <p className="m-0 text-[#a89fd0]">{t('game.tree.socket.needNode')}</p>
+      ) : (
+        <>
+          {held && (
+            <span>
+              <ActionButton busy={busy} onClick={() => onRemove(held)}>
+                {t('game.tree.socket.remove', { gem: name(held) })}
+              </ActionButton>
+            </span>
+          )}
+          <p id={listId} className="m-0 font-pixel text-[10px] text-[#7fffe9]">
+            {t('game.tree.socket.pick')}
+          </p>
+          {kinds.length === 0 ? (
+            <p className="m-0 text-[#a89fd0]">{t('game.tree.socket.none')}</p>
+          ) : (
+            <ul aria-labelledby={listId} className="m-0 flex list-none flex-col gap-1.5 p-0">
+              {kinds.map((gem) => (
+                <li key={gem.support} className="flex items-start gap-2 border-2 border-[#120c22] bg-[#100c20] p-1.5 shadow-[inset_2px_2px_0_#0a0818]">
+                  <GameIcon name={supportIcon(gem.support)} size={1} className="mt-0.5" />
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <b className="font-pixel text-[10px] font-normal leading-tight" style={{ color: supportColor(gem.support) }}>
+                      {name(gem)}
+                    </b>
+                    <small className="text-[11px] text-[#8fb8ff]">{text.mods.desc('support', gem.support)}</small>
+                    <span>
+                      <ActionButton tone="gold" busy={busy} why={inTree.has(gem.support) ? t('game.tree.socket.taken') : null} quiet onClick={() => onPut(gem)}>
+                        {t(held ? 'game.tree.socket.swap' : 'game.tree.socket.put')} <span className="sr-only">{name(gem)}</span>
+                      </ActionButton>
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// The slot itself: a small sunk hexagon, filled with the gem's color.
+function SocketSlot({ support }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`grid size-6 shrink-0 place-items-center ${HEX}`}
+      style={{ backgroundColor: support ? supportColor(support) : '#0a0818' }}
+    >
+      {support && <GameIcon name={supportIcon(support)} size={1} />}
+    </span>
   )
 }
