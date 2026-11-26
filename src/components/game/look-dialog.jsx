@@ -106,7 +106,7 @@ export default function LookDialog({ look, gear, first = false, onSave, onClose,
         aria-describedby={introId}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="relative flex max-h-[calc(100dvh-16px)] w-[min(880px,100%)] flex-col p-1 font-mono text-xs text-[#e9e4ff] shadow-[6px_6px_0_rgba(0,0,0,.5)] focus-visible:outline-none"
+        className="relative flex max-h-[calc(100dvh-16px)] w-[min(940px,100%)] flex-col p-1 font-mono text-xs text-[#e9e4ff] shadow-[6px_6px_0_rgba(0,0,0,.5)] focus-visible:outline-none"
       >
         <header className="flex flex-col gap-1 border-b-2 border-[#0a0818] px-3 pb-2.5 pt-3 shadow-[0_2px_0_#3e3170]">
           <h2 id={titleId} className="m-0 font-pixel text-[17px] font-normal uppercase leading-none tracking-[0.06em] text-[#f2c14e] [text-shadow:2px_2px_0_#120c22]">
@@ -118,7 +118,7 @@ export default function LookDialog({ look, gear, first = false, onSave, onClose,
         </header>
 
         <div className="gw-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-2">
-          <div className="grid gap-3 md:grid-cols-[300px_minmax(0,1fr)]">
+          <div className="grid gap-3 md:grid-cols-[300px_minmax(0,1fr)] md:items-start">
             <Stage
               look={draft}
               gear={hasGear && withGear ? gear : undefined}
@@ -166,13 +166,46 @@ export default function LookDialog({ look, gear, first = false, onSave, onClose,
   )
 }
 
-// The preview: the hero big on a lit stone, the gear switch under it.
+const WIDE = '(min-width: 768px)'
+
+// True from the two-column width up. Without matchMedia (tests) it answers true.
+function useWide() {
+  const read = () => {
+    try {
+      return window.matchMedia ? window.matchMedia(WIDE).matches : true
+    } catch {
+      return true
+    }
+  }
+  const [wide, setWide] = useState(read)
+  useEffect(() => {
+    let list = null
+    try {
+      list = window.matchMedia?.(WIDE) ?? null
+    } catch {
+      list = null
+    }
+    if (!list?.addEventListener) return undefined
+    const onChange = () => setWide(list.matches)
+    list.addEventListener('change', onChange)
+    return () => list.removeEventListener('change', onChange)
+  }, [])
+  return wide
+}
+
+// The preview: the hero on a lit stone, the gear switch under it. Wide, it is big (scale 5) beside the
+// pickers. On a phone it is smaller (scale 3) and stays pinned at the top while the pickers scroll
+// under it, so every pick shows on the hero.
 function Stage({ look, gear, label, toggle }) {
+  const wide = useWide()
   return (
-    <Frame tone="inset" className="flex min-w-0 flex-col items-center gap-2 p-3 md:sticky md:top-0 md:self-start">
-      <div className="relative flex w-full flex-col items-center pt-2">
-        <HeroCanvas look={look} gear={gear} scale={5} animate label={label} className="relative block h-auto max-w-full" />
-        <div aria-hidden="true" className="-mt-4 flex w-full flex-col items-center">
+    <Frame
+      tone="inset"
+      className="sticky top-0 z-10 flex min-w-0 items-center justify-center gap-3 p-2 shadow-[0_8px_0_#1b1433] md:min-h-[440px] md:self-stretch md:flex-col md:gap-4 md:p-3 md:shadow-none"
+    >
+      <div className="relative flex flex-col items-center pt-1">
+        <HeroCanvas look={look} gear={gear} scale={wide ? 5 : 3} animate label={label} className="relative block h-auto max-w-full" />
+        <div aria-hidden="true" className="-mt-3 flex w-full flex-col items-center md:-mt-4">
           <i className="block h-1 w-[46%] bg-[#574a96]" />
           <i className="block h-1.5 w-[56%] border-x-2 border-[#120c22] bg-[#3e3170]" />
           <i className="block h-2.5 w-[64%] border-x-2 border-[#120c22] bg-[#241c44]" />
@@ -278,9 +311,9 @@ function HeadChip({ look, radio, name }) {
     >
       <input {...radio} className="sr-only" />
       <span aria-hidden="true" className="block">
-        <HeroCanvas look={look} crop="head" scale={2} className="block" />
+        <HeroCanvas look={look} crop="head" scale={3} className="block" />
       </span>
-      <span className={`max-w-full truncate font-pixel text-[9px] leading-none ${on ? 'text-[#f2c14e]' : 'text-[#a89fd0]'}`}>{name}</span>
+      <span className={`max-w-full text-center font-pixel text-[9px] leading-tight ${on ? 'text-[#f2c14e]' : 'text-[#a89fd0]'}`}>{name}</span>
     </Frame>
   )
 }
