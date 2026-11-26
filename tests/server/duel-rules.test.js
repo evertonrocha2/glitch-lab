@@ -186,8 +186,8 @@ describe('clock and scoring', () => {
     const result = outcomeAt({ ...won, players: won.players.map((p) => ({ ...p, seenAt: iso(end) })) }, end)
     expect(result).toMatchObject({ reason: 'score', forfeitBy: null, winner: 'alice', rated: true })
     expect(result.players).toEqual([
-      { userId: 'alice', score: 5 * 193, fastestMs: 1000, outcome: 'win' },
-      { userId: 'bob', score: 0, fastestMs: null, outcome: 'loss' },
+      { userId: 'alice', score: 5 * 193, correct: 5, fastestMs: 1000, outcome: 'win' },
+      { userId: 'bob', score: 0, correct: 0, fastestMs: null, outcome: 'loss' },
     ])
 
     const tied = play([...all('alice', 'a', 1000), ...all('bob', 'a', 1000)])

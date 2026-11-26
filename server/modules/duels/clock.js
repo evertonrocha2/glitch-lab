@@ -108,7 +108,8 @@ export function outcomeAt(duel, now, leavingId = null) {
   return buildResult(duel, rounds, now, forfeitBy)
 }
 
-// { reason, forfeitBy, winner (null for a draw), rated, early, players: [{ userId, score, fastestMs, outcome }] }.
+// { reason, forfeitBy, winner (null for a draw), rated, early, players: [{ userId, score, correct, fastestMs, outcome }] }.
+// `correct` is the rounds that player answered right (the hero's acertos); score is duel points.
 // Rated: two people, neither of them a demo account, never the bot, and not ended early.
 // Early: a forfeit before MIN_RATED_ROUNDS rounds closed; it pays no XP to either side.
 export function buildResult(duel, rounds, now, forfeitBy = null) {
@@ -117,7 +118,7 @@ export function buildResult(duel, rounds, now, forfeitBy = null) {
   const players = duel.players.map((player) => {
     const scored = closed.map((round) => scoreRound(duel, round, player.userId))
     const fastest = scored.filter((item) => item.correct && !item.left).map((item) => item.ms)
-    return { userId: player.userId, score: scored.reduce((sum, item) => sum + item.points, 0), fastestMs: player.bot || !fastest.length ? null : Math.min(...fastest) }
+    return { userId: player.userId, score: scored.reduce((sum, item) => sum + item.points, 0), correct: scored.filter((item) => item.correct).length, fastestMs: player.bot || !fastest.length ? null : Math.min(...fastest) }
   })
   let winner = null
   if (forfeitBy) winner = players.find((item) => item.userId !== forfeitBy)?.userId ?? null
