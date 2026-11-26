@@ -4,7 +4,6 @@
 import { describe, expect, it } from 'vitest'
 import { REF_KILLS_PER_HOUR, refGold } from '../../shared/game/economy.js'
 import { ELIXIRS, ELIXIR_MS, buffFighter, elixirPrice } from '../../shared/game/elixirs.js'
-import { DAILY_CAPS } from '../../shared/game/fuel.js'
 import { settleHunt } from '../../shared/game/hunt.js'
 import { QUEST_REWARDS, dailyQuests } from '../../shared/game/quests.js'
 import { buyPrice, marketStock, sellValue } from '../../shared/game/shop.js'
@@ -106,6 +105,7 @@ describe('the economy against an hour of hunting', () => {
       expect(xp).toBeLessThan(plain.xp)
     }
     const fragments = Object.values(QUEST_REWARDS).reduce((sum, reward) => sum + reward.fragments, 0)
-    expect(fragments).toBeLessThanOrEqual(DAILY_CAPS.fragments / 2)
+    // At most what 15 ENEM acertos pay (5 each): studying stays the main source of fragments.
+    expect(fragments).toBeLessThanOrEqual(15 * 5)
   })
 })

@@ -104,7 +104,8 @@ export const ACERTOS_PER_POINT = 10
 export const talentPoints = (level, totalCorrect) =>
   level - 1 + Math.min(Math.floor(totalCorrect / ACERTOS_PER_POINT), ACERTO_POINTS_CAP)
 
-export const DAILY_CAPS = { fragments: 150, potions: 6 }
+// Fragments have no daily cap (the user's call, 2026-11-26): every acerto pays. Potions still do.
+export const DAILY_CAPS = { potions: 6 }
 
 const DAY_MS = 24 * 3_600_000
 const dayNumber = (day) => Date.parse(`${day}T00:00:00Z`) / DAY_MS
@@ -122,7 +123,7 @@ export function studyRewards(ledger) {
       while (dailyDays.has(today - streak)) streak++
     }
     rewards[item.day] = {
-      fragments: Math.min(fragments, DAILY_CAPS.fragments),
+      fragments,
       potions: Math.min(3 * item.reviewDone, DAILY_CAPS.potions),
       chest: item.dailies > 0 ? 1 : 0,
       chestBoost: item.dailies > 0 ? Math.min(streak, 7) * 0.1 : 0,

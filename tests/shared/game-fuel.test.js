@@ -90,14 +90,15 @@ describe('studyLedger', () => {
 })
 
 describe('studyRewards', () => {
-  it('caps fragments per day', () => {
+  it('pays every fragment a day earns, with no daily cap', () => {
     const ledger = studyLedger({
       examDays: [{ day: D1, topic: mathTopic, answered: 40, correct: 40 }],
       cases: [{ id: 'c', concept: 'other' }],
       challenges: Array.from({ length: 5 }, () => ({ caseId: 'c', status: 'passed', passedAt: `${D1}T01:00:00Z` })),
       daily: { solved: [{ kind: 'daily', day: D1, difficulty: 1 }] },
     })
-    expect(studyRewards(ledger)[D1].fragments).toBe(Math.min(200 + 50 + 15, DAILY_CAPS.fragments))
+    expect(studyRewards(ledger)[D1].fragments).toBe(200 + 50 + 15)
+    expect(DAILY_CAPS.fragments).toBeUndefined()
   })
   it('boosts the chest on consecutive daily days', () => {
     const ledger = studyLedger({ daily: { solved: [D1, D2, '2026-05-05'].map((day) => ({ kind: 'daily', day, difficulty: 1 })) } })
