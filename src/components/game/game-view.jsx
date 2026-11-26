@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ZONES } from '../../../shared/game/zones.js'
 import { worldById } from '../../../shared/world/worlds.js'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
@@ -16,6 +16,8 @@ import { useFullscreen } from './use-fullscreen.js'
 
 export const SYNC_MS = 60_000
 const TICK_MS = 200
+// The closed drawer's height when it can't be measured (handle 44 + tab row 44 + padding and border).
+const DOCK_PX = 100
 const WIDE = '(min-width: 1024px)'
 // The part of the map the scene shows, in tiles: actors and numbers stay readable at panel width.
 const CROP = { wide: { w: 16, h: 10 }, narrow: { w: 10, h: 12 } }
@@ -117,22 +119,43 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   replayRef.current = replay
   const viewRef = useRef(null)
   viewRef.current = view
-
-  // A 409 means another tab saved the hero first: only a reload shows the real hero again.
-  const guard = useCallback(async (call) => {
-    try {
-      return await call()
-    } catch (err) {
-      if (isConflict(err)) setConflict(true)
-      throw err
+  const mounted = useRef(false)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
     }
   }, [])
 
+  // Every server call (sync and each action) waits for the one before it, so the answers land in the
+  // order the calls went out: an older hero never overwrites a newer one, and two calls never race
+  // for the same hero version (which would answer a false 409).
+  const queue = useRef(Promise.resolve())
+  // A 409 means another tab saved the hero first: only a reload shows the real hero again.
+  const guard = useCallback((call) => {
+    const run = queue.current.then(async () => {
+      try {
+        return await call()
+      } catch (err) {
+        if (isConflict(err) && mounted.current) setConflict(true)
+        throw err
+      }
+    })
+    queue.current = run.catch(() => {})
+    return run
+  }, [])
+
+  // At most one sync waits in the queue: asking again while one waits adds nothing.
+  const syncWaiting = useRef(false)
   const sync = useCallback(async () => {
-    if (replayRef.current) return
+    if (replayRef.current || syncWaiting.current) return
+    syncWaiting.current = true
     try {
-      const res = await guard(() => apiRef.current.syncGame())
-      if (replayRef.current) return
+      const res = await guard(() => {
+        syncWaiting.current = false
+        return apiRef.current.syncGame()
+      })
+      if (replayRef.current || !mounted.current) return
       setError('')
       setView(viewOf(res))
       if (res.away || res.studyClaimed)
@@ -141,7 +164,8 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
           studyClaimed: res.studyClaimed ?? null,
         })
     } catch (err) {
-      if (!isConflict(err)) setError(err?.message || String(err))
+      syncWaiting.current = false
+      if (!isConflict(err) && mounted.current) setError(err?.message || String(err))
     }
   }, [guard])
 
@@ -152,7 +176,10 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   const hunting = Boolean(view?.hero.hunt)
   useEffect(() => {
     if (!hunting) return undefined
-    const timer = setInterval(sync, SYNC_MS)
+    // A hidden tab waits: visibilitychange syncs when it comes back.
+    const timer = setInterval(() => {
+      if (!document.hidden) sync()
+    }, SYNC_MS)
     return () => clearInterval(timer)
   }, [hunting, sync])
 
@@ -177,6 +204,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
     for (const name of ACTIONS) {
       bound[name] = async (...args) => {
         const res = await guard(() => apiRef.current[name](...args))
+        if (!mounted.current) return res
         setView(viewOf(res))
         // Mid boss replay (equipping, say), this is also the View the result must show.
         setReplay((current) => (current && !current.done ? { ...current, next: viewOf(res) } : current))
@@ -185,6 +213,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
     }
     bound.fightBoss = async (target) => {
       const res = await guard(() => apiRef.current.fightBoss(target))
+      if (!mounted.current) return res
       setReplay({
         fight: res.fight,
         target,
@@ -204,10 +233,39 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   const samplesKey = view?.huntPreview?.samples ? JSON.stringify(view.huntPreview.samples) : ''
   const samples = useMemo(() => (samplesKey ? JSON.parse(samplesKey) : null), [samplesKey])
 
+  // Under lg the panel is a drawer docked at the bottom. While it shows, the page learns its closed
+  // height (--dock-h), so the study timer sits above it instead of under it.
+  const dock = useRef(null)
+  const handle = useRef(null)
+  const focusTab = useRef(false)
+  const docked = !wide && Boolean(view)
+  useLayoutEffect(() => {
+    if (!docked) return undefined
+    const root = document.documentElement
+    const height = dock.current?.getBoundingClientRect().height
+    root.style.setProperty('--dock-h', `${Math.round(height > 0 ? height : DOCK_PX)}px`)
+    return () => root.style.removeProperty('--dock-h')
+  }, [docked])
+
   const openTab = useCallback((id) => {
     setTab(id)
     setDrawer(true)
+    focusTab.current = true
   }, [])
+
+  // Opened on a tab, the drawer puts focus on that tab.
+  useEffect(() => {
+    if (!drawer || !focusTab.current) return
+    focusTab.current = false
+    dock.current?.querySelector('[role="tab"][aria-selected="true"]')?.focus()
+  }, [drawer])
+
+  function onDockKey(event) {
+    if (event.key !== 'Escape' || !drawer) return
+    event.stopPropagation()
+    setDrawer(false)
+    handle.current?.focus()
+  }
 
   if (!view) {
     return (
@@ -253,7 +311,7 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
   )
 
   return (
-    <div className="mt-6 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="mt-6 grid items-start gap-4 pb-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:pb-0">
       <div className="flex min-w-0 flex-col gap-2">
         {conflict && <Conflict t={t} />}
         <StageFrame>
@@ -320,8 +378,14 @@ export default function GameView({ worldId, api, onLeave, studyHref }) {
       {wide ? (
         panel
       ) : (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col border-t-[3px] border-[#0a0818] bg-[#120e26] shadow-[0_-4px_0_rgba(0,0,0,.35)]">
+        // biome-ignore lint/a11y/noStaticElementInteractions: Escape anywhere in the drawer closes it.
+        <div
+          ref={dock}
+          onKeyDown={onDockKey}
+          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col border-t-[3px] border-[#0a0818] bg-[#120e26] shadow-[0_-4px_0_rgba(0,0,0,.35)]"
+        >
           <button
+            ref={handle}
             type="button"
             aria-expanded={drawer}
             aria-label={drawer ? t('game.view.closePanel') : t('game.view.openPanel')}

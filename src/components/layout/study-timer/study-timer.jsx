@@ -79,7 +79,12 @@ export default function StudyTimer() {
   const close = () => setForm(null)
 
   return (
-    <section aria-label={t('app.timer.label')} className="fixed bottom-4 left-4 z-30 w-max max-w-[calc(100vw-2rem)] border-2 border-ink bg-white shadow-pixel-secondary">
+    // bottom: above a panel docked at the bottom of the screen (--dock-h, set by the game on phones).
+    <section
+      aria-label={t('app.timer.label')}
+      style={{ bottom: 'calc(1rem + var(--dock-h, 0px))' }}
+      className="fixed left-4 z-30 w-max max-w-[calc(100vw-2rem)] border-2 border-ink bg-white shadow-pixel-secondary"
+    >
       {form && (
         <div className="w-[min(20rem,calc(100vw-2rem-4px))] border-b-2 border-dashed border-line p-3">
           <TopicForm

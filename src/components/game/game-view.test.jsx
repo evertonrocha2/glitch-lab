@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { StrictMode } from 'react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import GameView from './game-view.jsx'
 import { makeView } from './panel/fixtures.js'
@@ -186,4 +187,112 @@ it('offers fullscreen once the hero loaded, where the browser has it', async () 
 
 beforeEach(() => {
   Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true })
+})
+
+// A promise the test resolves by hand.
+function deferred() {
+  let resolve
+  const promise = new Promise((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+const visible = () => act(async () => document.dispatchEvent(new Event('visibilitychange')))
+
+it('runs overlapping syncs one after the other, and queues only one more', async () => {
+  const api = makeApi()
+  const first = deferred()
+  api.syncGame.mockImplementationOnce(() => first.promise)
+  ui(api)
+  await visible()
+  await visible()
+  expect(api.syncGame).toHaveBeenCalledTimes(1)
+  await act(async () => first.resolve(makeView()))
+  await vi.waitFor(() => expect(api.syncGame).toHaveBeenCalledTimes(2))
+  await screen.findByRole('tablist')
+  expect(api.syncGame).toHaveBeenCalledTimes(2)
+})
+
+it('never runs two server calls at once, even under StrictMode', async () => {
+  const api = makeApi()
+  let running = 0
+  let most = 0
+  api.syncGame.mockImplementation(async () => {
+    running++
+    most = Math.max(most, running)
+    await new Promise((done) => setTimeout(done, 5))
+    running--
+    return makeView()
+  })
+  render(
+    <StrictMode>
+      <I18nProvider locale="pt-BR">
+        <MemoryRouter>
+          <GameView worldId="floresta-js" api={api} onLeave={vi.fn()} studyHref="/daily" />
+        </MemoryRouter>
+      </I18nProvider>
+    </StrictMode>,
+  )
+  await screen.findByRole('tablist')
+  await new Promise((done) => setTimeout(done, 30))
+  expect(most).toBe(1)
+  expect(screen.queryByText('Seu herói mudou em outra aba.')).toBeNull()
+})
+
+it('applies a sync queued behind an action after the action', async () => {
+  const api = makeApi(makeView({ gold: 500 }))
+  const hunt = deferred()
+  api.startHunt.mockImplementationOnce(() => hunt.promise)
+  ui(api)
+  fireEvent.click(await screen.findByRole('tab', { name: /Mundo/ }))
+  fireEvent.click(within(screen.getByRole('region', { name: /Clareira/ })).getByRole('button', { name: 'Caçar aqui' }))
+  api.syncGame.mockResolvedValue(makeView({ gold: 900, hunt: HUNT }))
+  await visible()
+  expect(api.syncGame).toHaveBeenCalledTimes(1)
+  await act(async () => hunt.resolve(makeView({ gold: 777, hunt: HUNT })))
+  await vi.waitFor(() => expect(api.syncGame).toHaveBeenCalledTimes(2))
+  expect(await screen.findByText('900')).toBeInTheDocument()
+  expect(screen.queryByText('777')).toBeNull()
+})
+
+it('skips the minute sync while the tab is hidden', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  const api = makeApi(makeView({ hunt: HUNT }))
+  ui(api)
+  await screen.findByRole('tablist')
+  Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+  try {
+    await act(() => vi.advanceTimersByTimeAsync(60_000))
+    expect(api.syncGame).toHaveBeenCalledTimes(1)
+  } finally {
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+  }
+})
+
+describe('on a phone', () => {
+  beforeEach(() => {
+    window.matchMedia = vi.fn(() => ({ matches: false, addEventListener() {}, removeEventListener() {} }))
+  })
+  afterEach(() => {
+    delete window.matchMedia
+  })
+
+  it('docks the panel at the bottom and tells the page its height while mounted', async () => {
+    const view = ui(makeApi())
+    await screen.findByRole('button', { name: 'Abrir o painel' })
+    expect(document.documentElement.style.getPropertyValue('--dock-h')).toMatch(/px$/)
+    view.unmount()
+    expect(document.documentElement.style.getPropertyValue('--dock-h')).toBe('')
+  })
+
+  it('opens the drawer on a tab, focuses that tab, and closes on Escape', async () => {
+    ui(makeApi())
+    fireEvent.click(await screen.findByRole('button', { name: 'Bolsa' }))
+    const tab = screen.getByRole('tab', { name: /Bolsa/ })
+    expect(tab).toHaveAttribute('aria-selected', 'true')
+    await vi.waitFor(() => expect(tab).toHaveFocus())
+    fireEvent.keyDown(tab, { key: 'Escape' })
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Abrir o painel' })).toHaveAttribute('aria-expanded', 'false')
+  })
 })

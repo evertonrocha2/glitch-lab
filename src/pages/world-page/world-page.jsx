@@ -21,6 +21,7 @@ import {
   forgeSocket,
   forgeUpgrade,
   getDaily,
+  getGame,
   getHunt,
   getWorld,
   openChest,
@@ -86,20 +87,34 @@ function useDoneToday(getToken, enabled) {
     if (!enabled) return undefined
     let live = true
     ;(async () => {
-      const token = await getToken()
-      const [daily, hunt] = await Promise.allSettled([getDaily(token), getHunt(token)])
-      if (!live) return
-      const puzzles = daily.status === 'fulfilled' ? (daily.value?.puzzles ?? []) : []
-      setDone({
-        daily: puzzles.length > 0 && puzzles.every((puzzle) => puzzle.status === 'passed'),
-        hunt: hunt.status === 'fulfilled' && Boolean(hunt.value?.run?.finished),
-      })
+      try {
+        const token = await getToken()
+        const [daily, hunt] = await Promise.allSettled([getDaily(token), getHunt(token)])
+        if (!live) return
+        const puzzles = daily.status === 'fulfilled' ? (daily.value?.puzzles ?? []) : []
+        setDone({
+          daily: puzzles.length > 0 && puzzles.every((puzzle) => puzzle.status === 'passed'),
+          hunt: hunt.status === 'fulfilled' && Boolean(hunt.value?.run?.finished),
+        })
+      } catch {
+        // No token (signed out meanwhile): the link keeps its default.
+      }
     })()
     return () => {
       live = false
     }
   }, [getToken, enabled])
   return done
+}
+
+// The running hunt's world, or null (no hunt, or the game can't be read: the hub shows as usual).
+async function huntWorldOf(token) {
+  try {
+    const world = (await getGame(token))?.hero?.hunt?.world
+    return HUNT_WORLDS.includes(world) ? world : null
+  } catch {
+    return null
+  }
 }
 
 // /mundo: Glitch World. The hero walks the worlds the student's study opened; the server says
@@ -118,10 +133,13 @@ export default function WorldPage() {
     let live = true
     ;(async () => {
       try {
-        const data = await getWorld(await getToken())
+        const token = await getToken()
+        // A hero saved in a hunt world comes back in the hub, but a running hunt opens the hunt view
+        // right away, so its away summary shows without stepping into the portal.
+        const [data, hunting] = await Promise.all([getWorld(token), huntWorldOf(token)])
         if (!live) return
         setState(data)
-        setWorld(data.position.world)
+        setWorld(hunting ?? data.position.world)
       } catch (err) {
         if (!live) return
         if (err instanceof AuthError) await signOut()

@@ -53,6 +53,13 @@ const pauseTimer = () =>
     fireEvent.click(screen.getByRole('button', { name: 'Pause the study timer' }))
   })
 
+// A docked panel (the game's bottom drawer on phones) sets --dock-h; the timer sits above it.
+it('sits above whatever is docked at the bottom', async () => {
+  renderAt('/progress', { user: 'alice' })
+  const timer = await screen.findByRole('region', { name: 'Study timer' })
+  expect(timer.style.bottom).toBe('calc(1rem + var(--dock-h, 0px))')
+})
+
 it('counts, reports every minute to its study session and pauses', async () => {
   renderAt('/progress', { user: 'alice' })
   await startTimer('Promises em JavaScript')

@@ -12,7 +12,9 @@ const FILL = {
   xp: 'bg-gradient-to-b from-[#a98bff] to-[#5a2fd9]',
   boss: 'bg-gradient-to-b from-[#7dffb0] to-[#1f8a4c]',
 }
-const LOG_COLORS = { crit: 'text-[#ffd76a]', hurt: 'text-[#7dffb0]', heal: 'text-[#7fe9ff]', shield: 'text-[#7fe9ff]', potion: 'text-[#7fe9ff]' }
+// Damage the hero takes is red, healing green, shields and potions cyan, crits gold.
+const LOG_COLORS = { crit: 'text-[#ffd76a]', hurt: 'text-[#ff8a8a]', heal: 'text-[#7dffb0]', shield: 'text-[#7fe9ff]', potion: 'text-[#7fe9ff]' }
+const LOG_TONES = { hurt: 'bad', heal: 'good', shield: 'good', potion: 'good' }
 const KEYS = { m: 'world', i: 'bag', k: 'tree' }
 const SKILL_KEYS = ['Q', 'W', 'E', 'R']
 const LOG_SIZE = 5
@@ -160,7 +162,7 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
           {events.map((ev, i) => {
             const line = lineOf(ev)
             return (
-              <li key={`${ev.t ?? i}-${i}`} className={`my-px ${LOG_COLORS[line.kind] ?? ''}`}>
+              <li key={`${ev.t ?? i}-${i}`} data-tone={LOG_TONES[line.kind]} className={`my-px ${LOG_COLORS[line.kind] ?? ''}`}>
                 {line.text}
               </li>
             )

@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { unlocks } from '../../../shared/world/unlocks.js'
-import { getWorld, saveWorldPosition, stopHunt, syncGame } from '../../lib/api.js'
+import { getGame, getWorld, saveWorldPosition, stopHunt, syncGame } from '../../lib/api.js'
 import { makeView } from '../../components/game/panel/fixtures.js'
 import { renderAt } from '../../test/render.jsx'
 
@@ -15,6 +15,7 @@ vi.mock('../../lib/api.js', () => ({
   saveWorldPosition: vi.fn(),
   getDaily: vi.fn().mockResolvedValue({ puzzles: [] }),
   getHunt: vi.fn().mockResolvedValue({ run: null }),
+  getGame: vi.fn(),
   syncGame: vi.fn(),
   stopHunt: vi.fn(),
   startHunt: vi.fn(),
@@ -45,6 +46,7 @@ const title = () => screen.findByRole('heading', { level: 1 })
 beforeEach(() => {
   vi.mocked(getWorld).mockReset()
   vi.mocked(saveWorldPosition).mockReset().mockResolvedValue({ world: 'laboratorio', x: 2, y: 2 })
+  vi.mocked(getGame).mockReset().mockResolvedValue(makeView())
 })
 
 it('shows the hub and the closest goal for a new player', async () => {
@@ -109,4 +111,22 @@ it('links to the world from the main navigation', async () => {
   open()
   await title()
   expect(screen.getByRole('link', { name: 'Glitch World' })).toHaveAttribute('href', '/mundo')
+})
+
+it('opens the hunt straight away after a reload when a hunt is running, with the away summary', async () => {
+  HTMLCanvasElement.prototype.getContext = () => null
+  const hunting = makeView({ hunt: { world: 'floresta-js', zone: 'z1', difficulty: 'normal', startedAt: 0, claims: 0 } })
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 2, y: 2 }))
+  vi.mocked(getGame).mockResolvedValue(hunting)
+  vi.mocked(syncGame).mockResolvedValue({ ...hunting, away: { elapsedMs: 3_600_000, kills: 40, elites: 4, deaths: 0, gold: 300, items: 2, gems: 0, scrap: 0 } })
+  open()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'Bem-vindo de volta' })).toHaveTextContent('Enquanto você estava fora: 40 inimigos, 300 de ouro, 2 itens')
+})
+
+it('stays in the hub when the game cannot be read', async () => {
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'laboratorio', x: 7, y: 5 }))
+  vi.mocked(getGame).mockRejectedValue(new Error('offline'))
+  open()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Laboratório' })).toBeInTheDocument()
 })
