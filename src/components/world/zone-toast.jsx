@@ -32,7 +32,7 @@ export default function ZoneToast({ view, world, zone, difficulty }) {
   return (
     <output
       aria-live="polite"
-      className="pointer-events-none absolute left-1/2 top-11 flex max-w-[90%] -translate-x-1/2 flex-col items-center gap-0.5 border-2 border-[#0d1017] bg-[rgba(20,24,33,0.9)] px-3 py-1.5 text-center shadow-[inset_0_0_0_1px_rgba(91,127,166,0.55)]"
+      className="pointer-events-none absolute bottom-20 left-1/2 flex sm:bottom-auto sm:top-11 max-w-[90%] -translate-x-1/2 flex-col items-center gap-0.5 border-2 border-[#0d1017] bg-[rgba(20,24,33,0.9)] px-3 py-1.5 text-center shadow-[inset_0_0_0_1px_rgba(91,127,166,0.55)]"
     >
       <span className="font-pixel text-[11px] leading-tight text-[#e8c35a]">{title}</span>
       <span className="font-mono text-[11px] leading-tight text-[#d5dde8]">
