@@ -1,42 +1,54 @@
-// Offline hunt settlement. A handful of seeded sample fights stand in for the whole trip:
-// their averages say how many fights fit in the time away, how many are won and what they cost.
+// Offline hunt settlement. A handful of seeded sample pack fights stand in for the whole trip:
+// their averages say how many packs fit in the time away, how many foes die and what they cost.
+// The samples run back to back like the hunt does: each pack starts with the skill cooldowns the last
+// one left (minus the walk between them), so every equipped skill gets its turn.
 import { simulateFight } from './combat.js'
-import { DIFFICULTIES, enemyFor } from './enemies.js'
+import { DIFFICULTIES, packFor } from './enemies.js'
 import { BAG_SIZE, rollGem, rollItem, salvageValue } from './items.js'
 import { createRng } from './rng.js'
 import { huntXp } from './xp.js'
 
 export { BAG_SIZE }
 export const MAX_HUNT_MS = 8 * 3600_000
+// The walk between two packs in the samples (their cooldowns tick down meanwhile). The time a hunt
+// spends finding the next pack is zone.spawnMs (zones.js).
 export const WALK_MS = 1500
 export const RESPAWN_MS = 10000
 export const SAMPLE_FIGHTS = 12
-export const ELITE_RATE = 0.1
 export const DROP_CHANCE = 0.12
 export const GEM_CHANCE = 0.01
 export const GEM_SALVAGE_SCRAP = 10
 const ELITE_GOLD = 3
-const ELITE_EVERY = Math.round(1 / ELITE_RATE)
 const SHOWN_SAMPLES = 3
 
 const mean = (list, pick) => list.reduce((sum, item) => sum + pick(item), 0) / list.length
 
-// Runs the sample fights with a given potion stock and summarizes them.
+// What the leader of a pack looks like, for a client that draws one foe.
+const foeOf = (enemy) => ({ id: enemy.id, sprite: enemy.sprite, elite: Boolean(enemy.elite) })
+
+// Cooldowns after the walk to the next pack.
+const afterWalk = (cooldowns) => Object.fromEntries(Object.entries(cooldowns).map(([id, ms]) => [id, Math.max(0, ms - WALK_MS)]))
+
+// Runs the sample pack fights with a given potion stock and summarizes them (per pack).
 function sample({ hero, zone, difficulty, seed, tag, potions }) {
   const root = createRng(seed)
   const fighter = { ...hero, potions }
   const results = []
+  let cooldowns = {}
   for (let i = 0; i < SAMPLE_FIGHTS; i++) {
-    const elite = i % ELITE_EVERY === ELITE_EVERY - 1
-    const enemy = enemyFor(zone, difficulty, root.fork(`enemy:${i}`), { elite })
-    // The foe rides along so the client can draw who the hero fights in the shown samples.
-    const foe = { id: enemy.id, sprite: enemy.sprite, elite: Boolean(enemy.elite) }
-    results.push({ ...simulateFight({ hero: fighter, enemy, seed: `${seed}:${tag}${i}` }), enemy: foe })
+    const elite = i % zone.elitePacks === zone.elitePacks - 1
+    const pack = packFor(zone, difficulty, root.fork(`pack:${i}`), { elite })
+    const result = simulateFight({ hero: fighter, enemies: pack, seed: `${seed}:${tag}${i}`, cooldowns })
+    cooldowns = afterWalk(result.cooldowns)
+    // The leader rides along for a client that draws one foe; the log's spawn events have the whole pack.
+    results.push({ ...result, enemy: foeOf(pack[0]) })
   }
   return {
     results,
-    cycle: mean(results, (r) => r.ms + WALK_MS + (r.won ? 0 : RESPAWN_MS)),
+    cycle: mean(results, (r) => r.ms + zone.spawnMs + (r.won ? 0 : RESPAWN_MS)),
     winRate: results.filter((r) => r.won).length / results.length,
+    kills: mean(results, (r) => r.kills),
+    elites: mean(results, (r) => r.elites),
     perFight: { hp: mean(results, (r) => r.potionsUsed.hp), mp: mean(results, (r) => r.potionsUsed.mp) },
   }
 }
@@ -60,22 +72,27 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
   const limit = potionFights(withPotions.perFight, stock)
   const wanted = Math.floor(elapsedMs / withPotions.cycle)
   const fightsA = Math.min(wanted, limit)
-  let kills = Math.floor(fightsA * withPotions.winRate)
   let fights = fightsA
+  let killed = fightsA * withPotions.kills
+  let eliteKills = fightsA * withPotions.elites
+  let won = fightsA * withPotions.winRate
 
   if (fightsA < wanted) {
     // Potions ran out: the rest of the time is spent without them.
     const dry = sample({ hero, zone, difficulty, seed, tag: 'n', potions: { hp: 0, mp: 0 } })
     const fightsB = Math.floor((elapsedMs - fightsA * withPotions.cycle) / dry.cycle)
-    kills += Math.floor(fightsB * dry.winRate)
     fights += fightsB
+    killed += fightsB * dry.kills
+    eliteKills += fightsB * dry.elites
+    won += fightsB * dry.winRate
   }
 
   const potionsUsed = {
     hp: Math.min(stock.hp, Math.round(fightsA * withPotions.perFight.hp)),
     mp: Math.min(stock.mp, Math.round(fightsA * withPotions.perFight.mp)),
   }
-  const elites = Math.floor(kills * ELITE_RATE)
+  const kills = Math.floor(killed + 1e-9)
+  const elites = Math.min(kills, Math.floor(eliteKills + 1e-9))
   const gold = Math.floor((kills - elites + elites * ELITE_GOLD) * zone.gold * diff.mult)
 
   const rng = createRng(seed).fork('drops')
@@ -101,7 +118,8 @@ export function settleHunt({ hero, zone, difficulty, startedAt, now, seed, bagFr
     elapsedMs,
     kills,
     elites,
-    deaths: fights - kills,
+    // Packs the hero fell (or ran out of time) in.
+    deaths: fights - Math.floor(won + 1e-9),
     gold,
     xp: huntXp({ kills, elites, zone, difficulty, multiplier: xpMultiplier }),
     items,

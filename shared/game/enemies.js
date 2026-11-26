@@ -57,22 +57,29 @@ export const ELITE_MODS = [
   { id: 'blindado', effect: 'armored' },
 ]
 
+// Pack members are lighter than a lone foe (fase 2b): several hit the hero at once and area skills hit
+// them all. Elites keep their own multipliers on top. Boss adds are pack members too.
+export const PACK_HP = 0.6
+export const PACK_ATTACK = 0.45
+// A boss calls this many of its zone's commons in each phase (fase 2b).
+export const BOSS_ADDS = 2
 const ELITE_HP = 2.5
 const ELITE_ATTACK = 1.4
 const ILVL_GROWTH = 0.15
 
-const scale = (base, zone, mult, elite) => {
+const scale = (base, zone, mult, elite, pack) => {
   const grow = (1 + ILVL_GROWTH * zone.ilvl) * mult
   return {
     ...base,
-    hp: Math.round(base.hp * grow * (elite ? ELITE_HP : 1)),
-    attack: Math.round(base.attack * grow * (elite ? ELITE_ATTACK : 1)),
+    hp: Math.round(base.hp * grow * (elite ? ELITE_HP : 1) * (pack ? PACK_HP : 1)),
+    attack: Math.round(base.attack * grow * (elite ? ELITE_ATTACK : 1) * (pack ? PACK_ATTACK : 1)),
     armor: Math.round(base.armor * grow),
     res: { ...base.res },
   }
 }
 
-export function enemyFor(zone, difficulty, rng, { elite = false, boss = false } = {}) {
+// pack: a pack member (PACK_HP, PACK_ATTACK), for packFor and boss adds.
+export function enemyFor(zone, difficulty, rng, { elite = false, boss = false, pack = false } = {}) {
   const { mult } = DIFFICULTIES[difficulty]
   const id = boss ? zone.boss : rng.pick(zone.enemies)
   const def = ENEMIES.find((enemy) => enemy.id === id)
@@ -83,7 +90,20 @@ export function enemyFor(zone, difficulty, rng, { elite = false, boss = false } 
     const count = 1 + rng.int(2)
     for (let i = 0; i < count; i++) mods.push(pool.splice(rng.int(pool.length), 1)[0].id)
   }
-  const out = { ...def, base: scale(def.base, zone, mult, isElite), elite: isElite, mods }
-  if (def.phases) out.phases = def.phases.map((phase) => ({ ...phase }))
+  const out = { ...def, base: scale(def.base, zone, mult, isElite, pack && !boss), elite: isElite, mods }
+  // Each phase calls BOSS_ADDS of the zone's commons, rolled now so the fight stays pure.
+  if (def.phases) {
+    out.phases = def.phases.map((phase, k) => ({
+      ...phase,
+      adds: Array.from({ length: BOSS_ADDS }, (_, j) => enemyFor(zone, difficulty, rng.fork(`add:${k}:${j}`), { pack: true })),
+    }))
+  }
   return out
+}
+
+// A hunt pack: zone.pack [min, max] commons; an elite pack has an elite leading it (index 0).
+export function packFor(zone, difficulty, rng, { elite = false } = {}) {
+  const [min, max] = zone.pack
+  const size = min + rng.int(max - min + 1)
+  return Array.from({ length: size }, (_, k) => enemyFor(zone, difficulty, rng.fork(`m:${k}`), { elite: elite && k === 0, pack: true }))
 }
