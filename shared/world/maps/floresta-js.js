@@ -1,14 +1,15 @@
-// Floresta do JavaScript: the first world, open from the start, and a hunt world: all its zones are open, danger is the limit (shared/game/zones.js).
-// Its terminals open the daily puzzle, Glitchdle and Line Hunt.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Floresta do JavaScript: tier 1, west of the town. Its east road comes from the town into z1 (the
+// clearing); the woods get deeper to the west, and the north road out of z3 leads up to the SQL Cave.
+// Its terminals open the daily puzzle, Glitchdle and Line Hunt. Drawn on a 32x20 grid in three columns,
+// one hunt zone each (shared/game/zones.js): z3 west, z2 middle, z1 east.
 export const FLORESTA_JS = {
   id: 'floresta-js',
   kind: 'tech',
   area: null,
-  requirement: null,
+  tier: 1,
   rows: [
-    'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-    'T..........T..........T........T',
+    'TTTT:::TTTTTTTTTTTTTTTTTTTTTTTTT',
+    'T...:::....T..........T........T',
     'T..........T..........T........T',
     'T..........T..........T........T',
     'T..........T..........T........T',
@@ -16,9 +17,9 @@ export const FLORESTA_JS = {
     'T.C.C.C....T.C.C.C....T.C.C.C..T',
     'T.TT..TT...T.TT..TT...T.TT..TT.T',
     'T.TT..TT...T.TT..TT...T.TT..TT.T',
-    'T..........T..........T........T',
-    'TO:::::::::D::::::::::D::::::::T',
-    'T..........T..........T........T',
+    'T..........T..........T.......::',
+    'T::::::::::D::::::::::D:::::::::',
+    'T..........T..........T.......::',
     'T...~~..TT.T...~~..TT.T...~~...T',
     'T...~~..TT.T...~~..TT.T...~~...T',
     'T..........T..........T........T',
@@ -28,23 +29,26 @@ export const FLORESTA_JS = {
     'T..........T..........T........T',
     'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
   ],
-  spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 2, y: 2 } },
+  spawn: { x: 29, y: 10 },
+  roads: [
+    { side: 'east', start: 9, to: 'laboratorio' },
+    { side: 'north', start: 4, to: 'caverna-sql' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 22, y: 0, w: 10, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
-    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
+    { id: 'z3', rect: { x: 0, y: 0, w: 11, h: 20 } },
   ],
+  npcs: [],
   terminals: [
-    { x: 2, y: 6, kind: 'daily' },
-    { x: 4, y: 6, kind: 'glitchdle' },
-    { x: 6, y: 6, kind: 'hunt' },
-    { x: 13, y: 6, kind: 'daily' },
-    { x: 15, y: 6, kind: 'glitchdle' },
-    { x: 17, y: 6, kind: 'hunt' },
     { x: 24, y: 6, kind: 'daily' },
     { x: 26, y: 6, kind: 'glitchdle' },
     { x: 28, y: 6, kind: 'hunt' },
+    { x: 13, y: 6, kind: 'daily' },
+    { x: 15, y: 6, kind: 'glitchdle' },
+    { x: 17, y: 6, kind: 'hunt' },
+    { x: 2, y: 6, kind: 'daily' },
+    { x: 4, y: 6, kind: 'glitchdle' },
+    { x: 6, y: 6, kind: 'hunt' },
   ],
 }

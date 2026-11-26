@@ -1,13 +1,13 @@
-// Cidade das Humanas: ENEM Ciências Humanas, one terminal per topic.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Cidade das Humanas: ENEM Ciências Humanas, tier 1, south of the town (its only road, into z1). One
+// terminal per topic. Drawn on a 32x20 grid in three columns, one hunt zone each.
 export const CIDADE_HUMANAS = {
   id: 'cidade-humanas',
   kind: 'enem',
   area: 'humanas',
-  requirement: { signal: 'enemCorrect', area: 'humanas', count: 5 },
+  tier: 1,
   rows: [
-    '################################',
-    '#__________#__________#________#',
+    '####:::#########################',
+    '#___:::____#__________#________#',
     '#__________#__________#________#',
     '#__________#__________#________#',
     '#__________#__________#________#',
@@ -16,7 +16,7 @@ export const CIDADE_HUMANAS = {
     '#_##__TT___#_##__TT___#_##__TT_#',
     '#_##__TT___#_##__TT___#_##__TT_#',
     '#__________#__________#________#',
-    '#O:::::::::D::::::::::D::::::::#',
+    '#::::::::::D::::::::::D::::::::#',
     '#__________#__________#________#',
     '#___##__TT_#___##__TT_#___##___#',
     '#___##__TT_#___##__TT_#___##___#',
@@ -27,14 +27,16 @@ export const CIDADE_HUMANAS = {
     '#__________#__________#________#',
     '################################',
   ],
-  spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 2, y: 7 } },
+  spawn: { x: 5, y: 2 },
+  roads: [
+    { side: 'north', start: 4, to: 'laboratorio' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 0, y: 0, w: 11, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
     { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
+  npcs: [],
   terminals: [
     { x: 2, y: 6, kind: 'topic', topicId: 'historia-brasil-colonia-imperio' },
     { x: 4, y: 6, kind: 'topic', topicId: 'historia-brasil-republica' },

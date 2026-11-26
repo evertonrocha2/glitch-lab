@@ -1,10 +1,11 @@
-// Torre da Matemática: ENEM Matemática, one terminal per topic.
-// Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
+// Torre da Matemática: ENEM Matemática, tier 3, the deepest region. The west road comes from the SQL
+// Cave into z1, the east road from the Garden of Nature into z3. One terminal per topic. Drawn on a
+// 32x20 grid in three columns, one hunt zone each.
 export const TORRE_MATEMATICA = {
   id: 'torre-matematica',
   kind: 'enem',
   area: 'matematica',
-  requirement: { signal: 'enemCorrect', area: 'matematica', count: 5 },
+  tier: 3,
   rows: [
     '################################',
     '#__________#__________#________#',
@@ -15,9 +16,9 @@ export const TORRE_MATEMATICA = {
     '#_C_C_C_C__#_C_C_C_C__#_C_C_C_C#',
     '#_##__BB___#_##__BB___#_##__BB_#',
     '#_##__BB___#_##__BB___#_##__BB_#',
-    '#__________#__________#________#',
-    '#O_________D__________D________#',
-    '#__________#__________#________#',
+    '::_________#__________#_______::',
+    '::_________D__________D_______::',
+    '::_________#__________#_______::',
     '#___##__BB_#___##__BB_#___##___#',
     '#___##__BB_#___##__BB_#___##___#',
     '#__________#__________#________#',
@@ -28,13 +29,16 @@ export const TORRE_MATEMATICA = {
     '################################',
   ],
   spawn: { x: 3, y: 10 },
-  portals: [
-    { x: 1, y: 10, to: 'laboratorio', at: { x: 12, y: 7 } },
+  roads: [
+    { side: 'west', start: 9, to: 'caverna-sql' },
+    { side: 'east', start: 9, to: 'jardim-natureza' },
   ],
   zones: [
+    { id: 'z1', rect: { x: 0, y: 0, w: 11, h: 20 } },
     { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
     { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
+  npcs: [],
   terminals: [
     { x: 2, y: 6, kind: 'topic', topicId: 'aritmetica' },
     { x: 4, y: 6, kind: 'topic', topicId: 'razao-proporcao-porcentagem' },
