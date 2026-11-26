@@ -31,6 +31,7 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
   const items = view.hero.items.filter((item) => !item.equipped).sort(SORTS[sort])
   const selected = items.find((item) => item.id === selectedId)
   const pickedItems = items.filter((item) => picked.includes(item.id))
+  const manyVars = { count: pickedItems.length, scrap: text.number(pickedItems.reduce((sum, item) => sum + scrapOf(item), 0)) }
 
   const togglePick = (id) => setPicked((now) => (now.includes(id) ? now.filter((each) => each !== id) : [...now, id]))
   const stopPicking = () => {
@@ -90,13 +91,15 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
         </ActionButton>
         {picking &&
           (pickedItems.length > 0 ? (
+            // A new pick disarms the confirm (the key changes), so it always salvages what it names.
             <ConfirmButton
+              key={pickedItems.map((item) => item.id).join()}
               busy={runner.busy}
-              confirmLabel={t('game.act.confirm')}
+              confirmLabel={t('game.bag.confirmMany', manyVars)}
               cancelLabel={t('game.act.cancel')}
               onConfirm={() => salvage(pickedItems).then((done) => done && stopPicking())}
             >
-              {t('game.bag.salvageMany', { count: pickedItems.length, scrap: text.number(pickedItems.reduce((sum, item) => sum + scrapOf(item), 0)) })}
+              {t('game.bag.salvageMany', manyVars)}
             </ConfirmButton>
           ) : (
             <small className="self-center text-[10px] text-[#9a93b8]">{t('game.bag.pickMany')}</small>
@@ -117,7 +120,9 @@ export default function BagTab({ view, actions, runner, selectedId, onSelect, on
                 {t('game.act.forge')}
               </ActionButton>
             )}
+            {/* Keyed by the item: picking another one disarms the confirm. */}
             <ConfirmButton
+              key={selected.id}
               busy={runner.busy}
               confirmLabel={t('game.act.confirm')}
               cancelLabel={t('game.act.cancel')}

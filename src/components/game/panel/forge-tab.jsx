@@ -65,6 +65,7 @@ export default function ForgeTab({ view, actions, runner, selectedId, onSelect }
         <BlockTitle>{t('game.forge.salvage')}</BlockTitle>
         <span>
           <ConfirmButton
+            key={selected.id}
             busy={runner.busy}
             why={selected.equipped ? t('game.why.equipped') : null}
             confirmLabel={t('game.act.confirm')}

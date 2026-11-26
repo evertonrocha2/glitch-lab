@@ -66,6 +66,28 @@ it('salvages one item after a confirm', async () => {
   await waitFor(() => expect(actions.forgeSalvage).toHaveBeenCalledWith([plainRing.id]))
 })
 
+it('disarms the salvage confirm when another item is selected', () => {
+  ui()
+  fireEvent.click(screen.getByRole('button', { name: 'Ring, Uncommon' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Salvage (+4 scrap)' }))
+  expect(screen.getByRole('button', { name: 'Yes, salvage' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Syntax Gem' }))
+  expect(screen.queryByRole('button', { name: 'Yes, salvage' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Salvage (+10 scrap)' })).toBeInTheDocument()
+})
+
+it('disarms the multi-select confirm when the picked set changes', () => {
+  const { actions } = ui()
+  fireEvent.click(screen.getByRole('button', { name: 'Select many' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Ring, Uncommon' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Salvage 1 item (+4 scrap)' }))
+  expect(screen.getByRole('button', { name: 'Yes, salvage 1 item (+4 scrap)' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Syntax Gem' }))
+  expect(screen.queryByRole('button', { name: /^Yes, salvage/ })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Salvage 2 items (+14 scrap)' })).toBeInTheDocument()
+  expect(actions.forgeSalvage).not.toHaveBeenCalled()
+})
+
 it('salvages many at once', async () => {
   const view = makeView()
   const actions = makeActions(vi, view)
@@ -76,7 +98,7 @@ it('salvages many at once', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Syntax Gem' }))
   expect(screen.getByRole('button', { name: 'Syntax Gem' })).toHaveAttribute('aria-pressed', 'true')
   fireEvent.click(screen.getByRole('button', { name: 'Salvage 2 items (+14 scrap)' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Yes, salvage' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Yes, salvage 2 items (+14 scrap)' }))
   await waitFor(() => expect(actions.forgeSalvage).toHaveBeenCalledWith([plainRing.id, gem.id]))
   expect(await screen.findByText('Salvaged for 14 scrap')).toBeInTheDocument()
 })

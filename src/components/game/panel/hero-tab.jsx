@@ -44,7 +44,8 @@ export function bossTarget(view, target) {
   const def = ZONES[world]?.[zone]
   const diff = DIFFICULTIES[difficulty]
   if (!def || !diff) return null
-  return { boss: def.boss, suggested: Math.round(def.suggestedPower * diff.mult) }
+  // suggestedPower is tuned on Normal only; the scaled number is an estimate, so it reads "approx.".
+  return { boss: def.boss, suggested: Math.round(def.suggestedPower * diff.mult), approx: diff.mult !== 1 }
 }
 
 export default function HeroTab({ view, actions, runner, selectedId, onSelect, onForge, target, portrait, studyHref }) {
@@ -112,7 +113,7 @@ function PowerBox({ view, target, text }) {
   const power = view.power
   const pct = goal ? Math.min(100, (power / goal.suggested) * 100) : 100
   const short = goal && power < goal.suggested
-  const vars = goal && { boss: t(`game.boss.${goal.boss}`), power: text.number(goal.suggested), gap: text.number(goal.suggested - power) }
+  const vars = goal && { boss: t(`game.boss.${goal.boss}`), power: goal.approx ? t('game.hero.approx', { power: text.number(goal.suggested) }) : text.number(goal.suggested), gap: text.number(goal.suggested - power) }
   return (
     <div className="border-2 border-[#2e2650] bg-[#160f2e] p-1.5">
       <div className="flex justify-between">
@@ -122,7 +123,7 @@ function PowerBox({ view, target, text }) {
       <div
         role="progressbar"
         aria-labelledby={labelId}
-        aria-valuenow={power}
+        aria-valuenow={Math.min(power, goal?.suggested ?? power)}
         aria-valuemin={0}
         aria-valuemax={goal?.suggested ?? power}
         className="relative mt-[3px] h-3 border border-[#0a0818] bg-[#2a2440]"

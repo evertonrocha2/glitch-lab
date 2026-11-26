@@ -32,13 +32,15 @@ it('scales the suggested power with the target difficulty', () => {
   const view = makeView({ level: 30 })
   ui({ view, target: { world: 'floresta-js', zone: 'z3', difficulty: 'pesadelo' } })
   expect(screen.getByRole('progressbar', { name: 'Your power' })).toHaveAttribute('aria-valuemax', String(Math.round(400 * 3.2)))
-  expect(screen.getByText(/Undefined Hydra asks for 1,280/)).toBeInTheDocument()
+  expect(screen.getByText(/Undefined Hydra asks for approx\. 1,280\./)).toBeInTheDocument()
 })
 
 it('says the hero is ready when power reaches the boss', () => {
   const view = { ...makeView(), power: 150 }
   ui({ view })
   expect(screen.getByText('Ready to face Slime King (130 suggested).')).toBeInTheDocument()
+  // valuenow never passes valuemax.
+  expect(screen.getByRole('progressbar', { name: 'Your power' })).toHaveAttribute('aria-valuenow', '130')
 })
 
 it('lays out 8 slots with rarity borders', () => {
