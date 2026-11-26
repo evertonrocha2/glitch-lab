@@ -8,10 +8,12 @@
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --shadow-pixel: 4px 4px 0 var(--color-primary);
-  --shadow-pixel-secondary: 4px 4px 0 var(--color-secondary);
-  --shadow-pixel-ink: 4px 4px 0 var(--color-ink);
-  --shadow-pixel-muted: 4px 4px 0 #b9bdc9;
+  /* Hard pixel drop shadows, cut darker than their color so they read as depth on the night. */
+  --shadow-pixel: 4px 4px 0 #3d1fa0;
+  --shadow-pixel-secondary: 4px 4px 0 #143f8f;
+  --shadow-pixel-ink: 4px 4px 0 #05030e;
+  --shadow-pixel-muted: 4px 4px 0 #2a2250;
+  --shadow-pixel-gold: 4px 4px 0 #6e4a12;
 
   --animate-walk: walk 0.6s steps(2, jump-none) infinite alternate;
   --animate-blink: blink 1.2s steps(2, jump-none) infinite;
@@ -80,16 +82,55 @@
     }
   }
 
-  /* Purple marks the "why" (understanding). Blue marks practice (doing). */
-  --color-ink: #1c1d26;
-  --color-muted: #5b5f70;
-  --color-line: #e3e5ec;
-  --color-mist: #f4f5f8;
-  --color-primary: #6a3df0;
+  /* Noite arcana (docs/superpowers/specs/2026-11-26-site-noite-arcana-design.md): the whole site is
+     dark. These are the named tokens, for new code: bg-night, bg-panel, text-gold, border-line-hi... */
+  --color-void: #0a0818;
+  --color-night: #120c22;
+  --color-panel: #1b1433;
+  --color-raised: #241c44;
+  --color-inset: #100c20;
+  --color-line: #3e3170;
+  --color-line-hi: #574a96;
+  --color-text: #e9e4ff;
+  --color-muted: #a89fd0;
+  --color-arcane: #8a5cff;
+  --color-arcane-hi: #c3a6ff;
+  --color-arcane-deep: #5a2fd9;
+  --color-gold: #f2c14e;
+  --color-gold-hi: #fff1b0;
+  --color-gold-dark: #9a6a1c;
+  --color-gold-ink: #2a1606;
+  --color-ember: #ff7a3d;
+  --color-mana: #4fa3ff;
+  --color-ok: #6fe39a;
+  --color-danger: #ff5a6e;
+  --color-rarity-common: #c9ccd4;
+  --color-rarity-uncommon: #6fe39a;
+  --color-rarity-rare: #6fb4ff;
+  --color-rarity-epic: #c3a6ff;
+  --color-rarity-legendary: #ffc04a;
+
+  /* The old light names keep working, flipped to the night: "ink" is the light text (text-ink,
+     fill-ink) but the outline (border-ink) and the hairline fills between cells (bg-ink) are the
+     violet line; "white" surfaces are panels (text-white stays white); "mist" is the night.
+     Tailwind reads --border-color-*, --background-color-* and --text-color-* before --color-*. */
+  --color-ink: #e9e4ff;
+  --border-color-ink: #574a96;
+  --background-color-ink: #574a96;
+  --background-color-white: #1b1433;
+  --color-mist: #120c22;
+
+  /* Purple marks the "why" (understanding). Blue marks practice (doing). Text gets the lighter cut
+     (4.5:1 on a panel); fills under white text get the deeper one (4.5:1 under white). */
+  --color-primary: #8a5cff;
+  --text-color-primary: #c3a6ff;
+  --background-color-primary: #6a3df0;
   --color-primary-strong: #5a2fd9;
-  --color-primary-soft: #efeafe;
-  --color-secondary: #1a4fe0;
-  --color-secondary-soft: #e8eeff;
+  --color-primary-soft: #2b2058;
+  --color-secondary: #4fa3ff;
+  --text-color-secondary: #7dbbff;
+  --background-color-secondary: #2360cc;
+  --color-secondary-soft: #15264a;
 }
 
 /* 1-bit dither: a 6px pixel checkerboard that fades out across the panel. */
@@ -106,10 +147,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    color-scheme: dark;
+    background: var(--color-void);
   }
 
   body {
-    @apply bg-white font-sans text-ink antialiased;
+    @apply bg-night font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-arcane) 55%, transparent);
+    color: #fff;
   }
 
   /* Pixel type never joins letters (a "fi" ligature once rendered "Desafios" as "DesaAos"). */
@@ -137,7 +185,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-secondary);
+    outline: 2px solid var(--color-gold);
     outline-offset: 3px;
     border-radius: 6px;
   }
