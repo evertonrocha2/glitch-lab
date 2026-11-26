@@ -6,6 +6,7 @@ import { HUB_ID, worldById } from '../../../shared/world/worlds.js'
 import GameView from '../../components/game/game-view.jsx'
 import { gearOf } from '../../components/game/hero/gear.js'
 import LookDialog from '../../components/game/look-dialog.jsx'
+import { StudyWindowProvider } from '../../components/game/study-window/study-window-provider.jsx'
 import { studyHref } from '../../components/game/study-cta.js'
 import Frame from '../../components/game/ui/frame.jsx'
 import AppShell from '../../components/layout/app-shell/app-shell.jsx'
@@ -232,17 +233,20 @@ export default function WorldPage() {
         </div>
       )}
       {!state && !message && <WorldPageSkeleton />}
-      {state && inGame && <GameView worldId={world} api={gameApi} onLeave={leave} studyHref={studyHref({ locale, doneToday })} />}
-      {/* The console the hunt plays in: the map with its status line, and the panel beside it from lg up. */}
-      {state && !inGame && (
-        <Frame tone="panel" className="mt-6 grid items-start gap-2 p-1.5 shadow-pixel lg:grid-cols-[minmax(0,1fr)_20rem] lg:p-2">
-          <WorldGame state={state} look={look} gear={gear} onSave={save} onWorldChange={setWorld} />
-          <WorldPanel state={state} currentWorld={world} />
-        </Frame>
-      )}
-      {lookOpen && !inGame && (
-        <LookDialog look={look} gear={gear} first onSave={saveHeroLook} onClose={() => setLookOpen(false)} onLater={lookLater} />
-      )}
+      {/* One study window for the hub and the hunt, so it stays open across a portal. */}
+      <StudyWindowProvider>
+        {state && inGame && <GameView worldId={world} api={gameApi} onLeave={leave} studyHref={studyHref({ locale, doneToday })} />}
+        {/* The console the hunt plays in: the map with its status line, and the panel beside it from lg up. */}
+        {state && !inGame && (
+          <Frame tone="panel" className="mt-6 grid items-start gap-2 p-1.5 shadow-pixel lg:grid-cols-[minmax(0,1fr)_20rem] lg:p-2">
+            <WorldGame state={state} look={look} gear={gear} onSave={save} onWorldChange={setWorld} />
+            <WorldPanel state={state} currentWorld={world} />
+          </Frame>
+        )}
+        {lookOpen && !inGame && (
+          <LookDialog look={look} gear={gear} first onSave={saveHeroLook} onClose={() => setLookOpen(false)} onLater={lookLater} />
+        )}
+      </StudyWindowProvider>
     </AppShell>
   )
 }

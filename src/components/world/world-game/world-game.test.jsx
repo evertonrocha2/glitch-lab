@@ -6,6 +6,7 @@ import { unlocks } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
 import { I18nProvider } from '../../../lib/i18n/I18nProvider.jsx'
 import { cameraOn, cropFor } from '../hub-scene/hub-view.js'
+import { StudyWindowProvider } from '../../game/study-window/study-window-provider.jsx'
 import WorldGame, { SAVE_DELAY_MS, STEP_MS } from './world-game.jsx'
 
 const signalsOf = ({ codeSolved = 0, ...areas } = {}) => ({
@@ -371,4 +372,26 @@ it('starts at the zoom the hunt left, and a click still lands on the tile under 
   fireEvent.click(canvas, { clientX: 5.5 * TILE, clientY: 3.5 * TILE })
   wait(STEP_MS * 4)
   expect(place()).toBe('caverna-sql 5 9')
+})
+
+it('opens a terminal in the study window over the game when the page has one, after saving', async () => {
+  let finishSave
+  onSave.mockReturnValue(new Promise((resolve) => (finishSave = resolve)))
+  render(
+    <I18nProvider locale="pt-BR">
+      <MemoryRouter initialEntries={['/mundo']}>
+        <StudyWindowProvider>
+          <WorldGame state={stateAt({ world: 'torre-matematica', x: 2, y: 5 }, { matematica: 5 })} look={DEFAULT_LOOK} gear={{}} onSave={onSave} onWorldChange={onWorldChange} />
+        </StudyWindowProvider>
+        <Location />
+      </MemoryRouter>
+    </I18nProvider>,
+  )
+  press('Enter')
+  expect(onSave).toHaveBeenCalledWith({ world: 'torre-matematica', x: 2, y: 5 }, { keepalive: false })
+  expect(document.querySelector('iframe')).toBeNull()
+  await act(async () => finishSave())
+  expect(location()).toBe('/mundo')
+  expect(document.querySelector('iframe').getAttribute('src')).toContain('/exams/enem/aritmetica')
+  expect(map()).toBeInTheDocument()
 })

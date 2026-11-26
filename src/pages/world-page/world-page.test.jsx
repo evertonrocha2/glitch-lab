@@ -235,3 +235,13 @@ it('does not open the creator for a hero that already has a look', async () => {
   await vi.waitFor(() => expect(getGame).toHaveBeenCalled())
   expect(screen.queryByRole('dialog')).toBeNull()
 })
+
+it('opens a hub terminal in the study window and stays in the world', async () => {
+  vi.mocked(getWorld).mockResolvedValue(stateAt({ world: 'caverna-sql', x: 2, y: 5 }, { codeSolved: 3 }))
+  open()
+  expect(await title()).toHaveTextContent('Caverna do SQL')
+  fireEvent.keyDown(screen.getByRole('application'), { key: 'Enter' })
+  await vi.waitFor(() => expect(document.querySelector('iframe')?.getAttribute('src')).toContain('/daily'))
+  expect(screen.getByTestId('location')).toHaveTextContent('/mundo')
+  expect(screen.getByRole('application')).toHaveAttribute('data-place', 'caverna-sql 2 5')
+})

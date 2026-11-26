@@ -7,6 +7,7 @@ import { openZones } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { ActionButton } from '../../game/panel/panel-ui.jsx'
+import { useStudyWindow } from '../../game/study-window/study-window-provider.jsx'
 import Frame, { Chip } from '../../game/ui/frame.jsx'
 import DPad from '../d-pad/d-pad.jsx'
 import { visibleWorld } from '../enem-worlds.js'
@@ -39,6 +40,8 @@ const PAGE_NAMES = { daily: 'app.nav.daily', glitchdle: 'app.nav.glitchdle', hun
 export default function WorldGame({ state, look, gear, onSave, onWorldChange }) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
+  // The study window over the game, when the page has one; else a terminal leaves for its page.
+  const studyWindow = useStudyWindow()
   const helpId = useId()
   const mapRef = useRef(null)
   const stageRef = useRef(null)
@@ -217,8 +220,10 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
     await saveNow()
     opening.current = false
     // The player may have gone somewhere else while the save was out.
-    if (mounted.current) navigate(terminalHref(found))
-  }, [navigate, release, saveNow, stopPath])
+    if (!mounted.current) return
+    if (studyWindow) studyWindow.open(terminalHref(found))
+    else navigate(terminalHref(found))
+  }, [navigate, release, saveNow, stopPath, studyWindow])
 
   // Stop every timer when the game goes away, and keep the last tile if a save was still waiting.
   // Closing the tab or the app doesn't unmount anything: pagehide is the last word the page gets.
