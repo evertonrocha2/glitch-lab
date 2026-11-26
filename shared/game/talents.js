@@ -1,7 +1,10 @@
 // Talent tree for Glitch World: one root, three branches (logica, sintaxe, algoritmos), two bridges and one
 // keystone per branch. Pure data and rules: the server validates allocations with canAllocate and the client
 // draws the tree from the x/y layout (a 760x440 box). Ids and stat keys only, labels live in i18n.
+// Fase 2c: some side paths end in a skill passive (a notable whose effect changes a skill, skill-mods.js)
+// or a socket (kind 'socket', holds one support gem: the hero's treeSockets).
 import { STATS_KEYS } from './items.js'
+import { PASSIVES } from './skill-mods.js'
 
 export const MAX_KEYSTONES = 1
 export const RESPEC_GOLD_PER_POINT = 50
@@ -61,6 +64,23 @@ const BRANCHES = {
     forks: [[1, -1, 1, false], [1, 1, 2, false], [3, 1, 4, true], [3, -1, 4, false], [4, 1, 4, true], [5, 1, 3, false], [6, 1, 3, false]],
   },
 }
+
+// Where each skill passive sits: one cheap per branch (golpe, raio and cura come early), the rest deep.
+const PASSIVE_AT = {
+  'logica-f1-2': 'golpeTwice',
+  'logica-f3-4': 'critBlast',
+  'logica-f5-3': 'quickCache',
+  'logica-f6-3': 'globalScope',
+  'sintaxe-f1-3': 'garbageCollector',
+  'sintaxe-f4-3': 'tryCatch',
+  'sintaxe-f5-3': 'endlessWinter',
+  'algoritmos-f1-2': 'breadthFirst',
+  'algoritmos-f3-4': 'divideConquer',
+  'algoritmos-f5-3': 'fork',
+  'algoritmos-f6-3': 'memoryLeak',
+}
+// The socket nodes: one near the root of each branch, and one deep in sintaxe.
+export const SOCKET_NODES = ['logica-f0-1', 'sintaxe-f0-3', 'sintaxe-f6-3', 'algoritmos-f0-1']
 
 const round = (n) => Math.round(n * 10) / 10
 const iconFor = (stats) => STAT_ICON[Object.keys(stats)[0]] || 'gem'
@@ -135,6 +155,12 @@ function build() {
   }
   bridge('ponte-logica-sintaxe', -120, 'logica', 'sintaxe', { attackPct: 2, hpPct: 2 })
   bridge('ponte-sintaxe-algoritmos', -60, 'sintaxe', 'algoritmos', { hpPct: 2, magicPct: 2 })
+  // The ends of side paths that change a skill or hold a support gem, in place of a small stat.
+  for (const node of nodes) {
+    const effect = PASSIVE_AT[node.id]
+    if (effect) Object.assign(node, { kind: 'notable', icon: PASSIVES[effect].icon, stats: {}, effect })
+    if (SOCKET_NODES.includes(node.id)) Object.assign(node, { kind: 'socket', icon: 'gem', stats: {} })
+  }
   return { nodes, edges }
 }
 

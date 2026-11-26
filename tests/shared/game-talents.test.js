@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { STATS_KEYS } from '../../shared/game/items.js'
+import { PASSIVES } from '../../shared/game/skill-mods.js'
 import {
-  MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, TALENTS, canAllocate, talentStats,
+  MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, SOCKET_NODES, TALENTS, canAllocate, talentStats,
 } from '../../shared/game/talents.js'
 
 // Local copy of the recipe names, replaced by the real export in Task 14.
 const ICONS = new Set([
   'sword', 'shield', 'staff', 'ring', 'boot', 'helm', 'armor', 'amulet', 'hppot', 'mppot', 'gem', 'coins', 'chest',
   'scroll', 'book', 'keyboard', 'bug', 'flame', 'bolt', 'barrier', 'skull', 'clock', 'xp', 'heart', 'target',
-  'feather', 'poison', 'bag', 'hammer', 'map', 'tree',
+  'feather', 'poison', 'bag', 'hammer', 'map', 'tree', 'snow',
 ])
 const { nodes, edges } = TALENTS
 const byId = new Map(nodes.map((n) => [n.id, n]))
@@ -45,7 +46,7 @@ describe('talent tree shape', () => {
     const degree = new Map(nodes.map((n) => [n.id, 0]))
     for (const [a, b] of edges) { degree.set(a, degree.get(a) + 1); degree.set(b, degree.get(b) + 1) }
     for (const b of ['logica', 'sintaxe', 'algoritmos']) {
-      const n = nodes.filter((x) => x.branch === b && x.kind === 'notable').length
+      const n = nodes.filter((x) => x.branch === b && x.kind === 'notable' && !PASSIVES[x.effect]).length
       expect(n).toBeGreaterThanOrEqual(3)
       expect(n).toBeLessThanOrEqual(4)
       const keys = nodes.filter((x) => x.branch === b && x.kind === 'keystone')
@@ -134,5 +135,48 @@ describe('talentStats', () => {
 
   it('is empty for nothing', () => {
     expect(talentStats([])).toEqual({ effects: [] })
+  })
+})
+
+describe('skill passives and sockets (fase 2c)', () => {
+  const degree = new Map(nodes.map((n) => [n.id, 0]))
+  for (const [a, b] of edges) { degree.set(a, degree.get(a) + 1); degree.set(b, degree.get(b) + 1) }
+  const passives = nodes.filter((n) => PASSIVES[n.effect])
+
+  it('places every skill passive once, as a notable at the end of a side path, 3 or 4 per branch', () => {
+    expect(passives.map((n) => n.effect).sort()).toEqual(Object.keys(PASSIVES).sort())
+    for (const n of passives) {
+      expect(n.kind).toBe('notable')
+      expect(degree.get(n.id), n.id).toBe(1)
+      expect(n.icon).toBe(PASSIVES[n.effect].icon)
+      expect(n.stats).toEqual({})
+    }
+    for (const b of ['logica', 'sintaxe', 'algoritmos']) {
+      const count = passives.filter((n) => n.branch === b).length
+      expect(count, b).toBeGreaterThanOrEqual(3)
+      expect(count, b).toBeLessThanOrEqual(4)
+    }
+  })
+
+  it('has 4 socket nodes, leaves with no stats, at least one per branch', () => {
+    const sockets = nodes.filter((n) => n.kind === 'socket')
+    expect(sockets.map((n) => n.id)).toEqual(SOCKET_NODES)
+    expect(sockets).toHaveLength(4)
+    for (const n of sockets) {
+      expect(degree.get(n.id), n.id).toBe(1)
+      expect(n.icon).toBe('gem')
+      expect(n.stats).toEqual({})
+    }
+    for (const b of ['logica', 'sintaxe', 'algoritmos']) expect(sockets.some((n) => n.branch === b), b).toBe(true)
+  })
+
+  it('collects a passive as an effect and gives nothing for a socket', () => {
+    const path = ['logica-c0', 'logica-c1', 'logica-f1-1', 'logica-f1-2']
+    expect(talentStats(path).effects).toEqual(['golpeTwice'])
+    expect(talentStats(['logica-c0', 'logica-c1', 'logica-f0-1'])).toEqual(talentStats(['logica-c0', 'logica-c1']))
+  })
+
+  it('allocates a socket like any node', () => {
+    expect(canAllocate(['logica-c0', 'logica-c1'], 'logica-f0-1', ctx)).toEqual({ ok: true })
   })
 })
