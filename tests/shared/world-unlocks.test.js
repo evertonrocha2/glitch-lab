@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { worldSignals } from '../../shared/world/signals.js'
 import { haveFor, nextGoal, openZones, unlocks } from '../../shared/world/unlocks.js'
+import { WORLDS } from '../../shared/world/worlds.js'
 
 const EMPTY = { examSummary: [], challenges: [], daily: { solved: [] }, riddle: { results: [] }, hunt: { runs: [] } }
 const signals = ({ codeSolved = 0, ...areas } = {}) => ({
@@ -75,15 +76,21 @@ it('opens the SQL cave at exactly 3 solved', () => {
   expect(worldOf(unlocks(signals({ codeSolved: 3 })), 'caverna-sql')).toMatchObject({ unlocked: true, have: 3, need: 3 })
 })
 
-it('opens Math zone 2 at 15 right answers in Math and not with other areas', () => {
-  expect(zoneOf(unlocks(signals({ humanas: 40, matematica: 14 })), 'torre-matematica', 'z2').unlocked).toBe(false)
-  const state = unlocks(signals({ matematica: 15 }))
-  expect(zoneOf(state, 'torre-matematica', 'z2')).toMatchObject({ unlocked: true, have: 15, need: 15 })
-  expect(openZones(state, 'torre-matematica')).toEqual(new Set(['z2']))
+it('opens every zone inside every world from the start, with nothing to study for them', () => {
+  const state = unlocks(signals())
+  for (const world of WORLDS) {
+    expect(state.zones[world.id].map((zone) => zone.id)).toEqual(world.zones.map((zone) => zone.id))
+    for (const zone of state.zones[world.id]) expect(zone).toEqual({ id: zone.id, unlocked: true, requirement: null, have: null, need: null })
+    expect(openZones(state, world.id)).toEqual(new Set(world.zones.map((zone) => zone.id)))
+  }
   expect(openZones(state, 'nope')).toEqual(new Set())
 })
 
-it('picks the locked goal with the least left, in world order on a tie', () => {
+it('keeps no study requirement on any zone of the maps', () => {
+  for (const world of WORLDS) for (const zone of world.zones) expect(zone.requirement ?? null).toBeNull()
+})
+
+it('picks the locked world with the least left, in world order on a tie', () => {
   // The cave and the tower both have 1 left: the cave comes first.
   expect(nextGoal(unlocks(signals({ codeSolved: 2, matematica: 4 })))).toEqual({
     worldId: 'caverna-sql',
@@ -92,20 +99,13 @@ it('picks the locked goal with the least left, in world order on a tie', () => {
     have: 2,
     need: 3,
   })
-  // The forest's zones are open now: the cave's z3 is the next goal.
-  expect(nextGoal(unlocks(signals({ codeSolved: 19, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 })))).toMatchObject({
-    worldId: 'caverna-sql',
-    zoneId: 'z3',
-    have: 19,
-    need: 20,
-  })
 })
 
-it('puts a world before a zone with as much left', () => {
-  // The forest's z3 and the tower both have 1 left.
-  expect(nextGoal(unlocks(signals({ codeSolved: 19, matematica: 4 })))).toMatchObject({ worldId: 'torre-matematica', zoneId: null })
+it('never names a zone as the next goal', () => {
+  // The cave's zone 2 used to wait for 8 code challenges (1 left here); now the tower, 2 left, is the goal.
+  expect(nextGoal(unlocks(signals({ codeSolved: 7, matematica: 3 })))).toMatchObject({ worldId: 'torre-matematica', zoneId: null, have: 3, need: 5 })
 })
 
-it('has no goal once everything is open', () => {
-  expect(nextGoal(unlocks(signals({ codeSolved: 20, linguagens: 40, humanas: 40, natureza: 40, matematica: 40 })))).toBeNull()
+it('has no goal once every world is open', () => {
+  expect(nextGoal(unlocks(signals({ codeSolved: 3, linguagens: 5, humanas: 5, natureza: 5, matematica: 5 })))).toBeNull()
 })

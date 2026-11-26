@@ -32,8 +32,8 @@ export const TORRE_MATEMATICA = {
     { x: 1, y: 10, to: 'laboratorio', at: { x: 12, y: 7 } },
   ],
   zones: [
-    { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 }, requirement: { signal: 'enemCorrect', area: 'matematica', count: 15 } },
-    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 }, requirement: { signal: 'enemCorrect', area: 'matematica', count: 40 } },
+    { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
+    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
   terminals: [
     { x: 2, y: 6, kind: 'topic', topicId: 'aritmetica' },
