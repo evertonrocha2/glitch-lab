@@ -135,15 +135,17 @@ describe('settleHunt with packs', () => {
 
 // Per hour before packs (the single-foe engine, measured with the same 12-seed sim), and the pin:
 // within 15% of it for the same hero. kills, gold, scrap (bag full), drops (items + gems), xp.
+// Fase 3 moved the Forest's xp per kill onto the region ladder (0.7, 1.1, 1.6 became 0.8, 1.0, 1.25):
+// the xp column is the old one times that change, everything else is as it was.
 describe('balance: the hunt economy per hour stays where it was before packs', () => {
   const BEFORE = {
-    'z1 L3 golpe': { zone: 'z1', level: 3, skills: ['golpe'], gold: 2694, scrap: 520, drops: 124, xp: 471 },
-    'z1 L5 golpe': { zone: 'z1', level: 5, skills: ['golpe'], gold: 3103, scrap: 584, drops: 144, xp: 542 },
-    'z1 L7 4 skills': { zone: 'z1', level: 7, skills: ['golpe', 'raio', 'chama', 'barreira'], gold: 4050, scrap: 753, drops: 187, xp: 708 },
-    'z2 L10 golpe': { zone: 'z2', level: 10, skills: ['golpe'], gold: 6280, scrap: 517, drops: 126, xp: 767 },
-    'z2 L12 4 skills': { zone: 'z2', level: 12, skills: ['golpe', 'raio', 'chama', 'veneno'], gold: 6631, scrap: 528, drops: 130, xp: 810 },
-    'z3 L16 golpe': { zone: 'z3', level: 16, skills: ['golpe'], gold: 10076, scrap: 467, drops: 114, xp: 1007 },
-    'z3 L18 4 skills': { zone: 'z3', level: 18, skills: ['nevasca', 'raio', 'chama', 'cura'], gold: 14056, scrap: 671, drops: 155, xp: 1405 },
+    'z1 L3 golpe': { zone: 'z1', level: 3, skills: ['golpe'], gold: 2694, scrap: 520, drops: 124, xp: 538 },
+    'z1 L5 golpe': { zone: 'z1', level: 5, skills: ['golpe'], gold: 3103, scrap: 584, drops: 144, xp: 619 },
+    'z1 L7 4 skills': { zone: 'z1', level: 7, skills: ['golpe', 'raio', 'chama', 'barreira'], gold: 4050, scrap: 753, drops: 187, xp: 809 },
+    'z2 L10 golpe': { zone: 'z2', level: 10, skills: ['golpe'], gold: 6280, scrap: 517, drops: 126, xp: 697 },
+    'z2 L12 4 skills': { zone: 'z2', level: 12, skills: ['golpe', 'raio', 'chama', 'veneno'], gold: 6631, scrap: 528, drops: 130, xp: 736 },
+    'z3 L16 golpe': { zone: 'z3', level: 16, skills: ['golpe'], gold: 10076, scrap: 467, drops: 114, xp: 787 },
+    'z3 L18 4 skills': { zone: 'z3', level: 18, skills: ['nevasca', 'raio', 'chama', 'cura'], gold: 14056, scrap: 671, drops: 155, xp: 1098 },
   }
   const SEEDS = 12
   for (const [name, row] of Object.entries(BEFORE)) {

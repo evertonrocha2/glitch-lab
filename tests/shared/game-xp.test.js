@@ -117,3 +117,46 @@ describe('balance', () => {
     expect(climb(180)).toBeGreaterThanOrEqual(10)
   })
 })
+
+// Fase 3: every harder area pays more. The regions form one ladder, Forest (tier 1) to the SQL Cave
+// (tier 2) to the Math Tower (tier 3), three zones each; the ENEM regions of a tier share its numbers.
+describe('the region ladder', () => {
+  const CHAIN = ['floresta-js', 'caverna-sql', 'torre-matematica']
+  const ladder = CHAIN.flatMap((world) => Object.values(ZONES[world]))
+  const bare = (level) => ({ stats: heroStats({ level }), skills: [{ id: 'golpe', level: 1 }], potions: { hp: 0, mp: 0 }, thresholds: { hp: 0.4, mp: 0.25 } })
+  // XP an hour for a bare hero two levels over the zone's suggested level, over 3 seeds.
+  const perHour = (zone) => {
+    let xp = 0
+    for (let i = 0; i < 3; i++) xp += settleHunt({ hero: bare(zone.minLevel + 2), zone, difficulty: 'normal', startedAt: 0, now: 3600_000, seed: `ladder:${zone.world}:${zone.id}:${i}`, bagFree: 0 }).xp
+    return xp / 3
+  }
+
+  it('pays more xp per kill at every step, ordered by suggested level', () => {
+    for (let i = 1; i < ladder.length; i++) {
+      expect(ladder[i].minLevel, ladder[i].id).toBeGreaterThan(ladder[i - 1].minLevel)
+      expect(ladder[i].xp, `${ladder[i].world} ${ladder[i].id}`).toBeGreaterThan(ladder[i - 1].xp)
+    }
+  })
+
+  it('pays every ENEM region the xp of the tech region on its tier', () => {
+    for (const [enem, tech] of [['biblioteca-linguagens', 'floresta-js'], ['cidade-humanas', 'floresta-js'], ['jardim-natureza', 'caverna-sql']]) {
+      for (const k of ['z1', 'z2', 'z3']) expect(ZONES[enem][k].xp).toBe(ZONES[tech][k].xp)
+    }
+  })
+
+  it('pays more xp an hour at each step for a hero at its suggested level, about 1.6x to 2x a tier', () => {
+    const rates = ladder.map(perHour)
+    for (let i = 1; i < rates.length; i++) expect(rates[i], `${ladder[i].world} ${ladder[i].id}`).toBeGreaterThan(rates[i - 1])
+    for (let k = 0; k < 3; k++) {
+      for (const tier of [1, 2]) {
+        const ratio = rates[tier * 3 + k] / rates[(tier - 1) * 3 + k]
+        expect(ratio, `tier ${tier + 1} z${k + 1}`).toBeGreaterThanOrEqual(1.6)
+        expect(ratio, `tier ${tier + 1} z${k + 1}`).toBeLessThanOrEqual(2.1)
+      }
+    }
+  })
+
+  it('keeps a boss first win worth BOSS_XP_KILLS kills of its zone on every tier', () => {
+    for (const zone of ladder) expect(bossXp(zone, 'normal')).toBe(Math.floor(BOSS_XP_KILLS * zone.xp + 1e-9))
+  })
+})
