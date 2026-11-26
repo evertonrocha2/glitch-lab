@@ -20,8 +20,8 @@ function floorOf(world, zone) {
 }
 
 describe('createAmbient', () => {
-  it("places 6 to 10 monsters in each hunt zone, only on walkable tiles inside its rect, from the zone's enemy list", () => {
-    expect(AMBIENT_PER_ZONE).toEqual([6, 10])
+  it("places 14 to 18 monsters in each hunt zone, only on walkable tiles inside its rect, from the zone's enemy list", () => {
+    expect(AMBIENT_PER_ZONE).toEqual([14, 18])
     for (const world of REGIONS) {
       const list = make(world).monsters()
       for (const zone of Object.values(ZONES[world.id])) {
@@ -41,9 +41,9 @@ describe('createAmbient', () => {
   })
 
   it('never has more than AMBIENT_CAP monsters on a map', () => {
-    expect(AMBIENT_CAP).toBe(30)
+    expect(AMBIENT_CAP).toBe(54)
     for (const world of REGIONS) expect(make(world).monsters().length).toBeLessThanOrEqual(AMBIENT_CAP)
-    // Five open zones would want up to 50: the cap holds.
+    // Five open zones would want up to 90: the cap holds.
     const rows = Array.from({ length: 20 }, () => '.'.repeat(50))
     const zones = Array.from({ length: 5 }, (_, k) => ({ id: `z${k + 1}`, rect: { x: k * 10, y: 0, w: 10, h: 20 }, enemies: ['slime'] }))
     const wide = { id: 'wide', kind: 'code', rows, zones: zones.map(({ id, rect }) => ({ id, rect })) }
@@ -105,6 +105,20 @@ describe('createAmbient', () => {
     const sprites = new Map(ENEMIES.map((e) => [e.id, e.sprite]))
     for (const world of REGIONS) {
       for (const m of make(world).monsters()) expect(m.sprite, `${world.id} ${m.enemy}`).toBe(sprites.get(m.enemy))
+    }
+  })
+
+  it('leaves the open ground walkable: monsters take a small share of it and are never solid', () => {
+    for (const world of REGIONS) {
+      const list = make(world).monsters()
+      for (const zone of Object.values(ZONES[world.id])) {
+        const open = floorOf(world, zone).length
+        const mine = list.filter((m) => zoneAt(world, m.x, m.y)?.id === zone.id).length
+        // Packs of up to 9 plus the hero still find their ground: at most 6% of a zone's floor is taken.
+        expect(mine / open, `${world.id} ${zone.id}`).toBeLessThanOrEqual(0.06)
+      }
+      // Standing on a monster's tile is still standing on floor (the hero walks through them).
+      for (const m of list) expect(canEnter(world, m.x, m.y)).toBe(true)
     }
   })
 

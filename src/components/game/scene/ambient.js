@@ -17,9 +17,10 @@ import { canEnter, zoneAt } from '../../../../shared/world/map.js'
 //   monsters(): [{ id, enemy, sprite, x, y, facing, anim, fade }], x and y in tiles (a fraction mid
 //   step), facing 1 right or -1 left (as drawFoe takes it), anim 'idle' or 'walk', fade 0..1.
 
-export const AMBIENT_PER_ZONE = [6, 10]
-// Three zones of up to 10, plus a live pack of up to 9: under 40 enemies drawn on a phone.
-export const AMBIENT_CAP = 30
+// Packs take 5 to 9 and come from these monsters, so a 48x32 map's zones hold plenty of them.
+export const AMBIENT_PER_ZONE = [14, 18]
+// Three zones of up to 18, plus a live pack of up to 9: about 60 enemies drawn, still smooth on a phone.
+export const AMBIENT_CAP = 54
 // Tiles (Chebyshev) a wandering monster never steps into around the hero and the live pack. One
 // already that close stands where it is, facing the hero: it never vanishes because the hero came.
 export const KEEP_AWAY = 4
