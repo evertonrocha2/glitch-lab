@@ -27,25 +27,42 @@ function ui({ view = makeView(), locale = 'pt-BR', onLeave = vi.fn(), replaying 
 
 const zone = (name) => screen.getByRole('region', { name: new RegExp(name) })
 
-it('disables "Enfrentar chefe" under the boss level and says why', () => {
+it('lets a hero under the boss level fight the boss and hunt', () => {
   ui({ view: makeView({ level: 3 }) })
   const clearing = zone('Clareira')
-  const fight = within(clearing).getByRole('button', { name: 'Enfrentar chefe' })
-  expect(fight).toBeDisabled()
-  expect(fight).toHaveAccessibleDescription('Precisa nível 5')
+  expect(within(clearing).getByRole('button', { name: 'Enfrentar chefe' })).toBeEnabled()
   expect(within(clearing).getByRole('button', { name: 'Caçar aqui' })).toBeEnabled()
 })
 
-it('shows each zone with its level, lock reason, boss and suggested power', () => {
-  ui()
-  const clearing = zone('Clareira')
-  expect(clearing).toHaveTextContent('A partir do nível 1')
-  expect(clearing).toHaveTextContent('Rei Slime')
-  expect(clearing).toHaveTextContent('Poder sugerido 130')
-  const canopy = zone('Copas')
-  expect(canopy).toHaveTextContent('Vença Rei Slime primeiro')
-  expect(within(canopy).getByRole('button', { name: 'Caçar aqui' })).toBeDisabled()
-  expect(within(canopy).getByRole('button', { name: 'Enfrentar chefe' })).toBeDisabled()
+it('shows every zone open, with its suggested level, boss and suggested power', () => {
+  ui({ view: makeView({ level: 1 }) })
+  for (const [name, level, power] of [['Clareira', 1, 130], ['Copas', 8, 260], ['Raízes', 14, 400]]) {
+    const card = zone(name)
+    expect(card).toHaveTextContent(`Nível sugerido ${level}`)
+    expect(card).toHaveTextContent(`Poder sugerido ${power}`)
+    expect(card).not.toHaveTextContent(/primeiro|Precisa nível/)
+    expect(within(card).getByRole('button', { name: 'Caçar aqui' })).toBeEnabled()
+    expect(within(card).getByRole('button', { name: 'Enfrentar chefe' })).toBeEnabled()
+  }
+  expect(zone('Clareira')).toHaveTextContent('Rei Slime')
+})
+
+it('starts a hunt in zone 3 at level 1', () => {
+  const { actions } = ui({ view: makeView({ level: 1 }) })
+  fireEvent.click(within(zone('Raízes')).getByRole('button', { name: 'Caçar aqui' }))
+  expect(actions.startHunt).toHaveBeenCalledWith({ world: 'floresta-js', zone: 'z3', difficulty: 'normal' })
+})
+
+it('tags each zone by how dangerous it is for the hero, and warns an under-powered one', () => {
+  const view = makeView({ level: 1 })
+  view.power = 200
+  ui({ view })
+  expect(within(zone('Clareira')).getByText('Tranquila')).toBeVisible()
+  expect(zone('Clareira')).not.toHaveTextContent('abaixo do sugerido')
+  // 200 of 260: risky. 200 of 400: deadly.
+  expect(within(zone('Copas')).getByText('Arriscada')).toBeVisible()
+  expect(within(zone('Raízes')).getByText('Mortal')).toBeVisible()
+  expect(zone('Raízes')).toHaveTextContent('Seu poder 200 está abaixo do sugerido')
 })
 
 it('starts a hunt and fights a boss on the picked zone and difficulty', async () => {
@@ -66,12 +83,20 @@ it('marks a beaten boss and the zone being hunted', () => {
   expect(clearing).toHaveTextContent('Caçando aqui')
 })
 
-it('keeps the harder difficulties locked with the reason', () => {
-  ui()
-  const nightmare = screen.getByRole('button', { name: 'Pesadelo' })
-  expect(nightmare).toBeDisabled()
-  expect(nightmare).toHaveAccessibleDescription('Precisa nível 25')
+it('opens the harder difficulties at any level, with a strong warning', async () => {
+  const { actions } = ui({ view: makeView({ level: 3 }) })
   expect(screen.getByRole('button', { name: 'Normal' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByText(/mais fortes que no Normal/)).toBeNull()
+  const nightmare = screen.getByRole('button', { name: 'Pesadelo' })
+  expect(nightmare).toBeEnabled()
+  fireEvent.click(nightmare)
+  expect(nightmare).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText(/Pesadelo: inimigos 3,2x mais fortes que no Normal. Sugerido a partir do nível 25./)).toBeVisible()
+  expect(screen.getByText(/Seu herói está no nível 3/)).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Inferno' }))
+  expect(screen.getByText(/Inferno: inimigos 9x mais fortes que no Normal. Sugerido a partir do nível 40./)).toBeVisible()
+  fireEvent.click(within(zone('Copas')).getByRole('button', { name: 'Caçar aqui' }))
+  expect(actions.startHunt).toHaveBeenCalledWith({ world: 'floresta-js', zone: 'z2', difficulty: 'inferno' })
 })
 
 it('lists the Forest and the other worlds as coming soon, without ENEM in English', () => {

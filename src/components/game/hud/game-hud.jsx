@@ -217,19 +217,20 @@ export default function GameHud({
 
       <Frame as="ul" aria-label={t('game.hud.difficulties')} className={`pointer-events-auto absolute right-2 top-[92px] gap-1 p-1 sm:top-[68px] ${boss ? 'hidden sm:flex' : 'flex'}`}>
         {Object.entries(DIFFICULTIES).map(([id, d]) => {
-          const locked = level.level < d.minLevel
+          // Every difficulty is open; under its suggested level it shows that level, as advice.
+          const under = level.level < d.minLevel
           const name = t(`game.diff.${id}`)
           const current = id === active
           return (
             <li
               key={id}
               aria-current={current ? 'true' : undefined}
-              aria-label={locked ? `${name}, ${t('game.hud.locked', { level: d.minLevel })}` : undefined}
+              aria-label={under ? t('gameOpen.hud.suggested', { difficulty: name, level: d.minLevel }) : undefined}
               className="flex"
             >
-              <Chip tone={current ? 'gold' : locked ? 'ink' : 'muted'} className={`gap-1 py-0.5 ${locked ? 'text-[#8a80b8]' : ''}`}>
+              <Chip tone={current ? 'gold' : under ? 'ink' : 'muted'} className={`gap-1 py-0.5 ${under && !current ? 'text-[#c9c1ec]' : ''}`}>
                 {name}
-                {locked && <small className="text-[8px] font-normal text-[#a89fd0]">{t('game.hud.minLevel', { level: d.minLevel })}</small>}
+                {under && <small className={`text-[8px] font-normal ${current ? 'text-[#7a1f2e]' : 'text-[#ff9aa6]'}`}>{t('game.hud.minLevel', { level: d.minLevel })}</small>}
               </Chip>
             </li>
           )

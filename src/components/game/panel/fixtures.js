@@ -73,6 +73,12 @@ export const plainRing = gear({ id: 'aaaaaaaaaaa6', base: 'anel', slot: 'ring', 
 
 export const gem = { id: 'aaaaaaaaaaa7', kind: 'gem', gem: 'sintaxe' }
 
+const openZones = () => [
+  { id: 'z1', unlocked: true, beaten: false, minLevel: 1, bossLevel: 5 },
+  { id: 'z2', unlocked: true, beaten: false, minLevel: 8, bossLevel: 10 },
+  { id: 'z3', unlocked: true, beaten: false, minLevel: 14, bossLevel: 14 },
+]
+
 export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, legendarySword, plainRing, gem], gold = 500, scrap = 40, fragments = 30, chests = [], potions = { hp: 3, mp: 1 }, hunt = null, level = 12, free = 2, correct = 14, toNextPoint = 6, talents = ['root'], skills = { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] }, thresholds = { hp: 0.4, mp: 0.25 }, branch = { logica: 0, sintaxe: 0, algoritmos: 0 } } = {}) {
   const spent = talents.filter((id) => id !== 'root').length
   const stats = heroStats({ level, items: items.filter((item) => item.equipped), talents })
@@ -101,13 +107,10 @@ export function makeView({ items = [epicRelic, wornRelic, wornHelm, wornChest, l
     power: power(stats),
     zones: {
       'floresta-js': {
-        normal: [
-          { id: 'z1', unlocked: true, beaten: false, minLevel: 1, bossLevel: 5 },
-          { id: 'z2', unlocked: false, beaten: false, minLevel: 8, bossLevel: 10 },
-          { id: 'z3', unlocked: false, beaten: false, minLevel: 14, bossLevel: 14 },
-        ],
-        pesadelo: [],
-        inferno: [],
+        // Every zone of every difficulty is open from the start (shared/game/zones.js).
+        normal: openZones(),
+        pesadelo: openZones(),
+        inferno: openZones(),
       },
     },
     study: { today: { correct, toNextPoint }, pending: { fragments: 0, potions: 0, chests: [], keys: 0, honor: 0 }, branch },

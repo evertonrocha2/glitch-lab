@@ -76,14 +76,17 @@ it('shows the boss bar with phase and enrage', () => {
   expect(screen.getByRole('meter', { name: /Slime King/ })).toHaveAttribute('aria-valuenow', '6320')
 })
 
-it('locked difficulty chips show the min level', () => {
+it('shows the suggested level of a harder difficulty as advice, never as a lock', () => {
   ui({})
   expect(screen.getByText('Normal')).toBeInTheDocument()
   expect(screen.getByText('Lv 25')).toBeInTheDocument()
   expect(screen.getByText('Lv 40')).toBeInTheDocument()
+  const list = screen.getByRole('list', { name: /difficult/i })
+  expect(list).not.toHaveTextContent(/locked/i)
+  expect(within(list).getByRole('listitem', { name: 'Nightmare, suggested from level 25' })).toBeInTheDocument()
 })
 
-it('opens difficulties the hero level reaches', () => {
+it('drops the suggested level once the hero reaches it', () => {
   ui({ view: view({ level: { level: 30, xp: 0, into: 0, needed: 1 } }) })
   expect(screen.queryByText('Lv 25')).toBeNull()
   expect(screen.getByText('Lv 40')).toBeInTheDocument()

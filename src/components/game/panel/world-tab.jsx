@@ -9,24 +9,21 @@ import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
 import { ActionButton } from './panel-ui.jsx'
 
 const ORDER = Object.keys(DIFFICULTIES)
-const FINAL = 'z3'
 
 // The zone's suggested power on a difficulty: enemies scale by its mult, so the power does too.
 export const suggestedPower = (zone, difficulty) => Math.round(zone.suggestedPower * DIFFICULTIES[difficulty].mult)
 
-// Why a zone of the list is closed: the level, the difficulty, or the boss before it.
-function lockReason(t, list, at, level, difficulty, world) {
-  const state = list[at]
-  if (state.unlocked) return null
-  const needs = Math.max(state.minLevel, DIFFICULTIES[difficulty].minLevel)
-  if (level < needs) return t('game.why.level', { level: needs })
-  const before = ORDER[ORDER.indexOf(difficulty) - 1]
-  if (before) return t('game.why.difficulty', { boss: t(`game.boss.${ZONES[world][FINAL].boss}`), difficulty: t(`game.diff.${before}`) })
-  return t('game.why.prevBoss', { boss: t(`game.boss.${ZONES[world][list[at - 1].id].boss}`) })
+// How dangerous a zone is for the hero: at the suggested power it beats the boss, under 70% of it it
+// does not (shared/game/zones.js), so those are the steps. Advice only: every zone is open.
+export function dangerOf(power, suggested) {
+  if (power >= suggested) return 'safe'
+  return power >= suggested * 0.7 ? 'risky' : 'deadly'
 }
+const DANGER_TONE = { safe: 'ok', risky: 'gold', deadly: 'danger' }
 
 // The Mundo tab: the world map list, the Forest's zones on a difficulty, and per zone "Caçar aqui"
-// and "Enfrentar chefe". actions.startHunt / fightBoss / stopHunt take { world, zone, difficulty } and
+// and "Enfrentar chefe". Every zone and difficulty is open from the start: each zone says how
+// dangerous it is for the hero, and a harder difficulty shows a strong warning. actions.startHunt / fightBoss / stopHunt take { world, zone, difficulty } and
 // resolve to the new View (the page applies it, and plays the boss fight back). replaying: a boss
 // fight is on screen, so nothing else starts. onLeave: back to the Lab, after the hunt stops.
 export default function WorldTab({ view, actions, runner, replaying = false, onLeave }) {
@@ -40,6 +37,8 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
   const hunt = view.hero.hunt
   const zoneName = (id) => t(`game.zone.${ZONES[world][id].name}`)
   const busy = runner.busy
+  const heroPower = view.power ?? 0
+  const diff = DIFFICULTIES[difficulty]
 
   const worlds = WORLDS.filter((each) => each.id !== HUB_ID && (showsEnem(locale) || !isEnemWorld(each.id)))
 
@@ -81,58 +80,64 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
           <SectionTitle>{t('game.world.difficulty')}</SectionTitle>
         </legend>
         <div className="flex flex-wrap gap-1.5">
-          {ORDER.map((id) => {
-            const open = (view.zones?.[world]?.[id] ?? []).some((zone) => zone.unlocked)
-            const needs = DIFFICULTIES[id].minLevel
-            const before = ORDER[ORDER.indexOf(id) - 1]
-            const why =
-              open || !before
-                ? null
-                : level < needs
-                  ? t('game.why.level', { level: needs })
-                  : t('game.why.difficulty', { boss: t(`game.boss.${ZONES[world][FINAL].boss}`), difficulty: t(`game.diff.${before}`) })
-            return (
-              <ActionButton key={id} pressed={id === difficulty} why={why} onClick={() => setDifficulty(id)} tone={id === difficulty ? 'gold' : 'default'}>
-                {t(`game.diff.${id}`)}
-              </ActionButton>
-            )
-          })}
+          {ORDER.map((id) => (
+            <ActionButton key={id} pressed={id === difficulty} onClick={() => setDifficulty(id)} tone={id === difficulty ? 'gold' : 'default'}>
+              {t(`game.diff.${id}`)}
+            </ActionButton>
+          ))}
+        </div>
+        <div aria-live="polite">
+          {difficulty !== 'normal' && (
+            <Frame tone="inset" className="mt-1 flex items-start gap-2 px-2.5 py-2 text-[11px] leading-relaxed text-[#ff9aa6]">
+              <GameIcon name="skull" size={1} className="mt-0.5 shrink-0" />
+              <p className="m-0">
+                {t('gameOpen.diff.warn', { difficulty: t(`game.diff.${difficulty}`), mult: fmt.format(diff.mult), level: diff.minLevel })}
+                {level < diff.minLevel && <strong className="block font-bold text-[#ffd3d9]">{t('gameOpen.diff.below', { level })}</strong>}
+              </p>
+            </Frame>
+          )}
         </div>
       </fieldset>
 
       <SectionTitle>{t('game.world.zones')}</SectionTitle>
       {list.map((state, at) => {
         const def = ZONES[world][state.id]
-        const locked = lockReason(t, list, at, level, difficulty, world)
         const here = hunt?.world === world && hunt.zone === state.id && hunt.difficulty === difficulty
-        const bossWhy = replaying ? t('game.why.fighting') : locked ?? (level < state.bossLevel ? t('game.why.level', { level: state.bossLevel }) : null)
-        const huntWhy = replaying ? t('game.why.fighting') : locked
+        const why = replaying ? t('game.why.fighting') : null
+        const suggested = suggestedPower(def, difficulty)
+        const danger = dangerOf(heroPower, suggested)
         return (
-          <ZoneCard key={state.id} title={t('game.world.zoneTitle', { n: at + 1, name: zoneName(state.id) })} locked={Boolean(locked)}>
-            <p className="m-0 text-[11px] text-[#a89fd0]">
-              {t('game.world.minLevel', { level: state.minLevel })}
-              {locked && <span className="text-[#ff9aa6]">{`. ${locked}`}</span>}
-            </p>
+          <ZoneCard
+            key={state.id}
+            title={t('game.world.zoneTitle', { n: at + 1, name: zoneName(state.id) })}
+            tag={
+              <Chip tone={DANGER_TONE[danger]} title={t('gameOpen.danger.label', { danger: t(`gameOpen.danger.${danger}`) })} className="shrink-0">
+                {t(`gameOpen.danger.${danger}`)}
+              </Chip>
+            }
+          >
+            <p className="m-0 text-[11px] text-[#a89fd0]">{t('gameOpen.zone.level', { level: Math.max(state.minLevel, diff.minLevel) })}</p>
             <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px]">
               <GameIcon name="skull" size={1} />
               {t('game.world.boss', { boss: t(`game.boss.${def.boss}`) })}
               {state.beaten && <Chip tone="ok">{t('game.world.beaten')}</Chip>}
             </p>
             <p className="m-0 flex flex-wrap items-center gap-1.5 text-[11px] text-[#a89fd0]">
-              {t('game.world.power', { power: fmt.format(suggestedPower(def, difficulty)) })}
+              {t('game.world.power', { power: fmt.format(suggested) })}
               {here && <Chip tone="gold">{t('game.world.hunting')}</Chip>}
             </p>
+            {heroPower < suggested && <p className="m-0 text-[11px] text-[#ff9aa6]">{t('gameOpen.under', { power: fmt.format(heroPower) })}</p>}
             <div className="flex flex-wrap items-start gap-1.5">
               {here ? (
                 <ActionButton busy={busy} onClick={stop}>
                   {t('game.world.stop')}
                 </ActionButton>
               ) : (
-                <ActionButton busy={busy} why={huntWhy} onClick={() => start(state.id)}>
+                <ActionButton busy={busy} why={why} onClick={() => start(state.id)}>
                   {t('game.world.hunt')}
                 </ActionButton>
               )}
-              <ActionButton tone="danger" busy={busy} why={bossWhy} onClick={() => fight(state.id)}>
+              <ActionButton tone="danger" busy={busy} why={why} onClick={() => fight(state.id)}>
                 {t('game.world.fight')}
               </ActionButton>
             </div>
@@ -149,14 +154,17 @@ export default function WorldTab({ view, actions, runner, replaying = false, onL
   )
 }
 
-// A zone: a raised box when open, sunk and dimmed while locked.
-function ZoneCard({ title, locked, children }) {
+// A zone: a raised box with its title and, on the right, its danger tag.
+function ZoneCard({ title, tag, children }) {
   const titleId = useId()
   return (
-    <Frame as="section" tone={locked ? 'inset' : 'panel'} aria-labelledby={titleId} className={`flex flex-col gap-1.5 p-2.5 ${locked ? 'opacity-80' : ''}`}>
-      <h4 id={titleId} className={`m-0 font-pixel text-[11px] font-normal leading-tight ${locked ? 'text-[#a89fd0]' : 'text-white'}`}>
-        {title}
-      </h4>
+    <Frame as="section" tone="panel" aria-labelledby={titleId} className="flex flex-col gap-1.5 p-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <h4 id={titleId} className="m-0 font-pixel text-[11px] font-normal leading-tight text-white">
+          {title}
+        </h4>
+        {tag}
+      </div>
       {children}
     </Frame>
   )
