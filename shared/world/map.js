@@ -36,6 +36,18 @@ export function canEnter(world, x, y, openZones) {
 
 export const portalAt = (world, x, y) => world.portals.find((portal) => portal.x === x && portal.y === y) ?? null
 
+// Where a hero coming back through `hub`'s portal to worldId stands: the first floor tile beside that
+// portal (below, right, left, then above). The hub's spawn when no portal leads there.
+export function besidePortal(hub, worldId) {
+  const portal = hub.portals.find((item) => item.to === worldId)
+  const spots = portal ? [STEPS[2], STEPS[1], STEPS[3], STEPS[0]].map((step) => ({ x: portal.x + step.x, y: portal.y + step.y })) : []
+  const spot = spots.find(({ x, y }) => {
+    const tile = tileAt(hub, x, y)
+    return tile !== null && !isSolid(tile) && !portalAt(hub, x, y)
+  })
+  return spot ?? { x: hub.spawn.x, y: hub.spawn.y }
+}
+
 // The terminal right next to the tile (up, down, left or right), if there is one. Terminals sit two
 // tiles apart, so a tile can touch two: the one the hero faces wins.
 export function terminalNear(world, x, y, facing) {

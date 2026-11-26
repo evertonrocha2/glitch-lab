@@ -65,10 +65,18 @@ it("keeps each player's unlocks to themselves", async () => {
 })
 
 it('saves a walkable position in an open world and gives it back', async () => {
-  const res = await put({ world: 'floresta-js', x: 3, y: 10 })
+  await gymPasses(3)
+  const res = await put({ world: 'caverna-sql', x: 3, y: 10 })
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ position: { world: 'floresta-js', x: 3, y: 10 } })
-  expect((await world()).position).toEqual({ world: 'floresta-js', x: 3, y: 10 })
+  expect(await res.json()).toEqual({ position: { world: 'caverna-sql', x: 3, y: 10 } })
+  expect((await world()).position).toEqual({ world: 'caverna-sql', x: 3, y: 10 })
+})
+
+it('brings a hero saved inside a hunt world back to the hub, beside its portal', async () => {
+  await store.saveWorldPosition('alice', { world: 'floresta-js', x: 5, y: 5 })
+  expect((await world()).position).toEqual({ world: 'laboratorio', x: 2, y: 2 })
+  expect((await put({ world: 'floresta-js', x: 3, y: 10 })).status).toBe(200)
+  expect((await world()).position).toEqual({ world: 'laboratorio', x: 2, y: 2 })
 })
 
 it('refuses a locked world and a solid tile with 400', async () => {
@@ -104,10 +112,9 @@ it('refuses broken positions with 400', async () => {
 it('sends a hero standing somewhere no longer valid back to a spawn', async () => {
   await store.saveWorldPosition('alice', { world: 'torre-matematica', x: 3, y: 10 })
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
-  await store.saveWorldPosition('alice', { world: 'floresta-js', x: 0, y: 0 })
-  expect((await world()).position).toEqual(spawnOf('floresta-js'))
-  await store.saveWorldPosition('alice', { world: 'floresta-js', x: 12, y: 1 })
-  expect((await world()).position).toEqual({ world: 'floresta-js', x: 12, y: 1 })
+  await gymPasses(3)
+  await store.saveWorldPosition('alice', { world: 'caverna-sql', x: 0, y: 0 })
+  expect((await world()).position).toEqual(spawnOf('caverna-sql'))
   await store.saveWorldPosition('alice', { world: 'apagado', x: 1, y: 1 })
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
 })

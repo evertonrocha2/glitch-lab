@@ -71,7 +71,8 @@ function huntResult(hero, level, now) {
 // restarts the hunt from now).
 const dueForSync = (hunt, now) => Boolean(hunt) && (now - hunt.startedAt >= AWAY_MIN_MS || now < hunt.startedAt)
 
-const previewOf = (result) => (result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold } : null)
+// The running hunt so far, plus its first sample fights (log and foe) for the client to animate.
+const previewOf = (result) => (result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold, samples: result.samples } : null)
 
 // Pays the running hunt into the hero and answers the AwaySummary when it ran long enough to show.
 // keep: the hunt goes on from now (sync); otherwise it ends (stop, or a new hunt).

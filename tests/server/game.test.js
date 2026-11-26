@@ -104,7 +104,14 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
   expect(synced.away.elapsedMs).toBe(HOUR)
   expect(synced.hero.gold).toBeGreaterThan(0)
   expect(synced.hero.gold).toBe(synced.away.gold)
-  expect(synced.away).toMatchObject(preview.huntPreview)
+  const { samples, ...counts } = preview.huntPreview
+  expect(synced.away).toMatchObject(counts)
+  // A few sample fights ride along for the client to animate, each with its foe.
+  expect(samples).toHaveLength(3)
+  for (const fight of samples) {
+    expect(fight.log.length).toBeGreaterThan(0)
+    expect(fight.enemy).toEqual({ id: expect.any(String), sprite: expect.any(String), elite: false })
+  }
   expect(synced.hero.lastAway).toEqual(synced.away)
   expect(Object.keys(synced.away).sort()).toEqual(['deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'scrap'])
   expect(synced.hero.items.length).toBe(synced.away.items + synced.away.gems)

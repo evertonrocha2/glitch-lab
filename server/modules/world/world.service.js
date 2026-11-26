@@ -1,4 +1,5 @@
-import { canEnter } from '../../../shared/world/map.js'
+import { HUNT_WORLDS } from '../../../shared/game/zones.js'
+import { besidePortal, canEnter } from '../../../shared/world/map.js'
 import { worldSignals } from '../../../shared/world/signals.js'
 import { openZones, unlocks } from '../../../shared/world/unlocks.js'
 import { HUB_ID, worldById } from '../../../shared/world/worlds.js'
@@ -37,8 +38,10 @@ const spawnOf = (worldId) => ({ world: worldId, ...worldById(worldId).spawn })
 
 // The saved place, or a spawn when it stopped being valid (a map changed, or a zone locked again
 // because a question was removed): the same world's spawn if it's still open, else the hub's.
+// A hunt world isn't walked: a hero saved inside one comes back on the hub tile beside its portal.
 function placeFor(state, saved) {
   if (!saved) return spawnOf(HUB_ID)
+  if (HUNT_WORLDS.includes(saved.world)) return { world: HUB_ID, ...besidePortal(worldById(HUB_ID), saved.world) }
   if (standable(state, saved)) return toPosition(saved)
   return worldById(saved.world) && isOpen(state, saved.world) ? spawnOf(saved.world) : spawnOf(HUB_ID)
 }

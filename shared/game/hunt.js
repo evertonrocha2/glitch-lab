@@ -28,7 +28,9 @@ function sample({ hero, zone, difficulty, seed, tag, potions }) {
   for (let i = 0; i < SAMPLE_FIGHTS; i++) {
     const elite = i % ELITE_EVERY === ELITE_EVERY - 1
     const enemy = enemyFor(zone, difficulty, root.fork(`enemy:${i}`), { elite })
-    results.push(simulateFight({ hero: fighter, enemy, seed: `${seed}:${tag}${i}` }))
+    // The foe rides along so the client can draw who the hero fights in the shown samples.
+    const foe = { id: enemy.id, sprite: enemy.sprite, elite: Boolean(enemy.elite) }
+    results.push({ ...simulateFight({ hero: fighter, enemy, seed: `${seed}:${tag}${i}` }), enemy: foe })
   }
   return {
     results,
