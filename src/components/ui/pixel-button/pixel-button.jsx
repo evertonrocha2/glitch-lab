@@ -1,5 +1,7 @@
+// The kit button (src/index.css .kit-btn): a pixel bevel lit from the top left on a hard drop; it
+// lifts on hover and sinks when pressed, the bevel flipping. Disabled, it sits flat in the panel.
 const BASE =
-  'items-center justify-center gap-2 border-2 border-ink font-label tracking-wide transition-[translate,box-shadow] duration-100 active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:translate-0 disabled:border-ink/30 disabled:bg-mist disabled:text-muted disabled:shadow-none'
+  'kit-btn items-center justify-center gap-2 border-2 border-void font-label tracking-wide disabled:cursor-not-allowed'
 
 // Default size. A className that sets its own padding or text size replaces these: Tailwind applies
 // whichever class comes later in its stylesheet, not in the class list, so both can't be kept.
@@ -13,11 +15,11 @@ const SIZE = [
   { test: /(^|\s)(sm:|md:|lg:)?min-h-/, value: 'min-h-10' },
 ]
 
-// Colored buttons sit on a hard ink shadow that shrinks when pressed.
+// primary is the gold call to action, secondary the arcane violet, ghost a raised panel button.
 const VARIANTS = {
-  primary: 'bg-primary text-white shadow-pixel-ink active:shadow-[2px_2px_0_var(--color-ink)]',
-  secondary: 'bg-secondary text-white shadow-pixel-ink active:shadow-[2px_2px_0_var(--color-ink)]',
-  ghost: 'bg-white text-ink hover:bg-mist',
+  primary: 'kit-gold',
+  secondary: 'kit-arcane',
+  ghost: 'kit-raised',
 }
 
 export const buttonClasses = (variant = 'primary', className = '') => {

@@ -169,7 +169,9 @@
       "clig" 0;
   }
 
-  /* Labels are small: a faked bold would smear their pixels. */
+  /* Pixel type has one weight: a faked bold would smear its pixels (font-bold on a pixel title
+     stays crisp, as in the spike). */
+  .font-pixel,
   .font-label {
     font-synthesis: none;
   }
@@ -320,4 +322,100 @@
     scrollbar-width: thin;
     scrollbar-color: #6a5bb0 #0a0818;
   }
+}
+
+/* Site kit (the approved spike): pixel bevels lit from the top left, a hard drop under raised
+   things. Buttons: .kit-btn plus a tone. Panels: .kit-frame (raised) and .kit-inset (sunk). */
+@layer components {
+  .kit-btn {
+    --k-hi: var(--color-line-hi);
+    --k-lo: var(--color-void);
+    box-shadow:
+      inset 2px 2px 0 var(--k-hi),
+      inset -3px -3px 0 var(--k-lo),
+      0 4px 0 0 var(--color-void);
+    transition:
+      translate 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 160ms;
+  }
+
+  .kit-btn:not(:disabled):hover {
+    translate: 0 -2px;
+    box-shadow:
+      inset 2px 2px 0 var(--k-hi),
+      inset -3px -3px 0 var(--k-lo),
+      0 6px 0 0 var(--color-void);
+  }
+
+  .kit-btn:not(:disabled):active {
+    translate: 0 2px;
+    box-shadow:
+      inset 2px 2px 0 var(--k-lo),
+      inset -2px -2px 0 var(--k-hi),
+      0 2px 0 0 var(--color-void);
+  }
+
+  .kit-btn:disabled {
+    background: var(--color-inset);
+    color: var(--color-muted);
+    box-shadow: inset 2px 2px 0 var(--color-void);
+  }
+
+  .kit-gold {
+    --k-hi: var(--color-gold-hi);
+    --k-lo: var(--color-gold-dark);
+    background: linear-gradient(180deg, #ffd56e, #f2c14e 55%, #e0a83a);
+    color: var(--color-gold-ink);
+  }
+
+  .kit-arcane {
+    --k-hi: #a985ff;
+    --k-lo: #2a1066;
+    background: linear-gradient(180deg, #7a4cff, #6a3df0 55%, #5a2fd9);
+    color: #fff;
+  }
+
+  .kit-raised {
+    background: var(--color-raised);
+    color: var(--color-text);
+  }
+
+  .kit-raised:not(:disabled):hover {
+    background: #2c2354;
+  }
+
+  .kit-frame {
+    background: var(--color-panel);
+    border: 2px solid var(--color-void);
+    box-shadow:
+      inset 2px 2px 0 var(--color-line),
+      inset -2px -2px 0 var(--color-void),
+      6px 6px 0 0 rgb(5 3 14 / 0.9);
+  }
+
+  .kit-inset {
+    background: var(--color-inset);
+    border: 2px solid var(--color-void);
+    box-shadow:
+      inset 2px 2px 0 var(--color-void),
+      inset -2px -2px 0 #2a2250;
+  }
+}
+
+/* Boxed form fields (the ones drawn as bg-white boxes) sink into the panel and take the gold focus
+   ring, whatever focus style their classes ask for. Unlayered, so it wins over the utilities. */
+:is(input, textarea, select).bg-white {
+  background-color: var(--color-inset);
+  box-shadow: inset 2px 2px 0 var(--color-void);
+}
+
+:is(input, textarea, select).bg-white:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+:is(input, textarea).bg-white::placeholder {
+  color: color-mix(in srgb, var(--color-muted) 80%, transparent);
 }
