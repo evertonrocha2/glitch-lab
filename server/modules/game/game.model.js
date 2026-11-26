@@ -1,4 +1,4 @@
-import { ACERTO_POINTS_CAP, pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
+import { ACERTO_POINTS_CAP, ACERTOS_PER_POINT, pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
 import { DEFAULT_LOOK, normalizeLook } from '../../../shared/game/look.js'
 import { heroStats, power } from '../../../shared/game/stats.js'
 import { HUNT_WORLDS, zoneState } from '../../../shared/game/zones.js'
@@ -66,8 +66,6 @@ export const fighterOf = (hero, level) => ({
   potions: hero.potions,
   thresholds: hero.thresholds,
 })
-
-const ACERTOS_PER_POINT = 10
 
 // pendingStudy without its per-day breakdown (that's for recording claims).
 export const pendingTotals = ({ fragments, potions, chests, keys, honor }) => ({ fragments, potions, chests, keys, honor })

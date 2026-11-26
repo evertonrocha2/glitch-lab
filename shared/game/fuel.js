@@ -98,8 +98,10 @@ export function heroLevel(xp) {
 }
 
 export const ACERTO_POINTS_CAP = 30
+// Correct answers that earn one tree point (the Hero tab's quest card fills toward the next one).
+export const ACERTOS_PER_POINT = 10
 export const talentPoints = (level, totalCorrect) =>
-  level - 1 + Math.min(Math.floor(totalCorrect / 10), ACERTO_POINTS_CAP)
+  level - 1 + Math.min(Math.floor(totalCorrect / ACERTOS_PER_POINT), ACERTO_POINTS_CAP)
 
 export const DAILY_CAPS = { fragments: 150, potions: 6 }
 
