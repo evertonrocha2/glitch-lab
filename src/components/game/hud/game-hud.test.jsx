@@ -83,6 +83,11 @@ it('colors the hits the hero takes red and heals green', () => {
   expect(heal).toHaveAttribute('data-tone', 'good')
 })
 
+it('keeps the combat log visible but silent for screen readers', () => {
+  ui({ log: [{ t: 1, who: 'hero', type: 'hit', amount: 10 }] })
+  expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'off')
+})
+
 it('keeps the last 5 log events', () => {
   const log = Array.from({ length: 7 }, (_, i) => ({ t: i, who: 'hero', type: 'hit', amount: 10 + i }))
   ui({ log })

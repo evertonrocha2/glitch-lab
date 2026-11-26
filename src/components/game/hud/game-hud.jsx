@@ -156,8 +156,8 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         })}
       </ul>
 
-      {/* Empty, the log stays in place for screen readers but draws nothing. */}
-      <div role="log" aria-label={t('game.hud.log')} className={`${PANEL} bottom-[66px] left-2 w-[270px] max-w-[calc(100%-1rem)] text-[10px] ${events.length ? '' : 'opacity-0'}`}>
+      {/* Empty, the log stays in place for screen readers but draws nothing. aria-live off: it ticks all the time, so it is read on demand, never announced. */}
+      <div role="log" aria-live="off" aria-label={t('game.hud.log')} className={`${PANEL} bottom-[66px] left-2 w-[270px] max-w-[calc(100%-1rem)] text-[10px] ${events.length ? '' : 'opacity-0'}`}>
         <ul>
           {events.map((ev, i) => {
             const line = lineOf(ev)
