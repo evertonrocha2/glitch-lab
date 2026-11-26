@@ -43,6 +43,12 @@ describe('game items data', () => {
     expect(UNIQUES).toHaveLength(3)
     for (const u of UNIQUES) expect(typeof u.effect).toBe('string')
   })
+
+  it('keeps unique effect ids apart from the talent keystone ids', () => {
+    const talentEffects = ['bruteForce', 'strongTyping', 'recursion']
+    for (const u of UNIQUES) expect(talentEffects).not.toContain(u.effect)
+    expect(UNIQUES.map((u) => u.effect)).toEqual(['bugSplash', 'rootAccess', 'selfCall'])
+  })
 })
 
 describe('rollItem', () => {
@@ -179,6 +185,11 @@ describe('setBonuses', () => {
   it('gives chainBolt at 4 pieces', () => {
     const r = setBonuses([piece('helm'), piece('chest'), piece('boots'), piece('relic')])
     expect(r.effects).toContain('chainBolt')
+  })
+  it('dedupes effects', () => {
+    const u = UNIQUES[0]
+    const r = setBonuses([{ slot: u.slot, unique: u.id }, { slot: u.slot, unique: u.id }])
+    expect(r.effects).toEqual([u.effect])
   })
   it('gives nothing below 2 pieces and includes unique effects', () => {
     expect(setBonuses([piece('helm')]).effects).toEqual([])

@@ -97,7 +97,7 @@ export const SETS = [
 export const UNIQUES = [
   { id: 'excalibug', slot: 'weapon', base: 'espada', effect: 'bugSplash' },
   { id: 'amuleto-do-root', slot: 'amulet', base: 'amuleto', effect: 'rootAccess' },
-  { id: 'anel-recursivo', slot: 'ring', base: 'anel', effect: 'recursion' },
+  { id: 'anel-recursivo', slot: 'ring', base: 'anel', effect: 'selfCall' },
 ]
 
 export const GEMS = {
@@ -220,7 +220,7 @@ export const setBonuses = (equipped) => {
     const unique = item.unique && UNIQUES.find((u) => u.id === item.unique)
     if (unique) effects.push(unique.effect)
   }
-  return { ...total, effects }
+  return { ...total, effects: [...new Set(effects)] }
 }
 
 export const salvageValue = (item) => ({ scrap: SALVAGE[item.rarity] + (item.upgrade ?? 0) * 3 })
