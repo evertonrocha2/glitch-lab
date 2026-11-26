@@ -275,3 +275,19 @@ it('reads a View without study as x1.0', () => {
   ui({})
   expect(screen.getByRole('note', { name: /XP x1\.0/ })).toHaveAttribute('data-active', 'false')
 })
+
+it('names the talent and support log lines instead of printing their ids', () => {
+  const log = [
+    { who: 'hero', type: 'skill', skill: 'critBlast', amount: 10 },
+    { who: 'hero', type: 'skill', skill: 'rethrow', amount: 11 },
+    { who: 'hero', type: 'heal', skill: 'vampiro', amount: 12 },
+    { who: 'hero', type: 'skill', skill: 'bugSplash', amount: 13 },
+  ]
+  ui({ log })
+  const text = screen.getByRole('log').textContent
+  expect(text).toMatch(/Fatal Exception/)
+  expect(text).toMatch(/Rethrow/)
+  expect(text).toMatch(/Life Leech/)
+  expect(text).toMatch(/Bug Splash/)
+  expect(text).not.toMatch(/critBlast|rethrow|vampiro|bugSplash/)
+})

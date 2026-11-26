@@ -1,23 +1,26 @@
 import { useId, useRef, useState } from 'react'
 import { GEM_SALVAGE_SCRAP } from '../../../../shared/game/hunt.js'
-import { BAG_SIZE, MAX_POTION_BUY, POTION_PRICE, RARITIES, SLOTS, salvageValue } from '../../../../shared/game/items.js'
+import { BAG_SIZE, MAX_POTION_BUY, POTION_PRICE, RARITIES, SLOTS, SUPPORT_SALVAGE_SCRAP, salvageValue } from '../../../../shared/game/items.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { ItemPopover, ItemTip, cellIn, useItemPeek } from '../item-popover/item-popover.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
-import { useItemText } from '../item-tooltip/item-text.js'
+import { isGear, useItemText } from '../item-tooltip/item-text.js'
 import Frame, { Chip, SectionTitle } from '../ui/frame.jsx'
 import ItemCell, { EmptyCell } from './item-cell.jsx'
 import { ActionButton, ConfirmButton } from './panel-ui.jsx'
 
 // Scrap one bag item gives back (gear by rarity and upgrade, a gem a flat amount), as the server pays.
-export const scrapOf = (item) => (item.kind === 'gem' ? GEM_SALVAGE_SCRAP : salvageValue(item).scrap)
+export const scrapOf = (item) => (item.kind === 'support' ? SUPPORT_SALVAGE_SCRAP : item.kind === 'gem' ? GEM_SALVAGE_SCRAP : salvageValue(item).scrap)
 
-const rank = (item) => (item.kind === 'gem' ? -1 : RARITIES.indexOf(item.rarity))
-const byRarity = (a, b) => rank(b) - rank(a) || (b.ilvl ?? 0) - (a.ilvl ?? 0)
-const slotRank = (item) => (item.kind === 'gem' ? SLOTS.length : SLOTS.indexOf(item.slot))
+// Gear first; then gems, then support gems (each kept in its server order: sort is stable).
+const FAMILY = { gem: 1, support: 2 }
+const family = (item) => FAMILY[item.kind] ?? 0
+const rank = (item) => (isGear(item) ? RARITIES.indexOf(item.rarity) : -1)
+const byRarity = (a, b) => family(a) - family(b) || rank(b) - rank(a) || (b.ilvl ?? 0) - (a.ilvl ?? 0)
+const slotRank = (item) => (isGear(item) ? SLOTS.indexOf(item.slot) : SLOTS.length)
 const SORTS = {
   rarity: byRarity,
-  slot: (a, b) => slotRank(a) - slotRank(b) || byRarity(a, b),
+  slot: (a, b) => family(a) - family(b) || slotRank(a) - slotRank(b) || byRarity(a, b),
 }
 
 // The Bolsa tab: the 60-cell grid (sorted by rarity or slot), a tooltip on hover or focus, a popover
@@ -40,7 +43,7 @@ export default function BagTab({ view, actions, runner, onSelect, onForge }) {
   const items = view.hero.items.filter((item) => !item.equipped).sort(SORTS[sort])
   const selected = picking ? undefined : items.find((item) => item.id === openId)
   const peeked = selected ? undefined : items.find((item) => item.id === tip.id)
-  const wornIn = (item) => (item.kind === 'gear' ? worn.find((each) => each.equipped === item.slot) : undefined)
+  const wornIn = (item) => (isGear(item) ? worn.find((each) => each.equipped === item.slot) : undefined)
   // Opening one also selects it for the panel, so the Forge tab starts on it.
   const show = (id) => {
     setOpenId(id)
@@ -56,7 +59,7 @@ export default function BagTab({ view, actions, runner, onSelect, onForge }) {
   const togglePick = (id) => setPicked((now) => (now.includes(id) ? now.filter((each) => each !== id) : [...now, id]))
   // One click picks every bag item of a rarity (only the lower three: nobody bulk-salvages epics),
   // a second click lets them all go.
-  const rarityIds = (rarity) => items.filter((item) => item.kind === 'gear' && item.rarity === rarity).map((item) => item.id)
+  const rarityIds = (rarity) => items.filter((item) => isGear(item) && item.rarity === rarity).map((item) => item.id)
   const quickRarities = QUICK_RARITIES.filter((rarity) => rarityIds(rarity).length > 0)
   const allPicked = (rarity) => rarityIds(rarity).every((id) => picked.includes(id))
   const toggleRarity = (rarity) => {
@@ -160,12 +163,12 @@ export default function BagTab({ view, actions, runner, onSelect, onForge }) {
         <ItemPopover key={selected.id} label={text.name(selected)} anchor={cellIn(grid, selected.id)} closeLabel={t('gamePopover.close')} onClose={() => setOpenId(null)}>
           <ItemTooltip item={selected} equipped={wornIn(selected)} worn={worn} />
           <div className="flex flex-wrap gap-1.5">
-            {selected.kind === 'gear' && (
+            {isGear(selected) && (
               <ActionButton busy={runner.busy} tone="gold" onClick={() => runner.run(() => actions.equipItem(selected.id))}>
                 {t('game.act.equip')}
               </ActionButton>
             )}
-            {selected.kind === 'gear' && (
+            {isGear(selected) && (
               <ActionButton busy={runner.busy} onClick={() => onForge(selected.id)}>
                 {t('game.act.forge')}
               </ActionButton>

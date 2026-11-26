@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { GEMS, itemStats } from '../../../../shared/game/items.js'
-import { RARITY_COLORS, statDiff, useItemText } from '../item-tooltip/item-text.js'
+import { RARITY_COLORS, gemColors, isGear, statDiff, useItemText } from '../item-tooltip/item-text.js'
 import { ActionButton } from '../panel/panel-ui.jsx'
 import Frame, { Chip } from '../ui/frame.jsx'
 import { RARITY_TRIM } from '../ui/tokens.js'
@@ -15,8 +15,6 @@ import { boxOf, placeBeside } from './place.js'
 const WIDE = '(min-width: 1024px)'
 const POPOVER_WIDTH = 288
 const TIP_WIDTH = 216
-const GEM_TRIM = '#4fd1c5'
-const GEM_TEXT = '#7fe9ff'
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 // True from 1024px up. Without matchMedia (tests) it answers true.
@@ -207,10 +205,13 @@ export function ItemTip({ id, item, anchor, equipped, worn = false, hint }) {
   const box = useRef(null)
   const { side, style } = usePlacement(anchor, box, TIP_WIDTH, 6)
   const isGem = item.kind === 'gem'
-  const trim = isGem ? GEM_TRIM : (RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common)
-  const color = isGem ? GEM_TEXT : (RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common).text
-  const stats = Object.entries(isGem ? (GEMS[item.gem] ?? {}) : itemStats(item)).filter(([, value]) => value)
-  const diffs = !isGem && !worn && equipped && equipped.id !== item.id ? statDiff(item, equipped) : null
+  const isSupport = item.kind === 'support'
+  const gear = isGear(item)
+  const colors = gemColors(item)
+  const trim = colors?.border ?? RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common
+  const color = colors?.text ?? (RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common).text
+  const stats = gear ? Object.entries(itemStats(item)).filter(([, value]) => value) : Object.entries(isGem ? (GEMS[item.gem] ?? {}) : {}).filter(([, value]) => value)
+  const diffs = gear && !worn && equipped && equipped.id !== item.id ? statDiff(item, equipped) : null
 
   return createPortal(
     <Frame
@@ -225,12 +226,13 @@ export function ItemTip({ id, item, anchor, equipped, worn = false, hint }) {
       <b className="font-pixel text-[11px] font-normal leading-tight" style={{ color }}>
         {text.name(item)}
       </b>
-      <small className="text-[10px] text-[#a89fd0]">{isGem ? t('game.item.gem') : text.line(item)}</small>
+      <small className="text-[10px] text-[#a89fd0]">{isSupport ? t('game.item.supportKind') : isGem ? t('game.item.gem') : text.line(item)}</small>
       {worn && (
         <span>
           <Chip tone="ok">{t('game.item.equipped')}</Chip>
         </span>
       )}
+      {isSupport && <p className="m-0 text-white">{text.supportDesc(item)}</p>}
       {stats.length > 0 && (
         <ul className="m-0 list-none p-0 text-white">
           {stats.map(([stat, value]) => (
@@ -255,7 +257,7 @@ export function ItemTip({ id, item, anchor, equipped, worn = false, hint }) {
           )}
         </div>
       )}
-      {!isGem && !worn && !equipped && <small className="text-[10px] text-[#6fe39a]">{t('gamePopover.freeSlot')}</small>}
+      {gear && !worn && !equipped && <small className="text-[10px] text-[#6fe39a]">{t('gamePopover.freeSlot')}</small>}
       {hint && <small className="text-[10px] text-[#9a93b8]">{hint}</small>}
     </Frame>,
     document.body,

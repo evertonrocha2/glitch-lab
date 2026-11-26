@@ -3,6 +3,7 @@ import { CHANCE, RATE } from '../../../../shared/game/combat-effects.js'
 import { AFFIXES, BASES, GEMS, STATS_KEYS, itemStats } from '../../../../shared/game/items.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { capitalize } from '../../../lib/i18n/format.js'
+import { modText, supportColor, supportIcon } from '../panel/support-gem.js'
 
 // Labels and colors for items, shared by the tooltip and the panel tabs. Ids come from
 // shared/game/items.js, every word from the game.* messages.
@@ -30,7 +31,13 @@ const EFFECT_VARS = {
   selfCall: { chance: pct(CHANCE.selfCall) },
 }
 
-export const iconOf = (item) => (item.kind === 'gem' ? 'gem' : (BASE_BY_ID[item.base]?.icon ?? 'bag'))
+// Gems and support gems are not gear: no base, no affixes, no slot, nothing to compare.
+export const isGear = (item) => item.kind !== 'gem' && item.kind !== 'support'
+
+export const iconOf = (item) => (item.kind === 'support' ? supportIcon(item.support) : item.kind === 'gem' ? 'gem' : (BASE_BY_ID[item.base]?.icon ?? 'bag'))
+
+// Border and text color of a gem or support gem; undefined for gear (its rarity decides).
+export const gemColors = (item) => (item.kind === 'support' ? { border: supportColor(item.support), text: supportColor(item.support) } : item.kind === 'gem' ? { border: '#4fd1c5', text: '#7fe9ff' } : undefined)
 
 // The item's stats minus the other's, stat by stat in STATS_KEYS order, zeros left out.
 export function statDiff(item, other) {
@@ -59,6 +66,7 @@ export function useItemText() {
 
     const plainName = (item) => {
       if (item.kind === 'gem') return gemName(item.gem)
+      if (item.kind === 'support') return t(`game.support.${item.support}`)
       if (item.unique) return t(`game.unique.${item.unique}`)
       const base = t(`game.base.${item.base}`)
       return item.set ? t('game.item.setName', { base, set: t(`game.set.${item.set}`) }) : base
@@ -77,8 +85,9 @@ export function useItemText() {
     const affixLine = (affix) => statLine(AFFIX_BY_ID[affix.id]?.stat, affix.value)
     const affixNamed = (affix) => t('game.item.affixName', { affix: t(`game.affix.${affix.id}`), line: affixLine(affix) })
     const effect = (id) => t(`game.effect.${id}`, EFFECT_VARS[id])
-    const cellLabel = (item) => (item.kind === 'gem' ? name(item) : t('game.item.cell', { name: name(item), rarity: rarity(item.rarity) }))
+    const supportDesc = (item) => modText(t, (value) => num.format(value)).desc('support', item.support)
+    const cellLabel = (item) => (!isGear(item) ? name(item) : t('game.item.cell', { name: name(item), rarity: rarity(item.rarity) }))
 
-    return { t, locale, num, number: (value) => num.format(value), signed, statName, statLine, statsLine, gemName, gemLine, rarity, name, line, affixLine, affixNamed, effect, cellLabel }
+    return { t, locale, num, number: (value) => num.format(value), signed, statName, statLine, statsLine, gemName, gemLine, rarity, name, line, affixLine, affixNamed, effect, supportDesc, cellLabel }
   }, [t, locale])
 }

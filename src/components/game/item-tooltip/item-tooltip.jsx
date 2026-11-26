@@ -2,9 +2,7 @@ import { useId } from 'react'
 import { GEMS, SETS, UNIQUES, itemStats } from '../../../../shared/game/items.js'
 import GameIcon from '../icons/game-icon.jsx'
 import Frame from '../ui/frame.jsx'
-import { RARITY_COLORS, iconOf, statDiff, useItemText } from './item-text.js'
-
-const GEM_COLOR = { border: '#4fd1c5', text: '#7fe9ff' }
+import { RARITY_COLORS, gemColors, iconOf, statDiff, useItemText } from './item-text.js'
 
 // The item card (the mockup's .tip), a Frame whose bevel wears the rarity color: name in that color, "Epic relic, item level 14", base stats
 // (with the upgrade bonus), affixes, sockets, set progress, the unique effect and a compare line.
@@ -15,7 +13,8 @@ export default function ItemTooltip({ item, equipped, worn = [], className = '' 
   const { t } = text
   const headId = useId()
   const isGem = item.kind === 'gem'
-  const colors = isGem ? GEM_COLOR : (RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common)
+  const isSupport = item.kind === 'support'
+  const colors = gemColors(item) ?? RARITY_COLORS[item.rarity] ?? RARITY_COLORS.common
   const name = text.name(item)
 
   return (
@@ -33,11 +32,20 @@ export default function ItemTooltip({ item, equipped, worn = [], className = '' 
           <b id={headId} className="block font-pixel text-[12px] font-normal leading-tight" style={{ color: colors.text }}>
             {name}
           </b>
-          <small className="text-[#a89fd0]">{isGem ? t('game.item.gem') : text.line(item)}</small>
+          <small className="text-[#a89fd0]">{isGem ? t('game.item.gem') : isSupport ? t('game.item.supportKind') : text.line(item)}</small>
         </div>
       </div>
-      {isGem ? <GemBody item={item} text={text} /> : <GearBody item={item} equipped={equipped} worn={worn} text={text} />}
+      {isSupport ? <SupportBody item={item} text={text} /> : isGem ? <GemBody item={item} text={text} /> : <GearBody item={item} equipped={equipped} worn={worn} text={text} />}
     </Frame>
+  )
+}
+
+function SupportBody({ item, text }) {
+  return (
+    <>
+      <p className="m-0 mb-1 text-white">{text.supportDesc(item)}</p>
+      <p className="m-0 text-[#a89fd0]">{text.t('game.item.supportHint')}</p>
+    </>
   )
 }
 
