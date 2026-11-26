@@ -1,5 +1,5 @@
 import { SLOTS } from '../../../shared/game/items.js'
-import { SKILLS, skillUpgradeCost } from '../../../shared/game/skills.js'
+import { LOADOUT_SIZE, MAX_THRESHOLD, SKILLS, skillUpgradeCost } from '../../../shared/game/skills.js'
 import { RESPEC_GOLD_PER_POINT, TALENTS, canAllocate } from '../../../shared/game/talents.js'
 import { badRequest, detailedBadRequest } from '../../core/errors.js'
 import { isId } from '../../core/validation.js'
@@ -9,8 +9,6 @@ import { act, bagFree, gearOf, isIntIn, spend } from './game.service.js'
 // The hero's build: gear, talents, skills, loadout and look. Every action runs through act, so a
 // running hunt is paid with the old build first and goes on with the new one.
 
-const LOADOUT_SIZE = 4
-const MAX_THRESHOLD = 0.9
 const LOOK_FIELDS = ['hood', 'outfit', 'hair']
 const LOOK_MAX = 7
 

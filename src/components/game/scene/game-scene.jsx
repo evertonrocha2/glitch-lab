@@ -1,38 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { isSolid } from '../../../../shared/world/tiles.js'
 import { useT } from '../../../lib/i18n/I18nProvider.jsx'
+import { useReducedMotion } from '../use-reduced-motion.js'
 import { drawEnemy, drawHero, enemyLight, heroLight, isBossSprite } from './actors.js'
 import { floaterAnchor, paintFloaters } from './floaters.js'
 import { paintLight } from './light.js'
 import { BOSS_SPEED, duration, HUNT_SPEED, sample, timeline, WALK_MS } from './playback.js'
 import { mapLights, paintAnimated, paintBase, paintFog, readMap, TS } from './tiles.js'
-
-const REDUCE = '(prefers-reduced-motion: reduce)'
-
-function reducedNow() {
-  try {
-    return Boolean(window.matchMedia?.(REDUCE).matches)
-  } catch {
-    return false
-  }
-}
-
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(reducedNow)
-  useEffect(() => {
-    let query = null
-    try {
-      query = window.matchMedia?.(REDUCE) ?? null
-    } catch {
-      query = null
-    }
-    if (!query?.addEventListener) return undefined
-    const onChange = () => setReduced(Boolean(query.matches))
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
-  }, [])
-  return reduced
-}
 
 const sameRect = (a, b) => a && b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h
 

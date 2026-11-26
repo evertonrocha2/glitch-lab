@@ -3,6 +3,9 @@
 // power: a damage multiplier of attack for hit, per second for dot, a share of max hp for shield and heal,
 // a share of attack speed for buff.
 export const MAX_SKILL_LEVEL = 5
+// The loadout has four slots; a potion threshold is a share of max hp or mana, up to 90%.
+export const LOADOUT_SIZE = 4
+export const MAX_THRESHOLD = 0.9
 const UPGRADE_FRAGMENTS = 40
 const UPGRADE_POWER = 0.15
 
