@@ -1,5 +1,6 @@
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { rerollCost, upgradeCost } from '../../../../shared/game/items.js'
+import { ItemTip, cellIn, useItemPeek } from '../item-popover/item-popover.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
 import Frame, { SectionTitle } from '../ui/frame.jsx'
@@ -28,7 +29,8 @@ const shortOf = (t, costs) => {
 }
 
 // The Forja tab: the selected gear (worn or in the bag) with Upgrade, Reroll, Socket and Salvage.
-// Every cost comes from shared/game/items.js, so the numbers match what the server charges.
+// Every cost comes from shared/game/items.js, so the numbers match what the server charges. The
+// picker's cells show the hover tooltip; a click picks (the forge itself is the item's full view).
 export default function ForgeTab({ view, actions, runner, selectedId, onSelect }) {
   const text = useItemText()
   const { t } = text
@@ -37,18 +39,24 @@ export default function ForgeTab({ view, actions, runner, selectedId, onSelect }
   const worn = gear.filter((item) => item.equipped)
   const selected = gear.find((item) => item.id === selectedId)
   const [choosing, setChoosing] = useState(false)
+  const picker = useRef(null)
+  const tip = useItemPeek()
+  const peeked = gear.find((item) => item.id === tip.id)
+  const wornIn = (item) => worn.find((each) => each.equipped === item.slot)
 
   if (!selected || choosing) {
     return (
       <>
         <SectionTitle id={pickId}>{t('game.forge.pick')}</SectionTitle>
-        <ul aria-labelledby={pickId} className="m-0 grid list-none grid-cols-6 gap-1 p-0">
+        <ul ref={picker} aria-labelledby={pickId} className="m-0 grid list-none grid-cols-6 gap-1 p-0">
           {gear.map((item) => (
             <li key={item.id}>
               <ItemCell
                 item={item}
                 label={text.cellLabel(item)}
                 selected={item.id === selectedId}
+                onPeek={(on) => tip.peek(item.id, on)}
+                describedBy={item.id === peeked?.id ? tip.tipId : undefined}
                 onClick={() => {
                   onSelect(item.id)
                   setChoosing(false)
@@ -57,6 +65,9 @@ export default function ForgeTab({ view, actions, runner, selectedId, onSelect }
             </li>
           ))}
         </ul>
+        {peeked && (
+          <ItemTip id={tip.tipId} item={peeked} anchor={cellIn(picker, peeked.id)} equipped={wornIn(peeked)} worn={Boolean(peeked.equipped)} hint={t('gamePopover.hintForge')} />
+        )}
       </>
     )
   }
