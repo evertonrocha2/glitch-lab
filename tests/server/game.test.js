@@ -109,11 +109,25 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
   expect(synced.hero.hunt).toMatchObject({ zone: 'z1', startedAt: Date.now(), claims: 1 })
 })
 
-it('pays nothing and sets no away for a short hunt', async () => {
-  await post('/hunt', { world: FOREST, zone: 'z1', difficulty: 'normal' })
-  later(60_000)
-  const synced = await bodyOf(await post('/sync'))
-  expect(synced.away).toBeUndefined()
+it('leaves a hunt under 5 minutes running and unsaved on sync, then settles it at 6 minutes', async () => {
+  const started = await bodyOf(await post('/hunt', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
+  const { version } = await store.getGameHero('alice')
+  for (const minute of [1, 2]) {
+    later(60_000)
+    const synced = await bodyOf(await post('/sync'))
+    expect(synced.away, `minute ${minute}`).toBeUndefined()
+    expect(synced.hero.gold).toBe(0)
+    expect(synced.hero.hunt).toEqual(started.hero.hunt)
+    expect(synced.huntPreview.elapsedMs).toBe(minute * 60_000)
+    // Nothing changed, so nothing was written.
+    expect((await store.getGameHero('alice')).version).toBe(version)
+  }
+  later(4 * 60_000)
+  const settled = await bodyOf(await post('/sync'))
+  expect(settled.away.elapsedMs).toBe(6 * 60_000)
+  expect(settled.hero.gold).toBe(settled.away.gold)
+  expect(settled.hero.hunt).toMatchObject({ startedAt: Date.now(), claims: 1 })
+  expect((await store.getGameHero('alice')).version).toBe(version + 1)
 })
 
 it('stops a hunt after settling it', async () => {
@@ -216,6 +230,14 @@ it('refuses a boss above the hero level, and records a win with its loot', async
   const loot = body.hero.items.filter((item) => !item.equipped)
   expect(loot.map((item) => item.kind).sort()).toEqual(['gear', 'gem'])
   expect(body.fight.loot).toMatchObject({ items: 1, gems: 1, goldLost: 0 })
+
+  // Only the first win pays: a beaten boss fought again drops nothing.
+  const again = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
+  expect(again.fight.won).toBe(true)
+  expect(again.fight.log.length).toBeGreaterThan(0)
+  expect(again.fight.loot).toEqual({ items: 0, gems: 0, scrap: 0, goldLost: 0 })
+  expect(again.hero.items).toEqual(body.hero.items)
+  expect(again.hero.progress[FOREST].normal).toEqual(['z1'])
 })
 
 it('takes 10% of the gold when an Inferno boss wins', async () => {

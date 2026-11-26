@@ -19,12 +19,16 @@ const INFERNO_GOLD_LOSS = 0.1
 
 export const gameConflict = () => codedConflict(MESSAGES.conflict, 'GAME_CONFLICT')
 
+// What fn answers when it changed nothing: mutate then skips the save.
+export const NO_CHANGE = Symbol('no change')
+
 // Every write: load the hero (or a new one), let fn change a copy, save it under the loaded version.
 // Two tabs that read the same version can't both save: the second gets a 409.
 export async function mutate(store, userId, fn) {
   const loaded = await store.getGameHero(userId)
   const hero = withDefaults(structuredClone(loaded?.data ?? newHero()))
   const extra = await fn(hero)
+  if (extra === NO_CHANGE) return { hero, extra: {} }
   const saved = await store.saveGameHero(userId, hero, loaded?.version ?? 0)
   if (!saved) throw gameConflict()
   return { hero: withDefaults(saved.data), extra }
@@ -61,6 +65,11 @@ function huntResult(hero, level, now) {
     bagFree: bagFree(hero),
   })
 }
+
+// sync pays a hunt only after AWAY_MIN_MS: settling every minute would throw away each partial fight
+// cycle and every elite under 10 kills. A start in the future is settled at once (it pays 0 and
+// restarts the hunt from now).
+const dueForSync = (hunt, now) => Boolean(hunt) && (now - hunt.startedAt >= AWAY_MIN_MS || now < hunt.startedAt)
 
 const previewOf = (result) => (result ? { elapsedMs: result.elapsedMs, kills: result.kills, gold: result.gold } : null)
 
@@ -130,13 +139,16 @@ export async function getGame(store, user, today) {
   return viewOf(withDefaults(loaded?.data ?? newHero()), ctx)
 }
 
-// Pays the running hunt (and keeps it going) and claims every pending study reward.
+// Pays the running hunt once it ran AWAY_MIN_MS (and keeps it going) and claims every pending
+// study reward. When neither happens nothing is saved, so an idle player's polling never writes.
 export async function sync(store, user, today) {
   const ctx = await context(store, user, today)
-  const { hero, extra } = await mutate(store, user.id, (draft) => ({
-    away: settle(draft, ctx.fuel.level.level, ctx.now, { keep: true }),
-    studyClaimed: claimStudy(draft, ctx.fuel.ledger),
-  }))
+  const { hero, extra } = await mutate(store, user.id, (draft) => {
+    const due = dueForSync(draft.hunt, ctx.now)
+    const away = due ? settle(draft, ctx.fuel.level.level, ctx.now, { keep: true }) : undefined
+    const studyClaimed = claimStudy(draft, ctx.fuel.ledger)
+    return due || studyClaimed ? { away, studyClaimed } : NO_CHANGE
+  })
   return withExtra(viewOf(hero, ctx), extra)
 }
 
@@ -178,8 +190,9 @@ function stash(hero, drop) {
   return false
 }
 
-// One boss fight, simulated here. A win marks the zone beaten and drops 1 item (rarity boost +1)
-// and 1 gem; an Inferno loss costs 10% of the gold; potions drunk are gone either way.
+// One boss fight, simulated here. The first win per world, difficulty and zone marks the zone beaten
+// and drops 1 item (rarity boost +1) and 1 gem; later wins pay nothing, so a script can't farm the
+// boss. An Inferno loss costs 10% of the gold; potions drunk are gone either way.
 export async function fightBoss(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
@@ -197,13 +210,15 @@ export async function fightBoss(store, user, today, body) {
     if (result.won) {
       const worldProgress = (draft.progress[target.world] ??= {})
       const beaten = (worldProgress[target.difficulty] ??= [])
-      if (!beaten.includes(target.zone)) beaten.push(target.zone)
-      const diff = DIFFICULTIES[target.difficulty]
-      const rng = root.fork('drops')
-      const scrapBefore = draft.scrap
-      if (stash(draft, rollItem(rng, { ilvl: target.def.ilvl + diff.ilvl, rarityBoost: diff.rarityBoost + 1 }))) loot.items++
-      if (stash(draft, rollGem(rng))) loot.gems++
-      loot.scrap = draft.scrap - scrapBefore
+      if (!beaten.includes(target.zone)) {
+        beaten.push(target.zone)
+        const diff = DIFFICULTIES[target.difficulty]
+        const rng = root.fork('drops')
+        const scrapBefore = draft.scrap
+        if (stash(draft, rollItem(rng, { ilvl: target.def.ilvl + diff.ilvl, rarityBoost: diff.rarityBoost + 1 }))) loot.items++
+        if (stash(draft, rollGem(rng))) loot.gems++
+        loot.scrap = draft.scrap - scrapBefore
+      }
     } else if (target.difficulty === 'inferno') {
       loot.goldLost = Math.floor(draft.gold * INFERNO_GOLD_LOSS)
       draft.gold -= loot.goldLost
