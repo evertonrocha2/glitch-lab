@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { zoneAt } from '../../../shared/world/map.js'
 import { worldById } from '../../../shared/world/worlds.js'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import { SETTLE_MS } from '../world/use-auto-hunt.js'
@@ -58,9 +59,9 @@ describe('roads', () => {
     await tap('ArrowLeft')
     expect(place()).toBe('laboratorio 0 13')
     await act(() => vi.advanceTimersByTimeAsync(FADE_MS))
-    expect(place()).toBe('floresta-js 30 11')
+    expect(place()).toBe('floresta-js 46 16')
     expect(onWorldChange).toHaveBeenCalledWith('floresta-js')
-    expect(onSave).toHaveBeenLastCalledWith({ world: 'floresta-js', x: 30, y: 11 }, { keepalive: false })
+    expect(onSave).toHaveBeenLastCalledWith({ world: 'floresta-js', x: 46, y: 16 }, { keepalive: false })
     expect(status()).toContain('Você entrou em Floresta do JavaScript')
     expect(scene()).toHaveAccessibleName('Glitch World: Floresta do JavaScript, Clareira')
   })
@@ -68,7 +69,7 @@ describe('roads', () => {
   it('swaps the region at once, with no fade, under reduced motion', async () => {
     window.matchMedia = (query) => ({ matches: query.includes('reduce') || query.includes('min-width'), media: query, addEventListener() {}, removeEventListener() {} })
     try {
-      ui({ start: { world: 'floresta-js', x: 30, y: 10 } })
+      ui({ start: { world: 'floresta-js', x: 46, y: 15 } })
       await screen.findByRole('tablist')
       await tap('ArrowRight')
       expect(place()).toBe('laboratorio 1 12')
@@ -122,7 +123,7 @@ describe('hunting where the hero stands', () => {
 
   it('stops the hunt when the hero walks back into town', async () => {
     const api = makeApi(makeView({ hunt: HUNT }))
-    ui({ api, start: { world: 'floresta-js', x: 30, y: 10 } })
+    ui({ api, start: { world: 'floresta-js', x: 46, y: 15 } })
     await screen.findByRole('tablist')
     await tap('ArrowRight')
     await act(() => vi.advanceTimersByTimeAsync(FADE_MS))
@@ -135,7 +136,7 @@ describe('hunting where the hero stands', () => {
 
   it('moves the hunt to the next zone, on the picked difficulty', async () => {
     const api = makeApi(makeView({ hunt: HUNT, level: 30 }))
-    ui({ api, start: { world: 'floresta-js', x: 22, y: 10 } })
+    ui({ api, start: { world: 'floresta-js', x: 32, y: 23 } })
     await screen.findByRole('tablist')
     fireEvent.click(screen.getByRole('tab', { name: /Mundo/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Pesadelo' }))
@@ -149,7 +150,7 @@ describe('hunting where the hero stands', () => {
   it('pauses the hunt by hand until the hero leaves the zone', async () => {
     const api = makeApi(makeView({ hunt: HUNT }))
     api.stopHunt.mockResolvedValue(makeView())
-    ui({ api, start: { world: 'floresta-js', x: 29, y: 10 } })
+    ui({ api, start: { world: 'floresta-js', x: 44, y: 15 } })
     await screen.findByRole('tablist')
     fireEvent.click(screen.getByRole('tab', { name: /Mundo/ }))
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Pausar a caça aqui' })))
@@ -169,7 +170,7 @@ describe('hunting where the hero stands', () => {
   })
 
   it('names the zone and what an hour there pays when the hero walks in', async () => {
-    ui({ start: { world: 'floresta-js', x: 29, y: 10 } })
+    ui({ start: { world: 'floresta-js', x: 44, y: 15 } })
     await screen.findByRole('tablist')
     expect(status()).toMatch(/Clareira · Tier 1/)
     expect(status()).toMatch(/Nível 1 · ~[\d.]+ XP\/h/)
@@ -262,13 +263,13 @@ describe('startPlace', () => {
   const town = { world: 'laboratorio', x: 16, y: 8 }
   it('keeps the saved place without a hunt, or when the hero already stands in its zone', () => {
     expect(startPlace(town, makeView(), 'pt-BR')).toBe(town)
-    const inZone = { world: 'floresta-js', x: 29, y: 10 }
+    const inZone = { world: 'floresta-js', x: 44, y: 15 }
     expect(startPlace(inZone, makeView({ hunt: HUNT }), 'pt-BR')).toBe(inZone)
   })
   it('moves the hero into the hunted zone otherwise', () => {
     const at = startPlace(town, makeView({ hunt: { ...HUNT, zone: 'z3' } }), 'pt-BR')
     expect(at.world).toBe('floresta-js')
-    expect(at.x).toBeLessThan(11)
+    expect(zoneAt(worldById('floresta-js'), at.x, at.y)?.id).toBe('z3')
   })
   it('leaves a hunt in a hidden ENEM region alone (the town stops it)', () => {
     const hunt = { ...HUNT, world: 'biblioteca-linguagens' }

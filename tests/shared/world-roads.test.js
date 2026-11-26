@@ -101,18 +101,18 @@ describe('roads on the maps', () => {
 describe('arrival', () => {
   it('enters the Forest from the town west gate one tile in, at the matching road tile, facing on', () => {
     const town = worldById(HUB_ID)
-    expect(arrival(town, 0, 11)).toEqual({ world: 'floresta-js', x: 30, y: 9, facing: 'left' })
-    expect(arrival(town, 0, 13)).toEqual({ world: 'floresta-js', x: 30, y: 11, facing: 'left' })
+    expect(arrival(town, 0, 11)).toEqual({ world: 'floresta-js', x: 46, y: 14, facing: 'left' })
+    expect(arrival(town, 0, 13)).toEqual({ world: 'floresta-js', x: 46, y: 16, facing: 'left' })
   })
 
   it('goes back to the town gate it came from', () => {
     const forest = worldById('floresta-js')
-    expect(arrival(forest, 31, 10)).toEqual({ world: HUB_ID, x: 1, y: 12, facing: 'right' })
+    expect(arrival(forest, 47, 15)).toEqual({ world: HUB_ID, x: 1, y: 12, facing: 'right' })
   })
 
   it('climbs from the Forest north road into the Cave south road', () => {
-    expect(arrival(worldById('floresta-js'), 5, 0)).toEqual({ world: 'caverna-sql', x: 5, y: 18, facing: 'up' })
-    expect(arrival(worldById('caverna-sql'), 6, 19)).toEqual({ world: 'floresta-js', x: 6, y: 1, facing: 'down' })
+    expect(arrival(worldById('floresta-js'), 7, 0)).toEqual({ world: 'caverna-sql', x: 5, y: 18, facing: 'up' })
+    expect(arrival(worldById('caverna-sql'), 6, 19)).toEqual({ world: 'floresta-js', x: 8, y: 1, facing: 'down' })
   })
 
   it('lands on a walkable tile that is not itself a road, for every road and offset', () => {

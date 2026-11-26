@@ -19,9 +19,9 @@ describe('stageOffset: the camera follows the hero', () => {
   })
   it('stops at the map edges', () => {
     expect(stageOffset(FLORESTA_JS, { x: 0, y: 0 }, crop)).toEqual({ left: -0, top: -0 })
-    const end = stageOffset(FLORESTA_JS, { x: 31, y: 19 }, crop)
-    expect(end.left).toBeCloseTo((-(32 - 16) / 16) * 100)
-    expect(end.top).toBeCloseTo((-(20 - 10) / 10) * 100)
+    const end = stageOffset(FLORESTA_JS, { x: 47, y: 31 }, crop)
+    expect(end.left).toBeCloseTo((-(48 - 16) / 16) * 100)
+    expect(end.top).toBeCloseTo((-(32 - 10) / 10) * 100)
   })
   it('snaps to whole art pixels so the pixel art stays crisp', () => {
     const at = stageOffset(FLORESTA_JS, { x: 10.013, y: 8.5 }, crop)

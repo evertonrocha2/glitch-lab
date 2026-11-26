@@ -79,6 +79,14 @@ it('sends a hero standing somewhere no longer valid back to a spawn', async () =
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
 })
 
+it('sends a hero saved on a tile of the old 32x20 Forest that is solid on the 48x32 one to its spawn', async () => {
+  // (31, 10) was the Forest's east road; it is the tree line between the clearing and the roots now.
+  const forest = worldById('floresta-js')
+  expect(forest.rows[10][31]).toBe('T')
+  await store.saveWorldPosition('alice', { world: 'floresta-js', x: 31, y: 10 })
+  expect((await world()).position).toEqual(spawnOf('floresta-js'))
+})
+
 it('asks to sign in', async () => {
   expect((await get(null)).status).toBe(401)
   expect((await put({ world: 'laboratorio', x: 9, y: 7 }, null)).status).toBe(401)

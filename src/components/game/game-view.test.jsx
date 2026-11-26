@@ -16,7 +16,7 @@ const CLAIMED = { fragments: 120, potions: 0, chests: [{ day: '2026-11-25', boos
 const HUNT = { world: 'floresta-js', zone: 'z1', difficulty: 'normal', startedAt: 0, claims: 0 }
 // The town square (safe: no hunt starts there) and the Forest's clearing (z1).
 const TOWN = { world: 'laboratorio', x: 16, y: 8 }
-const CLEARING = { world: 'floresta-js', x: 29, y: 10 }
+const CLEARING = { world: 'floresta-js', x: 44, y: 15 }
 const SCENE = { name: /^Glitch World: / }
 
 function makeApi(view = makeView()) {
