@@ -122,9 +122,9 @@ it('hunts while away and pays on sync, and keeps the hunt going', async () => {
   expect(samples.map((fight) => fight.enemy.elite)).toEqual([false, false, true])
   expect(synced.hero.lastAway).toEqual(synced.away)
   expect(Object.keys(synced.away).sort()).toEqual([
-    'deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'xp', 'xpMultiplier',
+    'deaths', 'elapsedMs', 'elites', 'gems', 'gold', 'items', 'kills', 'levelsGained', 'scrap', 'supports', 'xp', 'xpMultiplier',
   ])
-  expect(synced.hero.items.length).toBe(synced.away.items + synced.away.gems)
+  expect(synced.hero.items.length).toBe(synced.away.items + synced.away.gems + synced.away.supports)
   expect(synced.hero.hunt).toMatchObject({ zone: 'z1', startedAt: Date.now(), claims: 1 })
 })
 
@@ -266,8 +266,9 @@ it('records a boss win with its loot', async () => {
   expect(body.hero.progress[FOREST].normal).toEqual(['z1'])
   expect(body.zones[FOREST].normal.find((zone) => zone.id === 'z1').beaten).toBe(true)
   const loot = body.hero.items.filter((item) => !item.equipped)
-  expect(loot.map((item) => item.kind).sort()).toEqual(['gear', 'gem'])
-  expect(body.fight.loot).toMatchObject({ items: 1, gems: 1, goldLost: 0 })
+  // Fase 2c: the first win also drops a support gem, for sure.
+  expect(loot.map((item) => item.kind).sort()).toEqual(['gear', 'gem', 'support'])
+  expect(body.fight.loot).toMatchObject({ items: 1, gems: 1, supports: 1, goldLost: 0 })
   // The first win pays XP, times today's multiplier (8 gym passes: x1.8).
   expect(body.fight.loot.xp).toBe(bossXp(ZONES[FOREST].z1, 'normal', 1.8))
   expect(body.level.xp).toBe(ready.level.xp + body.fight.loot.xp)
@@ -277,7 +278,7 @@ it('records a boss win with its loot', async () => {
   const again = await bodyOf(await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' }))
   expect(again.fight.won).toBe(true)
   expect(again.fight.log.length).toBeGreaterThan(0)
-  expect(again.fight.loot).toEqual({ items: 0, gems: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 })
+  expect(again.fight.loot).toEqual({ items: 0, gems: 0, supports: 0, scrap: 0, goldLost: 0, xp: 0, levelsGained: 0 })
   expect(again.level.xp).toBe(body.level.xp)
   expect(again.hero.items).toEqual(body.hero.items)
   expect(again.hero.progress[FOREST].normal).toEqual(['z1'])
