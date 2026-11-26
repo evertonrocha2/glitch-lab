@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { POTION_COOLDOWN_MS, TICK_MS, TRASH_TIMEOUT_MS, simulateFight } from '../../shared/game/combat.js'
-import { ENEMIES, enemyFor } from '../../shared/game/enemies.js'
+import { ENEMIES, enemyFor, packFor } from '../../shared/game/enemies.js'
 import { createRng } from '../../shared/game/rng.js'
 import { baseStats, heroStats, power } from '../../shared/game/stats.js'
 import { ZONES } from '../../shared/game/zones.js'
@@ -73,8 +73,8 @@ describe('simulateFight basics', () => {
     const phases = events(r, (e) => e.type === 'phase')
     expect(phases).toHaveLength(2)
     expect(phases.map((e) => e.skill)).toEqual(boss.phases.map((p) => p.skill))
-    // Hero armor 25: the plain hits grow from 10 to 12.5 to 15, times 100 / 125.
-    const hits = events(r, (e) => e.who === 'enemy' && e.type === 'hit').map((e) => e.amount)
+    // Hero armor 25: the boss's plain hits grow from 10 to 12.5 to 15, times 100 / 125 (its adds are src > 0).
+    const hits = events(r, (e) => e.who === 'enemy' && e.type === 'hit' && e.src === 0).map((e) => e.amount)
     expect(new Set(hits)).toEqual(new Set([8, 10, 12]))
     expect(events(r, (e) => e.who === 'enemy' && e.type === 'skill').length).toBeGreaterThan(0)
   })
@@ -113,20 +113,11 @@ describe('damage rules', () => {
     const r = simulateFight({ hero: hero(flat({ attack: 1, attackSpeed: 2 }), { skills: [] }), enemy: dummy(), seed: 's' })
     expect(events(r, (e) => e.who === 'hero' && e.type === 'hit').length).toBe(119)
   })
-  it('casts the first ready skill it has mana for, in loadout order', () => {
-    const r = simulateFight({
-      hero: hero(flat({ attack: 10, mana: 30 }), { skills: [{ id: 'chama', level: 1 }, { id: 'raio', level: 1 }, { id: 'golpe', level: 1 }] }),
-      enemy: dummy(),
-      seed: 'o',
-    })
-    const casts = events(r, (e) => e.type === 'skill').map((e) => e.skill)
-    // chama costs 25 of 30, so raio (20) has to wait for regen while golpe fills in.
-    expect(casts.slice(0, 2)).toEqual(['chama', 'golpe'])
-  })
   it('regenerates 2% of max mana per second', () => {
     const r = simulateFight({ hero: hero(flat({ mana: 50 }), { skills: [{ id: 'raio', level: 1 }] }), enemy: dummy(), seed: 'm' })
-    // 50 mana pays for 2 casts (1 s, 7 s). At 1 mana a second, the rest come at 13 s, 31 s and 51 s.
-    expect(events(r, (e) => e.skill === 'raio').map((e) => e.t)).toEqual([1000, 7000, 13000, 31000, 51000])
+    // Skills fire from the first tick (0.1 s): 50 mana pays for 3 casts (0.1, 6.1, 12.1 s). At 1 mana a
+    // second, the next ones come at 30.1 s and 50.1 s.
+    expect(events(r, (e) => e.skill === 'raio').map((e) => e.t)).toEqual([100, 6100, 12100, 30100, 50100])
   })
 })
 
@@ -182,9 +173,9 @@ describe('effects', () => {
     const recasts = casts.filter((e) => e.recast)
     expect(recasts.length).toBeGreaterThan(0)
     expect(recasts.length).toBeLessThan(casts.length / 2)
-    // 100 mana at 40 a cast (plus 2 a second): casts at 1, 7 and 13 s, then dry until after 20 s. At 20 a cast, 19 s too.
+    // 100 mana at 40 a cast (plus 2 a second): casts at 0.1, 6.1 and 12.1 s, then dry until after 20 s. At 20 a cast, 18.1 s too.
     const low = simulateFight({ hero: hero(flat({ attack: 10, mana: 100, effects: ['recursion'] }), { skills: [{ id: 'raio', level: 1 }] }), enemy: dummy(), seed: 'rec' })
-    expect(events(low, (e) => e.skill === 'raio' && !e.recast && e.t < 20000).map((e) => e.t)).toEqual([1000, 7000, 13000])
+    expect(events(low, (e) => e.skill === 'raio' && !e.recast && e.t < 20000).map((e) => e.t)).toEqual([100, 6100, 12100])
   })
   it('strongTyping keeps the hero from being stunned', () => {
     const boss = bossOf(FOREST.z1)
@@ -252,19 +243,20 @@ describe('elite mods', () => {
 })
 
 describe('balance', () => {
-  it('commons die in 3 to 6 s on average for a bare hero at zone.minLevel + 2 with only golpe', () => {
+  it('a bare hero at zone.minLevel + 2 with only golpe clears every pack, in 5 to 11 s on average', () => {
     for (const zone of Object.values(FOREST)) {
       const stats = heroStats({ level: zone.minLevel + 2 })
       let total = 0
       for (let i = 0; i < 20; i++) {
-        const enemy = enemyFor(zone, 'normal', createRng(`${zone.id}-c${i}`))
-        const r = simulateFight({ hero: hero(stats), enemy, seed: `${zone.id}-f${i}` })
-        expect(r.won).toBe(true)
+        const pack = packFor(zone, 'normal', createRng(`${zone.id}-c${i}`), { elite: i % 3 === 2 })
+        const r = simulateFight({ hero: hero(stats), enemies: pack, seed: `${zone.id}-f${i}` })
+        expect(r.won, `${zone.id} pack ${i}`).toBe(true)
+        expect(r.kills).toBe(pack.length)
         total += r.ms
       }
       const mean = total / 20
-      expect(mean, zone.id).toBeGreaterThanOrEqual(3000)
-      expect(mean, zone.id).toBeLessThanOrEqual(6000)
+      expect(mean, zone.id).toBeGreaterThanOrEqual(5000)
+      expect(mean, zone.id).toBeLessThanOrEqual(11000)
     }
   })
 

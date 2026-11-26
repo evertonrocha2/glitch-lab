@@ -1,11 +1,14 @@
 // Damage math and the effect / elite mod rules for combat.js, kept apart so the fight loop stays short.
 // Effects (hero, from items, sets and talents):
-// - recursion: a cast skill has a 25% chance to cast again for free; every skill costs double mana.
-// - chainBolt: raio hits deal +50% (the fight is single target, so the chain lands on the same enemy).
+// - recursion: a cast skill has a 25% chance to cast again for free (aimed again, at whoever is left);
+//   every skill costs double mana.
+// - chainBolt: raio jumps to 2 more foes and every raio hit deals +50%.
 // - strongTyping: the hero can't be stunned (its stats part lives in talents.js).
-// - bugSplash (Excalibug): each basic attack has a 20% chance to splash bugs for 50% of attack as poison.
+// - bugSplash (Excalibug): each basic attack has a 20% chance to splash bugs for 50% of attack as poison
+//   on the struck foe and every foe within 1.5 tiles of it.
 // - rootAccess (Amuleto do Root): the hero's physical damage ignores half of the enemy armor.
-// - selfCall (Anel Recursivo): each basic attack has a 15% chance to call itself again right away.
+// - selfCall (Anel Recursivo): each basic attack has a 15% chance to call itself again right away, at
+//   another foe in reach when there is one.
 // Elite mods (by id, as enemyFor writes them):
 // - reflete: the hero takes 15% of the damage it deals. regenera: heals 2% of max hp per second.
 // - imune-fogo / imune-gelo: that element does 0. acelerado: x1.5 attack speed. blindado: +100 armor.
