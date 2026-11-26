@@ -1,17 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { DIFFICULTIES, ELITE_MODS, ENEMIES, SPRITES, enemyFor } from '../../shared/game/enemies.js'
 import { createRng } from '../../shared/game/rng.js'
-import { HUNT_WORLDS, ZONES, zoneState } from '../../shared/game/zones.js'
+import { HUNT_WORLDS, TIER_STEP, ZONES, ZONE_STEP, zoneDef, zoneState } from '../../shared/game/zones.js'
 import { FLORESTA_JS } from '../../shared/world/maps/floresta-js.js'
+import { HUB_ID, WORLDS, worldById } from '../../shared/world/worlds.js'
 
 const ids = (list) => list.filter((z) => z.unlocked).map((z) => z.id)
 const none = { 'floresta-js': { normal: [], pesadelo: [], inferno: [] } }
 const beaten = (normal, pesadelo = []) => ({ 'floresta-js': { normal, pesadelo, inferno: [] } })
 
 describe('enemies data', () => {
-  it('has 8+ commons and the 3 bosses', () => {
+  it('has 8+ commons and three bosses per hunt region, every id once', () => {
     expect(ENEMIES.filter((e) => !e.boss).length).toBeGreaterThanOrEqual(8)
-    expect(ENEMIES.filter((e) => e.boss).map((e) => e.id)).toEqual(['rei-slime', 'aranha-assincrona', 'hidra-undefined'])
+    expect(ENEMIES.filter((e) => e.boss).slice(0, 3).map((e) => e.id)).toEqual(['rei-slime', 'aranha-assincrona', 'hidra-undefined'])
+    expect(ENEMIES.filter((e) => e.boss)).toHaveLength(3 * HUNT_WORLDS.length)
+    expect(new Set(ENEMIES.map((e) => e.id)).size).toBe(ENEMIES.length)
     for (const boss of ENEMIES.filter((e) => e.boss)) {
       expect(boss.enrageMs).toBe(90000)
       expect(boss.phases.map((p) => [p.at, p.attackPct])).toEqual([[0.66, 25], [0.33, 25]])
@@ -28,17 +31,68 @@ describe('enemies data', () => {
 })
 
 describe('zones data', () => {
-  it('hunts only the forest, with rects from the map', () => {
-    expect(HUNT_WORLDS).toEqual(['floresta-js'])
+  it('hunts every region but the town, the Forest first, with rects from the maps', () => {
+    expect(HUNT_WORLDS[0]).toBe('floresta-js')
+    expect([...HUNT_WORLDS].sort()).toEqual(WORLDS.filter((world) => world.id !== HUB_ID).map((world) => world.id).sort())
     const z = ZONES['floresta-js']
-    expect(z.z1.rect).toEqual({ x: 0, y: 0, w: 11, h: 20 })
-    expect(z.z2.rect).toEqual(FLORESTA_JS.zones[0].rect)
-    expect(z.z3.rect).toEqual(FLORESTA_JS.zones[1].rect)
+    // The town's road comes into the Forest from the east: the clearing is there, the roots far west.
+    expect(z.z1.rect).toEqual({ x: 22, y: 0, w: 10, h: 20 })
+    for (const zone of FLORESTA_JS.zones) expect(z[zone.id].rect).toEqual(zone.rect)
     expect([z.z1.boss, z.z2.boss, z.z3.boss]).toEqual(['rei-slime', 'aranha-assincrona', 'hidra-undefined'])
-    for (const zone of Object.values(z)) for (const id of zone.enemies) expect(ENEMIES.find((e) => e.id === id && !e.boss)).toBeTruthy()
+    for (const world of HUNT_WORLDS) {
+      for (const zone of Object.values(ZONES[world])) {
+        expect(zone.rect).toEqual(worldById(world).zones.find((each) => each.id === zone.id).rect)
+        for (const id of zone.enemies) expect(ENEMIES.find((e) => e.id === id && !e.boss), `${world} ${id}`).toBeTruthy()
+        expect(ENEMIES.find((e) => e.id === zone.boss && e.boss), `${world} ${zone.boss}`).toBeTruthy()
+      }
+    }
   })
-  it('no longer opens the forest zones by the old study rule', () => {
-    for (const zone of FLORESTA_JS.zones) expect(zone.requirement ?? null).toBeNull()
+  it('gives every region its own enemies and bosses: none is shared with another region', () => {
+    const owner = new Map()
+    for (const world of HUNT_WORLDS) {
+      for (const zone of Object.values(ZONES[world])) {
+        for (const id of [...zone.enemies, zone.boss]) {
+          expect(owner.get(id) ?? world, id).toBe(world)
+          owner.set(id, world)
+        }
+      }
+    }
+  })
+  it("takes each zone's tier from its region and its numbers from the tier", () => {
+    for (const world of HUNT_WORLDS) {
+      for (const zone of Object.values(ZONES[world])) expect(zone.tier).toBe(worldById(world).tier)
+    }
+    expect(ZONES['caverna-sql'].z1).toMatchObject({ tier: 2, minLevel: 20, xp: 1.52 })
+    expect(ZONES['torre-matematica'].z3).toMatchObject({ tier: 3, minLevel: 50, bossLevel: 52 })
+  })
+  it('raises level, item level, boss level and suggested power with every zone and tier', () => {
+    for (const field of ['minLevel', 'bossLevel', 'suggestedPower']) {
+      for (const [a, b] of [['floresta-js', 'caverna-sql'], ['caverna-sql', 'torre-matematica']]) {
+        const ladder = [...Object.values(ZONES[a]), ...Object.values(ZONES[b])].map((zone) => zone[field])
+        for (let i = 1; i < ladder.length; i++) expect(ladder[i], `${field} ${a} ${b} ${i}`).toBeGreaterThan(ladder[i - 1])
+      }
+    }
+  })
+  it('steps xp ZONE_STEP per zone and TIER_STEP per tier, inside 1.6x to 2x a tier', () => {
+    expect(TIER_STEP).toBeGreaterThanOrEqual(1.6)
+    expect(TIER_STEP).toBeLessThanOrEqual(2)
+    for (const k of ['z1', 'z2', 'z3']) {
+      const t1 = ZONES['floresta-js'][k].xp
+      const t2 = ZONES['caverna-sql'][k].xp
+      const t3 = ZONES['torre-matematica'][k].xp
+      for (const ratio of [t2 / t1, t3 / t2]) {
+        expect(ratio, k).toBeGreaterThanOrEqual(1.6)
+        expect(ratio, k).toBeLessThanOrEqual(2)
+      }
+    }
+    expect(ZONES['floresta-js'].z2.xp / ZONES['floresta-js'].z1.xp).toBeCloseTo(ZONE_STEP, 2)
+  })
+  it('looks a zone up by own keys only', () => {
+    expect(zoneDef('floresta-js', 'z2')).toBe(ZONES['floresta-js'].z2)
+    expect(zoneDef('laboratorio', 'z1')).toBeNull()
+    expect(zoneDef('floresta-js', 'constructor')).toBeNull()
+    expect(zoneDef('__proto__', 'z1')).toBeNull()
+    expect(zoneDef(undefined, undefined)).toBeNull()
   })
 })
 
@@ -106,7 +160,8 @@ describe('zoneState', () => {
     expect(ids(zoneState(beaten(['z1']), 'floresta-js', 'pesadelo', 2))).toEqual(['z1', 'z2', 'z3'])
     expect(ids(zoneState(none, 'floresta-js', 'inferno', 2))).toEqual(['z1', 'z2', 'z3'])
   })
-  it('returns nothing for a world that is not hunted', () => {
-    expect(zoneState({}, 'caverna-sql', 'normal', 50)).toEqual([])
+  it('returns nothing for the town, which is not hunted', () => {
+    expect(zoneState({}, 'laboratorio', 'normal', 50)).toEqual([])
+    expect(zoneState({}, 'caverna-sql', 'normal', 50).map((z) => z.id)).toEqual(['z1', 'z2', 'z3'])
   })
 })

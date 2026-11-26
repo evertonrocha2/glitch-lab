@@ -31,7 +31,7 @@ const boss = (id, sprite, element, hp, attack, armor, attackSpeed, res, skills) 
   phases: BOSS_PHASES(...skills),
 })
 
-export const ENEMIES = [
+const FOREST_ENEMIES = [
   common('slime', 'slime', 'poison', 72, 16, 2, 0.8, { poison: 50 }),
   common('cogumelo-bug', 'cogumelo', 'poison', 90, 16, 4, 0.7, { poison: 30 }),
   common('morcego-bug', 'morcego-bug', 'physical', 55, 16, 1, 1.3),
@@ -46,6 +46,81 @@ export const ENEMIES = [
   boss('aranha-assincrona', 'aranha-assincrona', 'poison', 1000, 23, 20, 0.5, { poison: 50, ice: 20 }, ['teia-promise', 'enxame']),
   boss('hidra-undefined', 'hidra-undefined', 'fire', 870, 23, 25, 0.5, { fire: 40, lightning: 20 }, ['sopro-undefined', 'cabeca-extra']),
 ]
+
+// Fase 3: every region hunts its own enemies. Each is a regional variant of a Forest enemy: the same
+// sprite and base stats (zones.js scales them by the zone's item level, so a tier 2 cave slime hits
+// far harder than a forest one), its own id, element and resistances. A boss keeps its base boss's
+// phases and skills. [id, from, element, res]
+const REGION_ENEMIES = (() => {
+  const COMMONS = [
+    // Biblioteca das Linguagens
+    ['cogumelo-verbo', 'cogumelo-bug', 'poison', { poison: 30 }],
+    ['morcego-virgula', 'morcego-bug', 'physical', {}],
+    ['mosca-acento', 'mosca-null', 'lightning', { lightning: 30 }],
+    ['goblin-crase', 'goblin-loop', 'fire', { fire: 30 }],
+    ['lobo-rima', 'lobo-syntax', 'physical', { ice: 10 }],
+    ['esqueleto-arcaismo', 'esqueleto-array', 'ice', { ice: 40 }],
+    ['espectro-metafora', 'espectro-callback', 'lightning', { lightning: 40, fire: 20 }],
+    ['golem-gramatica', 'golem-if', 'physical', { poison: 20 }],
+    // Cidade das Humanas
+    ['goblin-feudo', 'goblin-loop', 'physical', { fire: 20 }],
+    ['lobo-imperio', 'lobo-syntax', 'physical', {}],
+    ['morcego-boato', 'morcego-bug', 'lightning', { lightning: 20 }],
+    ['cogumelo-censo', 'cogumelo-bug', 'poison', { poison: 40 }],
+    ['esqueleto-fossil', 'esqueleto-array', 'physical', { ice: 30 }],
+    ['mosca-propaganda', 'mosca-null', 'fire', { fire: 30 }],
+    ['golem-muralha', 'golem-if', 'physical', { fire: 20, ice: 20 }],
+    ['espectro-revolucao', 'espectro-callback', 'fire', { fire: 40, lightning: 20 }],
+    // Caverna do SQL
+    ['slime-select', 'slime', 'poison', { poison: 50 }],
+    ['morcego-join', 'morcego-bug', 'physical', { ice: 10 }],
+    ['esqueleto-tabela', 'esqueleto-array', 'ice', { ice: 40 }],
+    ['aranha-trigger', 'aranha-fio', 'poison', { poison: 30 }],
+    ['mosca-nulo', 'mosca-null', 'lightning', { lightning: 30 }],
+    ['golem-indice', 'golem-if', 'physical', { lightning: 20 }],
+    ['espectro-deadlock', 'espectro-callback', 'ice', { ice: 40, lightning: 20 }],
+    // Jardim da Natureza
+    ['slime-celula', 'slime', 'poison', { poison: 50 }],
+    ['cogumelo-fungo', 'cogumelo-bug', 'poison', { poison: 40 }],
+    ['aranha-teia', 'aranha-fio', 'poison', { poison: 30, ice: 10 }],
+    ['mosca-virus', 'mosca-null', 'poison', { poison: 30 }],
+    ['lobo-predador', 'lobo-syntax', 'physical', { ice: 20 }],
+    ['espectro-mutacao', 'espectro-callback', 'lightning', { lightning: 40, poison: 20 }],
+    ['golem-raiz', 'golem-if', 'physical', { poison: 30 }],
+    // Torre da Matemática
+    ['goblin-divisao', 'goblin-loop', 'fire', { fire: 30 }],
+    ['morcego-pi', 'morcego-bug', 'lightning', { lightning: 20 }],
+    ['mosca-fracao', 'mosca-null', 'lightning', { lightning: 30 }],
+    ['esqueleto-vetor', 'esqueleto-array', 'ice', { ice: 40 }],
+    ['golem-equacao', 'golem-if', 'physical', { fire: 20 }],
+    ['espectro-infinito', 'espectro-callback', 'ice', { ice: 40, lightning: 30 }],
+  ]
+  const BOSSES = [
+    ['rei-dicionario', 'rei-slime', 'physical', { poison: 30, ice: 20 }],
+    ['aranha-metafora', 'aranha-assincrona', 'lightning', { lightning: 50 }],
+    ['hidra-ambiguidade', 'hidra-undefined', 'fire', { fire: 40, ice: 20 }],
+    ['rei-absoluto', 'rei-slime', 'fire', { fire: 50 }],
+    ['aranha-burocracia', 'aranha-assincrona', 'poison', { poison: 50, lightning: 20 }],
+    ['hidra-guerra', 'hidra-undefined', 'fire', { fire: 40, lightning: 20 }],
+    ['rei-query', 'rei-slime', 'poison', { poison: 60 }],
+    ['aranha-join', 'aranha-assincrona', 'ice', { ice: 50, poison: 20 }],
+    ['hidra-deadlock', 'hidra-undefined', 'lightning', { lightning: 40, ice: 20 }],
+    ['rei-mitose', 'rei-slime', 'poison', { poison: 60 }],
+    ['aranha-cadeia', 'aranha-assincrona', 'poison', { poison: 50, ice: 20 }],
+    ['hidra-mutante', 'hidra-undefined', 'poison', { poison: 40, fire: 20 }],
+    ['rei-matriz', 'rei-slime', 'ice', { ice: 50 }],
+    ['aranha-fractal', 'aranha-assincrona', 'lightning', { lightning: 50, ice: 20 }],
+    ['hidra-exponencial', 'hidra-undefined', 'fire', { fire: 40, lightning: 30 }],
+  ]
+  const byId = (id) => FOREST_ENEMIES.find((enemy) => enemy.id === id)
+  const like = (from, id, element, res) => ({ ...from, id, element, base: { ...from.base, res: { ...NO_RES, ...res } } })
+  return [
+    ...COMMONS.map(([id, from, element, res]) => like(byId(from), id, element, res)),
+    ...BOSSES.map(([id, from, element, res]) => like(byId(from), id, element, res)),
+  ]
+})()
+
+export const ENEMIES = [...FOREST_ENEMIES, ...REGION_ENEMIES]
 
 // effect ids are read by combat (Task 8).
 export const ELITE_MODS = [

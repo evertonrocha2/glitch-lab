@@ -3,9 +3,11 @@ import { POTION_COOLDOWN_MS, TICK_MS, TRASH_TIMEOUT_MS, simulateFight } from '..
 import { ENEMIES, enemyFor, packFor } from '../../shared/game/enemies.js'
 import { createRng } from '../../shared/game/rng.js'
 import { baseStats, heroStats, power } from '../../shared/game/stats.js'
-import { ZONES } from '../../shared/game/zones.js'
+import { HUNT_WORLDS, ZONES } from '../../shared/game/zones.js'
 
 const FOREST = ZONES['floresta-js']
+// Every hunt zone of every region (fase 3).
+const ALL_ZONES = HUNT_WORLDS.flatMap((world) => Object.values(ZONES[world]))
 const NO_POTIONS = { potions: { hp: 0, mp: 0 }, thresholds: { hp: 0, mp: 0 } }
 
 const hero = (stats, extra = {}) => ({ stats, skills: [{ id: 'golpe', level: 1 }], ...NO_POTIONS, ...extra })
@@ -243,20 +245,20 @@ describe('elite mods', () => {
 })
 
 describe('balance', () => {
-  it('a bare hero at zone.minLevel + 2 with only golpe clears every pack, in 5 to 11 s on average', () => {
-    for (const zone of Object.values(FOREST)) {
+  it('a bare hero at zone.minLevel + 2 with only golpe clears every pack of every region, in 5 to 11 s on average', () => {
+    for (const zone of ALL_ZONES) {
       const stats = heroStats({ level: zone.minLevel + 2 })
       let total = 0
       for (let i = 0; i < 20; i++) {
         const pack = packFor(zone, 'normal', createRng(`${zone.id}-c${i}`), { elite: i % 3 === 2 })
         const r = simulateFight({ hero: hero(stats), enemies: pack, seed: `${zone.id}-f${i}` })
-        expect(r.won, `${zone.id} pack ${i}`).toBe(true)
+        expect(r.won, `${zone.world} ${zone.id} pack ${i}`).toBe(true)
         expect(r.kills).toBe(pack.length)
         total += r.ms
       }
       const mean = total / 20
-      expect(mean, zone.id).toBeGreaterThanOrEqual(5000)
-      expect(mean, zone.id).toBeLessThanOrEqual(11000)
+      expect(mean, `${zone.world} ${zone.id}`).toBeGreaterThanOrEqual(5000)
+      expect(mean, `${zone.world} ${zone.id}`).toBeLessThanOrEqual(11000)
     }
   })
 
@@ -299,8 +301,27 @@ describe('balance', () => {
     })
   }
 
-  it('the bosses are the hardest enemies in their zone', () => {
-    for (const zone of Object.values(FOREST)) {
+  // Fase 3: the other regions' bosses, gated the same way with a hero at the boss level whose attack,
+  // hp and armor are scaled up (strong) or down (weak) until its power crosses suggestedPower (or 70% of it).
+  const scaled = (level, f) => {
+    const stats = heroStats({ level })
+    return { ...stats, attack: Math.round(stats.attack * f), hp: Math.round(stats.hp * f), armor: Math.round(stats.armor * f) }
+  }
+  const crossing = (zone, target, up) => {
+    let f = 1
+    if (up) while (power(scaled(zone.bossLevel, f)) < target) f += 0.02
+    else while (power(scaled(zone.bossLevel, f)) > target) f -= 0.02
+    return scaled(zone.bossLevel, f)
+  }
+  for (const zone of ALL_ZONES.filter((each) => each.world !== 'floresta-js')) {
+    it(`gates the ${zone.world} ${zone.id} boss (${zone.boss}) by suggestedPower`, () => {
+      expect(wins(crossing(zone, zone.suggestedPower, true), zone)).toBeGreaterThanOrEqual(6)
+      expect(wins(crossing(zone, 0.7 * zone.suggestedPower, false), zone)).toBeLessThanOrEqual(2)
+    })
+  }
+
+  it('the bosses are the hardest enemies in their zone, in every region', () => {
+    for (const zone of ALL_ZONES) {
       const boss = ENEMIES.find((e) => e.id === zone.boss)
       for (const id of zone.enemies) expect(boss.base.hp).toBeGreaterThan(ENEMIES.find((e) => e.id === id).base.hp * 5)
     }
