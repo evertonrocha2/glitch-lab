@@ -321,13 +321,15 @@ function lilies(ctx, tx, ty) {
 
 // A dense bed of small flowers in calm colors.
 function flowerBed(ctx, tx, ty) {
-  const cols = ['#d4a0b0', '#e3d08a', '#e8eaf0', '#a99bc8', '#d9b38c']
-  for (let i = 0; i < 7; i++) {
-    const fx = tx * TS + 2 + Math.floor(hash(tx, ty, 103 + i) * 12)
-    const fy = ty * TS + 2 + Math.floor(hash(ty, tx, 113 + i) * 11)
-    const col = cols[Math.floor(hash(tx + i, ty, 123) * cols.length)]
+  const cols = ['#e893ab', '#f2d36b', '#f4f4f6', '#b59be0', '#eaa97a']
+  // One main color per bed, so a patch of beds reads as a color from far away.
+  const main = cols[Math.floor(hash(Math.floor(tx / 3), Math.floor(ty / 3), 121) * cols.length)]
+  for (let i = 0; i < 10; i++) {
+    const fx = tx * TS + 1 + (i % 4) * 4 + Math.floor(hash(tx, ty, 103 + i) * 3)
+    const fy = ty * TS + 2 + Math.floor(i / 4) * 5 + Math.floor(hash(ty, tx, 113 + i) * 3)
+    const col = hash(tx + i, ty, 123) < 0.7 ? main : cols[Math.floor(hash(tx, ty + i, 125) * cols.length)]
     P(ctx, fx, fy + 2, GR.dark)
-    P(ctx, fx + 1, fy + 2, GR.patch)
+    P(ctx, fx + 1, fy + 2, '#3f7330')
     P(ctx, fx, fy - 1, col)
     P(ctx, fx - 1, fy, col)
     P(ctx, fx + 1, fy, col)
