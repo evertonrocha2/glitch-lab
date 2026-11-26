@@ -41,6 +41,30 @@ const poly = (g, pts, m) => each((x, y) => {
 })
 const clear = (g, x, y, w, h) => rect(g, x, y, w, h, null)
 
+// A support gem (fase 2c): a round cut in its material with a dark glyph of what it does. Cut apart
+// from the gear gems' pointed one, so the two families never mix up in the bag.
+const supportGem = (mat, glyph) => (g) => {
+  poly(g, [[5, 1], [11, 1], [15, 5], [15, 11], [11, 15], [5, 15], [1, 11], [1, 5]], mat)
+  glyph(g)
+  set(g, 5, 3, 'shine')
+  set(g, 4, 4, 'shine')
+}
+const SUPPORT_GLYPHS = {
+  // three shots side by side
+  projeteis: (g) => { line(g, 5, 6, 5, 10, 'ink'); line(g, 8, 5, 8, 11, 'ink'); line(g, 11, 6, 11, 10, 'ink') },
+  encadear: (g) => { line(g, 4, 10, 7, 6, 'ink'); line(g, 7, 6, 9, 10, 'ink'); line(g, 9, 10, 12, 6, 'ink') },
+  areaAmpla: (g) => ring(g, 8, 8, 4.6, 1.2, 'ink'),
+  concentrado: (g) => circ(g, 8, 8, 2.2, 'ink'),
+  rapido: (g) => { line(g, 5, 5, 8, 8, 'ink'); line(g, 8, 8, 5, 11, 'ink'); line(g, 9, 5, 12, 8, 'ink'); line(g, 12, 8, 9, 11, 'ink') },
+  fogo: (g) => poly(g, [[8, 4], [11, 9], [10.5, 12], [5.5, 12], [5, 9]], 'ink'),
+  vampiro: (g) => { poly(g, [[8, 4], [11, 9], [5, 9]], 'ink'); circ(g, 8, 9.5, 3, 'ink') },
+  frio: (g) => { line(g, 8, 4, 8, 12, 'ink'); line(g, 4, 8, 12, 8, 'ink'); line(g, 5, 5, 11, 11, 'ink'); line(g, 11, 5, 5, 11, 'ink') },
+  persistencia: (g) => { poly(g, [[5, 4], [11, 4], [8, 8]], 'ink'); poly(g, [[8, 8], [11, 12], [5, 12]], 'ink'); line(g, 5, 4, 11, 4, 'ink'); line(g, 5, 12, 11, 12, 'ink') },
+}
+export const SUPPORT_MATS = {
+  projeteis: 'green', encadear: 'gold', areaAmpla: 'blue', concentrado: 'purple', rapido: 'teal', fogo: 'fire', vampiro: 'red', frio: 'glass', persistencia: 'bone',
+}
+
 const ICONS = {
   sword: (g) => { line(g, 5, 10, 13, 2, 'steel', 2); set(g, 14, 1, 'steel'); line(g, 2, 8, 7, 13, 'gold', 2); line(g, 2, 13, 4, 11, 'wood', 2); circ(g, 1.5, 14.5, 1.4, 'red') },
   shield: (g) => { poly(g, [[2, 1], [14, 1], [14, 8], [8, 15], [2, 8]], 'blue'); line(g, 8, 2, 8, 13, 'gold'); line(g, 3, 6, 13, 6, 'gold'); circ(g, 8, 6, 1.6, 'gold') },
@@ -79,6 +103,8 @@ const ICONS = {
   honor: (g) => { poly(g, [[3, 0], [7, 0], [9, 6], [5, 6]], 'red'); poly(g, [[9, 0], [13, 0], [11, 6], [7, 6]], 'blue'); circ(g, 8, 10.5, 4.5, 'gold'); circ(g, 8, 10.5, 2.4, 'purple'); set(g, 6, 8, 'shine') },
   fragment: (g) => { poly(g, [[8, 0], [13, 6], [10, 15], [4, 11], [3, 5]], 'purple'); line(g, 8, 1, 7, 14, 'purple'); set(g, 6, 4, 'shine'); set(g, 6, 5, 'shine'); set(g, 9, 9, 'glow') },
 }
+
+for (const [id, glyph] of Object.entries(SUPPORT_GLYPHS)) ICONS[`support-${id}`] = supportGem(SUPPORT_MATS[id], glyph)
 
 export const RECIPE_NAMES = Object.keys(ICONS)
 

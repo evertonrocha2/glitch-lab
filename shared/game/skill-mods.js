@@ -42,17 +42,16 @@ export const PASSIVES = {
   garbageCollector: { skill: 'cura', icon: 'heart', hot: { pct: 0.04, ms: 5000 } },
 }
 
-// color: the gem's tint (slot fill and its pixel icon, a recipe named support-<id>).
 export const SUPPORTS = {
-  projeteis: { color: '#ff9a1f', extra: 1, more: -0.15 },
-  encadear: { color: '#ffd23e', targets: 2 },
-  areaAmpla: { color: '#4fa3ff', area: 0.3 },
-  concentrado: { color: '#ff5a6e', area: -0.2, more: 0.3 },
-  rapido: { color: '#7fffe9', cooldown: 0.25, mana: 0.2 },
-  fogo: { color: '#ff6a2a', addedFire: 0.2 },
-  vampiro: { color: '#c8324a', leech: 0.05 },
-  frio: { color: '#9fd8ff', slow: { pct: 0.2, ms: 2000 } },
-  persistencia: { color: '#a98bff', duration: 0.4, kinds: ['dot', 'buff'] },
+  projeteis: { extra: 1, more: -0.15 },
+  encadear: { targets: 2 },
+  areaAmpla: { area: 0.3 },
+  concentrado: { area: -0.2, more: 0.3 },
+  rapido: { cooldown: 0.25, mana: 0.2 },
+  fogo: { addedFire: 0.2 },
+  vampiro: { leech: 0.05 },
+  frio: { slow: { pct: 0.2, ms: 2000 } },
+  persistencia: { duration: 0.4, kinds: ['dot', 'buff'] },
 }
 export const SUPPORT_IDS = Object.keys(SUPPORTS)
 
