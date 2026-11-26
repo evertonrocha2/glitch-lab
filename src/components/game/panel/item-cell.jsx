@@ -17,17 +17,31 @@ function glowOf(trim, rarity) {
 // One item square (bag, forge, the Hero tab's doll): its icon on a flat sunk fill tinted by the
 // rarity trim (the color the hero's gear wears), a 2px trim border and a stepped inner glow. A button,
 // so the whole grid is keyboard reachable. pressed: aria-pressed for multi-select; selected: the white ring.
-export default function ItemCell({ item, label, selected = false, pressed, onClick, disabled = false, badge }) {
+// onPeek(on): the pointer or the keyboard focus came onto the cell (true) or left it (false), for the
+// hover tooltip; a touch never peeks (it has no hover, and its tap opens the popover).
+// describedBy: the tooltip's id while it shows. popup: a click opens the item's popover; expanded: it is open.
+export default function ItemCell({ item, label, selected = false, pressed, onClick, disabled = false, badge, onPeek, describedBy, popup = false, expanded = false }) {
   const trim = item.kind === 'gem' ? GEM_TRIM : (RARITY_TRIM[item.rarity] ?? RARITY_TRIM.common)
   const ring = selected || pressed ? ' outline-2 outline-white' : ''
+  const peek = onPeek && {
+    onPointerEnter: (event) => event.pointerType !== 'touch' && onPeek(true),
+    onPointerLeave: () => onPeek(false),
+    onFocus: (event) => keyboardFocus(event.currentTarget) && onPeek(true),
+    onBlur: () => onPeek(false),
+  }
   return (
     <button
       type="button"
+      data-item-id={item.id}
       aria-label={label}
       aria-pressed={pressed}
       aria-current={selected ? 'true' : undefined}
+      aria-describedby={describedBy}
+      aria-haspopup={popup ? 'dialog' : undefined}
+      aria-expanded={popup ? expanded : undefined}
       disabled={disabled}
       onClick={onClick}
+      {...peek}
       className={`${CELL}${ring} cursor-pointer focus-visible:outline-2 focus-visible:outline-[#f2c14e] disabled:cursor-not-allowed disabled:opacity-60`}
       style={{ borderColor: trim, backgroundColor: `color-mix(in srgb, ${trim} 10%, ${UI.inset})`, boxShadow: glowOf(trim, item.rarity) }}
     >
@@ -36,6 +50,15 @@ export default function ItemCell({ item, label, selected = false, pressed, onCli
       {badge}
     </button>
   )
+}
+
+// A focus that came from the keyboard (a click focuses the button too, but that one peeks by hover).
+function keyboardFocus(element) {
+  try {
+    return element.matches(':focus-visible')
+  } catch {
+    return true
+  }
 }
 
 // An empty square: not a control, just the place, sunk into the panel. icon: a faded silhouette of
