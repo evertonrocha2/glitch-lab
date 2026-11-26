@@ -10,7 +10,7 @@ describe('cameraOn', () => {
     const crop = { w: 24, h: 15 }
     expect(cameraOn(cave, { x: 16, y: 10 }, crop)).toEqual({ x: 4.5, y: 3 })
     expect(cameraOn(cave, { x: 0, y: 0 }, crop)).toEqual({ x: 0, y: 0 })
-    expect(cameraOn(cave, { x: 31, y: 19 }, crop)).toEqual({ x: 8, y: 5 })
+    expect(cameraOn(cave, { x: 47, y: 31 }, crop)).toEqual({ x: 24, y: 17 })
   })
 
   it('follows a hero between two tiles', () => {

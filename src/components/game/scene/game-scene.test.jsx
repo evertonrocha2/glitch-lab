@@ -127,8 +127,8 @@ it('names the zone in its label', () => {
   const scene = screen.getByRole('img')
   expect(scene).toHaveAccessibleName(/JavaScript Forest, area 1/)
   expect(scene.tagName).toBe('CANVAS')
-  expect(scene).toHaveAttribute('width', String(32 * TS))
-  expect(scene).toHaveAttribute('height', String(20 * TS))
+  expect(scene).toHaveAttribute('width', String(48 * TS))
+  expect(scene).toHaveAttribute('height', String(32 * TS))
 })
 
 it('names the second zone from its rect, in Portuguese too', () => {
