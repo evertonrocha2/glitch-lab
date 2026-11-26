@@ -1,6 +1,9 @@
-// What the HUD shows `ms` into a boss fight replay, read back from the fight log alone (pure, tested).
+// What the HUD shows `ms` into a fight replay (a boss fight or a hunt sample pack), read back from the
+// fight log alone (pure, tested). The log format is documented at the top of shared/game/combat.js.
 // The View only has max hp and mana, so the hero starts full and the log's hits, heals and potions
-// move the bars; mana also pays each cast and regenerates as combat.js does.
+// move the bars; mana also pays each cast and regenerates as combat.js does. Each enemy's hp comes
+// from its spawn event and drops with every hit that names it.
+// Logs from before packs (no spawn events, no hits lists) still read: their damage goes to enemy 0.
 import { MANA_REGEN } from '../../../shared/game/combat.js'
 import { EFFECT } from '../../../shared/game/combat-effects.js'
 import { ENEMIES } from '../../../shared/game/enemies.js'
@@ -9,19 +12,29 @@ import { SKILLS } from '../../../shared/game/skills.js'
 const SKILL_BY_ID = Object.fromEntries(SKILLS.map((skill) => [skill.id, skill]))
 const DEFAULT_ENRAGE_MS = 90000
 const DAMAGE = new Set(['hit', 'crit', 'skill', 'dot'])
-const CASTS = new Set(['skill', 'heal', 'shield'])
+const CASTS = new Set(['skill', 'cast', 'heal', 'shield', 'buff'])
+// Events that only move pieces on the stage: no log line.
+const SILENT = new Set(['spawn', 'arrive'])
 
 const clamp = (value, max) => Math.min(max, Math.max(0, value))
 
-// fight: the server's boss fight ({ log, enemy: { id, base } }). stats: the hero's final stats.
-// Answers { hp, mana, cooldowns, buffs, boss: { hp, maxHp, phase, phases, enrageSec }, log }.
+// fight: { log, enemy?: { id, base } } (a boss fight carries its enemy). stats: the hero's final stats.
+// Answers { hp, mana, cooldowns, buffs, boss: { hp, maxHp, phase, phases, enrageSec }, enemies, log }.
+// enemies: [{ id, hp, maxHp, alive, elite?, boss? }] by spawn index; boss reads the boss (or enemy 0).
 export function replayAt(fight, ms, { stats }) {
-  const def = ENEMIES.find((enemy) => enemy.id === fight.enemy?.id)
-  const maxBoss = fight.enemy?.base?.hp ?? def?.base.hp ?? 1
   const doubleMana = (stats.effects ?? []).includes(EFFECT.recursion)
+  const foes = []
+  // A log from before packs has no spawn: enemy 0 is fight.enemy.
+  const legacyDef = ENEMIES.find((enemy) => enemy.id === fight.enemy?.id)
+  const legacyHp = fight.enemy?.base?.hp ?? legacyDef?.base.hp ?? 1
+  const foe = (i = 0) => {
+    if (!foes[i]) foes[i] = { id: i === 0 ? fight.enemy?.id : undefined, hp: legacyHp, maxHp: legacyHp, alive: true }
+    return foes[i]
+  }
+  const hasSpawns = (fight.log ?? []).some((ev) => ev.type === 'spawn')
+  if (!hasSpawns) foe(0)
   let hp = stats.hp
   let mana = stats.mana
-  let bossHp = maxBoss
   let phase = 1
   let last = 0
   const readyAt = {}
@@ -29,21 +42,31 @@ export function replayAt(fight, ms, { stats }) {
   const log = []
   for (const ev of fight.log ?? []) {
     if (ev.t > ms) break
-    log.push(ev)
+    if (!SILENT.has(ev.type)) log.push(ev)
     mana = clamp(mana + stats.mana * MANA_REGEN * ((ev.t - last) / 1000), stats.mana)
     last = ev.t
     const amount = ev.amount ?? 0
-    if (ev.who === 'enemy') {
+    if (ev.type === 'spawn') {
+      foes[ev.src] = { id: ev.id, hp: ev.hp, maxHp: ev.hp, alive: true, ...(ev.elite ? { elite: true } : {}), ...(ev.boss ? { boss: true } : {}) }
+    } else if (ev.who === 'enemy') {
       if (ev.type === 'hit' || ev.type === 'skill') hp -= amount
-      else if (ev.type === 'heal') bossHp += amount
+      else if (ev.type === 'heal') foe(ev.src).hp += amount
       else if (ev.type === 'phase') phase = ev.phase ?? phase + 1
+      else if (ev.type === 'death') {
+        foe(ev.src).hp = 0
+        foe(ev.src).alive = false
+      }
     } else if (ev.who === 'hero') {
-      if (DAMAGE.has(ev.type)) bossHp -= amount
+      if (DAMAGE.has(ev.type)) {
+        if (ev.hits) for (const hit of ev.hits) foe(hit.target).hp -= hit.amount ?? 0
+        else foe(0).hp -= amount
+      }
       if (ev.type === 'heal') hp += amount
       if (ev.type === 'potion') {
         if (ev.skill === 'mp') mana += amount
         else hp += amount
       }
+      if (ev.type === 'death') hp = 0
       const skill = CASTS.has(ev.type) && SKILL_BY_ID[ev.skill]
       if (skill && !ev.recast) {
         mana -= skill.mana * (doubleMana ? 2 : 1)
@@ -51,19 +74,18 @@ export function replayAt(fight, ms, { stats }) {
         if (skill.kind === 'buff') buffs[skill.id] = { icon: skill.icon, until: ev.t + skill.durationMs }
       }
     }
-    if (ev.type === 'death') {
-      if (ev.who === 'hero') hp = 0
-      else bossHp = 0
-    }
     hp = clamp(hp, stats.hp)
     mana = clamp(mana, stats.mana)
-    bossHp = clamp(bossHp, maxBoss)
+    for (const each of foes) if (each) each.hp = clamp(each.hp, each.maxHp)
   }
-  if (log.at(-1)?.type !== 'death') mana = clamp(mana + stats.mana * MANA_REGEN * ((ms - last) / 1000), stats.mana)
+  const ended = log.some((ev) => ev.type === 'death' && (ev.who === 'hero' || foes[ev.src ?? 0]?.boss || !foes.some((f) => f?.alive)))
+  if (!ended) mana = clamp(mana + stats.mana * MANA_REGEN * ((ms - last) / 1000), stats.mana)
   const cooldowns = Object.fromEntries(Object.entries(readyAt).map(([id, at]) => [id, Math.max(0, (at - ms) / 1000)]))
   const active = Object.entries(buffs)
     .filter(([, buff]) => buff.until > ms)
     .map(([id, buff]) => ({ id, icon: buff.icon, seconds: Math.ceil((buff.until - ms) / 1000) }))
+  const boss = foes.find((each) => each?.boss) ?? foe(0)
+  const def = ENEMIES.find((enemy) => enemy.id === boss.id) ?? legacyDef
   const enrageMs = def?.enrageMs ?? DEFAULT_ENRAGE_MS
   return {
     hp,
@@ -71,12 +93,13 @@ export function replayAt(fight, ms, { stats }) {
     cooldowns,
     buffs: active,
     boss: {
-      hp: bossHp,
-      maxHp: maxBoss,
+      hp: boss.hp,
+      maxHp: boss.maxHp,
       phase,
       phases: (def?.phases?.length ?? 2) + 1,
       enrageSec: Math.max(0, Math.ceil((enrageMs - Math.max(0, ms)) / 1000)),
     },
+    enemies: foes.map((each) => ({ ...each })),
     log,
   }
 }
