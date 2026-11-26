@@ -73,15 +73,6 @@ export function ConfirmButton({ children, confirmLabel, cancelLabel, onConfirm, 
   )
 }
 
-// A small heading for a block inside a tab.
-export function BlockTitle({ children, id }) {
-  return (
-    <h3 id={id} className="m-0 text-[11px] font-bold uppercase tracking-wide text-[#c3b2ff]">
-      {children}
-    </h3>
-  )
-}
-
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 // A modal over the page: focus moves in and comes back to the opener, Tab stays inside, Escape and

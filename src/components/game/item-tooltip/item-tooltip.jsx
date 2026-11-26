@@ -1,11 +1,12 @@
 import { useId } from 'react'
 import { GEMS, SETS, UNIQUES, itemStats } from '../../../../shared/game/items.js'
 import GameIcon from '../icons/game-icon.jsx'
+import Frame from '../ui/frame.jsx'
 import { RARITY_COLORS, iconOf, statDiff, useItemText } from './item-text.js'
 
 const GEM_COLOR = { border: '#4fd1c5', text: '#7fe9ff' }
 
-// The item card (the mockup's .tip): name in the rarity color, "Epic relic, item level 14", base stats
+// The item card (the mockup's .tip), a Frame whose bevel wears the rarity color: name in that color, "Epic relic, item level 14", base stats
 // (with the upgrade bonus), affixes, sockets, set progress, the unique effect and a compare line.
 // item: gear or a gem from the View. equipped: what the hero wears in that slot (for the compare line).
 // worn: every equipped item, to count set pieces.
@@ -18,22 +19,25 @@ export default function ItemTooltip({ item, equipped, worn = [], className = '' 
   const name = text.name(item)
 
   return (
-    <section
+    <Frame
+      as="section"
       aria-labelledby={headId}
-      className={`border-2 bg-[#120e26] px-2.5 py-2 font-mono text-[11px] leading-[1.4] text-[#d9d3f5] shadow-[0_0_0_2px_#0a0818,6px_6px_0_rgba(0,0,0,0.5)] ${className}`}
-      style={{ borderColor: colors.border }}
+      className={`px-3 py-2.5 font-mono text-[11px] leading-[1.4] text-[#e9e4ff] ${className}`}
+      style={{ '--f-hi': colors.border, '--f-lo': `color-mix(in srgb, ${colors.border} 40%, #0a0818)` }}
     >
-      <div className="mb-1.5 flex items-center gap-2 border-b border-[#2e2650] pb-1.5">
-        <GameIcon name={iconOf(item)} size={2} />
-        <div className="min-w-0">
-          <b id={headId} className="block text-[13px]" style={{ color: colors.text }}>
+      <div className="mb-2 flex items-center gap-2.5 border-b-2 border-[#0a0818] pb-2 shadow-[0_2px_0_#3e3170]">
+        <span className="grid size-10 shrink-0 place-items-center border-2 border-[#120c22] bg-[#100c20] shadow-[inset_2px_2px_0_#0a0818]">
+          <GameIcon name={iconOf(item)} size={2} />
+        </span>
+        <div className="flex min-w-0 flex-col gap-1">
+          <b id={headId} className="block font-pixel text-[12px] font-normal leading-tight" style={{ color: colors.text }}>
             {name}
           </b>
-          <small className="text-[#9a93b8]">{isGem ? t('game.item.gem') : text.line(item)}</small>
+          <small className="text-[#a89fd0]">{isGem ? t('game.item.gem') : text.line(item)}</small>
         </div>
       </div>
       {isGem ? <GemBody item={item} text={text} /> : <GearBody item={item} equipped={equipped} worn={worn} text={text} />}
-    </section>
+    </Frame>
   )
 }
 
@@ -81,14 +85,14 @@ function GearBody({ item, equipped, worn, text }) {
             <li key={at} className="flex items-center gap-1.5">
               {gemId ? (
                 <>
-                  <span className="grid size-[22px] place-items-center border border-[#4fd1c5] bg-[#0b1f2a]">
+                  <span className="grid size-[22px] place-items-center border-2 border-[#4fd1c5] bg-[#0b1f2a]">
                     <GameIcon name="gem" size={1} />
                   </span>
                   {t('game.item.socketGem', { gem: text.gemName(gemId), line: text.gemLine(gemId) })}
                 </>
               ) : (
                 <>
-                  <span aria-hidden="true" className="size-[22px] border border-dashed border-[#4a4266]" />
+                  <span aria-hidden="true" className="size-[22px] border-2 border-[#2a2250] bg-[#100c20] shadow-[inset_2px_2px_0_#0a0818]" />
                   {t('game.item.socketEmpty')}
                 </>
               )}
@@ -102,8 +106,8 @@ function GearBody({ item, equipped, worn, text }) {
       {unique && <p className="m-0 mb-1.5 text-[#ffb347]">{text.effect(unique.effect)}</p>}
 
       {diffs && (
-        <p className="m-0">
-          {t('game.item.compare')}{' '}
+        <p className="m-0 border-t-2 border-[#0a0818] pt-1.5 shadow-[inset_0_2px_0_#3e3170]">
+          <span className="text-[#a89fd0]">{t('game.item.compare')}</span>{' '}
           {diffs.length === 0
             ? t('game.item.same')
             : diffs.map(([stat, value]) => (

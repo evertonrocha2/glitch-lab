@@ -2,6 +2,7 @@ import { useId, useMemo } from 'react'
 import { useI18n } from '../../lib/i18n/I18nProvider.jsx'
 import GameIcon from './icons/game-icon.jsx'
 import { ActionButton, GameDialog } from './panel/panel-ui.jsx'
+import Frame from './ui/frame.jsx'
 
 // Counts in words ("212 inimigos, 3.400 de ouro, 4 itens") and durations ("2 h 15 min").
 export function useCounts() {
@@ -44,19 +45,13 @@ export default function AwayDialog({ away, studyClaimed, onClose }) {
 
   return (
     <GameDialog titleId={titleId} title={t('game.away.title')} closeLabel={t('game.tree.close')} onClose={onClose} width="w-[min(440px,95vw)]">
-      <div className="flex flex-col gap-2 p-1 text-[13px] leading-snug">
-        {away && <p className="m-0 text-[#b9b0de]">{t('game.away.time', { time: time(away.elapsedMs) })}</p>}
-        {hunt && (
-          <p className="m-0 flex items-start gap-2">
-            <GameIcon name="sword" size={2} />
-            <span>{t('game.away.hunt', { list: hunt })}</span>
-          </p>
-        )}
+      <div className="flex flex-col gap-2.5 text-[12px] leading-snug">
+        {away && <p className="m-0 text-[11px] text-[#a89fd0]">{t('game.away.time', { time: time(away.elapsedMs) })}</p>}
+        {hunt && <Line icon="sword">{t('game.away.hunt', { list: hunt })}</Line>}
         {study && (
-          <p className="m-0 flex items-start gap-2">
-            <GameIcon name="book" size={2} />
-            <span>{t('game.away.study', { list: study })}</span>
-          </p>
+          <Line icon="book" gold>
+            {t('game.away.study', { list: study })}
+          </Line>
         )}
         <span className="self-end">
           <ActionButton tone="gold" onClick={onClose}>
@@ -65,5 +60,18 @@ export default function AwayDialog({ away, studyClaimed, onClose }) {
         </span>
       </div>
     </GameDialog>
+  )
+}
+
+// One reward line: its icon in a sunk square, the text beside it. gold: the study line, framed like
+// the Hero tab's quest card.
+function Line({ icon, gold = false, children }) {
+  return (
+    <Frame as="p" tone={gold ? 'gold' : 'raised'} className="m-0 flex items-center gap-2.5 p-2">
+      <span className="grid size-10 shrink-0 place-items-center border-2 border-[#120c22] bg-[#100c20] shadow-[inset_2px_2px_0_#0a0818]">
+        <GameIcon name={icon} size={2} />
+      </span>
+      <span className="min-w-0">{children}</span>
+    </Frame>
   )
 }
