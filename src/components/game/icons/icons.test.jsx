@@ -22,6 +22,11 @@ const used = [
   'honor',
   'fragment',
   'gold',
+  'town',
+  'board',
+  'elixir-xp',
+  'elixir-damage',
+  'elixir-luck',
 ]
 
 it('has a recipe for every icon the game modules use', () => {

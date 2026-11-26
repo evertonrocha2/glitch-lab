@@ -104,6 +104,22 @@ const ICONS = {
   fragment: (g) => { poly(g, [[8, 0], [13, 6], [10, 15], [4, 11], [3, 5]], 'purple'); line(g, 8, 1, 7, 14, 'purple'); set(g, 6, 4, 'shine'); set(g, 6, 5, 'shine'); set(g, 9, 9, 'glow') },
 }
 
+// The town (fase 3): the Cidade tab's house, the quest board, and the alchemist's elixirs (a tall
+// flask apart from the round potions, its fill the elixir's color).
+const elixir = (fill) => (g) => {
+  poly(g, [[6, 5], [10, 5], [13, 11], [12, 15], [4, 15], [3, 11]], 'glass')
+  each((x, y) => { if (y >= 9 && g[y][x] === 'glass') g[y][x] = fill })
+  rect(g, 6, 2, 4, 3, 'glass')
+  rect(g, 5, 0, 6, 2, 'wood')
+  set(g, 5, 10, 'shine')
+  set(g, 8, 12, 'shine')
+}
+ICONS.town = (g) => { poly(g, [[0, 8], [8, 1], [16, 8]], 'blue'); rect(g, 2, 8, 12, 7, 'bone'); rect(g, 6, 10, 4, 5, 'wood'); rect(g, 3, 9, 2, 2, 'gold'); rect(g, 11, 9, 2, 2, 'gold'); rect(g, 11, 2, 2, 4, 'steel') }
+ICONS.board = (g) => { rect(g, 2, 9, 2, 7, 'wood'); rect(g, 12, 9, 2, 7, 'wood'); rect(g, 0, 1, 16, 10, 'wood'); rect(g, 2, 3, 5, 6, 'paper'); rect(g, 8, 2, 4, 5, 'paper'); rect(g, 12, 5, 3, 5, 'paper'); set(g, 4, 3, 'red'); set(g, 10, 2, 'gold'); rect(g, 3, 5, 3, 1, 'ink'); rect(g, 3, 7, 3, 1, 'ink'); rect(g, 9, 4, 2, 1, 'ink') }
+ICONS['elixir-xp'] = elixir('gold')
+ICONS['elixir-damage'] = elixir('fire')
+ICONS['elixir-luck'] = elixir('green')
+
 for (const [id, glyph] of Object.entries(SUPPORT_GLYPHS)) ICONS[`support-${id}`] = supportGem(SUPPORT_MATS[id], glyph)
 
 export const RECIPE_NAMES = Object.keys(ICONS)
