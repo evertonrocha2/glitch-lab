@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs'
 import { deflateSync } from 'node:zlib'
 import { LOGO_ROWS, LOGO_ROWS_DETAILED, LOGO_PALETTE, logoRuns } from '../src/components/ui/pixel-logo/logo-pixels.js'
 
-const NIGHT = '#120c22'
+const NIGHT = '#181c24'
 const out = (name) => new URL(`../public/${name}`, import.meta.url)
 
 const rgba = (hex) => {
