@@ -56,12 +56,13 @@ export function studyLedger({ examDays = [], cases = [], challenges = [], daily,
     if (target) branch[target]++
   }
 
-  for (const item of daily?.solved ?? []) row(item.day).dailies++
+  // Global puzzles share daily.solved; only the daily itself counts (as dailySummary and the streak do).
+  for (const item of daily?.solved ?? []) if (item.kind === 'daily') row(item.day).dailies++
   for (const item of riddle?.results ?? []) if (item.solved) row(item.day).glitchdles++
   for (const item of hunt?.runs ?? []) row(item.day).huntCorrect += item.correct ?? 0
   for (const item of duel?.results ?? []) {
     const target = row(item.day)
-    target.duelCorrect += item.score ?? 0
+    target.duelCorrect += item.correct ?? 0
     // Practice duels (bot or demo) give acertos but no honor, wins or losses.
     if (item.vsBot) continue
     if (item.outcome === 'win') target.duelWins++

@@ -47,9 +47,9 @@ describe('studyLedger', () => {
     riddle: { results: [{ day: D1, mode: 'x', guessCount: 3, solved: true }, { day: D1, mode: 'y', guessCount: 6, solved: false }] },
     hunt: { runs: [{ day: D1, correct: 2, answered: 4 }] },
     duel: { results: [
-      { day: D1, outcome: 'win', vsBot: true, score: 3 },
-      { day: D1, outcome: 'win', vsBot: false, score: 4 },
-      { day: D1, outcome: 'loss', vsBot: false, score: 1 },
+      { day: D1, outcome: 'win', vsBot: true, correct: 3 },
+      { day: D1, outcome: 'win', vsBot: false, correct: 4 },
+      { day: D1, outcome: 'loss', vsBot: false, correct: 1 },
     ] },
     review: { days: [{ day: D1, cards: 5, right: 4, completed: true }] },
   }
@@ -73,6 +73,11 @@ describe('studyLedger', () => {
     expect(CONCEPT_BRANCH['key-error']).toBe('sintaxe')
     expect(CONCEPT_BRANCH['async-await']).toBe('algoritmos')
     expect(AREA_BRANCH.matematica).toBe('algoritmos')
+  })
+  it('ignores global puzzles in daily.solved', () => {
+    const ledger = studyLedger({ daily: { solved: [{ kind: 'global', day: D1, difficulty: 1 }] } })
+    expect(ledger.totals.dailies).toBe(0)
+    expect(studyRewards(ledger)[D1]).toBeUndefined()
   })
   it('survives empty input', () => {
     const ledger = studyLedger({})
@@ -110,7 +115,7 @@ describe('studyRewards', () => {
     expect(rewards[D2]).toMatchObject({ key: 0, potions: 0 })
   })
   it('pays honor only for real duels', () => {
-    const honor = (vsBot, outcome) => studyRewards(studyLedger({ duel: { results: [{ day: D1, outcome, vsBot, score: 0 }] } }))[D1].honor
+    const honor = (vsBot, outcome) => studyRewards(studyLedger({ duel: { results: [{ day: D1, outcome, vsBot, correct: 0 }] } }))[D1].honor
     expect(honor(true, 'win')).toBe(0)
     expect(honor(false, 'win')).toBe(10)
     expect(honor(false, 'loss')).toBe(3)
@@ -122,7 +127,7 @@ describe('pendingStudy', () => {
     examDays: [{ day: D1, topic: mathTopic, answered: 10, correct: 10 }],
     daily: { solved: [{ kind: 'daily', day: D1, difficulty: 1 }] },
     riddle: { results: [{ day: D1, solved: true }] },
-    duel: { results: [{ day: D1, outcome: 'win', vsBot: false, score: 0 }] },
+    duel: { results: [{ day: D1, outcome: 'win', vsBot: false, correct: 0 }] },
   }))
   it('returns the unclaimed half', () => {
     const total = rewards[D1].fragments
