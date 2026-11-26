@@ -241,6 +241,7 @@ function TalentsView({ view, actions, runner, text }) {
     selected ? (
       <TalentCard
         key={selected.id}
+        icon={Object.hasOwn(treeSockets, selected.id) ? supportIcon(treeSockets[selected.id].support) : selected.icon}
         node={selected}
         state={stateOf(selected.id)}
         why={verdicts.get(selected.id).ok ? null : text.why(verdicts.get(selected.id).reason, selected, branch)}
@@ -376,8 +377,8 @@ function Legend({ shape, color, children }) {
 }
 
 // The selected node: name, kind, what it gives, its requirement and Take / Remove from queue. children:
-// what follows (a socket's picker).
-function TalentCard({ node, state, why, requirement, busy, text, headingRef, onTake, onUnqueue, children }) {
+// what follows (a socket's picker). icon: the node's, or the gem a socket holds.
+function TalentCard({ node, icon, state, why, requirement, busy, text, headingRef, onTake, onUnqueue, children }) {
   const { t } = text
   const titleId = useId()
   const color = BRANCH_COLORS[node.branch]
@@ -389,7 +390,7 @@ function TalentCard({ node, state, why, requirement, busy, text, headingRef, onT
       style={{ '--f-hi': color, '--f-lo': `color-mix(in srgb, ${color} 40%, #0a0818)` }}
     >
       <div className="mb-2 flex items-center gap-2 border-b-2 border-[#0a0818] pb-2 shadow-[0_2px_0_#3e3170]">
-        <GameIcon name={node.icon} size={node.kind === 'keystone' ? 2 : 1} />
+        <GameIcon name={icon ?? node.icon} size={node.kind === 'keystone' ? 2 : 1} />
         <div className="flex min-w-0 flex-col gap-1">
           <h3 id={titleId} ref={headingRef} tabIndex={-1} className="m-0 font-pixel text-[12px] font-normal leading-tight text-white focus-visible:outline-2 focus-visible:outline-[#f2c14e]">
             {text.name(node)}
