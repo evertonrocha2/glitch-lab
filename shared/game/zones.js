@@ -1,5 +1,5 @@
-// The Forest's hunting zones and how they open. suggestedPower is tuned against the combat sim: a hero at it
-// beats the boss, a hero at 70% of it does not. xp is what one plain kill pays (shared/game/xp.js), tuned so
+// The Forest's hunting zones, all open from the start. suggestedPower is tuned against the combat sim:
+// a hero at it beats the boss, a hero at 70% of it does not. xp is what one plain kill pays (shared/game/xp.js), tuned so
 // a hero with no study goes from level 5 to about 10 in about 2 hours of hunting (tests/shared/game-xp.test.js).
 import { DIFFICULTIES } from './enemies.js'
 import { FLORESTA_JS } from '../world/maps/floresta-js.js'
@@ -33,32 +33,18 @@ export const ZONES = {
   },
 }
 
-const FINAL = 'z3'
-const ORDER = ['normal', 'pesadelo', 'inferno']
-const done = (progress, worldId, difficulty) => progress?.[worldId]?.[difficulty] ?? []
-
-// progress: { [worldId]: { normal: string[], pesadelo: [], inferno: [] } } (beaten zone ids)
-const difficultyOpen = (progress, worldId, difficulty) => {
-  const at = ORDER.indexOf(difficulty)
-  if (at <= 0) return at === 0
-  return done(progress, worldId, ORDER[at - 1]).includes(FINAL)
-}
-
-export function zoneState(progress, worldId, difficulty, level) {
+// progress: { [worldId]: { normal: string[], pesadelo: [], inferno: [] } } (beaten zone ids).
+// Every zone of every difficulty is open from the start: danger is the only limit. A weak hero just
+// dies or earns little. minLevel (the zone's suggested level) and bossLevel stay as guidance.
+export function zoneState(progress, worldId, difficulty, _level) {
   const zones = ZONES[worldId]
   if (!zones || !DIFFICULTIES[difficulty]) return []
-  const open = difficultyOpen(progress, worldId, difficulty)
-  const beaten = done(progress, worldId, difficulty)
-  const list = Object.values(zones)
-  return list.map((zone, i) => {
-    const levelOk = level >= Math.max(zone.minLevel, DIFFICULTIES[difficulty].minLevel)
-    const prevBeaten = i === 0 || beaten.includes(list[i - 1].id)
-    return {
-      id: zone.id,
-      unlocked: open && prevBeaten && levelOk,
-      beaten: beaten.includes(zone.id),
-      minLevel: zone.minLevel,
-      bossLevel: zone.bossLevel,
-    }
-  })
+  const beaten = progress?.[worldId]?.[difficulty] ?? []
+  return Object.values(zones).map((zone) => ({
+    id: zone.id,
+    unlocked: true,
+    beaten: beaten.includes(zone.id),
+    minLevel: zone.minLevel,
+    bossLevel: zone.bossLevel,
+  }))
 }

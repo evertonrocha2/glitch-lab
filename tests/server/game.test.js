@@ -67,7 +67,7 @@ const STRONG = [
   gear('aaaaaaaaaaa2', 'chest', 'armadura', [{ id: 'vital', tier: 4, value: 170 }, { id: 'fortified', tier: 4, value: 58 }]),
 ]
 
-it('starts a new player at level 1 with no gold and only the first Normal zone open', async () => {
+it('starts a new player at level 1 with no gold and every zone of every difficulty open', async () => {
   const body = await bodyOf(await get())
   expect(body.level.level).toBe(1)
   expect(body.hero.gold).toBe(0)
@@ -80,8 +80,7 @@ it('starts a new player at level 1 with no gold and only the first Normal zone o
   // No acertos today: XP x1.0.
   expect(body.study.xpMultiplier).toBe(1)
   const zones = body.zones[FOREST]
-  expect(zones.normal.map((zone) => zone.unlocked)).toEqual([true, false, false])
-  expect([...zones.pesadelo, ...zones.inferno].some((zone) => zone.unlocked)).toBe(false)
+  for (const difficulty of ['normal', 'pesadelo', 'inferno']) expect(zones[difficulty].map((zone) => zone.unlocked)).toEqual([true, true, true])
   // GET only reads: nothing was saved.
   expect(await store.getGameHero('alice')).toBeNull()
 })
@@ -159,10 +158,15 @@ it('stops a hunt after settling it', async () => {
   expect(stopped.huntPreview).toBeNull()
 })
 
-it('refuses a locked zone and bad hunt intents with 400', async () => {
-  const locked = await post('/hunt', { world: FOREST, zone: 'z2', difficulty: 'normal' })
-  expect(locked.status).toBe(400)
-  expect((await locked.json()).message).toBe('This zone is still locked.')
+it('starts a hunt in zone 3 at level 1, on any difficulty', async () => {
+  const deep = await bodyOf(await post('/hunt', { world: FOREST, zone: 'z3', difficulty: 'normal' }))
+  expect(deep.level.level).toBe(1)
+  expect(deep.hero.hunt).toMatchObject({ world: FOREST, zone: 'z3', difficulty: 'normal' })
+  const inferno = await bodyOf(await post('/hunt', { world: FOREST, zone: 'z2', difficulty: 'inferno' }))
+  expect(inferno.hero.hunt).toMatchObject({ zone: 'z2', difficulty: 'inferno' })
+})
+
+it('refuses bad hunt intents with 400', async () => {
   for (const body of [{ world: 'nowhere', zone: 'z1', difficulty: 'normal' }, { world: FOREST, zone: 'constructor', difficulty: 'normal' }, { world: FOREST, zone: 'z1', difficulty: 'easy' }, { world: FOREST, zone: 'z1' }]) {
     expect((await post('/hunt', body)).status).toBe(400)
   }
@@ -227,10 +231,19 @@ it('subtracts the potions a hunt drank, never below zero', async () => {
   expect(synced.hero.potions.hp).toBeLessThanOrEqual(1)
 })
 
-it('refuses a boss above the hero level, and records a win with its loot', async () => {
-  const early = await post('/boss', { world: FOREST, zone: 'z1', difficulty: 'normal' })
-  expect(early.status).toBe(400)
-  expect((await early.json()).message).toBe('Your hero needs a higher level for this boss.')
+it('lets a level 1 hero fight any boss, and a loss marks nothing', async () => {
+  for (const [zone, difficulty] of [['z3', 'normal'], ['z1', 'pesadelo']]) {
+    const res = await post('/boss', { world: FOREST, zone, difficulty })
+    expect(res.status).toBe(200)
+    const body = await bodyOf(res)
+    expect(body.level.level).toBe(1)
+    expect(body.fight.won).toBe(false)
+    expect(body.fight.loot).toMatchObject({ items: 0, gems: 0, xp: 0 })
+    expect(body.hero.progress[FOREST]?.[difficulty] ?? []).toEqual([])
+  }
+})
+
+it('records a boss win with its loot', async () => {
 
   // Gym passes are app XP: enough of them lift the hero to the first boss's level.
   await gymPasses(8)
@@ -373,12 +386,12 @@ it('migrates a hero saved without xp to the xp its study gives, stores it on the
   expect(after.talentPoints.total).toBe(before.talentPoints.total + 1)
 })
 
-it('opens what a level gates as soon as hunt XP reaches it', async () => {
+it('levels up from hunt XP, with zone 2 open before and after', async () => {
   const hero = newHero()
   hero.xp = xpForLevel(8) - 1
   hero.progress = { [FOREST]: { normal: ['z1'] } }
   await store.saveGameHero('alice', hero, 0)
-  expect((await game()).zones[FOREST].normal.find((zone) => zone.id === 'z2').unlocked).toBe(false)
+  expect((await game()).zones[FOREST].normal.find((zone) => zone.id === 'z2').unlocked).toBe(true)
   await startHunt()
   later(HOUR)
   const synced = await bodyOf(await post('/sync'))

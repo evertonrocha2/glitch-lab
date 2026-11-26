@@ -38,7 +38,7 @@ describe('zones data', () => {
     for (const zone of Object.values(z)) for (const id of zone.enemies) expect(ENEMIES.find((e) => e.id === id && !e.boss)).toBeTruthy()
   })
   it('no longer opens the forest zones by the old study rule', () => {
-    for (const zone of FLORESTA_JS.zones) expect(zone.requirement).toBeNull()
+    for (const zone of FLORESTA_JS.zones) expect(zone.requirement ?? null).toBeNull()
   })
 })
 
@@ -84,30 +84,27 @@ describe('enemyFor', () => {
 })
 
 describe('zoneState', () => {
-  it('opens only z1 for a new level 1 hero', () => {
-    const s = zoneState(none, 'floresta-js', 'normal', 1)
-    expect(ids(s)).toEqual(['z1'])
-    expect(s.map((z) => z.id)).toEqual(['z1', 'z2', 'z3'])
-    expect(s[1]).toMatchObject({ minLevel: 8, bossLevel: 10, beaten: false })
+  it('opens every zone of every difficulty for a new level 1 hero', () => {
+    for (const difficulty of ['normal', 'pesadelo', 'inferno']) {
+      const s = zoneState(none, 'floresta-js', difficulty, 1)
+      expect(ids(s)).toEqual(['z1', 'z2', 'z3'])
+    }
   })
-  it('needs the level even with the boss beaten', () => {
-    expect(ids(zoneState(beaten(['z1']), 'floresta-js', 'normal', 7))).toEqual(['z1'])
-    expect(ids(zoneState(beaten(['z1']), 'floresta-js', 'normal', 8))).toEqual(['z1', 'z2'])
+  it('keeps the zone and boss levels as guidance', () => {
+    const s = zoneState(none, 'floresta-js', 'normal', 1)
+    expect(s.map((z) => z.id)).toEqual(['z1', 'z2', 'z3'])
+    expect(s[1]).toMatchObject({ unlocked: true, minLevel: 8, bossLevel: 10, beaten: false })
+  })
+  it('opens zone 3 without the bosses before it beaten', () => {
+    expect(ids(zoneState(beaten([]), 'floresta-js', 'normal', 7))).toContain('z3')
   })
   it('marks beaten zones', () => {
     expect(zoneState(beaten(['z1']), 'floresta-js', 'normal', 8)[0].beaten).toBe(true)
+    expect(zoneState(beaten([], ['z2']), 'floresta-js', 'pesadelo', 1)[1].beaten).toBe(true)
   })
-  it('keeps pesadelo closed until the hidra falls in normal, and needs level 25', () => {
-    expect(ids(zoneState(beaten(['z1', 'z2']), 'floresta-js', 'pesadelo', 40))).toEqual([])
-    const done = beaten(['z1', 'z2', 'z3'])
-    expect(ids(zoneState(done, 'floresta-js', 'pesadelo', 24))).toEqual([])
-    expect(ids(zoneState(done, 'floresta-js', 'pesadelo', 25))).toEqual(['z1'])
-  })
-  it('opens inferno after the hidra falls in pesadelo', () => {
-    const p = { 'floresta-js': { normal: ['z3'], pesadelo: [], inferno: [] } }
-    expect(ids(zoneState(p, 'floresta-js', 'inferno', 50))).toEqual([])
-    const q = { 'floresta-js': { normal: ['z3'], pesadelo: ['z3'], inferno: [] } }
-    expect(ids(zoneState(q, 'floresta-js', 'inferno', 40))).toEqual(['z1'])
+  it('opens pesadelo and inferno before the hidra falls', () => {
+    expect(ids(zoneState(beaten(['z1']), 'floresta-js', 'pesadelo', 2))).toEqual(['z1', 'z2', 'z3'])
+    expect(ids(zoneState(none, 'floresta-js', 'inferno', 2))).toEqual(['z1', 'z2', 'z3'])
   })
   it('returns nothing for a world that is not hunted', () => {
     expect(zoneState({}, 'caverna-sql', 'normal', 50)).toEqual([])
