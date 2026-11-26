@@ -12,10 +12,10 @@ beforeAll(() => {
 
 describe('stageOffset: the camera follows the hero', () => {
   const crop = { w: 16, h: 10 }
-  it('slides the map so the hero sits in the middle', () => {
+  it('slides the map so the hero sits in the middle, a bit high, clear of the skill bar', () => {
     const at = stageOffset(FLORESTA_JS, { x: 15.5, y: 9.5 }, crop)
     expect(at.left).toBeCloseTo((-(15.5 + 0.5 - 8) / 16) * 100)
-    expect(at.top).toBeCloseTo((-(9.5 + 0.5 - 5) / 10) * 100)
+    expect(at.top).toBeCloseTo((-(9.5 + 1 + 0.5 - 5) / 10) * 100)
   })
   it('stops at the map edges', () => {
     expect(stageOffset(FLORESTA_JS, { x: 0, y: 0 }, crop)).toEqual({ left: -0, top: -0 })

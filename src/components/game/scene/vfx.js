@@ -366,12 +366,14 @@ const PAINT = {
       })
     }
     const tick = env.reduced ? 0 : Math.floor(env.ms / 70)
-    withAlpha(ctx, 0.9 * a, () => {
-      for (let i = 0; i < 18; i++) {
-        const ang = (i / 18) * Math.PI * 2
-        const fx0 = x + Math.cos(ang) * 13
-        const base = y - 13 + Math.sin(ang) * 16
-        const h = 3 + Math.floor(hash(i, tick, 81) * 7)
+    withAlpha(ctx, 0.6 * a, () => {
+      // Flames on the ground ring around the hero's feet and up its sides, never over its face.
+      for (let i = 0; i < 12; i++) {
+        const ang = (i / 12) * Math.PI * 2
+        const side = Math.cos(ang)
+        const fx0 = x + side * 15
+        const base = y - 2 + Math.sin(ang) * 5 - (Math.abs(side) > 0.6 ? 10 : 0)
+        const h = 3 + Math.floor(hash(i, tick, 81) * 6)
         rect(ctx, fx0, base - h, 2, h, hash(i, tick, 83) > 0.4 ? '#ff3a2a' : '#ffae5a')
         rect(ctx, fx0, base - h, 1, 1, '#fff0c0')
       }

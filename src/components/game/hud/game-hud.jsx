@@ -242,7 +242,7 @@ export default function GameHud({
         aria-live="off"
         aria-label={t('game.hud.log')}
         style={{ '--f-bg': LOG_BG }}
-        className={`absolute bottom-[70px] left-2 w-[270px] max-w-[calc(100%-1rem)] px-2.5 py-1.5 text-[10px] ${events.length ? '' : 'opacity-0'}`}
+        className={`absolute bottom-[70px] left-2 w-[270px] max-w-[calc(100%-4.5rem)] px-2.5 py-1.5 text-[10px] max-sm:opacity-85 ${events.length ? '' : 'opacity-0'}`}
       >
         <ul>
           {events.map((ev, i) => {
@@ -254,7 +254,8 @@ export default function GameHud({
                 key={`${ev.t ?? i}-${i}`}
                 data-tone={line.tone}
                 data-rarity={line.rarity}
-                className={`my-px truncate ${LOG_TONE_CLASS[line.tone]}`}
+                // On a phone only the last two lines show, so the log leaves the fight in sight.
+                className={`my-px truncate ${LOG_TONE_CLASS[line.tone]} ${age >= 2 ? 'max-sm:hidden' : ''}`}
                 style={{ opacity: LOG_FADE[age] ?? LOG_FADE.at(-1), color: line.rarity ? RARITY_TRIM[line.rarity] : undefined }}
               >
                 {line.text}

@@ -7,7 +7,6 @@ import AwayDialog, { useCounts } from './away-dialog.jsx'
 import GameHud from './hud/game-hud.jsx'
 import { gearOf } from './hero/gear.js'
 import GameIcon from './icons/game-icon.jsx'
-import HeroLoading from './loading/hero-loading.jsx'
 import LookDialog from './look-dialog.jsx'
 import GamePanel, { TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
@@ -130,9 +129,11 @@ function cropFor(world, rect, { w, h }) {
 }
 
 // Where the map sits in the stage for a camera on the hero at pos (tiles): the map's left and top as
-// percents of the crop, snapped to whole art pixels so the pixels stay crisp.
+// percents of the crop, snapped to whole art pixels so the pixels stay crisp. The hero sits a little
+// above the middle (LIFT of the height), clear of the skill bar and the log at the bottom.
+const LIFT = 0.1
 export function stageOffset(world, pos, crop) {
-  const camera = cameraOn(world, pos, crop)
+  const camera = cameraOn(world, { x: pos.x, y: pos.y + crop.h * LIFT }, crop)
   const snap = (n) => Math.round(n * 16) / 16
   return { left: (-snap(camera.x) / crop.w) * 100, top: (-snap(camera.y) / crop.h) * 100 }
 }
@@ -453,7 +454,9 @@ function GameScreen({ worldId, api, onLeave, studyHref }) {
             {error}
           </p>
         ) : (
-          <HeroLoading className="aspect-[16/10] border-2 border-ink" />
+          <div role="status" className="grid aspect-[16/10] place-items-center border-2 border-ink bg-[#120e26] font-pixel text-sm text-[#c3b2ff]">
+            {t('game.view.loading')}
+          </div>
         )}
       </div>
     )
