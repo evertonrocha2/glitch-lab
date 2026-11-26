@@ -109,12 +109,17 @@ it('refuses broken positions with 400', async () => {
   expect((await world()).position).toEqual(spawnOf('laboratorio'))
 })
 
-it('refuses a tile in a still-locked zone of an open world with 400', async () => {
+it('lets the hero stand in zones 2 and 3 of an open world, and still refuses a locked world', async () => {
+  expect((await put({ world: 'caverna-sql', x: 13, y: 2 })).status).toBe(400)
   await gymPasses(3)
   expect((await put({ world: 'caverna-sql', x: 3, y: 10 })).status).toBe(200)
-  const locked = await put({ world: 'caverna-sql', x: 13, y: 2 })
-  expect(locked.status).toBe(400)
-  expect((await world()).position).toEqual({ world: 'caverna-sql', x: 3, y: 10 })
+  // 3 challenges used to open only zone 1; zones 2 (8) and 3 (20) now open with the world.
+  expect((await put({ world: 'caverna-sql', x: 13, y: 2 })).status).toBe(200)
+  expect((await put({ world: 'caverna-sql', x: 24, y: 10 })).status).toBe(200)
+  expect((await world()).position).toEqual({ world: 'caverna-sql', x: 24, y: 10 })
+  const tower = await put({ world: 'torre-matematica', x: 13, y: 2 })
+  expect(tower.status).toBe(400)
+  expect((await tower.json()).message).toBe('This world is still locked.')
 })
 
 it('sends a hero standing somewhere no longer valid back to a spawn', async () => {

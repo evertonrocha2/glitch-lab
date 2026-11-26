@@ -10,7 +10,8 @@ import { loadRiddle } from '../glitchdle/solved.js'
 import { loadHunt } from '../hunt/solved.js'
 import { MESSAGES, toPosition } from './world.model.js'
 
-// Glitch World: which worlds and zones the student's study opened, and where their hero stands.
+// Glitch World: which worlds the student's study opened (their zones open with them), and where
+// their hero stands.
 // Unlocks are worked out on every read from what's already saved (like getProgress); only the
 // position is stored, and only so the hero comes back to the same place.
 
@@ -36,7 +37,7 @@ function standable(state, { world: worldId, x, y }) {
 
 const spawnOf = (worldId) => ({ world: worldId, ...worldById(worldId).spawn })
 
-// The saved place, or a spawn when it stopped being valid (a map changed, or a zone locked again
+// The saved place, or a spawn when it stopped being valid (a map changed, or a world locked again
 // because a question was removed): the same world's spawn if it's still open, else the hub's.
 // A hunt world isn't walked: a hero saved inside one comes back on the hub tile beside its portal.
 function placeFor(state, saved) {

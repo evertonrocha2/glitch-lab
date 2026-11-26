@@ -9,8 +9,8 @@ import { TORRE_MATEMATICA } from './maps/torre-matematica.js'
 // Every Glitch World map, hub first. A world is:
 // { id, kind: 'hub'|'tech'|'enem', area (ENEM area id or null), requirement (to open its portal, or
 //   null), rows (one character per tile, see tiles.js), spawn {x,y}, portals [{x,y,to,at:{x,y}}],
-//   zones [{ id: 'z2'|'z3', rect: {x,y,w,h}, requirement }] (tiles outside them are zone 1, always
-//   open), terminals [{x,y,kind:'topic'|'daily'|'glitchdle'|'hunt',topicId?}] }.
+//   zones [{ id: 'z2'|'z3', rect: {x,y,w,h} }] (tiles outside them are zone 1; every zone of a world
+//   is open once the world is), terminals [{x,y,kind:'topic'|'daily'|'glitchdle'|'hunt',topicId?}] }.
 // A requirement is { signal: 'enemCorrect'|'codeSolved', area?, count } (see unlocks.js).
 // World ids are saved with each player's position: renaming one sends those players to the hub.
 export const HUB_ID = 'laboratorio'

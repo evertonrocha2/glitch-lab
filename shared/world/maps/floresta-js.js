@@ -1,4 +1,4 @@
-// Floresta do JavaScript: the first world, open from the start, and a hunt world: its zones open by boss kills and level (shared/game/zones.js).
+// Floresta do JavaScript: the first world, open from the start, and a hunt world: all its zones are open, danger is the limit (shared/game/zones.js).
 // Its terminals open the daily puzzle, Glitchdle and Line Hunt.
 // Drawn on a 32x20 grid: zone 1 on the left, z2 in the middle and z3 on the right, each behind a door.
 export const FLORESTA_JS = {
@@ -33,8 +33,8 @@ export const FLORESTA_JS = {
     { x: 1, y: 10, to: 'laboratorio', at: { x: 2, y: 2 } },
   ],
   zones: [
-    { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 }, requirement: null },
-    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 }, requirement: null },
+    { id: 'z2', rect: { x: 11, y: 0, w: 11, h: 20 } },
+    { id: 'z3', rect: { x: 22, y: 0, w: 10, h: 20 } },
   ],
   terminals: [
     { x: 2, y: 6, kind: 'daily' },
