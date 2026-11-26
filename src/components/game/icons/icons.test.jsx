@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { BASES } from '../../../../shared/game/items.js'
+import { SUPPORT_IDS } from '../../../../shared/game/skill-mods.js'
 import { SKILL_ICONS } from '../../../../shared/game/skills.js'
 import { TALENT_ICONS } from '../../../../shared/game/talents.js'
 import GameIcon from './game-icon.jsx'
@@ -25,6 +26,10 @@ const used = [
 
 it('has a recipe for every icon the game modules use', () => {
   for (const name of new Set(used)) expect(RECIPE_NAMES, name).toContain(name)
+})
+
+it('has a support gem icon for every support gem', () => {
+  for (const id of SUPPORT_IDS) expect(RECIPE_NAMES).toContain(`support-${id}`)
 })
 
 it('draws every recipe on a 16x16 grid with at least 20 pixels', () => {
