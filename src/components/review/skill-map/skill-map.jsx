@@ -25,7 +25,7 @@ function Bar({ mastery, level }) {
           y={0}
           width={SEGMENT - 1}
           height={6}
-          fill={index < filled ? LEVEL_FILL[Math.max(level, 1)] : '#100c20'}
+          fill={index < filled ? LEVEL_FILL[Math.max(level, 1)] : '#1f1844'}
         />
       ))}
     </svg>

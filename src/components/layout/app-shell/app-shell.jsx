@@ -93,7 +93,7 @@ const AppHeader = memo(function AppHeader() {
   const unread = useUnreadMessages()
   const t = useT()
   return (
-    <header className="border-b border-arcane-hi/15 bg-[#0c081a]">
+    <header className="border-b border-arcane-hi/15 bg-[#171037]">
       {/* Top row: the brand on the left; the language, the assistant, notifications and your account on the right. */}
       <div className={`${COLUMN} flex items-center justify-between gap-2 py-3 sm:gap-3`}>
         <Link to="/" className="flex min-w-0 items-center gap-2 whitespace-nowrap font-pixel text-lg text-ink sm:gap-2.5 sm:text-[22px]">

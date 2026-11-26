@@ -84,15 +84,15 @@
 
   /* Noite arcana (docs/superpowers/specs/2026-11-26-site-noite-arcana-design.md): the whole site is
      dark. These are the named tokens, for new code: bg-night, bg-panel, text-gold, border-line-hi... */
-  --color-void: #0a0818;
-  --color-night: #120c22;
-  --color-panel: #1b1433;
-  --color-raised: #241c44;
-  --color-inset: #100c20;
-  --color-line: #3e3170;
-  --color-line-hi: #574a96;
+  --color-void: #170f33;
+  --color-night: #1e1642;
+  --color-panel: #2a2054;
+  --color-raised: #362a68;
+  --color-inset: #1f1844;
+  --color-line: #4f4192;
+  --color-line-hi: #7465c4;
   --color-text: #e9e4ff;
-  --color-muted: #a89fd0;
+  --color-muted: #c4bbec;
   --color-arcane: #8a5cff;
   --color-arcane-hi: #c3a6ff;
   --color-arcane-deep: #5a2fd9;
@@ -115,10 +115,10 @@
      violet line; "white" surfaces are panels (text-white stays white); "mist" is the night.
      Tailwind reads --border-color-*, --background-color-* and --text-color-* before --color-*. */
   --color-ink: #e9e4ff;
-  --border-color-ink: #574a96;
-  --background-color-ink: #574a96;
-  --background-color-white: #1b1433;
-  --color-mist: #120c22;
+  --border-color-ink: #7465c4;
+  --background-color-ink: #7465c4;
+  --background-color-white: #2a2054;
+  --color-mist: #1e1642;
 
   /* Purple marks the "why" (understanding). Blue marks practice (doing). Text gets the lighter cut
      (4.5:1 on a panel); fills under white text get the deeper one (4.5:1 under white). */
@@ -126,13 +126,13 @@
   --text-color-primary: #c3a6ff;
   --background-color-primary: #6a3df0;
   --color-primary-strong: #5a2fd9;
-  --color-primary-soft: #2b2058;
+  --color-primary-soft: #3a2b75;
   --color-secondary: #4fa3ff;
   --text-color-secondary: #7dbbff;
   --background-color-secondary: #2360cc;
-  --color-secondary-soft: #15264a;
+  --color-secondary-soft: #1f3466;
   /* The warning callout's soft fill (pale yellow on paper). */
-  --color-warn-soft: #2a2312;
+  --color-warn-soft: #3a3018;
 }
 
 /* 1-bit dither: a 6px pixel checkerboard that fades out across the panel. */
@@ -322,7 +322,7 @@
 @layer components {
   .gw-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #6a5bb0 #0a0818;
+    scrollbar-color: #8576d0 #170f33;
   }
 }
 
@@ -410,7 +410,7 @@
 /* The field's edge is lighter than the card outline so it clears 3:1 against the panel. */
 :is(input, textarea, select).bg-white {
   background-color: var(--color-inset);
-  border-color: #6f60b8;
+  border-color: #8576d0;
   box-shadow: inset 2px 2px 0 var(--color-void);
 }
 
