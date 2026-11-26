@@ -202,7 +202,7 @@ function NotesSection({ notes }) {
 export default function BoardSheet({ cases, notes, progress, date }) {
   const t = useT()
   return (
-    <div className="w-250 bg-white font-sans text-base text-ink">
+    <div className="theme-paper w-250 bg-white font-sans text-base text-ink">
       <header data-sheet-block className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-12 py-6">

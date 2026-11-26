@@ -92,7 +92,7 @@ export default function NoteSheet({ note, cases, date }) {
   const casesById = new Map(cases.map((item) => [item.id, item]))
   const line = summary(note.blocks, t)
   return (
-    <div className="w-200 bg-white font-sans text-base text-ink">
+    <div className="theme-paper w-200 bg-white font-sans text-base text-ink">
       <header className="relative overflow-hidden border-b-2 border-ink">
         <div aria-hidden="true" className="dither-primary absolute inset-0 opacity-20" />
         <div className="relative flex items-center justify-between gap-6 px-14 py-6">

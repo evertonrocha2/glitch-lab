@@ -131,6 +131,8 @@
   --text-color-secondary: #7dbbff;
   --background-color-secondary: #2360cc;
   --color-secondary-soft: #15264a;
+  /* The warning callout's soft fill (pale yellow on paper). */
+  --color-warn-soft: #2a2312;
 }
 
 /* 1-bit dither: a 6px pixel checkerboard that fades out across the panel. */
@@ -418,4 +420,51 @@
 
 :is(input, textarea).bg-white::placeholder {
   color: color-mix(in srgb, var(--color-muted) 80%, transparent);
+}
+
+/* Paper: the exported sheets (note and board PNG/PDF) print on white, so inside them the old light
+   palette comes back for every token the components use. */
+.theme-paper {
+  --color-ink: #1c1d26;
+  --border-color-ink: #1c1d26;
+  --background-color-ink: #1c1d26;
+  --background-color-white: #ffffff;
+  --color-mist: #f4f5f8;
+  --color-muted: #5b5f70;
+  --color-line: #e3e5ec;
+  --color-primary: #6a3df0;
+  --text-color-primary: #6a3df0;
+  --background-color-primary: #6a3df0;
+  --color-primary-soft: #efeafe;
+  --color-secondary: #1a4fe0;
+  --text-color-secondary: #1a4fe0;
+  --background-color-secondary: #1a4fe0;
+  --color-secondary-soft: #e8eeff;
+  --color-warn-soft: #fff6d6;
+  color-scheme: light;
+  color: var(--color-ink);
+}
+
+.theme-paper .shadow-pixel {
+  --tw-shadow-color: #6a3df0;
+}
+
+.theme-paper .shadow-pixel-muted {
+  --tw-shadow-color: #b9bdc9;
+}
+
+.theme-paper .shadow-pixel-ink {
+  --tw-shadow-color: #1c1d26;
+}
+
+/* Glitchdle boards (src/components/glitchdle/boards/boards.jsx keeps its light-era classes): the
+   amber "close" cell keeps its dark text (gold ink on amber, 9:1), and a guess card's hairlines and
+   empty grid tail are the void, the kit's dark seams, instead of the violet line. */
+.bg-\[\#f5b800\],
+.bg-\[\#f5b800\] .text-ink {
+  color: var(--color-gold-ink);
+}
+
+li.bg-ink.\[content-visibility\:auto\] {
+  background-color: var(--color-void);
 }
