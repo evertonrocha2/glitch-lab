@@ -93,7 +93,7 @@ export default {
     'landing.v2.cta.world': 'Open the Glitch World',
     'landing.v2.cta.note': 'Free, with an email and a password',
 
-    'landing.v2.footer.made': 'StudyQuest · GLITCHATHON 2026 · Glitch Detective',
+    'landing.v2.footer.made': 'StudyQuest · 2026',
     'landing.v2.footer.links': 'More',
   },
   'pt-BR': {
@@ -199,7 +199,7 @@ export default {
     'landing.v2.cta.world': 'Abrir o Glitch World',
     'landing.v2.cta.note': 'Grátis, com e-mail e senha',
 
-    'landing.v2.footer.made': 'StudyQuest · GLITCHATHON 2026 · Glitch Detective',
+    'landing.v2.footer.made': 'StudyQuest · 2026',
     'landing.v2.footer.links': 'Mais',
   },
 }

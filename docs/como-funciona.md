@@ -27,7 +27,7 @@ Este guia explica onde cada parte do StudyQuest roda, como elas conversam, como 
 
 Um laboratório de debug para quem está aprendendo a programar. Em vez de entregar a correção, ele explica por que o código quebrou, guarda o erro como um caso e treina a pessoa com bugs parecidos até ela parar de errar.
 
-O nome do hackathon (GLITCHATHON 2026) é a trilha "Glitch Detective". O produto cresceu além de investigar bugs, então virou Glitch Lab, e depois StudyQuest, quando ganhou ENEM, comunidade e o jogo Glitch World. O repositório e a API no Render continuam com o nome `glitch-lab`.
+O produto começou como Glitch Detective, investigando bugs. Cresceu além disso, então virou Glitch Lab, e depois StudyQuest, quando ganhou ENEM, comunidade e o jogo Glitch World. O repositório e a API no Render continuam com o nome `glitch-lab`.
 
 ## Onde cada coisa roda
 

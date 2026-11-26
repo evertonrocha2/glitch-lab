@@ -11,7 +11,7 @@ export default {
     'landing.nav.board': 'My board',
     'landing.nav.signIn': 'Sign in',
     'landing.nav.signUp': 'Create account',
-    'landing.footer.ai': 'Explanations by Gemini. AI can be wrong, so test the fix yourself.',
+    'landing.footer.ai': 'Explanations by AI. AI can be wrong, so test the fix yourself.',
 
     // Hero
     'landing.hero.kicker': '> debugging gym for students',
@@ -304,7 +304,7 @@ export default {
     'landing.nav.board': 'Meu board',
     'landing.nav.signIn': 'Entrar',
     'landing.nav.signUp': 'Criar conta',
-    'landing.footer.ai': 'Explicações feitas pelo Gemini. A IA pode errar, então teste a correção você mesmo.',
+    'landing.footer.ai': 'Explicações feitas por IA. A IA pode errar, então teste a correção você mesmo.',
 
     'landing.hero.kicker': '> gym de debug para estudantes',
     'landing.hero.line1': 'Cole o erro.',

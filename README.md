@@ -2,7 +2,7 @@
 
 > Paste the error. Understand why. Practice so it never happens again.
 
-A **debugging gym for programming students**, built for GLITCHATHON 2026 (track: Glitch Detective). In English and Brazilian Portuguese.
+A **debugging gym for programming students**. In English and Brazilian Portuguese.
 
 **Live:** https://playstudyquest.vercel.app (create a free account to try it). The API sleeps when idle on Render's free plan, so the first request can take about 50 seconds.
 
