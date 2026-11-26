@@ -38,6 +38,14 @@ const cases = [
   ['openChest', (t) => api.openChest(t), '/api/game/chests/open', 'POST', undefined],
   ['buyPotions', (t) => api.buyPotions('hp', 3, t), '/api/game/potions/buy', 'POST', { kind: 'hp', count: 3 }],
   ['saveLook', (t) => api.saveLook(look, t), '/api/game/look', 'PUT', look],
+  ['buyMarketItem', (t) => api.buyMarketItem('i1', undefined, t), '/api/game/market/buy', 'POST', { itemId: 'i1' }],
+  ['buyMarketItem with a tier', (t) => api.buyMarketItem('i1', 2, t), '/api/game/market/buy', 'POST', { itemId: 'i1', tier: 2 }],
+  ['sellItems', (t) => api.sellItems(['i1', 'i2'], t), '/api/game/market/sell', 'POST', { itemIds: ['i1', 'i2'] }],
+  ['rerollMarket', (t) => api.rerollMarket(undefined, t), '/api/game/market/reroll', 'POST', {}],
+  ['buyElixir', (t) => api.buyElixir('xp', 'fragments', t), '/api/game/alchemist/elixir', 'POST', { type: 'xp', currency: 'fragments' }],
+  ['buyJewel', (t) => api.buyJewel('support', 'fogo', t), '/api/game/jeweler/buy', 'POST', { kind: 'support', id: 'fogo' }],
+  ['combineGems', (t) => api.combineGems(['g1', 'g2', 'g3'], t), '/api/game/jeweler/combine', 'POST', { gemIds: ['g1', 'g2', 'g3'] }],
+  ['claimQuest', (t) => api.claimQuest('hunt', t), '/api/game/quests/claim', 'POST', { questId: 'hunt' }],
 ]
 
 it.each(cases)('%s sends the right request and returns the JSON', async (_name, run, url, method, body) => {
@@ -47,6 +55,16 @@ it.each(cases)('%s sends the right request and returns the JSON', async (_name, 
   const made = call()
   expect(made.url).toMatch(/\?today=\d{4}-\d{2}-\d{2}$/)
   expect({ ...made, url: made.url.replace(/\?today=[\d-]+$/, '') }).toEqual({ url, method, body, auth: 'Bearer t1' })
+})
+
+it("reads one tier's market, or the level's own without a tier", async () => {
+  fetch.mockImplementation(async () => Response.json({ market: {} }))
+  await expect(api.getMarket(3, 't1')).resolves.toEqual({ market: {} })
+  expect(call().url).toMatch(/^\/api\/game\/market\?today=\d{4}-\d{2}-\d{2}&tier=3$/)
+  fetch.mockClear()
+  await api.getMarket(undefined, 't1')
+  expect(call()).toMatchObject({ method: 'GET', auth: 'Bearer t1' })
+  expect(call().url).toMatch(/^\/api\/game\/market\?today=\d{4}-\d{2}-\d{2}$/)
 })
 
 it('exposes status and code on a conflict', async () => {
