@@ -136,7 +136,7 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         </div>
       )}
 
-      <ul aria-label={t('game.hud.difficulties')} className={`${PANEL} pointer-events-auto right-2 top-[68px] flex gap-1 p-1`}>
+      <ul aria-label={t('game.hud.difficulties')} className={`${PANEL} pointer-events-auto right-2 top-[92px] flex gap-1 p-1 sm:top-[68px]`}>
         {Object.entries(DIFFICULTIES).map(([id, d]) => {
           const locked = level.level < d.minLevel
           const name = t(`game.diff.${id}`)
@@ -154,7 +154,8 @@ export default function GameHud({ view, live = {}, boss, log = [], onFullscreen,
         })}
       </ul>
 
-      <div role="log" aria-label={t('game.hud.log')} className={`${PANEL} bottom-[66px] left-2 w-[270px] text-[10px]`}>
+      {/* Empty, the log stays in place for screen readers but draws nothing. */}
+      <div role="log" aria-label={t('game.hud.log')} className={`${PANEL} bottom-[66px] left-2 w-[270px] max-w-[calc(100%-1rem)] text-[10px] ${events.length ? '' : 'opacity-0'}`}>
         <ul>
           {events.map((ev, i) => {
             const line = lineOf(ev)

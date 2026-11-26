@@ -40,7 +40,7 @@ function schedule(playback) {
   const speed = playback.speed ?? (playback.loop ? HUNT_SPEED : BOSS_SPEED)
   let at = 0
   const runs = playback.fights.map((fight) => {
-    const run = { start: at + (playback.walk === false ? 0 : WALK_MS), frames: timeline(fight, { speed }), len: duration(fight, { speed }) }
+    const run = { start: at + (playback.walk === false ? 0 : WALK_MS), frames: timeline(fight, { speed }), len: duration(fight, { speed }), foe: fight.enemy?.sprite ? fight.enemy : null }
     at = run.start + run.len
     return run
   })
@@ -51,8 +51,8 @@ function schedule(playback) {
 function stateAt(plan, ms, loop) {
   const t = loop ? ms % plan.total : Math.min(ms, plan.total)
   const run = plan.runs.find((r, i) => t < r.start + r.len || i === plan.runs.length - 1)
-  if (t < run.start) return { walking: true, p: (t - (run.start - WALK_MS)) / WALK_MS }
-  return { walking: false, ...sample(run.frames, t - run.start) }
+  if (t < run.start) return { walking: true, p: (t - (run.start - WALK_MS)) / WALK_MS, foe: run.foe }
+  return { walking: false, foe: run.foe, ...sample(run.frames, t - run.start) }
 }
 
 function layer(width, height, paint) {
@@ -70,7 +70,7 @@ function layer(width, height, paint) {
 // light pass are drawn each frame. With prefers-reduced-motion: one still frame, no fireflies, still water.
 //   world: a map from shared/world/maps/. zoneRect: the zone being hunted, in tiles (actors stand in it).
 //   lockedRects: rects to cover in fog. look: { hood, outfit, hair }. enemy: { sprite, elite } for the foe
-//   on stage (optional). playback: { fights, loop, speed? } plays fight logs (see playback.js); a loop walks 1.5 s between fights. zoneName: overrides the label.
+//   on stage (optional); a fight in the playback carrying its own `enemy` ({ sprite, elite }) wins over it. playback: { fights, loop, speed? } plays fight logs (see playback.js); a loop walks 1.5 s between fights. zoneName: overrides the label.
 export default function GameScene({ world, zoneRect, lockedRects = [], look, playback, enemy, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
@@ -136,8 +136,10 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, pla
 
     const draw = (time) => {
       const te = reduced ? 0 : time
-      const { look: heroLook, enemy: foe } = live.current
+      const { look: heroLook } = live.current
       const now = play(time)
+      // A fight that names its own foe ({ sprite, elite }) draws it; otherwise the enemy prop.
+      const foe = now?.foe ?? live.current.enemy
       const heroAnim = now ? (now.walking ? { anim: 'walk', p: now.p } : now.hero) : { anim: 'idle', p: 0 }
       const foeAnim = now && !now.walking ? now.enemy : { anim: 'idle', p: 0 }
       const showFoe = foe?.sprite && !(now?.walking)

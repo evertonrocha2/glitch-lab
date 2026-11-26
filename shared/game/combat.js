@@ -16,7 +16,7 @@ export const TICK_MS = 100
 export const TRASH_TIMEOUT_MS = 60000
 export const POTION_COOLDOWN_MS = 10000
 
-const MANA_REGEN = 0.02 // of max mana, per second
+export const MANA_REGEN = 0.02 // of max mana, per second
 const HP_POTION = 0.35
 const MP_POTION = 0.4
 const BOSS_SKILL_MS = 8000

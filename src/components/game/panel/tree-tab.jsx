@@ -1,11 +1,10 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useId, useMemo, useRef, useState } from 'react'
 import { CHANCE } from '../../../../shared/game/combat-effects.js'
 import { canAllocate, MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, TALENTS } from '../../../../shared/game/talents.js'
 import { capitalize } from '../../../lib/i18n/format.js'
 import GameIcon from '../icons/game-icon.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
-import { ActionButton, ConfirmButton } from './panel-ui.jsx'
+import { ActionButton, ConfirmButton, GameDialog } from './panel-ui.jsx'
 import SkillsView from './skills-view.jsx'
 import TalentCanvas, { BRANCH_COLORS } from './talent-canvas.jsx'
 
@@ -15,7 +14,6 @@ const BRANCHES = ['logica', 'sintaxe', 'algoritmos']
 const NODE_BY_ID = new Map(TALENTS.nodes.map((node) => [node.id, node]))
 // Before the View carried branch counts: every requirement counts as unmet.
 const NO_BRANCH = {}
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 // Where a node sits, for nodes whose name and kind repeat (many small nodes share stats): how many
 // steps past the nearest named node (root, notable, keystone or bridge), and whether it is on a side path.
@@ -293,7 +291,7 @@ function TalentsView({ view, actions, runner, text }) {
       </span>
 
       {expanded && (
-        <TreeDialog titleId={titleId} title={t('game.tree.title')} closeLabel={t('game.tree.close')} onClose={() => setExpanded(false)}>
+        <GameDialog titleId={titleId} title={t('game.tree.title')} closeLabel={t('game.tree.close')} onClose={() => setExpanded(false)}>
           <p className="m-0 text-[11px]">{freeLine}</p>
           {canvas}
           {nodeList(dialogCard)}
@@ -307,65 +305,9 @@ function TalentsView({ view, actions, runner, text }) {
             {card(dialogCard)}
             {queueBar}
           </div>
-        </TreeDialog>
+        </GameDialog>
       )}
     </>
-  )
-}
-
-// A modal over the page: focus moves in and comes back to the opener, Tab stays inside, Escape and
-// the dimmed backdrop close it.
-function TreeDialog({ titleId, title, closeLabel, onClose, children }) {
-  const panel = useRef(null)
-
-  useEffect(() => {
-    const opener = document.activeElement
-    panel.current?.focus()
-    return () => opener?.focus?.()
-  }, [])
-
-  function onKeyDown(event) {
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      onClose()
-      return
-    }
-    if (event.key !== 'Tab') return
-    const items = [...panel.current.querySelectorAll(FOCUSABLE)]
-    if (items.length === 0) return
-    const first = items[0]
-    const last = items[items.length - 1]
-    if (event.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
-      event.preventDefault()
-      last.focus()
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first.focus()
-    }
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2">
-      <button type="button" tabIndex={-1} aria-label={closeLabel} onClick={onClose} className="absolute inset-0 cursor-default bg-[#05040c]/75" />
-      <div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        onKeyDown={onKeyDown}
-        className="relative flex max-h-[95vh] w-[min(760px,95vw)] flex-col gap-2 overflow-y-auto border-2 border-[#8a5cff] bg-[#120e26] p-2 font-mono text-xs text-[#ece8ff] shadow-[0_0_0_2px_#0a0818,6px_6px_0_rgba(0,0,0,.5)] focus-visible:outline-none"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <h2 id={titleId} className="m-0 text-[13px] font-bold text-white">
-            {title}
-          </h2>
-          <ActionButton onClick={onClose}>{closeLabel}</ActionButton>
-        </div>
-        {children}
-      </div>
-    </div>,
-    document.body,
   )
 }
 
