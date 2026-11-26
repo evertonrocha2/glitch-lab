@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { DIFFICULTIES } from '../../../../shared/game/enemies.js'
 import { ACERTOS_PER_POINT } from '../../../../shared/game/fuel.js'
 import { BAG_SIZE } from '../../../../shared/game/items.js'
@@ -6,6 +6,7 @@ import { HUNT_WORLDS, ZONES } from '../../../../shared/game/zones.js'
 import { gearOf } from '../hero/gear.js'
 import { HeroCanvas } from '../hero/hero-canvas.jsx'
 import GameIcon from '../icons/game-icon.jsx'
+import { ItemPopover, ItemTip, cellIn, useItemPeek } from '../item-popover/item-popover.jsx'
 import ItemTooltip from '../item-tooltip/item-tooltip.jsx'
 import { useStudyWindow } from '../study-window/study-window-provider.jsx'
 import { useItemText } from '../item-tooltip/item-text.js'
@@ -80,29 +81,45 @@ export function bossTarget(view, target) {
   return { boss: def.boss, suggested: Math.round(def.suggestedPower * diff.mult), approx: diff.mult !== 1 }
 }
 
-// The Hero tab: the paper doll (the live hero on a pedestal, four slots each side), the worn item's
-// tooltip and actions, the study quest card, the power bar against the next boss and the stats.
+// The Hero tab: the paper doll (the live hero on a pedestal, four slots each side; a worn item shows a
+// tooltip on hover or focus and, on click, a popover beside its slot with Unequip and Forge), the study quest card, the power bar against the next boss and the stats.
 // The doll and the quest card come first: the desktop console shows about 400px of the tab.
 // onEditLook (optional): opens the character creator; without it the Appearance button is hidden.
-export default function HeroTab({ view, actions, runner, selectedId, onSelect, onForge, target, studyHref, onEditLook }) {
+export default function HeroTab({ view, actions, runner, onSelect, onForge, target, studyHref, onEditLook }) {
   const text = useItemText()
   const { t } = text
+  const doll = useRef(null)
+  // The worn item whose popover is open (one at a time), and the one the tooltip is on.
+  const [openId, setOpenId] = useState(null)
+  const tip = useItemPeek()
   const worn = view.hero.items.filter((item) => item.equipped)
-  const selected = worn.find((item) => item.id === selectedId)
+  const selected = worn.find((item) => item.id === openId)
+  const peeked = selected ? undefined : worn.find((item) => item.id === tip.id)
   const bagFull = view.hero.items.length - worn.length >= BAG_SIZE
+  // Opening one also selects it for the panel, so the Forge tab starts on it.
+  const show = (id) => {
+    setOpenId(id)
+    if (id) onSelect(id)
+  }
+  const unequipped = () => {
+    setOpenId(null)
+    onSelect(null)
+  }
 
   return (
     <>
-      <Doll view={view} worn={worn} selectedId={selectedId} onSelect={onSelect} onEditLook={onEditLook} text={text} />
+      <Doll view={view} worn={worn} scope={doll} openId={selected?.id} onOpen={show} tip={tip} peekedId={peeked?.id} onEditLook={onEditLook} text={text} />
+
+      {peeked && <ItemTip id={tip.tipId} item={peeked} anchor={cellIn(doll, peeked.id)} worn hint={t('gamePopover.hint')} />}
 
       {selected && (
-        <div className="flex flex-col gap-1.5">
+        <ItemPopover key={selected.id} label={text.name(selected)} anchor={cellIn(doll, selected.id)} closeLabel={t('gamePopover.close')} onClose={() => setOpenId(null)}>
           <ItemTooltip item={selected} worn={worn} />
           <div className="flex flex-wrap gap-1.5">
             <ActionButton
               busy={runner.busy}
               why={bagFull ? t('game.why.bagFull') : null}
-              onClick={() => runner.run(() => actions.unequipSlot(selected.equipped)).then((done) => done && onSelect(null))}
+              onClick={() => runner.run(() => actions.unequipSlot(selected.equipped)).then((done) => done && unequipped())}
             >
               {t('game.act.unequip')}
             </ActionButton>
@@ -110,7 +127,7 @@ export default function HeroTab({ view, actions, runner, selectedId, onSelect, o
               {t('game.act.forge')}
             </ActionButton>
           </div>
-        </div>
+        </ItemPopover>
       )}
 
       <StudyQuest study={view.study} href={studyHref} text={text} />
@@ -121,7 +138,9 @@ export default function HeroTab({ view, actions, runner, selectedId, onSelect, o
 }
 
 // The paper doll: slots left and right, the hero (wearing what is equipped) on a pedestal between.
-function Doll({ view, worn, selectedId, onSelect, onEditLook, text }) {
+// scope: a ref on the doll (the popover finds its slot in it). openId / onOpen(id): the slot whose
+// popover is open. tip / peekedId: the hover tooltip.
+function Doll({ view, worn, scope, openId, onOpen, tip, peekedId, onEditLook, text }) {
   const { t } = text
   const bySlot = Object.fromEntries(worn.map((item) => [item.equipped, item]))
   const gear = useMemo(() => gearOf(view.hero.items), [view.hero.items])
@@ -137,8 +156,12 @@ function Doll({ view, worn, selectedId, onSelect, onEditLook, text }) {
               <ItemCell
                 item={item}
                 label={t('game.hero.slotItem', { slot: slotName, name: text.cellLabel(item) })}
-                selected={item.id === selectedId}
-                onClick={() => onSelect(item.id === selectedId ? null : item.id)}
+                selected={item.id === openId}
+                popup
+                expanded={item.id === openId}
+                onPeek={(on) => tip.peek(item.id, on)}
+                describedBy={item.id === peekedId ? tip.tipId : undefined}
+                onClick={() => onOpen(item.id === openId ? null : item.id)}
               />
             ) : (
               <EmptyCell label={t('game.hero.emptySlot', { slot: slotName })} icon={SLOT_ICON[slot]} name={t(`game.slotShort.${slot}`)} />
@@ -151,7 +174,7 @@ function Doll({ view, worn, selectedId, onSelect, onEditLook, text }) {
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: a fieldset is for form controls; this only groups the slots and the hero.
-    <div role="group" aria-label={t('game.hero.gear')} className="grid grid-cols-[minmax(44px,56px)_minmax(0,1fr)_minmax(44px,56px)] gap-1.5">
+    <div ref={scope} role="group" aria-label={t('game.hero.gear')} className="grid grid-cols-[minmax(44px,56px)_minmax(0,1fr)_minmax(44px,56px)] gap-1.5">
       {column(LEFT)}
       <div className="flex min-w-0 flex-col items-center justify-center">
         <HeroCanvas look={view.hero.look} gear={gear} scale={4} animate label={t('game.hero.doll')} className="block h-auto max-w-full" />
