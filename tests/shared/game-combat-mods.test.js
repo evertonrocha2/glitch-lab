@@ -20,14 +20,14 @@ const at = (r, t, pred) => of(r, (e) => e.t === t && pred(e))
 const PACK = [dummy(1, 0), dummy(0, 1.2), dummy(-1, -0.5)]
 
 describe('passives', () => {
-  it('golpeTwice: each golpe cast is followed at once by a second cleave at 60%', () => {
+  it('golpeTwice: each golpe cast is followed at once by a second cleave at 50%', () => {
     const r = run(['golpe'], { effects: ['golpeTwice'], foes: PACK })
     const first = of(r, (e) => e.skill === 'golpe')[0]
     const both = at(r, first.t, (e) => e.skill === 'golpe')
     expect(both).toHaveLength(2)
     expect(both[1].echo).toBe(true)
     expect(targets(both[1]).sort()).toEqual([0, 1, 2])
-    for (const hit of both[1].hits) expect(hit.amount).toBe(Math.round(100 * S.golpe.power * 0.6))
+    for (const hit of both[1].hits) expect(hit.amount).toBe(Math.round(100 * S.golpe.power * 0.5))
     const plain = run(['golpe'], { foes: PACK })
     expect(of(plain, (e) => e.skill === 'golpe').length * 2).toBe(of(r, (e) => e.skill === 'golpe').length)
   })
@@ -160,12 +160,12 @@ describe('supports', () => {
     expect(targets(of(run(['raio'], { supports: ['encadear'], foes: line }), (e) => e.skill === 'raio')[0])).toHaveLength(5)
   })
 
-  it('concentrado: golpe hits 35% harder on a smaller circle', () => {
-    const r = run(['golpe'], { supports: ['concentrado'], foes: [dummy(1, 0), dummy(1.5, 0)] })
+  it('concentrado: golpe hits 30% harder on a smaller circle', () => {
+    const r = run(['golpe'], { supports: ['concentrado'], foes: [dummy(1, 0), dummy(1.6, 0)] })
     const cast = of(r, (e) => e.skill === 'golpe')[0]
     expect(targets(cast)).toEqual([0])
-    expect(cast.hits[0].amount).toBe(Math.round(100 * S.golpe.power * 1.35))
-    expect(cast.radius).toBeCloseTo(1.26)
+    expect(cast.hits[0].amount).toBe(Math.round(100 * S.golpe.power * 1.3))
+    expect(cast.radius).toBeCloseTo(1.44)
   })
 
   it('areaAmpla: golpe reaches 2.34 tiles', () => {
