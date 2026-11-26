@@ -147,12 +147,12 @@ it('follows the hero down a road into the next region and saves it through the A
   await key('ArrowLeft', 'keyup')
   await act(() => vi.advanceTimersByTimeAsync(FADE_MS))
   expect(await screen.findByRole('heading', { level: 1, name: 'Floresta do JavaScript' })).toBeInTheDocument()
-  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'floresta-js', x: 30, y: 10 }, 'token-ana', { keepalive: false }))
+  await vi.waitFor(() => expect(saveWorldPosition).toHaveBeenCalledWith({ world: 'floresta-js', x: 46, y: 15 }, 'token-ana', { keepalive: false }))
 })
 
 it('hunts the zone the hero stands in through the API', async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
-  vi.mocked(getWorld).mockResolvedValue(at({ world: 'floresta-js', x: 29, y: 10 }))
+  vi.mocked(getWorld).mockResolvedValue(at({ world: 'floresta-js', x: 44, y: 15 }))
   open()
   await scene()
   await act(() => vi.advanceTimersByTimeAsync(2000))

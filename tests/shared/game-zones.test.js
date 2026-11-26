@@ -36,7 +36,7 @@ describe('zones data', () => {
     expect([...HUNT_WORLDS].sort()).toEqual(WORLDS.filter((world) => world.id !== HUB_ID).map((world) => world.id).sort())
     const z = ZONES['floresta-js']
     // The town's road comes into the Forest from the east: the clearing is there, the roots far west.
-    expect(z.z1.rect).toEqual({ x: 22, y: 0, w: 10, h: 20 })
+    expect(z.z1.rect).toEqual({ x: 32, y: 0, w: 16, h: 32 })
     for (const zone of FLORESTA_JS.zones) expect(z[zone.id].rect).toEqual(zone.rect)
     expect([z.z1.boss, z.z2.boss, z.z3.boss]).toEqual(['rei-slime', 'aranha-assincrona', 'hidra-undefined'])
     for (const world of HUNT_WORLDS) {
