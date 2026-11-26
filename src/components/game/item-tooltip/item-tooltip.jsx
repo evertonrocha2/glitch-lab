@@ -66,6 +66,7 @@ function GearBody({ item, equipped, worn, text }) {
       {item.affixes.length > 0 && (
         <ul aria-label={t('game.item.affixes')} className="m-0 mb-1.5 list-disc pl-3.5 text-[#8fb8ff]">
           {item.affixes.map((affix, at) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: affixes are positions (a reroll swaps one in place).
             <li key={`${affix.id}-${at}`} className={affix.value < 0 ? 'text-[#ff9aa6]' : undefined}>
               {text.affixLine(affix)}
             </li>
