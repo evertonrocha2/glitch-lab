@@ -78,7 +78,7 @@ function LevelChip({ avatar, progress }) {
       )}
       <span aria-hidden="true" className="hidden gap-1.5 sm:grid">
         <span className="font-pixel text-xs leading-none text-gold">{progress ? t('app.nav.levelChip', { level: progress.level }) : ' '}</span>
-        <span className="block h-[5px] w-[72px] bg-void shadow-[0_0_0_1px_#2a2250]">
+        <span className="block h-[5px] w-[72px] bg-void shadow-[0_0_0_1px_#363e4c]">
           <span className="block h-full bg-linear-to-r from-arcane to-arcane-hi" style={{ width: `${Math.round(share * 100)}%` }} />
         </span>
       </span>
@@ -93,7 +93,7 @@ const AppHeader = memo(function AppHeader() {
   const unread = useUnreadMessages()
   const t = useT()
   return (
-    <header className="border-b border-arcane-hi/15 bg-[#171037]">
+    <header className="border-b border-arcane-hi/15 bg-[#14171d]">
       {/* Top row: the brand on the left; the language, the assistant, notifications and your account on the right. */}
       <div className={`${COLUMN} flex items-center justify-between gap-2 py-3 sm:gap-3`}>
         <Link to="/" className="flex min-w-0 items-center gap-2 whitespace-nowrap font-pixel text-lg text-ink sm:gap-2.5 sm:text-[22px]">

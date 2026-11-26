@@ -8,11 +8,12 @@
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Hard pixel drop shadows, cut darker than their color so they read as depth on the night. */
-  --shadow-pixel: 4px 4px 0 #3d1fa0;
-  --shadow-pixel-secondary: 4px 4px 0 #143f8f;
-  --shadow-pixel-ink: 4px 4px 0 #05030e;
-  --shadow-pixel-muted: 4px 4px 0 #2a2250;
+  /* Hard pixel drop shadows: near-black slate, faintly tinted toward their color, so they read as
+     depth on the night without a colored glow. */
+  --shadow-pixel: 4px 4px 0 #101823;
+  --shadow-pixel-secondary: 4px 4px 0 #0f1815;
+  --shadow-pixel-ink: 4px 4px 0 #07080b;
+  --shadow-pixel-muted: 4px 4px 0 #0c0e12;
   --shadow-pixel-gold: 4px 4px 0 #6e4a12;
 
   --animate-walk: walk 0.6s steps(2, jump-none) infinite alternate;
@@ -82,20 +83,22 @@
     }
   }
 
-  /* Noite arcana (docs/superpowers/specs/2026-11-26-site-noite-arcana-design.md): the whole site is
-     dark. These are the named tokens, for new code: bg-night, bg-panel, text-gold, border-line-hi... */
-  --color-void: #170f33;
-  --color-night: #1e1642;
-  --color-panel: #2a2054;
-  --color-raised: #362a68;
-  --color-inset: #1f1844;
-  --color-line: #4f4192;
-  --color-line-hi: #7465c4;
-  --color-text: #e9e4ff;
-  --color-muted: #c4bbec;
-  --color-arcane: #8a5cff;
-  --color-arcane-hi: #c3a6ff;
-  --color-arcane-deep: #5a2fd9;
+  /* Ardósia (docs/superpowers/specs/2026-11-26-site-noite-arcana-design.md): the whole site is dark,
+     graphite slate with a calm steel blue, gold for the calls to action. These are the named tokens,
+     for new code: bg-night, bg-panel, text-gold, border-line-hi... "arcane" is the steel accent (the
+     name stays so the classes keep working). */
+  --color-void: #12151b;
+  --color-night: #181c24;
+  --color-panel: #20252f;
+  --color-raised: #29303c;
+  --color-inset: #171b23;
+  --color-line: #363e4c;
+  --color-line-hi: #4e5869;
+  --color-text: #e8eaee;
+  --color-muted: #b0b6c1;
+  --color-arcane: #6f9bc6;
+  --color-arcane-hi: #a9c3dd;
+  --color-arcane-deep: #4f7aa6;
   --color-gold: #f2c14e;
   --color-gold-hi: #fff1b0;
   --color-gold-dark: #9a6a1c;
@@ -112,25 +115,25 @@
 
   /* The old light names keep working, flipped to the night: "ink" is the light text (text-ink,
      fill-ink) but the outline (border-ink) and the hairline fills between cells (bg-ink) are the
-     violet line; "white" surfaces are panels (text-white stays white); "mist" is the night.
+     slate line; "white" surfaces are panels (text-white stays white); "mist" is the night.
      Tailwind reads --border-color-*, --background-color-* and --text-color-* before --color-*. */
-  --color-ink: #e9e4ff;
-  --border-color-ink: #7465c4;
-  --background-color-ink: #7465c4;
-  --background-color-white: #2a2054;
-  --color-mist: #1e1642;
+  --color-ink: #e8eaee;
+  --border-color-ink: #4e5869;
+  --background-color-ink: #4e5869;
+  --background-color-white: #20252f;
+  --color-mist: #181c24;
 
-  /* Purple marks the "why" (understanding). Blue marks practice (doing). Text gets the lighter cut
-     (4.5:1 on a panel); fills under white text get the deeper one (4.5:1 under white). */
-  --color-primary: #8a5cff;
-  --text-color-primary: #c3a6ff;
-  --background-color-primary: #6a3df0;
-  --color-primary-strong: #5a2fd9;
-  --color-primary-soft: #3a2b75;
-  --color-secondary: #4fa3ff;
-  --text-color-secondary: #7dbbff;
-  --background-color-secondary: #2360cc;
-  --color-secondary-soft: #1f3466;
+  /* Steel blue marks the "why" (understanding). Sage marks practice (doing). Text gets the lighter
+     cut (4.5:1 on a panel); fills under white text get the deeper one (4.5:1 under white). */
+  --color-primary: #6f9bc6;
+  --text-color-primary: #a9c3dd;
+  --background-color-primary: #4a76a3;
+  --color-primary-strong: #4f7aa6;
+  --color-primary-soft: #26344a;
+  --color-secondary: #7fae9a;
+  --text-color-secondary: #a5cbbb;
+  --background-color-secondary: #4f7f6b;
+  --color-secondary-soft: #223a32;
   /* The warning callout's soft fill (pale yellow on paper). */
   --color-warn-soft: #3a3018;
 }
@@ -322,7 +325,7 @@
 @layer components {
   .gw-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #8576d0 #170f33;
+    scrollbar-color: #6b7587 #12151b;
   }
 }
 
@@ -371,10 +374,11 @@
     color: var(--color-gold-ink);
   }
 
+  /* The steel button: every stop keeps white text at 4.5:1. */
   .kit-arcane {
-    --k-hi: #a985ff;
-    --k-lo: #2a1066;
-    background: linear-gradient(180deg, #7a4cff, #6a3df0 55%, #5a2fd9);
+    --k-hi: #86a9cc;
+    --k-lo: #22364d;
+    background: linear-gradient(180deg, #4d79a6, #4a76a3 55%, #43699a);
     color: #fff;
   }
 
@@ -384,7 +388,7 @@
   }
 
   .kit-raised:not(:disabled):hover {
-    background: #2c2354;
+    background: #252b36;
   }
 
   .kit-frame {
@@ -393,7 +397,7 @@
     box-shadow:
       inset 2px 2px 0 var(--color-line),
       inset -2px -2px 0 var(--color-void),
-      6px 6px 0 0 rgb(5 3 14 / 0.9);
+      6px 6px 0 0 rgb(8 9 12 / 0.9);
   }
 
   .kit-inset {
@@ -401,7 +405,7 @@
     border: 2px solid var(--color-void);
     box-shadow:
       inset 2px 2px 0 var(--color-void),
-      inset -2px -2px 0 #2a2250;
+      inset -2px -2px 0 #262c37;
   }
 }
 
@@ -410,7 +414,7 @@
 /* The field's edge is lighter than the card outline so it clears 3:1 against the panel. */
 :is(input, textarea, select).bg-white {
   background-color: var(--color-inset);
-  border-color: #8576d0;
+  border-color: #6b7587;
   box-shadow: inset 2px 2px 0 var(--color-void);
 }
 
@@ -434,21 +438,21 @@
   --color-mist: #f4f5f8;
   --color-muted: #5b5f70;
   --color-line: #e3e5ec;
-  --color-primary: #6a3df0;
-  --text-color-primary: #6a3df0;
-  --background-color-primary: #6a3df0;
-  --color-primary-soft: #efeafe;
-  --color-secondary: #1a4fe0;
-  --text-color-secondary: #1a4fe0;
-  --background-color-secondary: #1a4fe0;
-  --color-secondary-soft: #e8eeff;
+  --color-primary: #3f6a96;
+  --text-color-primary: #3f6a96;
+  --background-color-primary: #3f6a96;
+  --color-primary-soft: #e8eef5;
+  --color-secondary: #3d6b58;
+  --text-color-secondary: #3d6b58;
+  --background-color-secondary: #3d6b58;
+  --color-secondary-soft: #e6f0eb;
   --color-warn-soft: #fff6d6;
   color-scheme: light;
   color: var(--color-ink);
 }
 
 .theme-paper .shadow-pixel {
-  --tw-shadow-color: #6a3df0;
+  --tw-shadow-color: #3f6a96;
 }
 
 .theme-paper .shadow-pixel-muted {
@@ -461,7 +465,7 @@
 
 /* Glitchdle boards (src/components/glitchdle/boards/boards.jsx keeps its light-era classes): the
    amber "close" cell keeps its dark text (gold ink on amber, 9:1), and a guess card's hairlines and
-   empty grid tail are the void, the kit's dark seams, instead of the violet line. */
+   empty grid tail are the void, the kit's dark seams, instead of the slate line. */
 .bg-\[\#f5b800\],
 .bg-\[\#f5b800\] .text-ink {
   color: var(--color-gold-ink);

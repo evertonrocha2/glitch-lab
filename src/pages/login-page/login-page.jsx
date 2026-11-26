@@ -102,7 +102,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-mist">
-      <header className="border-b border-arcane-hi/15 bg-[#171037]">
+      <header className="border-b border-arcane-hi/15 bg-[#14171d]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
           <Link to="/" className="flex items-center gap-2.5 font-pixel text-[22px] text-ink">
             <PixelLogo className="size-8" />

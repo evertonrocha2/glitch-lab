@@ -23,7 +23,7 @@ export default function PublicHeader({ showTry = true }) {
   const { user } = useAuth()
   const t = useT()
   return (
-    <header className="border-b border-arcane-hi/15 bg-[#171037]">
+    <header className="border-b border-arcane-hi/15 bg-[#14171d]">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-5 gap-y-3 px-5 py-3.5 sm:px-8">
         <Link to="/" className="flex items-center gap-2 whitespace-nowrap font-pixel text-lg text-ink sm:gap-2.5 sm:text-[22px]">
           <PixelLogo className="size-7 sm:size-8" />
