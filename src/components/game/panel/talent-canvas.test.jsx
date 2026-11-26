@@ -44,6 +44,22 @@ it('draws keystones as octagons and every edge', () => {
   expect(calls.some(([name, text]) => name === 'fillText' && text === 'Logic')).toBe(true)
 })
 
+it('draws branch labels bigger when the canvas is shown small', () => {
+  const fonts = []
+  const { ctx } = stubContext()
+  const labels = { logica: { name: 'Logic', sub: 'damage' } }
+  const spy = new Proxy(ctx, {
+    set(target, key, value) {
+      if (key === 'font') fonts.push(value)
+      target[key] = value
+      return true
+    },
+  })
+  drawTree(spy, { ...empty, labels }, null, 2)
+  expect(fonts).toContain('bold 28px ui-monospace, Menlo, monospace')
+  expect(fonts).toContain('20px ui-monospace, Menlo, monospace')
+})
+
 it('does not throw without a 2D context', () => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   expect(() => render(<TalentCanvas {...empty} onSelect={() => {}} />)).not.toThrow()

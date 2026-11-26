@@ -102,7 +102,7 @@ function SkillsBody({ view, actions, runner }) {
       </section>
 
       <span>
-        <ActionButton tone="gold" busy={runner.busy} why={changed ? null : t('game.why.unchanged')} onClick={save}>
+        <ActionButton tone="gold" busy={runner.busy} why={changed ? null : t('game.why.unchanged')} quiet onClick={save}>
           {t('game.loadout.save')}
         </ActionButton>
       </span>

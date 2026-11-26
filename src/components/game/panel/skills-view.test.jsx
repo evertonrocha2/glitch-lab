@@ -85,6 +85,8 @@ it('reorders the loadout and saves the new order', async () => {
 it('adds and removes skills from the loadout', async () => {
   const { actions } = ui({ view: makeView({ skills: { owned: { golpe: 1, raio: 1 }, loadout: ['golpe', null, null, null] } }) })
   expect(screen.getByRole('button', { name: 'Save' })).toHaveAccessibleDescription('Nothing changed')
+  // A plain state, not a problem: muted, not the error red.
+  expect(screen.getByText('Nothing changed')).toHaveClass('text-[#9a93b8]')
   fireEvent.click(screen.getByRole('button', { name: 'Equip Bolt' }))
   fireEvent.click(screen.getByRole('button', { name: 'Remove Strike' }))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))

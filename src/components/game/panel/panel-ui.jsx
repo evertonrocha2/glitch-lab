@@ -9,8 +9,9 @@ const TONES = {
 }
 
 // A panel button. why: the reason it is off, shown as text under it and tied to it with
-// aria-describedby, so a disabled button always says why. busy: an action is running.
-export function ActionButton({ children, onClick, why = null, busy = false, tone = 'default', pressed }) {
+// aria-describedby, so a disabled button always says why. busy: an action is running. quiet: the why is
+// a plain state (nothing to save), not a problem, so it shows muted instead of red.
+export function ActionButton({ children, onClick, why = null, busy = false, tone = 'default', pressed, quiet = false }) {
   const whyId = useId()
   return (
     <span className="inline-flex flex-col gap-0.5">
@@ -25,7 +26,7 @@ export function ActionButton({ children, onClick, why = null, busy = false, tone
         {children}
       </button>
       {why && (
-        <small id={whyId} className="text-[10px] text-[#ff9aa6]">
+        <small id={whyId} className={`text-[10px] ${quiet ? 'text-[#9a93b8]' : 'text-[#ff9aa6]'}`}>
           {why}
         </small>
       )}

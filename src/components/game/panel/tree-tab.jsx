@@ -1,4 +1,5 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CHANCE } from '../../../../shared/game/combat-effects.js'
 import { canAllocate, MAX_KEYSTONES, RESPEC_GOLD_PER_POINT, TALENTS } from '../../../../shared/game/talents.js'
 import { capitalize } from '../../../lib/i18n/format.js'
@@ -12,12 +13,29 @@ const BOX = 'flex flex-col gap-1.5 border-2 border-[#2e2650] bg-[#160f2e] p-1.5'
 const VIEWS = ['talents', 'skills']
 const BRANCHES = ['logica', 'sintaxe', 'algoritmos']
 const NODE_BY_ID = new Map(TALENTS.nodes.map((node) => [node.id, node]))
+// Before the View carried branch counts: every requirement counts as unmet.
+const NO_BRANCH = {}
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-// The View doesn't carry per-branch correct answers, so the client lets branch requirements pass and
-// the server decides (its refusal comes back with reason 'requirement').
-const ANY_BRANCH = Object.fromEntries(TALENTS.nodes.filter((node) => node.requires).map((node) => [node.requires.branch, Infinity]))
+// Where a node sits, for nodes whose name and kind repeat (many small nodes share stats): how many
+// steps past the nearest named node (root, notable, keystone or bridge), and whether it is on a side path.
+const PARENT = new Map()
+for (const [from, to] of TALENTS.edges) if (!PARENT.has(to)) PARENT.set(to, from)
+const SAME_NAME = new Map()
+const nameKey = (node) => (node.kind === 'small' && node.branch !== 'bridge' ? `${node.branch}:${JSON.stringify(node.stats)}` : node.id)
+for (const node of TALENTS.nodes) SAME_NAME.set(nameKey(node), (SAME_NAME.get(nameKey(node)) ?? 0) + 1)
+function placeOf(node) {
+  if (SAME_NAME.get(nameKey(node)) < 2) return null
+  let steps = 0
+  let at = node
+  do {
+    at = NODE_BY_ID.get(PARENT.get(at.id))
+    steps++
+  } while (at.kind === 'small' && at.branch !== 'bridge')
+  return { steps, anchor: at, side: /-f\d+-/.test(node.id) }
+}
 
-// What a keystone's effect does, one line each; neg lines are the price.
+// What a keystone's effect does, one line each; down lines are the price.
 const EFFECT_LINES = {
   bruteForce: [['game.keystone.bruteForce', 'down']],
   strongTyping: [['game.keystone.strongTyping', 'up']],
@@ -30,11 +48,11 @@ const EFFECT_VARS = { recursion: { chance: Math.round(CHANCE.recursion * 100) } 
 
 // The queue as it still stands on top of the allocated nodes: in order, each one that can still be
 // taken. Removing a node drops the queued nodes that hung on it.
-function settle(allocated, queue, free) {
+function settle(allocated, queue, free, branch) {
   const have = [...allocated]
   const kept = []
   for (const id of queue) {
-    if (canAllocate(have, id, { free: free - kept.length, branch: ANY_BRANCH }).ok) {
+    if (canAllocate(have, id, { free: free - kept.length, branch }).ok) {
       kept.push(id)
       have.push(id)
     }
@@ -54,14 +72,37 @@ function useTalentText() {
       if (node.branch === 'bridge') return t('game.tree.kind.bridge')
       return t(`game.tree.kind.${node.kind}`, { branch: branchName(node.branch) })
     }
+    // The hidden list's label: unique even when two small nodes give the same bonus.
+    const listLabel = (node, state) => {
+      const place = placeOf(node)
+      const vars = { name: name(node), kind: kind(node), state: t(`game.tree.state.${state}`) }
+      if (!place) return t('game.tree.node', vars)
+      const where = t(place.side ? 'game.tree.where.side' : 'game.tree.where.main', { count: place.steps, anchor: name(place.anchor) })
+      return t('game.tree.nodeWhere', { ...vars, where })
+    }
     const lines = (node) => [
       ...Object.entries(node.stats ?? {}).map(([stat, value]) => ({ text: text.statLine(stat, value), trend: value < 0 ? 'down' : 'up' })),
       ...(EFFECT_LINES[node.effect] ?? []).map(([key, trend]) => ({ text: t(key, EFFECT_VARS[node.effect]), trend })),
     ]
-    const requirement = (node) =>
-      node.requires ? t('game.tree.requires', { correct: text.number(node.requires.correct), branch: branchName(node.requires.branch) }) : null
-    const why = (reason) => t(`game.talentWhy.${reason}`, { count: MAX_KEYSTONES })
-    return { ...text, branchName, name, kind, lines, requirement, why }
+    // "Precisa: 40 acertos em questões de Algoritmos (12 de 40)".
+    const requirement = (node, branch) => {
+      if (!node.requires) return null
+      const { correct, branch: id } = node.requires
+      const vars = { correct: text.number(correct), branch: branchName(id) }
+      const have = branch?.[id]
+      return typeof have === 'number'
+        ? t('game.tree.requiresProgress', { ...vars, have: text.number(Math.min(have, correct)) })
+        : t('game.tree.requires', vars)
+    }
+    // A refusal reason. With the node and the branch counts, a requirement says how many answers are missing.
+    const why = (reason, node, branch) => {
+      if (reason === 'requirement' && node?.requires && typeof branch?.[node.requires.branch] === 'number') {
+        const left = node.requires.correct - branch[node.requires.branch]
+        return t('game.talentWhy.requirementLeft', { count: left, branch: branchName(node.requires.branch) })
+      }
+      return t(`game.talentWhy.${reason}`, { count: MAX_KEYSTONES })
+    }
+    return { ...text, branchName, name, kind, listLabel, lines, requirement, why }
   }, [text])
 }
 
@@ -94,23 +135,26 @@ export default function TreeTab({ view, actions, runner, start = 'talents' }) {
 
 function TalentsView({ view, actions, runner, text }) {
   const { t } = text
-  const listId = useId()
-  const cardRef = useRef(null)
+  const titleId = useId()
+  const inlineCard = useRef(null)
+  const dialogCard = useRef(null)
   const allocated = view.hero.talents
   const free = view.talentPoints?.free ?? 0
   const spent = view.talentPoints?.spent ?? 0
+  const branch = view.study?.branch ?? NO_BRANCH
   const [rawQueue, setQueue] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [focusedId, setFocusedId] = useState(null)
+  const [expanded, setExpanded] = useState(false)
 
-  const queue = useMemo(() => settle(allocated, rawQueue, free), [allocated, rawQueue, free])
+  const queue = useMemo(() => settle(allocated, rawQueue, free, branch), [allocated, rawQueue, free, branch])
   const owned = useMemo(() => new Set(['root', ...allocated]), [allocated])
   const queued = useMemo(() => new Set(queue), [queue])
   const left = free - queue.length
   const verdicts = useMemo(() => {
     const have = [...allocated, ...queue]
-    return new Map(TALENTS.nodes.map((node) => [node.id, canAllocate(have, node.id, { free: left, branch: ANY_BRANCH })]))
-  }, [allocated, queue, left])
+    return new Map(TALENTS.nodes.map((node) => [node.id, canAllocate(have, node.id, { free: left, branch })]))
+  }, [allocated, queue, left, branch])
   const open = useMemo(() => new Set(TALENTS.nodes.filter((node) => verdicts.get(node.id).ok).map((node) => node.id)), [verdicts])
   const labels = useMemo(() => Object.fromEntries(BRANCHES.map((b) => [b, { name: text.branchName(b), sub: t(`game.branchSub.${b}`) }])), [text, t])
 
@@ -137,39 +181,83 @@ function TalentsView({ view, actions, runner, text }) {
   const respec = () =>
     runner.run(() => actions.respecTalents(), () => t('game.tree.respecDone')).then((done) => done && setQueue([]))
 
+  // The pieces shown both in the tab and in the expanded dialog.
+  const canvas = (
+    <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} onSelect={setSelectedId} />
+  )
+  const nodeList = (cardRef) => (
+    <ul aria-label={t('game.tree.list')} className="sr-only">
+      {TALENTS.nodes.map((node) => (
+        <li key={node.id}>
+          <button
+            type="button"
+            aria-current={node.id === selectedId ? 'true' : undefined}
+            onFocus={() => setFocusedId(node.id)}
+            onBlur={() => setFocusedId(null)}
+            onClick={() => {
+              setSelectedId(node.id)
+              // The card says what the node gives; move there so it is read next.
+              requestAnimationFrame(() => cardRef.current?.focus())
+            }}
+          >
+            {text.listLabel(node, stateOf(node.id))}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+  const card = (cardRef) =>
+    selected ? (
+      <TalentCard
+        key={selected.id}
+        node={selected}
+        state={stateOf(selected.id)}
+        why={verdicts.get(selected.id).ok ? null : text.why(verdicts.get(selected.id).reason, selected, branch)}
+        requirement={text.requirement(selected, view.study?.branch)}
+        busy={runner.busy}
+        text={text}
+        headingRef={cardRef}
+        onTake={() => setQueue([...queue, selected.id])}
+        onUnqueue={() => setQueue(queue.filter((id) => id !== selected.id))}
+      />
+    ) : (
+      <p className="m-0 text-[#b9b0de]">{t('game.tree.pick')}</p>
+    )
+  const queueBar =
+    queue.length > 0 ? (
+      <section aria-label={t('game.tree.queue', { count: queue.length })} className={BOX}>
+        <p className="m-0 text-[#7fffe9]">{t('game.tree.queue', { count: queue.length })}</p>
+        <span className="flex flex-wrap gap-1.5">
+          <ActionButton tone="gold" busy={runner.busy} onClick={confirm}>
+            {t('game.tree.confirm', { count: queue.length })}
+          </ActionButton>
+          <ActionButton busy={runner.busy} onClick={() => setQueue([])}>
+            {t('game.tree.clear')}
+          </ActionButton>
+        </span>
+      </section>
+    ) : null
+  const freeLine = (
+    <span className="flex items-center gap-1">
+      <span>{t('game.tree.free')}</span> <b className="text-[#ffd76a]">{text.number(left)}</b>
+    </span>
+  )
+
   return (
     <>
       <div className="flex flex-col gap-1 text-[11px]">
         <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="flex items-center gap-1">
-            <span>{t('game.tree.free')}</span> <b className="text-[#ffd76a]">{text.number(left)}</b>
-          </span>
+          {freeLine}
           <span className="text-[#b9b0de]">{t('game.tree.respecRate', { gold: text.number(RESPEC_GOLD_PER_POINT) })}</span>
         </p>
         <small className="text-[10px] text-[#9a93b8]">{t('game.tree.hint')}</small>
       </div>
 
-      <TalentCanvas owned={owned} queued={queued} open={open} selected={focusedId ?? selectedId} labels={labels} onSelect={setSelectedId} />
-
-      <ul id={listId} aria-label={t('game.tree.list')} className="sr-only">
-        {TALENTS.nodes.map((node) => (
-          <li key={node.id}>
-            <button
-              type="button"
-              aria-current={node.id === selectedId ? 'true' : undefined}
-              onFocus={() => setFocusedId(node.id)}
-              onBlur={() => setFocusedId(null)}
-              onClick={() => {
-                setSelectedId(node.id)
-                // The card says what the node gives; move there so it is read next.
-                requestAnimationFrame(() => cardRef.current?.focus())
-              }}
-            >
-              {t('game.tree.node', { name: text.name(node), kind: text.kind(node), state: t(`game.tree.state.${stateOf(node.id)}`) })}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {expanded ? null : canvas}
+      <span>
+        <ActionButton onClick={() => setExpanded(true)}>{t('game.tree.expand')}</ActionButton>
+      </span>
+      {nodeList(inlineCard)}
 
       <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0 text-[10px] text-[#b9b0de]">
         <Legend shape="rounded-full size-2.5" color="#4a4266">
@@ -189,48 +277,95 @@ function TalentsView({ view, actions, runner, text }) {
         </Legend>
       </ul>
 
-      {selected ? (
-        <TalentCard
-          key={selected.id}
-          node={selected}
-          state={stateOf(selected.id)}
-          why={verdicts.get(selected.id).ok ? null : text.why(verdicts.get(selected.id).reason)}
-          busy={runner.busy}
-          text={text}
-          headingRef={cardRef}
-          onTake={() => setQueue([...queue, selected.id])}
-          onUnqueue={() => setQueue(queue.filter((id) => id !== selected.id))}
-        />
-      ) : (
-        <p className="m-0 text-[#b9b0de]">{t('game.tree.pick')}</p>
-      )}
-
-      {queue.length > 0 && (
-        <section aria-label={t('game.tree.queue', { count: queue.length })} className={BOX}>
-          <p className="m-0 text-[#7fffe9]">{t('game.tree.queue', { count: queue.length })}</p>
-          <span className="flex flex-wrap gap-1.5">
-            <ActionButton tone="gold" busy={runner.busy} onClick={confirm}>
-              {t('game.tree.confirm', { count: queue.length })}
-            </ActionButton>
-            <ActionButton busy={runner.busy} onClick={() => setQueue([])}>
-              {t('game.tree.clear')}
-            </ActionButton>
-          </span>
-        </section>
-      )}
+      {card(inlineCard)}
+      {queueBar}
 
       <span>
         <ConfirmButton
           busy={runner.busy}
           why={respecWhy}
-          confirmLabel={t('game.tree.respecYes')}
+          confirmLabel={t('game.tree.respecYes', { gold: text.number(respecCost) })}
           cancelLabel={t('game.act.cancel')}
           onConfirm={respec}
         >
           {t('game.tree.respec', { gold: text.number(respecCost) })}
         </ConfirmButton>
       </span>
+
+      {expanded && (
+        <TreeDialog titleId={titleId} title={t('game.tree.title')} closeLabel={t('game.tree.close')} onClose={() => setExpanded(false)}>
+          <p className="m-0 text-[11px]">{freeLine}</p>
+          {canvas}
+          {nodeList(dialogCard)}
+          <p role="status" className="m-0 min-h-4 text-[11px] text-[#6fe39a]">
+            {runner.notice?.kind === 'ok' ? runner.notice.text : ''}
+          </p>
+          <p role="alert" className="m-0 text-[11px] text-[#ff9aa6]">
+            {runner.notice?.kind === 'error' ? runner.notice.text : ''}
+          </p>
+          <div className="grid items-start gap-2 sm:grid-cols-2">
+            {card(dialogCard)}
+            {queueBar}
+          </div>
+        </TreeDialog>
+      )}
     </>
+  )
+}
+
+// A modal over the page: focus moves in and comes back to the opener, Tab stays inside, Escape and
+// the dimmed backdrop close it.
+function TreeDialog({ titleId, title, closeLabel, onClose, children }) {
+  const panel = useRef(null)
+
+  useEffect(() => {
+    const opener = document.activeElement
+    panel.current?.focus()
+    return () => opener?.focus?.()
+  }, [])
+
+  function onKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.stopPropagation()
+      onClose()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const items = [...panel.current.querySelectorAll(FOCUSABLE)]
+    if (items.length === 0) return
+    const first = items[0]
+    const last = items[items.length - 1]
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2">
+      <button type="button" tabIndex={-1} aria-label={closeLabel} onClick={onClose} className="absolute inset-0 cursor-default bg-[#05040c]/75" />
+      <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        className="relative flex max-h-[95vh] w-[min(760px,95vw)] flex-col gap-2 overflow-y-auto border-2 border-[#8a5cff] bg-[#120e26] p-2 font-mono text-xs text-[#ece8ff] shadow-[0_0_0_2px_#0a0818,6px_6px_0_rgba(0,0,0,.5)] focus-visible:outline-none"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h2 id={titleId} className="m-0 text-[13px] font-bold text-white">
+            {title}
+          </h2>
+          <ActionButton onClick={onClose}>{closeLabel}</ActionButton>
+        </div>
+        {children}
+      </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -244,11 +379,10 @@ function Legend({ shape, color, children }) {
 }
 
 // The selected node: name, kind, what it gives, its requirement and Take / Remove from queue.
-function TalentCard({ node, state, why, busy, text, headingRef, onTake, onUnqueue }) {
+function TalentCard({ node, state, why, requirement, busy, text, headingRef, onTake, onUnqueue }) {
   const { t } = text
   const titleId = useId()
   const color = BRANCH_COLORS[node.branch]
-  const requirement = text.requirement(node)
   return (
     <section aria-labelledby={titleId} className="border-2 bg-[#120e26] p-2 shadow-[0_0_0_2px_#0a0818,4px_4px_0_rgba(0,0,0,.5)]" style={{ borderColor: color }}>
       <div className="mb-1.5 flex items-center gap-2 border-b border-[#2e2650] pb-1.5">
