@@ -1,31 +1,24 @@
-// A pixel Erlenmeyer flask whose liquid glitches: one slice jumps left and leaves a blue ghost.
-export default function PixelLogo({ className = '' }) {
+import { LOGO_ROWS, LOGO_ROWS_DETAILED, logoRuns } from './logo-pixels.js'
+
+const RUNS = logoRuns(LOGO_ROWS)
+const DETAILED_RUNS = logoRuns(LOGO_ROWS_DETAILED)
+
+// The mark, "Grimório" (logo-pixels.js). `detailed` is the cut for large sizes (about 48px and up).
+export default function PixelLogo({ className = '', detailed = false }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 13 13" shapeRendering="crispEdges" className={className}>
-      <g className="fill-ink">
-        <rect x="4" y="0" width="5" height="1" />
-        <rect x="5" y="1" width="1" height="3" />
-        <rect x="7" y="1" width="1" height="3" />
-        <rect x="4" y="4" width="1" height="1" />
-        <rect x="8" y="4" width="1" height="1" />
-        <rect x="3" y="5" width="1" height="1" />
-        <rect x="9" y="5" width="1" height="1" />
-        <rect x="2" y="6" width="1" height="2" />
-        <rect x="10" y="6" width="1" height="2" />
-        <rect x="0" y="8" width="1" height="2" />
-        <rect x="10" y="8" width="1" height="2" />
-        <rect x="1" y="10" width="1" height="1" />
-        <rect x="11" y="10" width="1" height="1" />
-        <rect x="1" y="11" width="11" height="1" />
-      </g>
-      <g className="fill-primary">
-        <rect x="6" y="2" width="1" height="1" />
-        <rect x="7" y="5" width="1" height="1" />
-        <rect x="3" y="7" width="7" height="1" />
-        <rect x="1" y="8" width="9" height="2" />
-        <rect x="2" y="10" width="9" height="1" />
-      </g>
-      <rect className="fill-secondary" x="11" y="8" width="2" height="2" />
+    <svg aria-hidden="true" viewBox="0 0 16 16" shapeRendering="crispEdges" className={className}>
+      {(detailed ? DETAILED_RUNS : RUNS).map(({ x, y, width, fill }) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width={width} height="1" fill={fill} />
+      ))}
     </svg>
+  )
+}
+
+// "Study" in the text color, "Quest" in gold: the wordmark next to the mark.
+export function Wordmark({ className = '' }) {
+  return (
+    <span className={className}>
+      Study<span className="text-gold">Quest</span>
+    </span>
   )
 }
