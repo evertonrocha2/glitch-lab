@@ -69,8 +69,8 @@ function bolt(ctx, x0, y0, x1, y1, seed, glow, core) {
     const off = i === segs ? 0 : (hash(i, seed, 7) - 0.5) * Math.min(14, len * 0.35)
     const x = x0 + dx * k + nx * off
     const y = y0 + dy * k + ny * off
-    line(ctx, px, py, x, y, glow, 3)
-    line(ctx, px, py, x, y, core, 1)
+    line(ctx, px, py, x, y, glow, 5)
+    line(ctx, px, py, x, y, core, 2)
     // A fork off the middle joints.
     if (i === 2 || i === 4) {
       const fl = 5 + hash(i, seed, 9) * 6
@@ -109,48 +109,60 @@ const PAINT = {
     if (!at) return
     const cx = at.x
     const cy = at.y - BODY
-    const r = fx.crit ? 13 : 9
-    const head = env.reduced ? 1 : Math.min(1, p * 1.8)
-    const a0 = -2.4
-    const a1 = a0 + 2.6 * head
-    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.45), () => {
-      arc(ctx, cx, cy, r + 1, a0, a1, fx.crit ? '#ff9a1f' : '#8f8aa8', 2, 1)
-      arc(ctx, cx, cy, r, a0 + 0.3, a1, fx.crit ? '#ffd23f' : '#ffffff', fx.crit ? 2 : 1, 1)
+    const r = fx.crit ? 18 : 13
+    // A crescent cut from top right to bottom left, whole by a third of its life, then fading.
+    const head = env.reduced ? 1 : Math.min(1, p * 3)
+    const a0 = -1.1
+    const a1 = a0 + 2.9 * head
+    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.4), () => {
+      arc(ctx, cx - 4, cy - 2, r + 2, a0, a1, fx.crit ? '#c8501a' : '#5a5578', 4, 1)
+      arc(ctx, cx - 4, cy - 2, r, a0 + 0.2, a1, fx.crit ? '#ffd23f' : '#ffffff', 3, 1)
+      star(ctx, cx - 4 + Math.cos(a1) * r, cy - 2 + Math.sin(a1) * r, fx.crit ? 5 : 3, fx.crit ? '#fff4b0' : '#ffffff')
     })
   },
   critBurst(ctx, fx, p, env) {
     const at = env.foe(fx.target, tmpA)
     if (!at) return
-    const d = env.reduced ? 8 : 4 + p * 14
-    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.3), () => {
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2 + 0.2
-        const x = at.x + Math.cos(a) * d
-        const y = at.y - BODY + Math.sin(a) * d
-        rect(ctx, x, y, 2, 2, i % 2 ? '#ffd23f' : '#fff4b0')
+    const cx = at.x
+    const cy = at.y - BODY
+    const d = env.reduced ? 14 : 6 + p * 18
+    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.35), () => {
+      // Gold rays and sparks bursting out of the hit, a ring around them.
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 + 0.15
+        const inner = d * 0.45
+        line(ctx, cx + Math.cos(a) * inner, cy + Math.sin(a) * inner, cx + Math.cos(a) * d, cy + Math.sin(a) * d, i % 2 ? '#ffd23f' : '#fff4b0', i % 3 ? 1 : 2)
       }
-      star(ctx, at.x, at.y - BODY, 6, '#ffd23f')
+      arc(ctx, cx, cy, d * 0.8, 0, Math.PI * 2, '#ffae3a', 1, 1)
+      star(ctx, cx, cy, 9, '#ffd23f')
     })
   },
   echo(ctx, fx, p, env) {
     const at = env.foe(fx.target, tmpA)
     if (!at) return
-    const head = env.reduced ? 1 : Math.min(1, p * 2)
-    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.5), () => {
-      arc(ctx, at.x - 2, at.y - BODY, 10, 0.8, 0.8 + 2.4 * head, '#7fe9ff', 1, 1)
-      arc(ctx, at.x + 2, at.y - BODY + 2, 8, 3.9, 3.9 + 2.4 * head, '#c4fbff', 1, 1)
+    // The ring's extra swing: two cyan cuts crossing in an X, a ring of code dots around them.
+    const k = env.reduced ? 1 : Math.min(1, p * 3)
+    const cx = at.x
+    const cy = at.y - BODY
+    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.45), () => {
+      line(ctx, cx - 12, cy - 12, cx - 12 + 24 * k, cy - 12 + 24 * k, '#7fe9ff', 3)
+      line(ctx, cx + 12, cy - 12, cx + 12 - 24 * k, cy - 12 + 24 * k, '#c4fbff', 2)
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2
+        rect(ctx, cx + Math.cos(a) * 15, cy + Math.sin(a) * 15, 2, 2, '#4fd1c5')
+      }
     })
   },
   cleave(ctx, fx, p, env) {
     const { x, y } = env.hero
-    const r = (fx.radius ?? 1.8) * TS
+    const r = (fx.radius ?? 1.8) * TS * (env.spread ?? 1)
     const head = env.reduced ? Math.PI * 2 : p * Math.PI * 2.4
     withAlpha(ctx, env.reduced ? 0.9 : fade(p, 0.55), () => {
       // A fading trail behind the blade: three bands, dimmer further back.
       for (let k = 0; k < 3; k++) {
         const from = Math.max(0, head - 1.2 - k * 0.9)
         const to = Math.max(0, head - k * 0.9)
-        if (to > from) arc(ctx, x, y - 4, r - k * 2, from - 1.2, to - 1.2, k === 0 ? '#ffffff' : k === 1 ? '#c9d2f0' : '#7d86a8', k === 0 ? 3 : 2)
+        if (to > from) arc(ctx, x, y - 4, r - k * 3, from - 1.2, to - 1.2, k === 0 ? '#ffffff' : k === 1 ? '#c9d2f0' : '#7d86a8', k === 0 ? 4 : 3)
       }
       if (!env.reduced) {
         const a = head - 1.2
@@ -172,9 +184,9 @@ const PAINT = {
         if (!at) continue
         const tx = at.x
         const ty = at.y - BODY
-        bolt(ctx, fromX, fromY, tx, ty, seed * 13 + i, 'rgba(255,228,94,0.55)', '#fffbe0')
-        star(ctx, tx, ty, 7, '#ffe45e')
-        rect(ctx, tx - 3, ty - 3, 7, 7, 'rgba(255,255,220,0.35)')
+        bolt(ctx, fromX, fromY, tx, ty, seed * 13 + i, 'rgba(255,214,40,0.5)', '#fffbe0')
+        rect(ctx, tx - 6, ty - 6, 13, 13, 'rgba(255,240,120,0.35)')
+        star(ctx, tx, ty, 10, '#ffe45e')
         fromX = tx
         fromY = ty
       }
@@ -182,7 +194,7 @@ const PAINT = {
   },
   fireball(ctx, fx, _p, env) {
     const to = env.spot(fx.spot ?? { x: 2, y: 0 }, tmpB)
-    const r = (fx.radius ?? 1.6) * TS
+    const r = (fx.radius ?? 1.6) * TS * (env.spread ?? 1)
     const life = fx.ms
     const elapsed = env.ms - fx.at
     const flyMs = 260
@@ -213,7 +225,14 @@ const PAINT = {
     // The burning patch on the ground, for the dot's life.
     const end = 1 - (elapsed / life > 0.85 ? (elapsed / life - 0.85) / 0.15 : 0)
     withAlpha(ctx, env.reduced ? 0.8 : 0.85 * end, () => {
-      arc(ctx, to.x, to.y, r, 0, Math.PI * 2, '#a8321a', 1)
+      // A scorched, glowing disc under the flames.
+      withAlpha(ctx, 0.28, () => {
+        for (let yy = -Math.round(r * 0.55); yy <= Math.round(r * 0.55); yy += 1) {
+          const w = Math.round(r * Math.sqrt(Math.max(0, 1 - (yy / (r * 0.55)) ** 2)))
+          rect(ctx, to.x - w, to.y + yy, w * 2 + 1, 1, '#ff5a1a')
+        }
+      })
+      arc(ctx, to.x, to.y, r, 0, Math.PI * 2, '#ff8a3d', 1)
       const tick = env.reduced ? 0 : Math.floor(env.ms / 90)
       for (let i = 0; i < 26; i++) {
         const a = hash(i, 5, 31) * Math.PI * 2
@@ -258,7 +277,7 @@ const PAINT = {
   },
   frost(ctx, fx, p, env) {
     const { x, y } = env.hero
-    const r = (fx.radius ?? 3) * TS
+    const r = (fx.radius ?? 3) * TS * (env.spread ?? 1)
     const k = env.reduced ? 1 : Math.min(1, p * 1.6)
     withAlpha(ctx, env.reduced ? 0.9 : fade(p, 0.55), () => {
       arc(ctx, x, y - 2, r * k, 0, Math.PI * 2, 'rgba(127,216,255,0.9)', 2)
@@ -280,7 +299,7 @@ const PAINT = {
   },
   splash(ctx, fx, p, env) {
     const at = env.spot(fx.spot ?? { x: 1.5, y: 0 }, tmpB)
-    const r = (fx.radius ?? 1.5) * TS
+    const r = (fx.radius ?? 1.5) * TS * (env.spread ?? 1)
     const k = env.reduced ? 1 : p
     withAlpha(ctx, env.reduced ? 1 : fade(p, 0.4), () => {
       arc(ctx, at.x, at.y, r * (0.4 + 0.6 * k), 0, Math.PI * 2, '#b8e04a', 1)
@@ -317,16 +336,19 @@ const PAINT = {
   },
   mend(ctx, _fx, p, env) {
     const { x, y } = env.hero
-    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.5), () => {
-      arc(ctx, x, y, 10, 0, Math.PI * 2, '#5fe08a', 1)
-      for (let i = 0; i < 9; i++) {
-        const ox = (hash(i, 2, 71) - 0.5) * 22
-        const rise = env.reduced ? 10 + i * 2 : p * (22 + hash(i, 2, 73) * 14) + hash(i, 2, 75) * 6
-        const px0 = x + ox
-        const py0 = y - 4 - rise
-        const c = i % 3 ? '#5fe08a' : '#d2ffd8'
-        rect(ctx, px0 - 1, py0, 3, 1, c)
-        rect(ctx, px0, py0 - 1, 1, 3, c)
+    withAlpha(ctx, env.reduced ? 1 : fade(p, 0.55), () => {
+      // A green glow ring at the feet and fat plus signs rising around the hero.
+      arc(ctx, x, y, 14, 0, Math.PI * 2, '#5fe08a', 2)
+      arc(ctx, x, y, 10, 0, Math.PI * 2, '#b8ffcf', 1)
+      for (let i = 0; i < 10; i++) {
+        const ox = (hash(i, 2, 71) - 0.5) * 30
+        const rise = env.reduced ? 8 + i * 3 : p * (26 + hash(i, 2, 73) * 16) + hash(i, 2, 75) * 8
+        const px0 = Math.round(x + ox)
+        const py0 = Math.round(y - 6 - rise)
+        const c = i % 3 ? '#5fe08a' : '#e0ffe8'
+        const big = i % 2 === 0
+        rect(ctx, px0 - (big ? 2 : 1), py0, big ? 5 : 3, big ? 2 : 1, c)
+        rect(ctx, px0, py0 - (big ? 2 : 1), big ? 2 : 1, big ? 5 : 3, c)
       }
     })
   },
@@ -335,29 +357,38 @@ const PAINT = {
     const elapsed = env.ms - fx.at
     const left = fx.ms - elapsed
     const a = left < 300 ? left / 300 : 1
-    // The cast: a red ring bursting out; then flames licking up around the hero while it lasts.
-    if (!env.reduced && elapsed < 320) {
-      withAlpha(ctx, 1 - elapsed / 320, () => arc(ctx, x, y - 4, 6 + elapsed / 12, 0, Math.PI * 2, '#ff4a3a', 2))
+    // The cast: a red ring bursting out; then red flames licking up around the hero while it lasts,
+    // and red streaks trailing behind it.
+    if (!env.reduced && elapsed < 360) {
+      withAlpha(ctx, 1 - elapsed / 360, () => {
+        arc(ctx, x, y - 4, 8 + elapsed / 10, 0, Math.PI * 2, '#ff4a3a', 3)
+        arc(ctx, x, y - 4, 4 + elapsed / 16, 0, Math.PI * 2, '#ffd0c0', 1)
+      })
     }
     const tick = env.reduced ? 0 : Math.floor(env.ms / 70)
-    withAlpha(ctx, 0.85 * a, () => {
-      for (let i = 0; i < 14; i++) {
-        const ang = (i / 14) * Math.PI * 2
-        const fx0 = x + Math.cos(ang) * 11
-        const base = y - 12 + Math.sin(ang) * 15
-        const h = 2 + Math.floor(hash(i, tick, 81) * 5)
-        rect(ctx, fx0, base - h, 1, h, hash(i, tick, 83) > 0.4 ? '#ff4a3a' : '#ffae5a')
+    withAlpha(ctx, 0.9 * a, () => {
+      for (let i = 0; i < 18; i++) {
+        const ang = (i / 18) * Math.PI * 2
+        const fx0 = x + Math.cos(ang) * 13
+        const base = y - 13 + Math.sin(ang) * 16
+        const h = 3 + Math.floor(hash(i, tick, 81) * 7)
+        rect(ctx, fx0, base - h, 2, h, hash(i, tick, 83) > 0.4 ? '#ff3a2a' : '#ffae5a')
+        rect(ctx, fx0, base - h, 1, 1, '#fff0c0')
       }
+      withAlpha(ctx, 0.35, () => {
+        rect(ctx, x - 16, y - 30, 2, 26, '#ff3a2a')
+        rect(ctx, x - 20, y - 26, 2, 18, '#ff3a2a')
+      })
     })
   },
   zap(ctx, fx, p, env) {
     const at = env.foe(fx.target, tmpA)
     if (!at) return
     const c = ELEMENT[fx.element] ?? '#ffffff'
-    const d = env.reduced ? 6 : 3 + p * 6
+    const d = env.reduced ? 10 : 4 + p * 10
     withAlpha(ctx, env.reduced ? 1 : fade(p, 0.3), () => {
-      star(ctx, at.x, at.y - BODY, 5, c)
-      for (const [sx, sy] of DIAGONALS) rect(ctx, at.x + sx * d, at.y - BODY + sy * d, 1, 1, c)
+      star(ctx, at.x, at.y - BODY, 8, c)
+      for (const [sx, sy] of DIAGONALS) rect(ctx, at.x + sx * d, at.y - BODY + sy * d, 2, 2, c)
     })
   },
   dodge(ctx, _fx, p, env) {
@@ -372,24 +403,31 @@ const PAINT = {
   potion(ctx, fx, p, env) {
     const { x, y } = env.hero
     const c = fx.mp ? '#6fa8ff' : '#ff5a6e'
-    const lift = env.reduced ? 8 : p * 14
+    const dark = fx.mp ? '#2a4a9a' : '#8a1a2a'
+    const lift = env.reduced ? 8 : Math.min(1, p * 2.5) * 12
     withAlpha(ctx, env.reduced ? 1 : fade(p, 0.6), () => {
-      // The bottle over the head, its cork popping off.
-      const bx = x + 9
-      const by = y - 40 - lift
-      rect(ctx, bx, by + 3, 5, 5, c)
-      rect(ctx, bx + 1, by + 1, 3, 2, '#d6d1bd')
-      rect(ctx, bx + 1, by + 4, 1, 2, '#ffffff')
-      rect(ctx, bx + 1, by - 2 - (env.reduced ? 2 : p * 8), 3, 2, '#8a5a34')
-      for (let i = 0; i < 6; i++) rect(ctx, x + (hash(i, 4, 91) - 0.5) * 18, y - 6 - (env.reduced ? 6 + i * 3 : p * (14 + hash(i, 4, 93) * 12)), 2, 2, c)
+      // The bottle over the head, its cork popping off, bubbles of its color rising around the hero.
+      const bx = x + 10
+      const by = y - 44 - lift
+      rect(ctx, bx - 1, by + 3, 9, 9, dark)
+      rect(ctx, bx, by + 4, 7, 7, c)
+      rect(ctx, bx + 2, by, 3, 4, '#d6d1bd')
+      rect(ctx, bx + 1, by + 5, 2, 3, '#ffffff')
+      rect(ctx, bx + 2, by - 4 - (env.reduced ? 3 : p * 12), 3, 3, '#8a5a34')
+      arc(ctx, x, y, 12, 0, Math.PI * 2, c, 1)
+      for (let i = 0; i < 9; i++) rect(ctx, x + (hash(i, 4, 91) - 0.5) * 26, y - 6 - (env.reduced ? 6 + i * 3 : p * (18 + hash(i, 4, 93) * 16)), 3, 3, c)
     })
   },
   impact(ctx, _fx, p, env) {
     const { x, y } = env.hero
+    const cy = y - BODY
+    const d = env.reduced ? 9 : 5 + p * 7
     withAlpha(ctx, env.reduced ? 1 : 1 - p, () => {
-      line(ctx, x - 4, y - BODY - 4, x + 4, y - BODY + 4, '#ff6b6b', 1)
-      line(ctx, x - 4, y - BODY + 4, x + 4, y - BODY - 4, '#ff6b6b', 1)
-      rect(ctx, x - 1, y - BODY - 1, 3, 3, '#ffffff')
+      // A red hit spark on the hero: an X, sparks and a white core.
+      line(ctx, x - d, cy - d, x + d, cy + d, '#ff4d4d', 2)
+      line(ctx, x - d, cy + d, x + d, cy - d, '#ff4d4d', 2)
+      for (const [sx, sy] of DIAGONALS) rect(ctx, x + sx * (d + 3), cy + sy * (d + 3), 2, 2, '#ffb0a0')
+      rect(ctx, x - 2, cy - 2, 5, 5, '#ffffff')
     })
   },
   thorns(ctx, fx, p, env) {
@@ -438,9 +476,11 @@ const PAINT = {
     if (!at) return
     const open = env.reduced ? 1 : Math.sin(p * Math.PI)
     withAlpha(ctx, env.reduced ? 0.8 : open, () => {
-      arc(ctx, at.x, at.y, 12 * open + 2, 0, Math.PI * 2, '#9a6cff', 2)
-      arc(ctx, at.x, at.y, 7 * open + 1, 0, Math.PI * 2, '#3a1f7a', 2)
-      for (let i = 0; i < 6; i++) rect(ctx, at.x + (hash(i, 6, 101) - 0.5) * 22, at.y - 2 - (env.reduced ? 4 : p * 12) * hash(i, 6, 103), 2, 2, '#b8a3e6')
+      // A glitch portal opening on the ground, dust kicked up as the enemy steps out.
+      arc(ctx, at.x, at.y, 18 * open + 2, 0, Math.PI * 2, '#9a6cff', 3)
+      arc(ctx, at.x, at.y, 12 * open + 1, 0, Math.PI * 2, '#3a1f7a', 3)
+      arc(ctx, at.x, at.y, 6 * open, 0, Math.PI * 2, '#ff3fb0', 1)
+      for (let i = 0; i < 10; i++) rect(ctx, at.x + (hash(i, 6, 101) - 0.5) * 34, at.y - 2 - (env.reduced ? 6 : p * 18) * hash(i, 6, 103), 3, 3, '#b8a3e6')
     })
   },
   summon(ctx, fx, p, env) {
@@ -460,52 +500,62 @@ const PAINT = {
     if (!at) return
     const colors = env.colors(fx.target)
     withAlpha(ctx, env.reduced ? 1 : 1 - p * p, () => {
-      // Smoke puffs, then bits of the enemy flying out in its own colors.
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2 + 0.4
-        const d = env.reduced ? 8 : 3 + p * 12
-        const r = env.reduced ? 3 : 2 + Math.round(p * 4)
-        rect(ctx, at.x + Math.cos(a) * d - r, at.y - 10 + Math.sin(a) * d * 0.6 - r - (env.reduced ? 0 : p * 6), r * 2, r * 2, 'rgba(200,196,220,0.55)')
+      // Smoke puffs swelling, then bits of the enemy flying out in its own colors.
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + 0.4
+        const d = env.reduced ? 10 : 4 + p * 14
+        const r = env.reduced ? 5 : 3 + Math.round(p * 6)
+        rect(ctx, at.x + Math.cos(a) * d - r, at.y - 12 + Math.sin(a) * d * 0.6 - r - (env.reduced ? 0 : p * 8), r * 2, r * 2, 'rgba(214,208,236,0.6)')
       }
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 16; i++) {
         const a = hash(i, fx.target, 111) * Math.PI * 2
-        const d = env.reduced ? 10 : 4 + p * (12 + hash(i, fx.target, 113) * 14)
-        rect(ctx, at.x + Math.cos(a) * d, at.y - 12 + Math.sin(a) * d - (env.reduced ? 0 : p * 8), 2, 2, colors[(i % (colors.length - 1)) + 1] ?? '#ffffff')
+        const d = env.reduced ? 14 : 5 + p * (16 + hash(i, fx.target, 113) * 18)
+        rect(ctx, at.x + Math.cos(a) * d, at.y - 14 + Math.sin(a) * d - (env.reduced ? 0 : p * 10), 3, 3, colors[(i % (colors.length - 1)) + 1] ?? '#ffffff')
       }
     })
   },
   loot(ctx, fx, p, env) {
     const at = env.foe(fx.target, tmpA)
     if (!at) return
-    const count = env.elite?.(fx.target) ? 5 : 3
+    const elite = env.elite?.(fx.target)
+    const count = elite ? 6 : 3
     withAlpha(ctx, env.reduced ? 1 : fade(p, 0.75), () => {
+      // Gold coins hop out of the fallen enemy and land around it; an elite drops a gem too.
       for (let i = 0; i < count; i++) {
-        const dir = (i - (count - 1) / 2) * 6
+        const dir = (i - (count - 1) / 2) * 8
         const k = env.reduced ? 1 : Math.min(1, p * 1.6)
-        const x = at.x + dir * k
-        const y = at.y - 4 - Math.sin(k * Math.PI) * (14 + i * 2)
-        rect(ctx, x - 2, y - 2, 4, 4, '#b8860b')
-        rect(ctx, x - 1, y - 2, 3, 3, '#ffd23f')
-        rect(ctx, x - 1, y - 2, 1, 1, '#fff8c0')
+        const x = Math.round(at.x + dir * k)
+        const y = Math.round(at.y - 4 - Math.sin(k * Math.PI) * (16 + i * 3))
+        rect(ctx, x - 3, y - 3, 6, 6, '#8a6410')
+        rect(ctx, x - 2, y - 3, 4, 5, '#ffd23f')
+        rect(ctx, x - 1, y - 2, 1, 2, '#fff8c0')
       }
-      if (count > 3) star(ctx, at.x, at.y - 30 * (env.reduced ? 1 : Math.min(1, p * 2)), 3, '#7fe9ff')
+      if (elite) {
+        const gy = at.y - 34 * (env.reduced ? 1 : Math.min(1, p * 2))
+        rect(ctx, at.x - 3, gy - 3, 7, 7, '#2a8a9a')
+        rect(ctx, at.x - 2, gy - 2, 5, 5, '#7fe9ff')
+        star(ctx, at.x, gy, 6, '#c4fbff')
+      }
     })
   },
   heroDeath(ctx, _fx, p, env) {
     const { x, y } = env.hero
     withAlpha(ctx, env.reduced ? 0.9 : 1 - p, () => {
-      for (let i = 0; i < 10; i++) rect(ctx, x + (hash(i, 8, 121) - 0.5) * 24, y - 30 + (env.reduced ? 12 : p * 30) * hash(i, 8, 123), 2, 2, i % 2 ? '#8a8678' : '#ff6b6b')
+      // The hero falls: a dark red ring on the ground and grey shards drifting down.
+      arc(ctx, x, y, 16, 0, Math.PI * 2, '#8a1a2a', 2)
+      for (let i = 0; i < 16; i++) rect(ctx, x + (hash(i, 8, 121) - 0.5) * 34, y - 40 + (env.reduced ? 14 : p * 38) * hash(i, 8, 123), 3, 3, i % 2 ? '#8a8678' : '#ff6b6b')
     })
   },
   regen(ctx, fx, p, env) {
     const at = env.foe(fx.target, tmpA)
     if (!at) return
     withAlpha(ctx, env.reduced ? 1 : 1 - p, () => {
+      // An elite knitting back: green pluses rising over it.
       for (let i = 0; i < 3; i++) {
-        const px0 = at.x - 6 + i * 6
-        const py0 = at.y - 20 - (env.reduced ? 4 : p * 12) - i * 2
-        rect(ctx, px0 - 1, py0, 3, 1, '#5fe08a')
-        rect(ctx, px0, py0 - 1, 1, 3, '#5fe08a')
+        const px0 = at.x - 10 + i * 10
+        const py0 = at.y - 30 - (env.reduced ? 4 : p * 14) - i * 3
+        rect(ctx, px0 - 2, py0, 5, 2, '#5fe08a')
+        rect(ctx, px0, py0 - 2, 2, 5, '#5fe08a')
       }
     })
   },

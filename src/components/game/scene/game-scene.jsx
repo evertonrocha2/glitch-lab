@@ -110,6 +110,9 @@ function layer(width, height, paint) {
 // How fast the pack trails a hero walking away mid fight, and how fast an enemy slides when the
 // ground pushes it to another tile, in tiles a second.
 const FOLLOW = 3
+// The log stands enemies 1.3 tiles from the hero; drawn at 2x they would pile onto the hero, so the
+// scene spreads the whole pack (spots, areas, radii) this much wider. The fight itself is unchanged.
+export const SPREAD = 1.6
 const SLIDE = 10
 const LEVEL_UP_MS = 1800
 
@@ -203,6 +206,8 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
     // Ground px of a hero relative tile offset in this fight (turned, anchored, kept on floor).
     const spotPx = (at, out) => {
       rotate(fight.rot, at, rel)
+      rel.x *= SPREAD
+      rel.y *= SPREAD
       nudge(world, rect, fight.anchor.x + rel.x, fight.anchor.y + rel.y, target)
       out.x = Math.round(target.x * TS + 8)
       out.y = Math.round(target.y * TS + 15)
@@ -221,6 +226,7 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
         return out
       },
       spot: spotPx,
+      spread: SPREAD,
       colors: (i) => foeColors(fight.state?.foes[i]?.sprite),
       elite: (i) => Boolean(fight.state?.foes[i]?.elite),
     }
@@ -254,7 +260,8 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
           fight.key = key
           fight.anchor.x = tile.x
           fight.anchor.y = tile.y
-          fight.rot = orient(world, rect, tile, pack.foes)
+          const wide = (p) => ({ x: p.x * SPREAD, y: p.y * SPREAD })
+          fight.rot = orient(world, rect, tile, pack.foes.map((f) => ({ from: wide(f.from), to: wide(f.to) })))
           fight.spots = pack.foes.map(() => null)
         }
         // The pack trails a hero who walks away, and settles around the new spot.
@@ -265,6 +272,8 @@ export default function GameScene({ world, zoneRect, lockedRects = [], look, gea
         for (let i = 0; i < pack.foes.length; i++) {
           const f = fight.state.foes[i]
           rotate(fight.rot, f, rel)
+          rel.x *= SPREAD
+          rel.y *= SPREAD
           nudge(world, rect, fight.anchor.x + rel.x, fight.anchor.y + rel.y, target)
           const s = fight.spots[i]
           if (!s || reduced) fight.spots[i] = { x: target.x, y: target.y }
