@@ -2,7 +2,7 @@
 // duelist badge: anyone can open a passwordless demo in a second tab and lose to themselves.
 const practice = (duel) => duel.kind === 'bot' || duel.players.some((player) => player.bot || player.isDemo)
 
-// computeProgress's `duel` input: { results: [{ day, outcome, vsBot, early, fastestMs }] }, one per
+// computeProgress's `duel` input: { results: [{ day, outcome, vsBot, early, fastestMs, score }] }, one per
 // finished duel. For XP, the duelist and speed-demon badges and the activity graph.
 export async function loadDuel(store, userId) {
   const finished = await store.listDuels(userId, { status: 'finished' })
@@ -10,7 +10,7 @@ export async function loadDuel(store, userId) {
     .map((duel) => {
       const mine = duel.result?.players?.find((item) => item.userId === userId)
       if (!mine || !duel.finishedAt) return null
-      return { day: duel.finishedAt.slice(0, 10), outcome: mine.outcome, vsBot: practice(duel), early: Boolean(duel.result.early), fastestMs: mine.fastestMs ?? null }
+      return { day: duel.finishedAt.slice(0, 10), outcome: mine.outcome, vsBot: practice(duel), early: Boolean(duel.result.early), fastestMs: mine.fastestMs ?? null, score: mine.score ?? 0 }
     })
     .filter(Boolean)
   return { results }
