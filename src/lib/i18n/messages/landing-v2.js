@@ -1,4 +1,4 @@
-// The "noite arcana" landing: the hero with a live hero card, the modes as item cards, the quest
+// The "Ardósia" landing: the hero with a live hero card, the modes as item cards, the quest
 // panel and the CTA band. The sections that kept their text (how it works, compare, features, bug
 // types, FAQ) still read landing.* from landing.js. ENEM copy exists only in pt-BR.
 export default {

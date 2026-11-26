@@ -8,7 +8,7 @@ const QUESTIONS = ['free', 'languages', 'answer', 'judge', 'upload', 'safe', 'ex
 function Question({ q, a, open, onToggle }) {
   const id = useId()
   return (
-    <div className={`border-2 border-(--lp-void) transition-colors duration-200 ${open ? 'bg-(--lp-raised) shadow-[inset_2px_2px_0_var(--lp-gold-dark),4px_4px_0_0_rgb(8_5_24/0.5)]' : 'bg-(--lp-panel) shadow-[inset_2px_2px_0_var(--lp-line),4px_4px_0_0_rgb(8_5_24/0.5)]'}`}>
+    <div className={`border-2 border-(--lp-void) transition-colors duration-200 ${open ? 'bg-(--lp-raised) shadow-[inset_2px_2px_0_var(--lp-gold-dark),4px_4px_0_0_rgb(6_8_11/0.5)]' : 'bg-(--lp-panel) shadow-[inset_2px_2px_0_var(--lp-line),4px_4px_0_0_rgb(6_8_11/0.5)]'}`}>
       <h3>
         <button
           type="button"
@@ -36,7 +36,7 @@ function Question({ q, a, open, onToggle }) {
       >
         <div className="overflow-hidden">
           <p
-            className={`border-t border-dashed border-(--lp-line) px-5 py-4 leading-relaxed text-[#d6cff3] transition-[opacity,translate] duration-300 motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
+            className={`border-t border-dashed border-(--lp-line) px-5 py-4 leading-relaxed text-[#cfd4dc] transition-[opacity,translate] duration-300 motion-reduce:transition-none ${open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
           >
             {a}
           </p>

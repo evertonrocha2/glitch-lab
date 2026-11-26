@@ -60,7 +60,7 @@ function MiniNote() {
     <div className="lp-inset space-y-1.5 p-2.5">
       <p className="font-pixel text-sm">{t('landing.mini.noteTitle')}</p>
       <p className="text-xs text-(--lp-muted)">
-        {t('landing.mini.noteText')} <span className="bg-[rgb(138_92_255/0.25)] px-1 font-semibold text-(--lp-arcane-hi)">@TypeError</span>
+        {t('landing.mini.noteText')} <span className="bg-[rgb(111_155_198/0.2)] px-1 font-semibold text-(--lp-arcane-hi)">@TypeError</span>
       </p>
       <div className={`flex overflow-hidden ${chip}`}>
         <span className="w-1 bg-(--lp-mana)" />
@@ -198,7 +198,7 @@ export default function Features() {
         <ul aria-label={t('landing.features.list')} className="mt-12 grid gap-6 sm:mt-14 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ id, visual: Visual, span = '' }) => (
             <li key={id} className={`lp-frame flex flex-col p-6 ${span}`}>
-              <div aria-hidden="true" className="relative mb-6 overflow-hidden border border-dashed border-(--lp-line) bg-[rgb(24_18_51/0.5)] p-4">
+              <div aria-hidden="true" className="relative mb-6 overflow-hidden border border-dashed border-(--lp-line) bg-[rgb(18_21_27/0.5)] p-4">
                 <Visual />
               </div>
               <h3 className="font-pixel text-xl leading-tight">{t(`landing.features.${id}.title`)}</h3>

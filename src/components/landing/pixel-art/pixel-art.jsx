@@ -1,13 +1,13 @@
 // Small pixel drawings for the landing: one letter per pixel, '.' is empty. Runs of the same color
 // on a row become one rect, so a 16x16 icon stays a few dozen nodes.
 const PALETTE = {
-  k: '#120c22',
+  k: '#0e1116',
   w: '#efe3c2',
   s: '#c9b78f',
   W: '#ffffff',
-  v: '#8a5cff',
-  V: '#c3a6ff',
-  d: '#5a2fd9',
+  v: '#5b86b1',
+  V: '#a9c3dd',
+  d: '#3a5f86',
   y: '#f2c14e',
   Y: '#fff1b0',
   o: '#9a6a1c',

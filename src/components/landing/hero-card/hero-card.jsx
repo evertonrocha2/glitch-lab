@@ -82,13 +82,13 @@ export default function HeroCard() {
       label: t('landing.v2.card.xp'),
       value: `${number.format(xp)} / ${number.format(XP_MAX)}`,
       v: `${((xp / XP_MAX) * 100).toFixed(1)}%`,
-      c: 'linear-gradient(90deg, #5a2fd9, #8a5cff)',
+      c: 'linear-gradient(90deg, #4f7aa6, #6f9bc6)',
     },
   ]
 
   return (
     <aside ref={ref} aria-label={t('landing.v2.card.label')} className="lp-bob w-full max-w-[420px] justify-self-start lg:justify-self-end">
-      <div className="lp-frame bg-[rgb(46_35_92/0.72)] p-4 backdrop-blur-md sm:p-[18px]">
+      <div className="lp-frame bg-[rgb(35_41_52/0.74)] p-4 backdrop-blur-md sm:p-[18px]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-pixel text-[22px] leading-none">Lia</p>
@@ -101,10 +101,10 @@ export default function HeroCard() {
           </span>
         </div>
 
-        <div className="lp-inset relative mt-3.5 mb-3 grid h-[250px] items-end justify-items-center overflow-hidden bg-[radial-gradient(50%_55%_at_50%_55%,rgb(170_130_255/0.6),transparent_72%),linear-gradient(180deg,rgb(58_44_112/0.55),rgb(40_30_84/0.85))] sm:h-[300px]">
+        <div className="lp-inset relative mt-3.5 mb-3 grid h-[250px] items-end justify-items-center overflow-hidden bg-[radial-gradient(50%_55%_at_50%_55%,rgb(150_180_212/0.42),transparent_72%),linear-gradient(180deg,rgb(46_54_68/0.55),rgb(30_35_45/0.85))] sm:h-[300px]">
           <div
             aria-hidden="true"
-            className="absolute bottom-3 left-1/2 z-1 h-[18px] w-[210px] -translate-x-1/2 bg-[#2b2152] shadow-[inset_0_3px_0_#574a96,0_4px_0_#0a0818] before:absolute before:inset-x-3.5 before:-top-2.5 before:h-2.5 before:bg-[#3e3170] before:shadow-[inset_0_2px_0_#6e5fb8] before:content-['']"
+            className="absolute bottom-3 left-1/2 z-1 h-[18px] w-[210px] -translate-x-1/2 bg-[#262c37] shadow-[inset_0_3px_0_#4e5869,0_4px_0_#0c0e12] before:absolute before:inset-x-3.5 before:-top-2.5 before:h-2.5 before:bg-[#333b49] before:shadow-[inset_0_2px_0_#5f6a7d] before:content-['']"
           />
           <HeroCanvas
             look={LOOK}

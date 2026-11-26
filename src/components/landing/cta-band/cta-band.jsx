@@ -11,18 +11,18 @@ export default function CtaBand() {
   return (
     <section
       aria-labelledby="cta-title"
-      className="relative overflow-hidden border-y border-[rgb(195_166_255/0.18)] py-28 text-center sm:pt-[150px] sm:pb-[140px]"
+      className="relative overflow-hidden border-y border-[rgb(169_195_221/0.14)] py-28 text-center sm:pt-[150px] sm:pb-[140px]"
     >
       <ShaderBackdrop kind="embers" />
       <div aria-hidden="true" className="lp-cta-scrim pointer-events-none absolute inset-0 z-1" />
       <div className={`${WRAP} relative z-2`}>
         <h2
           id="cta-title"
-          className="font-pixel text-[clamp(2.25rem,5.6vw,4.5rem)] leading-[1.02] [text-shadow:0_0_40px_rgb(18_12_34/0.8),0_2px_0_rgb(18_12_34/0.7)]"
+          className="font-pixel text-[clamp(2.25rem,5.6vw,4.5rem)] leading-[1.02] [text-shadow:0_0_40px_rgb(14_17_22/0.8),0_2px_0_rgb(14_17_22/0.7)]"
         >
           {t('landing.v2.cta.line1')} <span className="text-(--lp-gold)">{t('landing.v2.cta.line2')}</span>
         </h2>
-        <p className="mx-auto mt-[18px] max-w-[56ch] text-lg text-[#f0e6ff] [text-shadow:0_1px_12px_rgb(18_12_34/0.9)]">{t('landing.v2.cta.body')}</p>
+        <p className="mx-auto mt-[18px] max-w-[56ch] text-lg text-[#eef1f5] [text-shadow:0_1px_12px_rgb(14_17_22/0.9)]">{t('landing.v2.cta.body')}</p>
         <div className="mt-[34px] flex flex-wrap justify-center gap-4">
           {user ? (
             <>

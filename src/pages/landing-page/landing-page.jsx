@@ -12,7 +12,7 @@ import SiteFooter from '../../components/landing/site-footer/site-footer.jsx'
 import SiteHeader from '../../components/landing/site-header/site-header.jsx'
 import '../../components/landing/landing.css'
 
-// The public landing, "noite arcana": the hero and the CTA band sit over shaders; everything you
+// The public landing, "Ardósia": the hero and the CTA band sit over shaders; everything you
 // read (how it works, the FAQ) sits on calm panels.
 export default function LandingPage() {
   return (
