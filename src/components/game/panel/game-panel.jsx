@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import GameIcon from '../icons/game-icon.jsx'
+import Frame, { Chip } from '../ui/frame.jsx'
 import BagTab from './bag-tab.jsx'
 import ForgeTab from './forge-tab.jsx'
 import HeroTab from './hero-tab.jsx'
@@ -13,6 +14,9 @@ export const TABS = [
   { id: 'forge', icon: 'hammer' },
   { id: 'world', icon: 'map' },
 ]
+
+// A tab's box: icon over label, in pixel type. The closed phone drawer's buttons wear it too.
+export const TAB_LOOK = 'flex min-h-13 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 px-1 pb-2 pt-1.5 font-pixel text-[11px] leading-none'
 
 const slot = (content, shared) => (typeof content === 'function' ? content(shared) : content)
 
@@ -41,11 +45,14 @@ const WALLET = [
 //   running hunt, else the first open zone not yet beaten on Normal.
 // - portrait (optional): the hero portrait and its "edit look" button, shown at the top of the Hero tab.
 // - studyHref (optional): where the study call to action links.
-export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab = null, worldTab = null, target, portrait = null, studyHref }) {
+// - fill (optional): the panel takes its parent's height and the tab content scrolls inside the frame
+//   (the desktop console); off, it grows with its content (the phone drawer scrolls it).
+export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab = null, worldTab = null, target, portrait = null, studyHref, fill = false }) {
   const { t, locale } = useI18n()
   const fmt = useMemo(() => new Intl.NumberFormat(locale), [locale])
   const baseId = useId()
   const tabRefs = useRef({})
+  const body = useRef(null)
   const focusNext = useRef(false)
   const [selectedId, setSelectedId] = useState(null)
   const runner = useActionRunner()
@@ -56,6 +63,7 @@ export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab 
   // A tab change clears the last message, and an arrow key moves focus to the new tab.
   useEffect(() => {
     setNotice(null)
+    if (body.current) body.current.scrollTop = 0
     if (focusNext.current) {
       focusNext.current = false
       tabRefs.current[active]?.focus()
@@ -88,17 +96,16 @@ export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab 
   }
 
   return (
-    <section
-      aria-label={t('game.panel.label')}
-      className="flex flex-col gap-2.5 border-l-[3px] border-[#0a0818] bg-linear-to-b from-[#1a1433] to-[#120e26] p-2.5 font-mono text-xs text-[#ece8ff]"
-    >
-      <div role="tablist" aria-label={t('game.panel.label')} className="grid grid-cols-3 gap-1" onKeyDown={onKeyDown}>
+    <section aria-label={t('game.panel.label')} className={`flex min-w-0 flex-col gap-2 font-mono text-xs text-[#e9e4ff] ${fill ? 'h-full w-full' : ''}`}>
+      <div role="tablist" aria-label={t('game.panel.label')} className="grid grid-cols-5 gap-1" onKeyDown={onKeyDown}>
         {TABS.map(({ id, icon }) => {
           const on = id === active
           const label = t(`game.tab.${id}`)
           const badge = id === 'tree' && free > 0
           return (
-            <button
+            <Frame
+              as="button"
+              tone={on ? 'raised' : 'inset'}
               key={id}
               ref={(node) => {
                 tabRefs.current[id] = node
@@ -110,53 +117,58 @@ export default function GamePanel({ view, tab = 'hero', onTab, actions, treeTab 
               aria-controls={`${baseId}-panel-${id}`}
               tabIndex={on ? 0 : -1}
               onClick={() => onTab?.(id)}
-              className={`relative flex min-h-11 cursor-pointer items-center gap-1 border-2 px-1 text-[11px] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2c14e] ${on ? 'border-[#f2c14e] bg-[#2a1f5a] text-white' : 'border-[#2e2650] bg-[#1e1838] text-[#b9b0de]'}`}
+              className={`${TAB_LOOK} ${on ? 'text-white' : 'text-[#a89fd0] hover:text-[#e9e4ff]'}`}
             >
-              <GameIcon name={icon} size={1} />
-              {label}
+              <GameIcon name={icon} size={1} className={on ? '' : 'opacity-70'} />
+              <span className="max-w-full truncate leading-[1.35]">{label}</span>
+              {on && <i aria-hidden="true" className="absolute inset-x-1 bottom-1 block h-0.5 bg-[#f2c14e]" />}
               {badge && (
-                <b className="absolute -right-1.5 -top-1.5 border border-[#0a0818] bg-[#ff5a6e] px-1 text-[9px] text-white">
+                <Chip tone="danger" className="absolute right-1 top-1 z-10">
                   <span aria-hidden="true">{fmt.format(free)}</span>
                   <span className="sr-only">, {t('game.tab.free', { count: free })}</span>
-                </b>
+                </Chip>
               )}
-            </button>
+            </Frame>
           )
         })}
       </div>
 
-      <ul aria-label={t('game.cur.wallet')} className="flex flex-wrap gap-3 text-[11px]">
-        {WALLET.map(({ field, icon }) => (
-          <li key={field} className="flex items-center gap-1">
-            <GameIcon name={icon} size={1} label={t(`game.cur.${field}`)} />
-            <b className="text-white">{fmt.format(view.hero[field] ?? 0)}</b>
-          </li>
-        ))}
-      </ul>
-
-      <div className="min-h-4 text-[11px]">
-        <p role="status" className="m-0 text-[#6fe39a]">
-          {runner.busy ? t('game.busy') : runner.notice?.kind === 'ok' ? runner.notice.text : ''}
-        </p>
-        <p role="alert" className="m-0 text-[#ff9aa6]">
-          {runner.notice?.kind === 'error' ? runner.notice.text : ''}
-        </p>
-      </div>
-
-      {TABS.map(({ id }) => (
-        <div
-          key={id}
-          role="tabpanel"
-          id={`${baseId}-panel-${id}`}
-          aria-labelledby={`${baseId}-tab-${id}`}
-          hidden={id !== active}
-          // biome-ignore lint/a11y/noNoninteractiveTabindex: the tabs pattern makes a panel focusable when its first content may not be.
-          tabIndex={0}
-          className="flex flex-col gap-2.5 focus-visible:outline-2 focus-visible:outline-[#f2c14e]"
-        >
-          {id === active ? content[id] : null}
+      <Frame tone="inset" className={`flex min-w-0 flex-col p-1 ${fill ? 'min-h-0 flex-1' : ''}`}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b-2 border-[#0a0818] px-1.5 pb-2 pt-1.5 shadow-[0_2px_0_#2a2250]">
+          <ul aria-label={t('game.cur.wallet')} className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+            {WALLET.map(({ field, icon }) => (
+              <li key={field} className="flex items-center gap-1 border-2 border-[#120c22] bg-[#1b1433] py-0.5 pl-1 pr-1.5 shadow-[inset_2px_2px_0_#2e2560]">
+                <GameIcon name={icon} size={1} label={t(`game.cur.${field}`)} />
+                <b className="font-pixel text-[11px] font-normal text-white">{fmt.format(view.hero[field] ?? 0)}</b>
+              </li>
+            ))}
+          </ul>
+          <div className="min-w-0 flex-1 basis-40 text-right text-[11px] leading-tight">
+            <p role="status" className="m-0 text-[#6fe39a]">
+              {runner.busy ? t('game.busy') : runner.notice?.kind === 'ok' ? runner.notice.text : ''}
+            </p>
+            <p role="alert" className="m-0 text-[#ff9aa6]">
+              {runner.notice?.kind === 'error' ? runner.notice.text : ''}
+            </p>
+          </div>
         </div>
-      ))}
+        <div ref={body} className={`gw-scroll flex min-w-0 flex-col gap-2.5 px-1.5 pb-1.5 pt-2.5 ${fill ? 'min-h-0 flex-1 overflow-y-auto' : ''}`}>
+          {TABS.map(({ id }) => (
+            <div
+              key={id}
+              role="tabpanel"
+              id={`${baseId}-panel-${id}`}
+              aria-labelledby={`${baseId}-tab-${id}`}
+              hidden={id !== active}
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: the tabs pattern makes a panel focusable when its first content may not be.
+              tabIndex={0}
+              className="flex flex-col gap-2.5 focus-visible:rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#f2c14e]"
+            >
+              {id === active ? content[id] : null}
+            </div>
+          ))}
+        </div>
+      </Frame>
     </section>
   )
 }

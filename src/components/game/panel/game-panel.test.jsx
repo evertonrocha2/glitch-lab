@@ -33,6 +33,19 @@ it('renders five tabs with the selected one in the tab order', () => {
   expect(panel).toHaveAttribute('aria-labelledby', tabs[0].id)
 })
 
+it('keeps the five tabs in one tablist, each with its icon and label', () => {
+  ui()
+  const lists = screen.getAllByRole('tablist')
+  expect(lists).toHaveLength(1)
+  const tabs = screen.getAllByRole('tab')
+  expect(tabs).toHaveLength(5)
+  for (const tab of tabs) {
+    expect(lists[0]).toContainElement(tab)
+    expect(tab.querySelector('canvas')).not.toBeNull()
+    expect(tab).toHaveAttribute('data-tone', tab.getAttribute('aria-selected') === 'true' ? 'raised' : 'inset')
+  }
+})
+
 it('moves between tabs with the arrow keys, wrapping, and Home / End', () => {
   ui()
   const hero = screen.getByRole('tab', { name: 'Hero' })

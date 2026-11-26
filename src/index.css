@@ -265,3 +265,11 @@
     border-radius: 0;
   }
 }
+
+/* A scroll area inside a game frame: a thin bevel-colored thumb on the dark track. */
+@layer components {
+  .gw-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #6a5bb0 #0a0818;
+  }
+}
