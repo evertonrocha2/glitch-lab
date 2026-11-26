@@ -1,7 +1,8 @@
 /* Landing, "noite arcana" (docs/superpowers/specs/2026-11-26-site-noite-arcana-design.md).
    Layout lives in Tailwind classes; the pieces Tailwind can't say well (pixel bevels, the item
    cards' foil, the shader scrims) live here, in the components layer so utilities still win.
-   Colors read the site tokens when the theme defines them, else the spec's values. */
+   Colors are the site's noite arcana tokens (src/index.css), aliased here as --lp-*.
+   Tailwind only emits the theme variables something uses, so each keeps the spec value as a fallback. */
 
 /* main.jsx imports the app (and so this file) before index.css: name Tailwind's layer order here
    too, or "components" would come first and the base reset would beat these rules. */
@@ -13,10 +14,10 @@
   --lp-panel: var(--color-panel, #1b1433);
   --lp-raised: var(--color-raised, #241c44);
   --lp-inset: var(--color-inset, #100c20);
-  --lp-line: var(--color-line-arcane, #3e3170);
+  --lp-line: var(--color-line, #3e3170);
   --lp-line-hi: var(--color-line-hi, #574a96);
   --lp-text: var(--color-text, #e9e4ff);
-  --lp-muted: var(--color-text-muted, #a89fd0);
+  --lp-muted: var(--color-muted, #a89fd0);
   --lp-arcane: var(--color-arcane, #8a5cff);
   --lp-arcane-hi: var(--color-arcane-hi, #c3a6ff);
   --lp-arcane-deep: var(--color-arcane-deep, #5a2fd9);
@@ -56,6 +57,15 @@
   .lp-eyebrow::before {
     content: "> ";
     color: var(--lp-gold);
+  }
+
+  /* A darker band with a faint pixel star grid, so the reading sections alternate. */
+  .lp-band {
+    background:
+      radial-gradient(rgb(195 166 255 / 0.08) 1px, transparent 1.5px) 0 0 / 24px 24px,
+      linear-gradient(180deg, #0d0a1c, #110c24);
+    border-block: 2px solid var(--lp-void);
+    box-shadow: inset 0 2px 0 #1b1433;
   }
 
   /* Pixel bevel panels. */

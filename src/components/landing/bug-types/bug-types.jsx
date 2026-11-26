@@ -8,7 +8,7 @@ import SectionHead, { WRAP } from '../section-head/section-head.jsx'
 export default function BugTypes() {
   const t = useT()
   return (
-    <section id="bugs" aria-labelledby="bugs-title" className="scroll-mt-16 py-20 sm:py-28">
+    <section id="bugs" aria-labelledby="bugs-title" className="lp-band scroll-mt-16 py-20 sm:py-28">
       <div className={WRAP}>
         <SectionHead
           id="bugs-title"

@@ -19,7 +19,7 @@ function Mark({ good }) {
 export default function Compare() {
   const t = useT()
   return (
-    <section id="why" aria-labelledby="why-title" className="scroll-mt-16 py-20 sm:py-28">
+    <section id="why" aria-labelledby="why-title" className="lp-band scroll-mt-16 py-20 sm:py-28">
       <div className={WRAP}>
         <SectionHead id="why-title" kicker={t('landing.why.kicker')} title={t('landing.why.title')} body={t('landing.why.body')} />
         <div className="lp-frame mt-12 sm:mt-14">
