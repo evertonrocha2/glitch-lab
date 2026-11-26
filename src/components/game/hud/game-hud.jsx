@@ -82,7 +82,7 @@ function StudyBuff({ multiplier, correct, className = '' }) {
       title={label}
       data-active={active}
       tone={active ? 'raised' : 'inset'}
-      className={`pointer-events-auto items-center gap-1 px-1.5 py-1 font-label text-[10px] ${active ? 'text-[#7dffb0]' : 'text-[#a89fd0]'} ${className}`}
+      className={`pointer-events-auto items-center gap-1 px-1.5 py-1 font-label text-[10px] normal-case ${active ? 'text-[#7dffb0]' : 'text-[#a89fd0]'} ${className}`}
     >
       <GameIcon name="book" size={1} className={active ? '' : 'opacity-50'} />
       <span aria-hidden="true">{t('gameXp.chip', { mult })}</span>
