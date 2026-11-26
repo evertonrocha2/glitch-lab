@@ -208,3 +208,60 @@
     }
   }
 }
+
+/* Glitch World UI kit (src/components/game/ui/frame.jsx): the fill sits behind the children
+   (::before) and the ink outline with its bevel on top of them (::after), both cut to 2px stepped
+   corners. The tone colors come in as --f-bg, --f-hi, --f-lo, --f-ink from tokens.js. */
+@layer components {
+  .gw-frame {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .gw-frame::before,
+  .gw-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    clip-path: polygon(
+      0 2px,
+      2px 2px,
+      2px 0,
+      calc(100% - 2px) 0,
+      calc(100% - 2px) 2px,
+      100% 2px,
+      100% calc(100% - 2px),
+      calc(100% - 2px) calc(100% - 2px),
+      calc(100% - 2px) 100%,
+      2px 100%,
+      2px calc(100% - 2px),
+      0 calc(100% - 2px)
+    );
+  }
+
+  .gw-frame::before {
+    z-index: -1;
+    background: var(--f-bg);
+  }
+
+  .gw-frame::after {
+    border: 2px solid var(--f-ink);
+    box-shadow:
+      inset 2px 2px 0 var(--f-hi),
+      inset -2px -2px 0 var(--f-lo);
+  }
+
+  /* A pressed button sinks: the bevel flips. */
+  .gw-frame:is(button, a):not(:disabled):active::after {
+    box-shadow:
+      inset 2px 2px 0 var(--f-lo),
+      inset -2px -2px 0 var(--f-hi);
+  }
+
+  .gw-frame:focus-visible {
+    outline: 2px solid #f2c14e;
+    outline-offset: 2px;
+    border-radius: 0;
+  }
+}
