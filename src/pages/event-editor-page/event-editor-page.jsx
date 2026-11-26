@@ -180,8 +180,8 @@ export default function EventEditorPage() {
       <Link to={id ? `/events/${id}` : '/events'} className="font-label text-xs text-ink hover:text-primary">
         &lt; {id ? t('events.editor.back') : t('events.page.all')}
       </Link>
-      <p className="mt-6 font-label text-xs text-secondary">
-        &gt; {id ? t('events.editor.promptEdit') : t('events.editor.promptNew')}
+      <p className="mt-6 font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+        <span className="text-gold">&gt;</span> {id ? t('events.editor.promptEdit') : t('events.editor.promptNew')}
         <span className="motion-safe:animate-caret">_</span>
       </p>
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{id ? t('events.editor.titleEdit') : t('events.editor.titleNew')}</h1>

@@ -143,8 +143,8 @@ export default function GymPage() {
       <Link to={back.to} className="font-label text-xs text-ink hover:text-primary">
         &lt; {back.text}
       </Link>
-      <p className="mt-6 font-label text-xs text-secondary">
-        &gt; {t(prompt)}
+      <p className="mt-6 font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+        <span className="text-gold">&gt;</span> {t(prompt)}
         <span className="motion-safe:animate-caret">_</span>
       </p>
       <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{puzzle ? puzzle.title : t('board.gym.title')}</h1>

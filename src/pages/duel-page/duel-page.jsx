@@ -304,8 +304,8 @@ export default function DuelPage() {
     <AppShell>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-label text-xs text-secondary">
-            &gt; duel<span className="motion-safe:animate-caret">_</span>
+          <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+            <span className="text-gold">&gt;</span> duel<span className="motion-safe:animate-caret">_</span>
           </p>
           <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('duel.title')}</h1>
         </div>

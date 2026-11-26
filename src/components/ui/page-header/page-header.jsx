@@ -8,8 +8,8 @@ export default function PageHeader({ kicker, title, lead, actions, children, cla
     <div className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${className}`}>
       <div className="min-w-0">
         {kicker && (
-          <p className="font-label text-xs text-secondary">
-            &gt; {prompt}
+          <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+            <span className="text-gold">&gt;</span> {prompt}
             <span className="motion-safe:animate-caret">_</span>
           </p>
         )}

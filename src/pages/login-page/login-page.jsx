@@ -4,7 +4,7 @@ import PixelBug from '../../components/ui/pixel-bug/pixel-bug.jsx'
 import PixelButton from '../../components/ui/pixel-button/pixel-button.jsx'
 import PixelCard from '../../components/ui/pixel-card/pixel-card.jsx'
 import LanguageSelect from '../../components/ui/language-select/language-select.jsx'
-import PixelLogo from '../../components/ui/pixel-logo/pixel-logo.jsx'
+import PixelLogo, { Wordmark } from '../../components/ui/pixel-logo/pixel-logo.jsx'
 import { useAuth } from '../../lib/auth/auth-provider.jsx'
 import { useT } from '../../lib/i18n/I18nProvider.jsx'
 import DemoLogin from './demo-login.jsx'
@@ -102,11 +102,11 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-mist">
-      <header className="border-b-2 border-ink bg-white">
+      <header className="border-b border-arcane-hi/15 bg-[#0c081a]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-          <Link to="/" className="flex items-center gap-2.5 font-pixel text-xl font-bold text-ink">
-            <PixelLogo className="size-7" />
-            <span>StudyQuest</span>
+          <Link to="/" className="flex items-center gap-2.5 font-pixel text-[22px] text-ink">
+            <PixelLogo className="size-8" />
+            <Wordmark />
           </Link>
           <LanguageSelect compact />
         </div>
@@ -114,8 +114,8 @@ export default function LoginPage() {
 
       <main className="mx-auto grid max-w-5xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:py-20">
         <div>
-          <p className="font-label text-xs text-secondary">
-            &gt; login_<span className="motion-safe:animate-caret">█</span>
+          <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+            <span className="text-gold">&gt;</span> login_<span className="motion-safe:animate-caret">█</span>
           </p>
           <h1 className="mt-4 font-pixel text-4xl font-bold leading-tight text-ink sm:text-5xl">{t('landing.login.title')}</h1>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-muted">

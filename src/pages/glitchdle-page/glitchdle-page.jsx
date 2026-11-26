@@ -307,8 +307,8 @@ export default function GlitchdlePage() {
   return (
     <AppShell>
       <div>
-        <p className="font-label text-xs text-secondary">
-          &gt; glitchdle<span className="motion-safe:animate-caret">_</span>
+        <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+          <span className="text-gold">&gt;</span> glitchdle<span className="motion-safe:animate-caret">_</span>
         </p>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <h1 className="font-pixel text-3xl font-bold text-ink sm:text-4xl">Glitchdle{game ? ` #${game.number}` : ''}</h1>
