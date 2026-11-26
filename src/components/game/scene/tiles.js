@@ -422,70 +422,21 @@ export function paintAnimated(ctx, world, t = 0) {
   }
 }
 
-// ---------- fog over locked zones ----------
+// ---------- padlocks on locked portals ----------
 
 const LOCK = ['..ggg..', '.g...g.', '.g...g.', 'kkkkkkk', 'kYyyyyk', 'kyykyyk', 'kyykyyk', 'kkkkkkk']
 const LOCK_PAL = { g: '#c9ccd4', k: '#1c1d26', y: '#f2c14e', Y: '#ffe08a' }
 
-// Smooth noise in [0, 1): bilinear over a coarse hash grid.
-function smooth(x, y, cell, s) {
-  const fx = x / cell
-  const fy = y / cell
-  const x0 = Math.floor(fx)
-  const y0 = Math.floor(fy)
-  const u = fx - x0
-  const v = fy - y0
-  const a = hash(x0, y0, s)
-  const b = hash(x0 + 1, y0, s)
-  const c = hash(x0, y0 + 1, s)
-  const d = hash(x0 + 1, y0 + 1, s)
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v
-}
-
-const inRect = (r, x, y) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h
-
-// The padlock on a locked door (or a portal to a locked world), centered on the tile at (tx, ty).
+// The padlock on a portal to a locked world, centered on the tile at (tx, ty). Zones inside a world
+// are always open, so nothing else is locked or fogged.
 export function paintPadlock(ctx, tx, ty) {
   sprite(ctx, LOCK, LOCK_PAL, tx * TS + 4, ty * TS + 5)
 }
 
-// A dark, cloudy fog over each locked rect (in tiles), with a padlock on its doors.
-export function paintFog(ctx, world, lockedRects = []) {
-  if (!lockedRects.length) return
-  const m = readMap(world)
-  const locked = (tx, ty) => lockedRects.some((r) => inRect(r, tx, ty))
-  for (const r of lockedRects) {
-    const x0 = clamp(r.x, 0, m.W) * TS
-    const y0 = clamp(r.y, 0, m.H) * TS
-    const x1 = clamp(r.x + r.w, 0, m.W) * TS
-    const y1 = clamp(r.y + r.h, 0, m.H) * TS
-    for (let gy = y0; gy < y1; gy += 2) {
-      for (let gx = x0; gx < x1; gx += 2) {
-        const tx = Math.floor(gx / TS)
-        const ty = Math.floor(gy / TS)
-        // Thinner near an open neighbor, so the fog has a soft edge.
-        const edgeX = (gx - x0 < 6 && !locked(tx - 1, ty)) || (x1 - gx <= 6 && !locked(tx + 1, ty))
-        const edgeY = (gy - y0 < 6 && !locked(tx, ty - 1)) || (y1 - gy <= 6 && !locked(tx, ty + 1))
-        const n = smooth(gx, gy, 24, 71) * 0.6 + smooth(gx, gy, 9, 73) * 0.4
-        let a = 0.5 + n * 0.25
-        if (edgeX || edgeY) a *= gx - x0 < 2 || x1 - gx <= 2 || gy - y0 < 2 || y1 - gy <= 2 ? 0.45 : 0.75
-        ctx.fillStyle = `rgba(12,8,30,${a.toFixed(2)})`
-        ctx.fillRect(gx, gy, 2, 2)
-      }
-    }
-  }
-  for (let ty = 0; ty < m.H; ty++) {
-    for (let tx = 0; tx < m.W; tx++) {
-      if (m.charAt(tx, ty) === 'D' && locked(tx, ty)) paintPadlock(ctx, tx, ty)
-    }
-  }
-}
-
-// The whole map at time t: ground, things, water, portals and the fog over locked rects.
-export function paintMap(ctx, world, { lockedRects = [], t = 0 } = {}) {
+// The whole map at time t: ground, things, water and portals.
+export function paintMap(ctx, world, { t = 0 } = {}) {
   paintBase(ctx, world)
   paintAnimated(ctx, world, t)
-  paintFog(ctx, world, lockedRects)
 }
 
 // The map's own lights for the light pass: portals glow violet, terminals cyan, chests a warm glint.

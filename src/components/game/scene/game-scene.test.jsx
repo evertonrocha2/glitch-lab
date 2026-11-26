@@ -11,6 +11,7 @@ import { clearHeroCache, heroSprite } from '../hero/hero-cache.js'
 import { ANIMS, drawEnemy } from './actors.js'
 import GameScene, { dollAt, fightSpot, heroFrame } from './game-scene.jsx'
 import { paintLight } from './light.js'
+import * as tiles from './tiles.js'
 import { paintMap, paintPadlock, TS } from './tiles.js'
 
 // A 2D context that records every fillRect and takes anything else silently.
@@ -55,7 +56,7 @@ it('paints every tile of a 2x2 map of each tile char without throwing', () => {
   for (const char of Object.keys(TILES)) {
     const ctx = recorder()
     const world = { id: 'test', rows: [char + char, char + char], zones: [], portals: [] }
-    expect(() => paintMap(ctx, world, { lockedRects: [] }), char).not.toThrow()
+    expect(() => paintMap(ctx, world), char).not.toThrow()
     for (let ty = 0; ty < 2; ty++) {
       for (let tx = 0; tx < 2; tx++) {
         const hit = ctx.rects.some((r) => r.x >= tx * TS && r.x < (tx + 1) * TS && r.y >= ty * TS && r.y < (ty + 1) * TS)
@@ -65,24 +66,23 @@ it('paints every tile of a 2x2 map of each tile char without throwing', () => {
   }
 })
 
-it('paints every real map, fog included, without throwing', () => {
+it('paints every real map without throwing', () => {
   for (const world of Object.values(WORLDS)) {
     const ctx = recorder()
-    const lockedRects = world.zones.map((zone) => zone.rect)
-    expect(() => paintMap(ctx, world, { lockedRects }), world.id).not.toThrow()
+    expect(() => paintMap(ctx, world), world.id).not.toThrow()
     expect(ctx.rects.length).toBeGreaterThan(world.rows.length * world.rows[0].length)
   }
 })
 
-it('fogs the locked rects and only those', () => {
-  const world = { id: 'test', rows: ['....', '....'], zones: [], portals: [] }
-  const open = recorder()
-  paintMap(open, world, { lockedRects: [] })
-  const fogged = recorder()
-  paintMap(fogged, world, { lockedRects: [{ x: 2, y: 0, w: 2, h: 2 }] })
-  const extra = fogged.rects.slice(open.rects.length)
-  expect(extra.length).toBeGreaterThan(0)
-  expect(extra.every((r) => r.x >= 2 * TS)).toBe(true)
+it('never fogs a zone: a map paints the same with its zones or without them', () => {
+  for (const world of Object.values(WORLDS)) {
+    const zoned = recorder()
+    paintMap(zoned, world, { lockedRects: world.zones.map((zone) => zone.rect) })
+    const bare = recorder()
+    paintMap(bare, { ...world, zones: [] })
+    expect(zoned.rects, world.id).toEqual(bare.rects)
+  }
+  expect(tiles.paintFog).toBeUndefined()
 })
 
 it('draws every enemy sprite in every anim, elite or not', () => {
@@ -121,7 +121,7 @@ it('the light pass leaves out the fireflies with reduced motion', () => {
 it('names the zone in its label', () => {
   render(
     <I18nProvider locale="en">
-      <GameScene world={FLORESTA_JS} zoneRect={z1} lockedRects={[]} look={look} />
+      <GameScene world={FLORESTA_JS} zoneRect={z1} look={look} />
     </I18nProvider>,
   )
   const scene = screen.getByRole('img')
@@ -134,7 +134,7 @@ it('names the zone in its label', () => {
 it('names the second zone from its rect, in Portuguese too', () => {
   render(
     <I18nProvider locale="pt-BR">
-      <GameScene world={FLORESTA_JS} zoneRect={ZONES['floresta-js'].z2.rect} lockedRects={[]} look={look} />
+      <GameScene world={FLORESTA_JS} zoneRect={ZONES['floresta-js'].z2.rect} look={look} />
     </I18nProvider>,
   )
   expect(screen.getByRole('img')).toHaveAccessibleName(/Floresta do JavaScript, área 2/)
@@ -143,7 +143,7 @@ it('names the second zone from its rect, in Portuguese too', () => {
 it('does not throw when the canvas has no 2D context', () => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   const onReady = vi.fn()
-  const { unmount } = render(<GameScene world={FLORESTA_JS} zoneRect={z1} lockedRects={[z1]} look={look} onReady={onReady} />)
+  const { unmount } = render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} onReady={onReady} />)
   expect(screen.getByRole('img')).toBeInTheDocument()
   expect(onReady).toHaveBeenCalledTimes(1)
   unmount()
@@ -169,7 +169,7 @@ it('animates with requestAnimationFrame and stops on unmount', () => {
   const caf = vi.fn()
   vi.stubGlobal('requestAnimationFrame', raf)
   vi.stubGlobal('cancelAnimationFrame', caf)
-  const { unmount } = render(<GameScene world={FLORESTA_JS} zoneRect={z1} lockedRects={[]} look={look} enemy={{ sprite: 'slime' }} />)
+  const { unmount } = render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} enemy={{ sprite: 'slime' }} />)
   expect(raf).toHaveBeenCalled()
   unmount()
   expect(caf).toHaveBeenCalledWith(7)
@@ -183,7 +183,7 @@ it('draws one still frame and no loop with reduced motion', () => {
   const raf = vi.fn(() => 1)
   vi.stubGlobal('requestAnimationFrame', raf)
   vi.stubGlobal('cancelAnimationFrame', vi.fn())
-  render(<GameScene world={FLORESTA_JS} zoneRect={z1} lockedRects={[]} look={look} />)
+  render(<GameScene world={FLORESTA_JS} zoneRect={z1} look={look} />)
   expect(getContext).toHaveBeenCalled()
   expect(raf).not.toHaveBeenCalled()
 })
