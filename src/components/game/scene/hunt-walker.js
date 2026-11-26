@@ -6,14 +6,19 @@ import { DIRECTIONS, STEP_MS, sideOf } from './walk.js'
 // step (onStep) to follow roads, hunt the zone the hero stands in and save where it is.
 // The player steers with keys, the pad or a click; left alone for IDLE_MS the hero strolls to a spot a
 // few tiles away by itself (only while the caller allows it: between packs of a hunt), inside roamIn
-// when it is set (the hunted zone, kept off the map's edge and its roads).
+// when it is set (the hunted zone, kept off the map's edge and its roads). When the caller names lures
+// (the idle monsters on the map), a stroll heads for the nearest one in that zone and stops LURE_SHORT
+// tiles short, so the next pack is made of monsters the player already sees (ambient.js claimPack).
 // A plain object with no timers: the scene's frame clock drives it through update(now).
 
 export const IDLE_MS = 3000
 export const ROAM_STEP_MS = 260
 export const ROAM_PAUSE_MS = 900
 const ROAM_MIN = 3
-const ROAM_MAX = 7
+// The most steps one stroll takes; a far group is reached over several strolls.
+export const ROAM_MAX = 7
+// How far (Chebyshev tiles) from an idle monster a stroll toward it stops.
+export const LURE_SHORT = 2
 
 const key = (x, y) => `${x},${y}`
 const STEPS = Object.values(DIRECTIONS)
@@ -61,6 +66,17 @@ export function roamTarget(world, rect, from, random = Math.random) {
   const pool = far.length ? far : others
   if (!pool.length) return null
   return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))]
+}
+
+// Where a stroll toward idle monsters goes: the reachable floor tile nearest `from` (by steps) within
+// LURE_SHORT tiles (Chebyshev) of a lure. lures: [{ x, y }] drawn spots (fractions read as the nearest
+// tile). `from` itself when the hero already stands that close; null with no lure, or none reachable.
+export function lureTarget(world, rect, from, lures) {
+  if (!lures?.length) return null
+  const tiles = lures.map((l) => ({ x: Math.round(l.x), y: Math.round(l.y) }))
+  const near = (t) => tiles.some((l) => Math.max(Math.abs(l.x - t.x), Math.abs(l.y - t.y)) <= LURE_SHORT)
+  const { order } = flood(world, rect, from)
+  return order.find(near) ?? null
 }
 
 const slide = (a, b, max) => (Math.abs(b - a) <= max ? b : a + Math.sign(b - a) * max)
@@ -184,8 +200,15 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     onFace?.(w.facing)
   }
 
-  // Advances to `now` (ms, the frame clock). roam: whether a stroll may start.
-  w.update = (now, { roam = false } = {}) => {
+  // The lures inside the rect strolls stay in, give or take LURE_SHORT (a monster on the zone's edge).
+  const luresIn = (area, lures) =>
+    lures?.filter(
+      (l) => l.x >= area.x - LURE_SHORT && l.x < area.x + area.w + LURE_SHORT && l.y >= area.y - LURE_SHORT && l.y < area.y + area.h + LURE_SHORT,
+    )
+
+  // Advances to `now` (ms, the frame clock). roam: whether a stroll may start. lures: the idle
+  // monsters a stroll heads for (read only when a stroll starts).
+  w.update = (now, { roam = false, lures = null } = {}) => {
     if (w.lastInput === null) w.lastInput = now
     if (w.last === null) w.last = now
     if (now - w.nextAt > 1000) w.nextAt = now
@@ -201,8 +224,9 @@ export function createWalker({ world, rect, start, random = Math.random, reduced
     }
     if (!w.held && !w.path.length && roam && !reduced && now - w.lastInput >= IDLE_MS && now >= w.pauseUntil) {
       const area = roamRect()
-      const target = roamTarget(world, area, w.tile, random)
-      const path = target && pathWithin(world, area, w.tile, target)
+      const lure = lureTarget(world, area, w.tile, luresIn(area, lures))
+      const target = lure ?? roamTarget(world, area, w.tile, random)
+      const path = target && pathWithin(world, area, w.tile, target)?.slice(0, ROAM_MAX)
       if (path?.length) {
         w.path = path
         w.pace = ROAM_STEP_MS

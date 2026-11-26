@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createWalker, IDLE_MS, pathWithin, ROAM_STEP_MS, roamTarget } from './hunt-walker.js'
+import { createWalker, IDLE_MS, LURE_SHORT, lureTarget, pathWithin, ROAM_MAX, ROAM_STEP_MS, roamTarget } from './hunt-walker.js'
 import { STEP_MS } from './walk.js'
 
 // 10x7 room with a wall pillar at (4,2)..(4,4).
@@ -177,5 +177,98 @@ describe('createWalker', () => {
     quick.release('down')
     quick.update(STEP_MS * 3)
     expect(quick.tile).toEqual({ x: 2, y: 3 })
+  })
+})
+
+// A 20x12 open field with walls around: room for the hero to walk up to idle monsters.
+const field = {
+  rows: ['T'.repeat(20), ...Array.from({ length: 10 }, () => `T${'.'.repeat(18)}T`), 'T'.repeat(20)],
+  npcs: [],
+}
+const fieldRect = { x: 0, y: 0, w: 20, h: 12 }
+const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+
+describe('lureTarget', () => {
+  it('is the nearest reachable tile LURE_SHORT tiles from the nearest lure', () => {
+    expect(LURE_SHORT).toBe(2)
+    const to = lureTarget(field, fieldRect, { x: 2, y: 5 }, [{ x: 15, y: 5 }, { x: 9, y: 5 }])
+    expect(chebyshev(to, { x: 9, y: 5 })).toBe(LURE_SHORT)
+    expect(to).toEqual({ x: 7, y: 5 })
+  })
+  it('reads drawn spots mid step (fractions) as their nearest tile', () => {
+    expect(lureTarget(field, fieldRect, { x: 2, y: 5 }, [{ x: 8.6, y: 5.2 }])).toEqual({ x: 7, y: 5 })
+  })
+  it('is the hero tile when it already stands that close, and null with no lure', () => {
+    expect(lureTarget(field, fieldRect, { x: 7, y: 5 }, [{ x: 9, y: 6 }])).toEqual({ x: 7, y: 5 })
+    expect(lureTarget(field, fieldRect, { x: 7, y: 5 }, [])).toBe(null)
+    expect(lureTarget(field, fieldRect, { x: 7, y: 5 }, null)).toBe(null)
+  })
+  it('walks around walls and is null when no tile near a lure can be reached', () => {
+    const split = { rows: field.rows.map((row, y) => (y > 0 && y < 11 ? `${row.slice(0, 10)}T${row.slice(11)}` : row)), npcs: [] }
+    const to = lureTarget(split, fieldRect, { x: 2, y: 5 }, [{ x: 12, y: 5 }])
+    expect(to).toBe(null)
+    const left = lureTarget(split, fieldRect, { x: 2, y: 5 }, [{ x: 12, y: 5 }, { x: 5, y: 9 }])
+    expect(chebyshev(left, { x: 5, y: 9 })).toBe(LURE_SHORT)
+  })
+})
+
+describe('createWalker strolls toward idle monsters', () => {
+  const make = (extra = {}) => createWalker({ world: field, rect: fieldRect, start: { x: 2, y: 5 }, random: () => 0.3, ...extra })
+  const idle = (w, lures, from, to) => {
+    for (let t = from; t < to; t += 16) w.update(t, { roam: true, lures })
+  }
+
+  it('heads for the nearest idle monster between packs and stops LURE_SHORT tiles short', () => {
+    const w = make()
+    const lures = [{ x: 8, y: 5 }, { x: 16, y: 9 }]
+    w.update(0, { roam: true, lures })
+    idle(w, lures, IDLE_MS, IDLE_MS + ROAM_STEP_MS * 12)
+    expect(chebyshev(w.tile, lures[0])).toBe(LURE_SHORT)
+    // There it waits for the pack instead of strolling off.
+    const here = { ...w.tile }
+    idle(w, lures, IDLE_MS + ROAM_STEP_MS * 12, IDLE_MS * 4)
+    expect(w.tile).toEqual(here)
+  })
+
+  it('walks at most a stroll (ROAM_MAX steps) at a time toward a far group', () => {
+    const w = make()
+    const lures = [{ x: 17, y: 10 }]
+    w.update(0, { roam: true, lures })
+    w.update(IDLE_MS, { roam: true, lures })
+    expect(w.path.length).toBeGreaterThan(0)
+    expect(w.path.length).toBeLessThanOrEqual(ROAM_MAX)
+    // Each step gets closer.
+    let last = chebyshev(w.tile, lures[0])
+    for (const p of w.path) {
+      expect(chebyshev(p, lures[0])).toBeLessThanOrEqual(last)
+      last = chebyshev(p, lures[0])
+    }
+  })
+
+  it('only follows lures in the zone it roams in, and roams as before without any', () => {
+    const w = make()
+    w.roamIn = { x: 1, y: 1, w: 8, h: 10 }
+    // The only monster stands in another zone, far right: ignored, a plain stroll inside roamIn.
+    const lures = [{ x: 17, y: 5 }]
+    w.update(0, { roam: true, lures })
+    idle(w, lures, IDLE_MS, IDLE_MS * 6)
+    expect(w.tile.x).toBeLessThan(9)
+    const plain = make()
+    plain.update(0, { roam: true, lures: [] })
+    idle(plain, [], IDLE_MS, IDLE_MS + ROAM_STEP_MS * 3)
+    expect(plain.roaming).toBe(true)
+  })
+
+  it('never takes over from the player, and never roams with reduced motion', () => {
+    const w = make()
+    const lures = [{ x: 9, y: 5 }]
+    w.update(0, { roam: true, lures })
+    w.press('down', 100)
+    idle(w, lures, 100, IDLE_MS)
+    expect(w.tile.x).toBe(2)
+    w.release()
+    const calm = make({ reduced: true })
+    idle(calm, lures, 0, IDLE_MS * 3)
+    expect(calm.tile).toEqual({ x: 2, y: 5 })
   })
 })
