@@ -405,14 +405,14 @@ function bones(ctx, tx, ty) {
 
 // Broken stones scattered on the ground, lit from the top left.
 function rubble(ctx, tx, ty) {
-  for (let i = 0; i < 6; i++) {
-    const x = tx * TS + 2 + Math.floor(hash(tx, ty, 171 + i) * 11)
+  for (let i = 0; i < 7; i++) {
+    const x = tx * TS + 1 + Math.floor(hash(tx, ty, 171 + i) * 12)
     const y = ty * TS + 2 + Math.floor(hash(ty, tx, 181 + i) * 11)
     const w = 2 + Math.floor(hash(tx + i, ty, 191) * 2)
-    rect(ctx, x, y + 1, w, 1, 'rgba(20,16,30,.35)')
-    rect(ctx, x, y - 1, w, 2, '#8d879f')
-    P(ctx, x, y - 1, '#b3aec2')
-    P(ctx, x + w - 1, y, '#5c5770')
+    rect(ctx, x, y + 1, w + 1, 1, 'rgba(14,10,24,.55)')
+    rect(ctx, x, y - 1, w, 2, '#a7a0ab')
+    rect(ctx, x, y - 1, w, 1, '#cbc5c8')
+    P(ctx, x + w - 1, y, '#6c6672')
   }
 }
 
