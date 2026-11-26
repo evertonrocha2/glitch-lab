@@ -61,8 +61,8 @@ export default function PublicNotePage() {
 
         {note && (
           <>
-            <p className="font-label text-xs text-secondary">
-              {t('landing.note.kicker')}
+            <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+              <span className="text-gold">&gt;</span> {t('landing.note.kicker').replace(/^>\s*/, '')}
               <span className="motion-safe:animate-caret">_</span>
             </p>
             <PixelCard as="article" className="mt-4 p-5 sm:p-10">

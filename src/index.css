@@ -407,8 +407,10 @@
 
 /* Boxed form fields (the ones drawn as bg-white boxes) sink into the panel and take the gold focus
    ring, whatever focus style their classes ask for. Unlayered, so it wins over the utilities. */
+/* The field's edge is lighter than the card outline so it clears 3:1 against the panel. */
 :is(input, textarea, select).bg-white {
   background-color: var(--color-inset);
+  border-color: #6f60b8;
   box-shadow: inset 2px 2px 0 var(--color-void);
 }
 

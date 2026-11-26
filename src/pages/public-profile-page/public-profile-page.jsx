@@ -148,8 +148,8 @@ export default function PublicProfilePage() {
                 </Link>
               </p>
             )}
-            <p className="font-label text-xs text-secondary">
-              {t('landing.profile.kicker')}
+            <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+              <span className="text-gold">&gt;</span> {t('landing.profile.kicker').replace(/^>\s*/, '')}
               <span className="motion-safe:animate-caret">_</span>
             </p>
             <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

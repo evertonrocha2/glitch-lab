@@ -42,8 +42,8 @@ export default function PeoplePage() {
       <PublicHeader />
 
       <main className="mx-auto max-w-6xl px-5 pt-10 pb-20 sm:px-8 sm:pt-14">
-        <p className="font-label text-xs text-secondary">
-          {t('landing.people.kicker')}
+        <p className="font-mono text-[13px] uppercase tracking-[0.08em] text-arcane-hi">
+          <span className="text-gold">&gt;</span> {t('landing.people.kicker').replace(/^>\s*/, '')}
           <span className="motion-safe:animate-caret">_</span>
         </p>
         <h1 className="mt-3 font-pixel text-3xl font-bold text-ink sm:text-4xl">{t('landing.people.title')}</h1>
