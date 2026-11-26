@@ -6,7 +6,7 @@ import { GEM_SALVAGE_SCRAP, settleHunt } from '../../../shared/game/hunt.js'
 import { BAG_SIZE, rollGem, rollItem, salvageValue } from '../../../shared/game/items.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { bossXp, correctToday, levelsGained, startingXp, studyMultiplier } from '../../../shared/game/xp.js'
-import { HUNT_WORLDS, ZONES, enemyFor, zoneState } from '../../../shared/game/zones.js'
+import { HUNT_WORLDS, ZONES, enemyFor } from '../../../shared/game/zones.js'
 import { badRequest, codedConflict } from '../../core/errors.js'
 import { isId } from '../../core/validation.js'
 import { loadFuel } from './game.fuel.js'
@@ -52,16 +52,13 @@ const change = (store, user, ctx, fn) =>
 export const bagFree = (hero) => Math.max(0, BAG_SIZE - hero.items.filter((item) => !item.equipped).length)
 
 // Known world, zone and difficulty only: the zone table is looked up with own keys, never the prototype.
+// Every zone and difficulty of a hunt world is open at any level (shared/game/zones.js): danger is the
+// only limit, so nothing else is checked here.
 function parseTarget(body) {
   const { world, zone, difficulty } = body
   if (!isId(world) || !isId(zone) || !isId(difficulty)) throw badRequest()
   if (!HUNT_WORLDS.includes(world) || !Object.hasOwn(ZONES[world], zone) || !Object.hasOwn(DIFFICULTIES, difficulty)) throw badRequest()
   return { world, zone, difficulty, def: ZONES[world][zone] }
-}
-
-function requireOpen(hero, level, { world, zone, difficulty }) {
-  const state = zoneState(hero.progress, world, difficulty, level).find((item) => item.id === zone)
-  if (!state?.unlocked) throw badRequest(MESSAGES.zoneLocked)
 }
 
 // The running hunt's result up to now, without changing the hero. null when no hunt runs
@@ -223,14 +220,12 @@ export async function sync(store, user, today) {
   return withExtra(viewOf(hero, ctx), extra)
 }
 
-// Pays any running hunt, then starts hunting { world, zone, difficulty } (open at the level that
-// payment leaves), at today's multiplier.
+// Pays any running hunt, then starts hunting { world, zone, difficulty }, at today's multiplier.
 export async function startHunt(store, user, today, body) {
   const target = parseTarget(body)
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => {
     const away = settle(draft, ctx.now, { keep: false })
-    requireOpen(draft, levelOf(draft).level, target)
     draft.hunt = {
       world: target.world,
       zone: target.zone,
@@ -271,8 +266,6 @@ export async function fightBoss(store, user, today, body) {
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => {
     const level = levelOf(draft).level
-    requireOpen(draft, level, target)
-    if (level < target.def.bossLevel) throw badRequest(MESSAGES.bossLevel)
     const seed = `${user.id}:${target.zone}:${target.difficulty}:${randomUUID()}`
     const root = createRng(seed)
     const enemy = enemyFor(target.def, target.difficulty, root.fork('enemy'), { boss: true })
