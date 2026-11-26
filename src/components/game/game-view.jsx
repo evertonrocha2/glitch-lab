@@ -202,6 +202,8 @@ export function startPlace(start, view, locale) {
 //   onNpc(id): Enter next to a town keeper ('merchant' | 'alchemist' | 'smith' | 'jeweler' |
 //   'quests'); optional: the panel opens that keeper either way (the Cidade tab, the Forge for the smith).
 //   studyHref: the study page the "Estudar" entries open, in the study window over the game.
+//   initialView: a game View already loaded (GET /api/game, prefetched): the scene shows it at once and
+//   the mount sync replaces it.
 // GameView carries its own StudyWindowProvider; a page that mounts one above it shares that one.
 export default function GameView(props) {
   return (
@@ -211,12 +213,12 @@ export default function GameView(props) {
   )
 }
 
-function GameScreen({ start, api, onSave, onWorldChange, onNpc, studyHref }) {
+function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onNpc, studyHref }) {
   const { t, locale } = useI18n()
   const studyWindow = useStudyWindow()
   const studyOpen = studyWindow.isOpen
   const counts = useCounts()
-  const [view, setView] = useState(null)
+  const [view, setView] = useState(() => (initialView ? viewOf(initialView) : null))
   const [tab, setTab] = useState('hero')
   const [drawer, setDrawer] = useState(false)
   // The town keeper open in the panel's Cidade tab (null: the list).

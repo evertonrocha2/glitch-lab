@@ -6,6 +6,7 @@ import AppShell from '../../components/layout/app-shell/app-shell.jsx'
 import ErrorNotice from '../../components/ui/error-notice/error-notice.jsx'
 import PageHeader from '../../components/ui/page-header/page-header.jsx'
 import { placeIn } from '../../components/world/enem-worlds.js'
+import { takeWorldPrefetch } from '../../components/world/world-prefetch.js'
 import {
   allocateTalents,
   AuthError,
@@ -138,20 +139,26 @@ function useDoneToday(getToken, enabled) {
 // The town keepers (shops, quest board) open in the panel's Cidade tab (GameView does it on Enter).
 export default function WorldPage() {
   const { t, locale } = useI18n()
-  const { getToken, signOut } = useAuth()
+  const { user, getToken, signOut } = useAuth()
   const [start, setStart] = useState(null)
+  const [firstView, setFirstView] = useState(null)
   const [world, setWorld] = useState(null)
   const [message, setMessage] = useState('')
   const doneToday = useDoneToday(getToken, Boolean(start))
+  const userId = user?.id ?? null
 
   useEffect(() => {
     let live = true
+    // The shell may have asked already (world-prefetch.js): a failed prefetch only means asking again.
+    const prefetched = takeWorldPrefetch(userId)
     ;(async () => {
       try {
-        const data = await getWorld(await getToken())
+        const data = prefetched ? await prefetched.world.catch(async () => getWorld(await getToken())) : await getWorld(await getToken())
+        const view = prefetched ? await prefetched.game.catch(() => null) : null
         if (!live) return
         // Where ENEM is hidden, a hero saved in an ENEM region starts in the town instead.
         const position = placeIn(data.position, locale)
+        if (view?.hero) setFirstView(view)
         setStart(position)
         setWorld(position.world)
       } catch (err) {
@@ -163,7 +170,7 @@ export default function WorldPage() {
     return () => {
       live = false
     }
-  }, [getToken, signOut, locale])
+  }, [getToken, signOut, locale, userId])
 
   // A failed save only means the hero may start a few tiles back next time: the game goes on.
   const save = useCallback(async (position, options) => saveWorldPosition(position, await getToken(), options), [getToken])
@@ -193,7 +200,7 @@ export default function WorldPage() {
       )}
       {!start && !message && <WorldPageSkeleton />}
       <StudyWindowProvider>
-        {start && <GameView start={start} api={gameApi} onSave={save} onWorldChange={setWorld} studyHref={studyHref({ locale, doneToday })} />}
+        {start && <GameView start={start} initialView={firstView} api={gameApi} onSave={save} onWorldChange={setWorld} studyHref={studyHref({ locale, doneToday })} />}
       </StudyWindowProvider>
     </AppShell>
   )

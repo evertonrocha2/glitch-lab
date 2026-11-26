@@ -6,7 +6,8 @@ import { gearOf } from '../../components/game/hero/gear.js'
 import { heroSprite } from '../../components/game/hero/hero-cache.js'
 import { makeView } from '../../components/game/panel/fixtures.js'
 import { NPC_LOOKS } from '../../components/game/scene/town.js'
-import { getWorld, saveLook, saveWorldPosition, startHunt, syncGame } from '../../lib/api.js'
+import { prefetchWorld, resetWorldPrefetch } from '../../components/world/world-prefetch.js'
+import { getGame, getWorld, saveLook, saveWorldPosition, startHunt, syncGame } from '../../lib/api.js'
 import { renderAt } from '../../test/render.jsx'
 
 // The real sprites, watched: the scene must draw the hero the game View describes, and the keepers.
@@ -109,6 +110,18 @@ it('starts a new player in the town square, safe, with the game around it', asyn
   expect(screen.getAllByText('Cidade do Laboratório · Zona segura').length).toBeGreaterThan(0)
   expect(getWorld).toHaveBeenCalledWith('token-ana')
   expect(syncGame).toHaveBeenCalledWith('token-ana')
+})
+
+it('opens on the hero the signed-in shell prefetched, before the first sync answers', async () => {
+  resetWorldPrefetch()
+  vi.mocked(getWorld).mockResolvedValue(at(TOWN))
+  vi.mocked(getGame).mockReset().mockResolvedValue(makeView())
+  vi.mocked(syncGame).mockReturnValue(new Promise(() => {}))
+  prefetchWorld('ana', async () => 'token-ana')
+  open()
+  expect(await scene()).toHaveAttribute('data-place', 'laboratorio 16 8')
+  expect(getWorld).toHaveBeenCalledTimes(1)
+  expect(getGame).toHaveBeenCalledTimes(1)
 })
 
 it('links to the world from the main navigation', async () => {

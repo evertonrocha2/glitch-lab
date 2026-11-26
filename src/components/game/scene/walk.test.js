@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { worldById } from '../../../../shared/world/worlds.js'
-import { cameraOn, directionOf, sideOf } from './walk.js'
+import { cameraOn, directionOf, sideOf, STEP_MS } from './walk.js'
 
 const cave = worldById('caverna-sql') // 32x20
 const tiny = { rows: ['.....', '.....'] }
@@ -35,4 +35,8 @@ it('reads the arrows and WASD, in either case, and nothing else', () => {
   expect(directionOf('D')).toBe('right')
   expect(directionOf('Enter')).toBeNull()
   expect(directionOf(undefined)).toBeNull()
+})
+
+it('takes 10 steps a second', () => {
+  expect(STEP_MS).toBe(100)
 })

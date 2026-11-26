@@ -17,16 +17,20 @@ export const pages = Object.fromEntries(Object.entries(loaders).map(([path, load
 
 const whenIdle = (callback) => (globalThis.requestIdleCallback ? requestIdleCallback(callback, { timeout: 4000 }) : setTimeout(callback, 200))
 
-// Fetches the other pages one at a time while the browser is idle, so moving between pages
-// later never waits on the network. Skipped when the visitor asked to save data.
+// The world page is where most visits end up (fase 4): its chunk goes first, right away.
+const WORLD_PAGE = '../pages/world-page/world-page.jsx'
+export const preloadOrder = (paths) => [...paths.filter((path) => path === WORLD_PAGE), ...paths.filter((path) => path !== WORLD_PAGE)]
+
+// Fetches the world page at once, then the other pages one at a time while the browser is idle, so
+// moving between pages later never waits on the network. Skipped when the visitor asked to save data.
 let preloading = false
 export function preloadPages() {
   if (preloading || globalThis.navigator?.connection?.saveData) return
   preloading = true
-  const queue = Object.values(loaders)
+  const queue = preloadOrder(Object.keys(loaders)).map((path) => loaders[path])
   const next = () => {
     const load = queue.shift()
     if (load) load().then(() => whenIdle(next), () => whenIdle(next))
   }
-  whenIdle(next)
+  next()
 }
