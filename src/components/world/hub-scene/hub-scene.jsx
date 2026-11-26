@@ -4,7 +4,7 @@ import { heroLight } from '../../game/scene/actors.js'
 import { dollAt } from '../../game/scene/game-scene.jsx'
 import { paintLight } from '../../game/scene/light.js'
 import { ellipse, SHADOW } from '../../game/scene/pixels.js'
-import { mapLights, paintAnimated, paintBase, paintFog, paintPadlock, readMap, TS } from '../../game/scene/tiles.js'
+import { mapLights, paintAnimated, paintBase, paintPadlock, readMap, TS } from '../../game/scene/tiles.js'
 import { useReducedMotion } from '../../game/use-reduced-motion.js'
 import { approach, cameraOn, heroPose, STEP_MS, sideOf, tileAtPoint } from './hub-view.js'
 
@@ -38,15 +38,15 @@ function contextOf(canvas) {
 // A Glitch World map in the hunt's lit 16px pixel art, seen through a camera that follows the hero:
 // the ground and everything on it go to an offscreen layer once per world; water, portals, the hero
 // and the light pass are drawn each frame. The hero is the paper doll (look + gear), walking from tile
-// to tile with its idle frames and a 1px bob, mirrored when it faces left. Locked zones sit under the
-// hunt's fog with a padlock on their doors, and a portal to a locked world wears a padlock too.
+// to tile with its idle frames and a 1px bob, mirrored when it faces left. Zones inside a world are
+// open with it, so nothing is fogged; a portal to a locked world wears a padlock.
 // With prefers-reduced-motion nothing loops: one still frame each time something changes.
 // The picture is hidden from screen readers; the game around it says what happens.
 //   world: the map as this locale sees it. hero: { world, x, y, facing, frame } (frame flips each step).
 //   look, gear: the hero's look and gearOf(items). crop: { w, h } tiles in view (see cropFor).
-//   lockedRects: zone rects in fog. lockedPortals: [{ x, y }]. onTileClick(x, y): a tile was clicked.
+//   lockedPortals: [{ x, y }]. onTileClick(x, y): a tile was clicked.
 // data-portals lists where the drawn map's portals lead (the ENEM ones are gone outside pt-BR).
-export default function HubScene({ world, hero, look, gear, crop, lockedRects = [], lockedPortals = [], onTileClick }) {
+export default function HubScene({ world, hero, look, gear, crop, lockedPortals = [], onTileClick }) {
   const ref = useRef(null)
   const reduced = useReducedMotion()
   const live = useRef({})
@@ -55,7 +55,7 @@ export default function HubScene({ world, hero, look, gear, crop, lockedRects = 
   const pos = useRef({ x: hero.x, y: hero.y })
   const looping = useRef(false)
   const redraw = useRef(null)
-  const lockedKey = JSON.stringify([lockedRects, lockedPortals])
+  const lockedKey = JSON.stringify(lockedPortals)
 
   useEffect(() => {
     const canvas = ref.current
@@ -63,16 +63,15 @@ export default function HubScene({ world, hero, look, gear, crop, lockedRects = 
     looping.current = false
     redraw.current = null
     if (!ctx) return undefined
-    const [rects, portals] = JSON.parse(lockedKey)
+    const portals = JSON.parse(lockedKey)
     const map = readMap(world)
     const width = map.W * TS
     const height = map.H * TS
     const paintOver = (c) => {
-      paintFog(c, world, rects)
       for (const portal of portals) paintPadlock(c, portal.x, portal.y)
     }
     const base = layer(width, height, (c) => paintBase(c, world))
-    const over = rects.length || portals.length ? layer(width, height, paintOver) : null
+    const over = portals.length ? layer(width, height, paintOver) : null
     const motes = map.outdoor ? 'fireflies' : 'dust'
     const tint = world.id === 'caverna-sql' ? '#8a80c4' : '#9d93cf'
 

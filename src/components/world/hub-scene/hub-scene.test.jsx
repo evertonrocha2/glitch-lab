@@ -3,9 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { DEFAULT_LOOK } from '../../../../shared/game/look.js'
 import { worldById } from '../../../../shared/world/worlds.js'
 import { heroSprite } from '../../game/hero/hero-cache.js'
+import { paintPadlock } from '../../game/scene/tiles.js'
 import HubScene from './hub-scene.jsx'
 
 vi.mock('../../game/hero/hero-cache.js', () => ({ heroSprite: vi.fn(() => ({ hero: true })) }))
+vi.mock('../../game/scene/tiles.js', async (importOriginal) => {
+  const real = await importOriginal()
+  return { ...real, paintPadlock: vi.fn(real.paintPadlock) }
+})
 
 const cave = worldById('caverna-sql')
 const lab = worldById('laboratorio')
@@ -149,4 +154,11 @@ it('copes with a canvas that has no 2D context', () => {
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 150, height: 100, right: 150, bottom: 100 })
   fireEvent.click(canvas, { clientX: 25, clientY: 15 })
   expect(onTileClick).toHaveBeenCalledWith(2, 1)
+})
+
+it('puts a padlock on a locked world's portal only, never on a zone's door', () => {
+  vi.mocked(paintPadlock).mockClear()
+  // Zones are open inside every world: a zone rect handed over by an old caller fogs nothing.
+  draw({ lockedRects: cave.zones.map((zone) => zone.rect), lockedPortals: [{ x: 1, y: 10 }] })
+  expect(vi.mocked(paintPadlock).mock.calls.map(([, x, y]) => [x, y])).toEqual([[1, 10]])
 })

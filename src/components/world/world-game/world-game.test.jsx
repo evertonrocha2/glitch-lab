@@ -114,14 +114,19 @@ it('ignores keys typed into a text field and keys with a modifier', () => {
   expect(place()).toBe('floresta-js 3 10')
 })
 
-it('refuses a locked door and says what to study', () => {
-  play({ world: 'torre-matematica', x: 10, y: 10 }, { matematica: 12 })
+it('walks through the doors into zones 2 and 3 of an open world, with nothing to study for them', () => {
+  // 5 right answers open the tower; zone 2 used to ask for 15, zone 3 for 40.
+  play({ world: 'torre-matematica', x: 10, y: 10 }, { matematica: 5 })
   tap('ArrowRight')
-  expect(place()).toBe('torre-matematica 10 10')
-  const notice = screen.getByText(/12 de 15 acertos em Matemática/)
-  expect(notice).toBeVisible()
-  expect(screen.getByRole('link', { name: /estudar/i })).toHaveAttribute('href', '/exams/enem')
-  expect(screen.getByRole('status')).toHaveTextContent(/12 de 15 acertos em Matemática/)
+  expect(place()).toBe('torre-matematica 11 10')
+  tap('ArrowRight')
+  expect(place()).toBe('torre-matematica 12 10')
+  expect(screen.queryByRole('link', { name: /estudar/i })).toBeNull()
+  expect(screen.getByRole('status')).not.toHaveTextContent(/acertos/)
+  press('ArrowRight')
+  wait(STEP_MS * 10)
+  fireEvent.keyUp(map(), { key: 'ArrowRight' })
+  expect(place()).toBe('torre-matematica 23 10')
 })
 
 it('refuses the portal of a locked world and points to programming for the tech ones', () => {
@@ -147,9 +152,16 @@ it('walks to a clicked tile and ignores a tile it cannot reach', () => {
   clickTile(5, 9)
   wait(STEP_MS * 4)
   expect(place()).toBe('caverna-sql 5 9')
-  clickTile(13, 9) // inside the locked zone 2
+  clickTile(0, 0) // the outer wall's corner: no floor next to it
   wait(STEP_MS * 10)
   expect(place()).toBe('caverna-sql 5 9')
+})
+
+it('walks into zone 2 when a tile there is clicked', () => {
+  play({ world: 'caverna-sql', x: 5, y: 9 }, { codeSolved: 3 })
+  clickTile(13, 9)
+  wait(STEP_MS * 12)
+  expect(place()).toBe('caverna-sql 13 9')
 })
 
 it('walks next to a terminal when the terminal is clicked', () => {
@@ -285,17 +297,12 @@ it('offers the terminal that was clicked, not its neighbor', () => {
   expect(screen.getByRole('button', { name: /Grandezas, medidas e escalas/ })).toBeVisible()
 })
 
-it('says what a locked door asks for when it is tapped, every time', () => {
+it('walks through a clicked door and says nothing about studying for it', () => {
   play({ world: 'caverna-sql', x: 5, y: 10 }, { codeSolved: 3 })
   clickTile(11, 10)
   wait(STEP_MS * 8)
-  expect(place()).toBe('caverna-sql 10 10')
-  expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
-  tap('ArrowLeft')
+  expect(place()).toBe('caverna-sql 11 10')
   expect(screen.getByRole('status')).not.toHaveTextContent(/desafios/)
-  tap('ArrowRight')
-  clickTile(11, 10)
-  expect(screen.getByRole('status')).toHaveTextContent(/3 de 8 desafios de programação/)
 })
 
 it('saves the last tile with keepalive when the tab closes mid-walk', () => {

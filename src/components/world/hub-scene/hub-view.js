@@ -38,9 +38,6 @@ export function heroPose({ walking, frame, t = 0, reduced = false }) {
   return { pose, bob: 0 }
 }
 
-// The rects (in tiles) of the world's zones that are not open yet. open: a Set of zone ids.
-export const lockedRects = (world, open) => world.zones.filter((zone) => !open.has(zone.id)).map((zone) => ({ ...zone.rect }))
-
 // The portals (x, y) leading to a world still locked. state: GET /api/world.
 export function lockedPortals(world, state) {
   const shut = new Set(state.worlds.filter((item) => !item.unlocked).map((item) => item.id))

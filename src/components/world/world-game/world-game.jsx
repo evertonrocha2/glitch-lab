@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { topicById } from '../../../../shared/exams/catalog.js'
-import { canEnter, pathTo, portalAt, terminalNear, tileAt, zoneAt } from '../../../../shared/world/map.js'
-import { isSolid } from '../../../../shared/world/tiles.js'
+import { canEnter, pathTo, portalAt, terminalNear } from '../../../../shared/world/map.js'
 import { openZones } from '../../../../shared/world/unlocks.js'
 import { worldById } from '../../../../shared/world/worlds.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
@@ -13,7 +12,7 @@ import DPad from '../d-pad/d-pad.jsx'
 import { visibleWorld } from '../enem-worlds.js'
 import HubScene from '../hub-scene/hub-scene.jsx'
 import { useHubZoom, useMediaQuery, useStageBox } from '../hub-scene/hub-hooks.js'
-import { cropFor, fitCrop, lockedPortals, lockedRects, STEP_MS } from '../hub-scene/hub-view.js'
+import { cropFor, fitCrop, lockedPortals, STEP_MS } from '../hub-scene/hub-view.js'
 import { progressText, studyHref } from '../requirement-text.js'
 
 export { STEP_MS }
@@ -46,7 +45,7 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
   const mapRef = useRef(null)
   const stageRef = useRef(null)
   const [hero, setHero] = useState(() => ({ ...state.position, facing: 'down', frame: 0 }))
-  // What the hero just ran into: { kind: 'locked', lock } or { kind: 'travel', world }.
+  // What the hero just ran into: { kind: 'locked', lock } (a locked world's portal) or { kind: 'travel', world }.
   const [notice, setNotice] = useState(null)
   const [zoom, changeZoom] = useHubZoom()
   const wide = useMediaQuery(WIDE)
@@ -150,10 +149,6 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
       const y = current.y + DIRECTIONS[dir].y
       if (!canEnter(world, x, y, open)) {
         if (current.facing !== dir) place({ ...current, facing: dir })
-        const zone = zoneAt(world, x, y)
-        if (zone && !open.has(zone.id) && !isSolid(tileAt(world, x, y))) {
-          setNotice({ kind: 'locked', lock: stateRef.current.zones[world.id].find((item) => item.id === zone.id) })
-        }
         return false
       }
       place({ world: current.world, x, y, facing: dir, frame: 1 - current.frame })
@@ -184,8 +179,8 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
       const current = heroRef.current
       const found = pathTo(mapOf(current.world), current, { x, y }, openZones(stateRef.current, current.world))
       if (!found) return
-      // Next to a tile it can't stand on (a terminal, a locked door), the hero turns to it, bumping
-      // into it: that picks the clicked terminal and says what a locked door asks for.
+      // Next to a tile it can't stand on (a terminal, a tree), the hero turns to it, bumping into it:
+      // that picks the clicked terminal.
       const arrive = () => {
         const here = heroRef.current
         const dir = here.world === current.world && directionBetween(here, { x, y })
@@ -274,7 +269,6 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
 
   const world = visibleWorld(worldById(hero.world), locale)
   const worldName = t(`world.name.${hero.world}`)
-  const open = openZones(state, hero.world)
   // The zoom's crop, widened to fill the stage at the tile size its height allows.
   const fit = fitCrop(world, zoom, cropFor(world, zoom, wide), box)
   const crop = { w: fit.w, h: fit.h }
@@ -308,7 +302,6 @@ export default function WorldGame({ state, look, gear, onSave, onWorldChange }) 
               look={look}
               gear={gear}
               crop={crop}
-              lockedRects={lockedRects(world, open)}
               lockedPortals={lockedPortals(world, state)}
               onTileClick={(x, y) => {
                 mapRef.current?.focus({ preventScroll: true })
