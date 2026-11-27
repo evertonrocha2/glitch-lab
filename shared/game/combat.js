@@ -100,8 +100,9 @@ const SPLASH_RADIUS = 1.5
 // chainBolt: raio jumps this many more times.
 const CHAIN_BOLT_JUMPS = 2
 
-const HP_POTION = 0.35
-const MP_POTION = 0.4
+// A potion restores this share of the max hp or mana (keys 5 and 6 restore the same on screen).
+export const HP_POTION = 0.35
+export const MP_POTION = 0.4
 const BOSS_SKILL_MS = 8000
 const BOSS_SKILL_MULT = 2
 const STUN_MS = 1000

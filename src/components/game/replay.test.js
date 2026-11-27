@@ -4,7 +4,7 @@ import { enemyFor } from '../../../shared/game/enemies.js'
 import { createRng } from '../../../shared/game/rng.js'
 import { heroStats } from '../../../shared/game/stats.js'
 import { ZONES } from '../../../shared/game/zones.js'
-import { replayAt } from './replay.js'
+import { potionAmount, replayAt, withPotion } from './replay.js'
 
 const stats = { hp: 200, mana: 100, effects: [] }
 const enemy = { id: 'rei-slime', base: { hp: 1300 } }
@@ -104,5 +104,51 @@ describe('replayAt', () => {
     expect(end.hp).toBe(fight.heroHpLeft)
     if (fight.won) expect(end.boss.hp).toBe(0)
     else expect(end.hp).toBe(0)
+  })
+})
+
+// Keys 5 and 6: a potion drunk by hand is a hero potion event put into the log at the replay's time.
+describe('a potion drunk by hand', () => {
+  const fight = {
+    enemy,
+    log: [
+      { t: 1000, who: 'enemy', type: 'hit', amount: 120 },
+      { t: 1500, who: 'hero', type: 'skill', skill: 'raio', amount: 10 },
+      { t: 4000, who: 'enemy', type: 'hit', amount: 10 },
+    ],
+  }
+
+  it('goes into the log in time order, leaving the fight as it was', () => {
+    const drunk = withPotion(fight, { t: 2000, who: 'hero', type: 'potion', skill: 'hp', amount: 70, manual: true })
+    expect(drunk.log.map((ev) => ev.t)).toEqual([1000, 1500, 2000, 4000])
+    expect(drunk.enemy).toBe(enemy)
+    expect(fight.log).toHaveLength(3)
+    // Same time as an event already there: after it.
+    expect(withPotion(fight, { t: 1500, who: 'hero', type: 'potion', skill: 'mp', amount: 5 }).log[2].type).toBe('potion')
+  })
+
+  it('heals hp or mana from its time on', () => {
+    const hp = withPotion(fight, { t: 2000, who: 'hero', type: 'potion', skill: 'hp', amount: 70, manual: true })
+    expect(replayAt(hp, 1999, { stats }).hp).toBe(80)
+    expect(replayAt(hp, 2000, { stats }).hp).toBe(150)
+    expect(replayAt(hp, 4500, { stats }).hp).toBe(140)
+    const mp = withPotion(fight, { t: 2000, who: 'hero', type: 'potion', skill: 'mp', amount: 15, manual: true })
+    expect(replayAt(mp, 2000, { stats }).mana - replayAt(fight, 2000, { stats }).mana).toBeCloseTo(15, 5)
+  })
+
+  it('puts that kind on its cooldown, as the fight does for its own potions', () => {
+    const drunk = withPotion(fight, { t: 2000, who: 'hero', type: 'potion', skill: 'hp', amount: 70, manual: true })
+    expect(replayAt(fight, 2000, { stats }).potions).toEqual({ hp: 0, mp: 0 })
+    expect(replayAt(drunk, 2000, { stats }).potions).toEqual({ hp: 10, mp: 0 })
+    expect(replayAt(drunk, 9500, { stats }).potions).toEqual({ hp: 2.5, mp: 0 })
+    expect(replayAt(drunk, 12000, { stats }).potions).toEqual({ hp: 0, mp: 0 })
+  })
+
+  it('restores what a sim potion would: a share of the max, never past it', () => {
+    // 35% of 200 hp, 40% of 100 mana.
+    expect(potionAmount({ hp: 80, mana: 100 }, stats, 'hp')).toBe(70)
+    expect(potionAmount({ hp: 180, mana: 100 }, stats, 'hp')).toBe(20)
+    expect(potionAmount({ hp: 200, mana: 30 }, stats, 'mp')).toBe(40)
+    expect(potionAmount({ hp: 200, mana: 100 }, stats, 'mp')).toBe(0)
   })
 })

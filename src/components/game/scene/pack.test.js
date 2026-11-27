@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { KIND_COLORS } from './floaters.js'
-import { activeFloaters, buildPack, claimSpawns, FX_KINDS, fxFor, packAt, shakeAt, stackFloaters } from './pack.js'
+import { activeFloaters, buildPack, claimSpawns, FX_KINDS, fxFor, packAt, packWithPotion, shakeAt, stackFloaters } from './pack.js'
 
 const fight = (log, extra = {}) => ({ won: true, reason: 'killed', ms: 3000, heroHpLeft: 10, potionsUsed: { hp: 0, mp: 0 }, log, ...extra })
 const spawn = (src, extra = {}) => ({ t: 0, who: 'enemy', src, type: 'spawn', id: 'slime', sprite: 'slime', element: 'poison', hp: 100, from: { x: 4, y: 0 }, to: { x: 1.3, y: 0 }, speed: 2.5, ...extra })
@@ -257,5 +257,27 @@ describe('claimSpawns: a pack walking in from claimed ambient monsters', () => {
     // Nothing claimed: the pack as it was.
     expect(claimSpawns(pack, [null, null])).toBe(pack)
     expect(claimSpawns(pack, [])).toBe(pack)
+  })
+})
+
+// Keys 5 and 6: a potion drunk by hand mid fight shows like the fight's own.
+describe('packWithPotion', () => {
+  const pack = buildPack(fight([spawn(0), { t: 500, who: 'hero', type: 'hit', target: 0, hits: [{ target: 0, amount: 5 }], amount: 5 }, { t: 3000, who: 'enemy', src: 0, type: 'hit', amount: 4 }]), { speed: 2 })
+
+  it('adds the potion flash and its green number at the drink time, in order', () => {
+    const ev = { t: 2000, who: 'hero', type: 'potion', skill: 'hp', amount: 70, manual: true }
+    const drunk = packWithPotion(pack, ev)
+    const own = buildPack(fight([spawn(0), { t: 500, who: 'hero', type: 'hit', target: 0, hits: [{ target: 0, amount: 5 }], amount: 5 }, ev, { t: 3000, who: 'enemy', src: 0, type: 'hit', amount: 4 }]), { speed: 2 })
+    expect(drunk.fx).toEqual(own.fx)
+    expect(drunk.floaters).toEqual(own.floaters)
+    expect(drunk.floaters.find((f) => f.text === '+70')).toMatchObject({ at: 1000, target: -1, color: KIND_COLORS.heal })
+  })
+
+  it('never changes the pack it was given', () => {
+    const fx = pack.fx.length
+    const floaters = pack.floaters.length
+    packWithPotion(pack, { t: 2000, who: 'hero', type: 'potion', skill: 'mp', amount: 9, manual: true })
+    expect(pack.fx).toHaveLength(fx)
+    expect(pack.floaters).toHaveLength(floaters)
   })
 })

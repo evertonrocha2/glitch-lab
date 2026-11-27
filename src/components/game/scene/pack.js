@@ -265,6 +265,20 @@ export function buildPack(fight, { speed = BOSS_SPEED, fallback = null } = {}) {
   return { k, len, foes: foes.filter(Boolean), hero, fx, floaters, shakes }
 }
 
+// Keys 5 and 6: the pack with a potion drunk by hand mid fight (a hero potion event at log time ev.t),
+// its flash and its number placed as buildPack places the fight's own. Answers a new pack with new fx
+// and floater lists; the one given is left as it was (the hunt loop plays it again).
+export function packWithPotion(pack, ev) {
+  const k = pack.k ?? 1
+  const at = ev.t / k
+  const fx = [...pack.fx, ...fxFor(ev).map((item) => ({ at, ms: FX_MS[item.kind] ?? 300, ...item }))]
+  const floater = floaterFor(ev, ev.amount, false)
+  const floaters = floater ? [...pack.floaters, { at, ms: FLOATER_MS / Math.min(k, 2), target: -1, ...floater }] : [...pack.floaters]
+  fx.sort((a, b) => a.at - b.at)
+  floaters.sort((a, b) => a.at - b.at)
+  return { ...pack, fx, floaters }
+}
+
 // The pack with some foes walking in from claimed ambient monsters (presentation only: the log and the
 // fight stay as they are). froms[i]: where foe i appears instead of its logged spawn, hero relative in
 // log tiles, or null to keep the log's. A claimed foe loses its spawn portal (it was already standing
