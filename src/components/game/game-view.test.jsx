@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { StrictMode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { HP_POTION } from '../../../shared/game/combat.js'
 import { I18nProvider } from '../../lib/i18n/I18nProvider.jsx'
 import { SETTLE_MS } from '../world/use-auto-hunt.js'
 import GameView from './game-view.jsx'
@@ -178,6 +179,61 @@ it('applies the View an action returns: standing in the clearing starts its hunt
   expect(api.startHunt).toHaveBeenCalledWith({ world: 'floresta-js', zone: 'z1', difficulty: 'normal' })
   expect(await screen.findByText('777')).toBeInTheDocument()
   expect(screen.getAllByText(/Caçando em Clareira \(Normal\)/).length).toBeGreaterThan(0)
+})
+
+// Keys 5 and 6 during a hunt: the potion lands on screen at once and the server records it.
+describe('drinking a potion by hand during a hunt', () => {
+  const sample = {
+    won: true,
+    reason: 'killed',
+    ms: 30000,
+    heroHpLeft: 100,
+    potionsUsed: { hp: 0, mp: 0 },
+    enemy: { id: 'slime', sprite: 'slime', elite: false },
+    log: [
+      { t: 0, who: 'enemy', src: 0, type: 'spawn', id: 'slime', sprite: 'slime', hp: 5000, from: { x: 4, y: 0 }, to: { x: 1.3, y: 0 }, speed: 2.5 },
+      { t: 500, who: 'enemy', src: 0, type: 'hit', amount: 300 },
+      { t: 30000, who: 'hero', type: 'hit', hits: [{ target: 0, amount: 10 }], amount: 10 },
+    ],
+  }
+  const huntingView = () => ({ ...makeView({ hunt: HUNT, potions: { hp: 3, mp: 1 } }), huntPreview: { elapsedMs: 0, kills: 0, gold: 0, xp: 0, fragments: 0, samples: [sample] } })
+  const hpNow = () => Number(screen.getByRole('meter', { name: 'Vida' }).getAttribute('aria-valuenow'))
+
+  async function inFight(api) {
+    ui(api, { start: CLEARING })
+    await screen.findByRole('tablist')
+    // The walk in (0.9 s), then 1 s of the fight at 2x: the hit of t 500 has landed.
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+  }
+
+  it('drinks with 5: the bar fills, the count drops and the server records it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const view = huntingView()
+    const api = { ...makeApi(view), drinkPotion: vi.fn(async () => ({ ...view, hero: { ...view.hero, hunt: { ...HUNT, drunk: { hp: 1, mp: 0 } } }, potionsLeft: { hp: 2, mp: 1 } })) }
+    await inFight(api)
+    const before = hpNow()
+    expect(before).toBe(view.stats.hp - 300)
+    fireEvent.keyDown(window, { key: '5' })
+    await act(() => vi.advanceTimersByTimeAsync(250))
+    expect(api.drinkPotion).toHaveBeenCalledWith('hp')
+    // A potion restores 35% of the max hp, never past it.
+    expect(hpNow()).toBe(before + Math.round(Math.min(view.stats.hp - before, view.stats.hp * HP_POTION)))
+    expect(screen.getByRole('button', { name: /Tomar poção de vida \(5\), 2 restantes/ })).toBeInTheDocument()
+  })
+
+  it('takes the drink back without a word when the server refuses it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const api = { ...makeApi(huntingView()), drinkPotion: vi.fn(async () => Promise.reject(Object.assign(new Error('Your hero is not hunting.'), { status: 400 }))) }
+    await inFight(api)
+    const before = hpNow()
+    fireEvent.keyDown(window, { key: '5' })
+    await act(() => vi.advanceTimersByTimeAsync(250))
+    expect(api.drinkPotion).toHaveBeenCalledWith('hp')
+    expect(hpNow()).toBe(before)
+    expect(screen.getByRole('button', { name: /Tomar poção de vida \(5\), 3 restantes/ })).toBeInTheDocument()
+    expect(screen.queryByText(/not hunting|não está caçando/)).toBeNull()
+    for (const alert of screen.queryAllByRole('alert')) expect(alert).toBeEmptyDOMElement()
+  })
 })
 
 it('plays a boss fight back and then shows the result', async () => {

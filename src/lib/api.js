@@ -317,6 +317,9 @@ export const getGame = (token) => game('', 'GET', token)
 export const syncGame = (token) => game('/sync', 'POST', token)
 export const startHunt = ({ world, zone, difficulty }, token) => game('/hunt', 'POST', token, { world, zone, difficulty })
 export const stopHunt = (token) => game('/hunt/stop', 'POST', token)
+// Keys 5 and 6: one potion ('hp' or 'mp') drunk by hand during the running hunt. Answers the View
+// plus potionsLeft { hp, mp }.
+export const drinkPotion = (kind, token) => game('/potion', 'POST', token, { kind })
 export const fightBoss = ({ world, zone, difficulty }, token) => game('/boss', 'POST', token, { world, zone, difficulty })
 export const equipItem = (itemId, token) => game('/equip', 'POST', token, { itemId })
 export const unequipSlot = (slot, token) => game('/unequip', 'POST', token, { slot })

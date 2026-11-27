@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { DIFFICULTIES } from '../../../../shared/game/enemies.js'
 import { SKILLS } from '../../../../shared/game/skills.js'
 import { ELIXIRS } from '../../../../shared/game/elixirs.js'
+import { potionsLeft } from '../../../../shared/game/hunt.js'
 import { MULTIPLIER_CAP } from '../../../../shared/game/xp.js'
 import { useI18n } from '../../../lib/i18n/I18nProvider.jsx'
 import { gearOf } from '../hero/gear.js'
@@ -37,6 +38,8 @@ const LOG_BG = 'rgba(16, 12, 32, 0.72)'
 const KEYS = { m: 'world', i: 'bag', k: 'tree' }
 // Number chips, so nothing reads like WASD (the hero walks with those). Skills cast on their own.
 const SKILL_KEYS = ['1', '2', '3', '4']
+// Keys 5 and 6 drink a potion by hand, while a fight plays.
+const POTION_KEYS = { 5: 'hp', 6: 'mp' }
 const LOG_SIZE = 5
 const SKILL_BY_ID = Object.fromEntries(SKILLS.map((s) => [s.id, s]))
 
@@ -49,11 +52,21 @@ function typing(target) {
 }
 
 // One action slot: a sunk 44px box, the key as a chip top left, the cooldown over it, a count badge
-// for potions. Empty slots show a faint plus.
-function Slot({ label, icon, keyHint, cooldown, count, className = '' }) {
+// for potions. Empty slots show a faint plus. With onClick it is a button (the potions): aria-disabled,
+// not disabled, so it keeps focus when it can't be used.
+function Slot({ label, icon, keyHint, cooldown, count, onClick, disabled = false, className = '' }) {
   const cooling = cooldown > 0
+  const button = onClick
+    ? {
+        as: 'button',
+        type: 'button',
+        'aria-disabled': disabled,
+        onClick: disabled ? undefined : onClick,
+        className: `grid size-11 shrink-0 cursor-pointer place-items-center aria-disabled:cursor-default focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#f2c14e] ${className}`,
+      }
+    : { role: 'group', className: `grid size-11 shrink-0 place-items-center ${className}` }
   return (
-    <Frame tone="inset" data-testid="slot" data-empty={icon ? undefined : ''} aria-label={label} role="group" className={`grid size-11 shrink-0 place-items-center ${className}`}>
+    <Frame tone="inset" data-testid="slot" data-empty={icon ? undefined : ''} aria-label={label} {...button}>
       {icon ? (
         <GameIcon name={icon} size={2} className={cooling ? 'opacity-35' : ''} />
       ) : (
@@ -148,6 +161,9 @@ function ZoomButton({ label, disabled, onClick, children }) {
 // knows, { hp, mana, buffs: [{ id, icon, seconds, bad? }], cooldowns: { [skillId]: seconds } }.
 // boss (optional): { name, phase, phases, hp, maxHp, enrageSec }. log: fight events, the last 5 show.
 // onFullscreen / onKey('world' | 'bag' | 'tree'): shortcuts F, M, I, K. fullscreenSupported hides the button.
+// onDrink(kind 'hp' | 'mp'): keys 5 and 6 or a click on the potion slot, set only while a fight plays;
+// called only with a potion left and off its cooldown (live.potions: { hp, mp } seconds left).
+// pending: { hp, mp } potions drunk by hand that the server has not answered yet.
 // zoom ('far' | 'mid' | 'near') / onZoom(step): -1 moves the camera out, +1 in; keys - and + (or =).
 export default function GameHud({
   view,
@@ -160,11 +176,21 @@ export default function GameHud({
   fullscreenActive = false,
   zoom = 'far',
   onZoom,
+  onDrink,
+  pending,
 }) {
   const { t, locale } = useI18n()
   const fmt = useMemo(() => new Intl.NumberFormat(locale), [locale])
+  const { level, stats, hero, study } = view
+  const stock = potionsLeft(hero)
+  const left = { hp: Math.max(0, stock.hp - (pending?.hp ?? 0)), mp: Math.max(0, stock.mp - (pending?.mp ?? 0)) }
+  const potionCd = { hp: Math.ceil(live.potions?.hp ?? 0), mp: Math.ceil(live.potions?.mp ?? 0) }
+  const canDrink = (kind) => Boolean(onDrink) && left[kind] > 0 && potionCd[kind] <= 0
+  const drink = (kind) => {
+    if (canDrink(kind)) onDrink(kind)
+  }
   const handlers = useRef({})
-  handlers.current = { onFullscreen, onKey, onZoom }
+  handlers.current = { onFullscreen, onKey, onZoom, drink }
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -176,12 +202,12 @@ export default function GameHud({
       else if (key === '-') handlers.current.onZoom?.(-1)
       else if (key === '+' || key === '=') handlers.current.onZoom?.(1)
       else if (KEYS[key]) handlers.current.onKey?.(KEYS[key])
+      else if (POTION_KEYS[key]) handlers.current.drink(POTION_KEYS[key])
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const { level, stats, hero, study } = view
   const gear = useMemo(() => gearOf(hero.items), [hero.items])
   const maxHp = stats.hp
   const maxMana = stats.mana
@@ -323,8 +349,25 @@ export default function GameHud({
           )
         })}
         <i aria-hidden="true" className="mx-0.5 block w-0.5 self-stretch bg-[#0a0818] shadow-[1px_0_0_#3e3170]" />
-        <Slot label={t('game.hud.potionHp', { count: hero.potions.hp })} icon="hppot" keyHint="5" count={fmt.format(hero.potions.hp)} />
-        <Slot label={t('game.hud.potionMp', { count: hero.potions.mp })} icon="mppot" keyHint="6" count={fmt.format(hero.potions.mp)} />
+        {[
+          ['hp', 'hppot', '5', 'game.hud.drinkHp'],
+          ['mp', 'mppot', '6', 'game.hud.drinkMp'],
+        ].map(([kind, icon, keyHint, key]) => {
+          const name = t(key, { count: fmt.format(left[kind]) })
+          return (
+            <Slot
+              key={kind}
+              label={potionCd[kind] > 0 ? t('game.hud.slotCd', { name, seconds: potionCd[kind] }) : name}
+              icon={icon}
+              keyHint={keyHint}
+              cooldown={potionCd[kind]}
+              count={fmt.format(left[kind])}
+              onClick={() => drink(kind)}
+              disabled={!canDrink(kind)}
+              className={left[kind] > 0 ? '' : 'opacity-50'}
+            />
+          )
+        })}
       </Frame>
 
       {onZoom && (

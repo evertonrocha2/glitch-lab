@@ -8,10 +8,10 @@ import { useReducedMotion } from '../use-reduced-motion.js'
 import { drawFoe, drawHealthBar, enemyLight, foeColors, foeHeight, heroLight } from './actors.js'
 import { createAmbient } from './ambient.js'
 import { claimFight } from './claim.js'
-import { activeFloaters, buildPack, packAt, shakeAt, stackFloaters } from './pack.js'
+import { activeFloaters, buildPack, packAt, packWithPotion, shakeAt, stackFloaters } from './pack.js'
 import { paintLight } from './light.js'
 import { nudge, rotate } from './placement.js'
-import { BOSS_SPEED, duration, HUNT_SPEED, WALK_MS } from './playback.js'
+import { BOSS_SPEED, drunkIn, duration, HUNT_SPEED, WALK_MS } from './playback.js'
 import { ellipse, SHADOW } from './pixels.js'
 import { mapLights, paintAnimated, paintBase, readMap, TS } from './tiles.js'
 import { drawNpc, nameTag, npcLights, roadSign } from './town.js'
@@ -136,13 +136,15 @@ const AMBIENT = 10000
 //   look: the hero's six field look. gear: { slot: { b, r } } from gearOf.
 //   playback: { fights, loop, speed? } plays pack fight logs (pack.js): a loop walks 1.5 s between fights,
 //   and each pack spawns around wherever the hero stands. enemy: { sprite, elite } for a log without spawns.
+//   drinks: potions drunk by hand (keys 5 and 6), [{ id, fight, wall, ev }]: each shows its flash and
+//   number in the play of `fight` it was drunk in (playback.js drunkIn).
 //   walker: a hunt-walker.js walker (the player walks the hero; it strolls on its own between packs).
 //   onCamera(pos): the hero's drawn spot in tiles, each time it moves, for a camera to follow.
 //   viewOf(pos): the camera's window in tiles { x, y, w, h } for the hero at pos; idle monsters taken by
 //   a pack come back only outside it (without it they fade back in anywhere).
 //   level: the hero's level; when it goes up a golden column and "Level X!" play over the hero.
 //   zoneName: overrides the label.
-export default function GameScene({ world, zoneRect, look, gear, playback, enemy, walker, onCamera, viewOf, level, zoneName, onReady }) {
+export default function GameScene({ world, zoneRect, look, gear, playback, drinks, enemy, walker, onCamera, viewOf, level, zoneName, onReady }) {
   const t = useT()
   const ref = useRef(null)
   const reduced = useReducedMotion()
@@ -153,7 +155,7 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
   const live = useRef({})
   const tr = useRef(t)
   tr.current = t
-  live.current = { look, gear, enemy, playback, onReady, walker, onCamera, viewOf, level, zoneRect }
+  live.current = { look, gear, enemy, playback, drinks, onReady, walker, onCamera, viewOf, level, zoneRect }
   const ready = useRef(false)
   const levelRef = useRef({ from: null, at: -1, n: 0 })
   // Kept across effect runs of the same region, so starting a hunt never snaps them back.
@@ -208,7 +210,8 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
 
     // The fight on screen: its pack (walking in from the idle monsters it claimed), where it is
     // anchored and how it is turned, each enemy's drawn spot.
-    const fight = { key: null, pack: null, anchor: { x: 0, y: 0 }, rot: null, spots: [], state: undefined }
+    // drunk: the hand drinks (keys 5 and 6) already added to this play's pack, by id.
+    const fight = { key: null, pack: null, anchor: { x: 0, y: 0 }, rot: null, spots: [], state: undefined, drunk: new Set() }
     const rel = { x: 0, y: 0 }
     const target = { x: 0, y: 0 }
     const heroPx = { x: 0, y: 0 }
@@ -303,6 +306,17 @@ export default function GameScene({ world, zoneRect, look, gear, playback, enemy
           fight.pack = made.pack
           fight.rot = made.rot
           fight.spots = made.pack.foes.map(() => null)
+          fight.drunk = new Set()
+        }
+        // A potion drunk by hand in this play of the fight shows like the fight's own.
+        const drinks = live.current.drinks
+        if (drinks?.length) {
+          const playStart = Date.now() - state.local
+          for (const drink of drinks) {
+            if (fight.drunk.has(drink.id) || !drunkIn(drink, state.run.fight, playStart)) continue
+            fight.drunk.add(drink.id)
+            fight.pack = packWithPotion(fight.pack, drink.ev)
+          }
         }
         pack = fight.pack
         // The pack trails a hero who walks away, and settles around the new spot.

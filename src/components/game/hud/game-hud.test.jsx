@@ -150,8 +150,8 @@ it('keeps the last 5 log events', () => {
 
 it('draws 4 skill slots and 2 potion slots with counts and cooldown', () => {
   ui({ live: { cooldowns: { raio: 4 } } })
-  expect(screen.getByLabelText(/Health potion/)).toHaveTextContent('4')
-  expect(screen.getByLabelText(/Mana potion/)).toHaveTextContent('2')
+  expect(screen.getByLabelText(/health potion/)).toHaveTextContent('4')
+  expect(screen.getByLabelText(/mana potion/)).toHaveTextContent('2')
   expect(screen.getByLabelText(/Bolt/)).toHaveTextContent('4s')
   expect(screen.getAllByTestId('slot')).toHaveLength(6)
 })
@@ -162,6 +162,81 @@ it('marks each slot with its key chip and the empty ones with a plus', () => {
   expect(slots.map((s) => s.querySelector('kbd')?.textContent)).toEqual(['1', '2', '3', '4', '5', '6'])
   expect(slots.filter((s) => s.hasAttribute('data-empty'))).toHaveLength(2)
   expect(screen.getAllByLabelText('Empty skill slot')).toHaveLength(2)
+})
+
+// Keys 5 and 6 (or a click on the slot) drink a potion now, while a fight plays (onDrink is set).
+it('drinks a health potion with 5 and a mana potion with 6', () => {
+  const onDrink = vi.fn()
+  ui({ onDrink })
+  fireEvent.keyDown(window, { key: '5' })
+  fireEvent.keyDown(window, { key: '6' })
+  expect(onDrink.mock.calls.map((c) => c[0])).toEqual(['hp', 'mp'])
+})
+
+it('drinks on a click or tap on the potion slot, named for screen readers', () => {
+  const onDrink = vi.fn()
+  ui({ onDrink })
+  fireEvent.click(screen.getByRole('button', { name: 'Drink health potion (5), 4 left' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Drink mana potion (6), 2 left' }))
+  expect(onDrink.mock.calls.map((c) => c[0])).toEqual(['hp', 'mp'])
+})
+
+it('names the potion slots in Portuguese too', () => {
+  ui({ onDrink: () => {} }, 'pt-BR')
+  expect(screen.getByRole('button', { name: 'Tomar poção de vida (5), 4 restantes' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tomar poção de mana (6), 2 restantes' })).toBeInTheDocument()
+})
+
+it('drinks nothing with no potion left, and shows that slot disabled', () => {
+  const onDrink = vi.fn()
+  ui({ onDrink, view: view({ hero: { ...view().hero, potions: { hp: 0, mp: 2 } } }) })
+  fireEvent.keyDown(window, { key: '5' })
+  const slot = screen.getByRole('button', { name: /health potion/ })
+  fireEvent.click(slot)
+  expect(onDrink).not.toHaveBeenCalled()
+  expect(slot).toHaveAttribute('aria-disabled', 'true')
+  expect(screen.getByRole('button', { name: /mana potion/ })).toHaveAttribute('aria-disabled', 'false')
+})
+
+it('counts the potions already drunk by hand on this hunt, and the ones still on their way', () => {
+  const onDrink = vi.fn()
+  const hunting = view({ hero: { ...view().hero, potions: { hp: 4, mp: 2 }, hunt: { difficulty: 'normal', drunk: { hp: 1, mp: 2 } } } })
+  ui({ onDrink, view: hunting, pending: { hp: 1, mp: 0 } })
+  expect(screen.getByRole('button', { name: /health potion/ })).toHaveTextContent('2')
+  fireEvent.keyDown(window, { key: '6' })
+  expect(onDrink).not.toHaveBeenCalled()
+})
+
+it('waits out the potion cooldown, showing it on the slot', () => {
+  const onDrink = vi.fn()
+  ui({ onDrink, live: { potions: { hp: 6.2, mp: 0 } } })
+  fireEvent.keyDown(window, { key: '5' })
+  expect(onDrink).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: /health potion/ })).toHaveTextContent('7s')
+  fireEvent.keyDown(window, { key: '6' })
+  expect(onDrink).toHaveBeenCalledWith('mp')
+})
+
+it('drinks nothing in a text field, with a modifier held, or with no fight on screen', () => {
+  const onDrink = vi.fn()
+  const { rerender } = ui({ onDrink })
+  const input = document.createElement('input')
+  document.body.append(input)
+  try {
+    fireEvent.keyDown(input, { key: '5' })
+    for (const mod of ['ctrlKey', 'metaKey', 'altKey']) fireEvent.keyDown(window, { key: '5', [mod]: true })
+    expect(onDrink).not.toHaveBeenCalled()
+  } finally {
+    input.remove()
+  }
+  rerender(
+    <I18nProvider locale="en">
+      <GameHud view={view()} />
+    </I18nProvider>,
+  )
+  fireEvent.keyDown(window, { key: '5' })
+  fireEvent.click(screen.getByRole('button', { name: /health potion/ }))
+  expect(onDrink).not.toHaveBeenCalled()
 })
 
 it('F calls onFullscreen and M, I, K call onKey', () => {

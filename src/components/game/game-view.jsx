@@ -22,10 +22,10 @@ import GamePanel, { TAB_GRID, TAB_LOOK, TABS } from './panel/game-panel.jsx'
 import { ActionButton } from './panel/panel-ui.jsx'
 import TreeTab from './panel/tree-tab.jsx'
 import WorldTab from './panel/world-tab.jsx'
-import { replayAt } from './replay.js'
+import { potionAmount, replayAt, withPotion } from './replay.js'
 import GameScene, { fightSpot } from './scene/game-scene.jsx'
 import { createWalker } from './scene/hunt-walker.js'
-import { duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
+import { DRINK_KEEP_MS, drunkIn, duration, HUNT_SPEED, WALK_MS } from './scene/playback.js'
 import { cameraOn, directionOf } from './scene/walk.js'
 import Frame, { Chip } from './ui/frame.jsx'
 import { StudyWindowProvider, useStudyWindow } from './study-window/study-window-provider.jsx'
@@ -245,6 +245,11 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
   // What the hero just did that the status line says: { kind: 'travel', world } or { kind: 'npc', id }.
   const [notice, setNotice] = useState(null)
   const [fade, setFade] = useState(false)
+  // Keys 5 and 6: potions drunk by hand on screen, [{ id, fight, wall, ev }] (shown in the play of the
+  // hunt fight they were drunk in), and pending { hp, mp }: the ones the server has not answered yet.
+  const [drinks, setDrinks] = useState([])
+  const [pending, setPending] = useState({ hp: 0, mp: 0 })
+  const drinkIds = useRef(0)
   const wide = useMediaQuery(WIDE)
   const [zoom, changeZoom] = useZoom()
   const reduced = useReducedMotion()
@@ -380,6 +385,31 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
     }
     return bound
   }, [guard])
+
+  // A potion drunk by hand: it shows at once (bar, number, count) and the server records it on the
+  // running hunt. A refusal (no hunt, none left) takes it back without a word; a 409 still says reload.
+  const drink = useCallback(
+    (kind, { fight, ev }) => {
+      const id = ++drinkIds.current
+      const wall = Date.now()
+      setDrinks((list) => [...list.filter((each) => wall - each.wall < DRINK_KEEP_MS), { id, fight, wall, ev }])
+      setPending((count) => ({ ...count, [kind]: count[kind] + 1 }))
+      const answered = () => setPending((count) => ({ ...count, [kind]: Math.max(0, count[kind] - 1) }))
+      guard(() => apiRef.current.drinkPotion(kind)).then(
+        (res) => {
+          if (!mounted.current) return
+          setView(viewOf(res))
+          answered()
+        },
+        () => {
+          if (!mounted.current) return
+          setDrinks((list) => list.filter((each) => each.id !== id))
+          answered()
+        },
+      )
+    },
+    [guard],
+  )
 
   // A hero that never picked a look meets the creator once, on the first View of the visit. Later
   // syncs never reopen it, even if the look is still unset (the save behind Depois failed).
@@ -758,6 +788,7 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
                 look={view.hero.look}
                 gear={gear}
                 playback={playback}
+                drinks={playback?.loop ? drinks : undefined}
                 walker={walker}
                 onCamera={onCamera}
                 viewOf={cameraView}
@@ -771,6 +802,9 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
               samples={playback?.loop ? samples : null}
               bossName={bossName}
               onReplayEnd={finish}
+              drinks={drinks}
+              onDrink={drink}
+              pending={pending}
               onKey={openTab}
               onFullscreen={fullscreen.toggle}
               fullscreenSupported={fullscreen.supported}
@@ -897,7 +931,10 @@ function GameScreen({ start, initialView = null, api, onSave, onWorldChange, onN
 // The HUD with its own clock, so the page around it doesn't redraw every tick. During a boss replay it
 // reads the fight log at the playback's time (bars, boss bar, cooldowns, log) and calls onReplayEnd
 // when the fight is over; during a hunt it follows the looping sample fights the same way.
-function StageHud({ view, replay, samples, bossName, onReplayEnd, ...hud }) {
+// Keys 5 and 6 drink a potion only while a hunt fight plays: onDrink(kind, { fight, ev }) gets the
+// fight on screen and the potion event put into its log (drinks: the ones already drunk). A boss fight
+// is settled before it plays, so it takes none.
+function StageHud({ view, replay, samples, bossName, onReplayEnd, drinks, onDrink, ...hud }) {
   const [now, setNow] = useState(() => Date.now())
   // The loop restarts when a new samples array arrives, as GameScene's does.
   const loop = useRef({ samples: null, start: 0 })
@@ -917,8 +954,17 @@ function StageHud({ view, replay, samples, bossName, onReplayEnd, ...hud }) {
     if (over) onReplayEnd()
   }, [over, onReplayEnd])
 
+  // The hunt fight on screen at wall time `wall`, with the potions drunk by hand in this play of it.
+  const huntLive = (at, wall) => {
+    const playStart = wall - at.ms / HUNT_SPEED
+    let fight = at.fight
+    for (const each of drinks ?? []) if (drunkIn(each, at.fight, playStart)) fight = withPotion(fight, each.ev)
+    return replayAt(fight, at.ms, { stats: view.stats })
+  }
+
   let live = null
   let boss
+  let drinkable = false
   if (replay) {
     if (fightMs >= 0) {
       live = replayAt(replay.fight, fightMs, { stats: view.stats })
@@ -926,9 +972,28 @@ function StageHud({ view, replay, samples, bossName, onReplayEnd, ...hud }) {
     }
   } else if (samples?.length) {
     const at = loopAt(samples, now - loop.current.start)
-    if (at) live = replayAt(at.fight, at.ms, { stats: view.stats })
+    if (at) {
+      live = huntLive(at, now)
+      drinkable = Boolean(onDrink) && fightGoing(at)
+    }
   }
-  return <GameHud view={view} live={live ?? undefined} boss={boss} log={live?.log ?? []} {...hud} />
+
+  // Read at the key press, not the last tick: the potion lands where the fight is now.
+  const drinkNow = (kind) => {
+    const wall = Date.now()
+    const at = samples?.length ? loopAt(samples, wall - loop.current.start) : null
+    if (!at || !fightGoing(at)) return
+    const ev = { t: Math.round(at.ms), who: 'hero', type: 'potion', skill: kind, amount: potionAmount(huntLive(at, wall), view.stats, kind), manual: true }
+    onDrink(kind, { fight: at.fight, ev })
+  }
+  return <GameHud view={view} live={live ?? undefined} boss={boss} log={live?.log ?? []} onDrink={drinkable ? drinkNow : undefined} {...hud} />
+}
+
+// A hunt fight still going `at.ms` into its log: before its last event, the hero standing.
+function fightGoing(at) {
+  if (!at) return false
+  const log = at.fight.log ?? []
+  return at.ms <= (log.at(-1)?.t ?? 0) && !log.some((ev) => ev.who === 'hero' && ev.type === 'death' && ev.t <= at.ms)
 }
 
 // Where the hunt loop is `ms` in, as GameScene lays it out: a walk, then each fight at HUNT_SPEED.

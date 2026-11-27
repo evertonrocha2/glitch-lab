@@ -11,6 +11,16 @@ export const BOSS_SPEED = 1
 // read each skill's effect. Boss fights replay in real time.
 export const HUNT_SPEED = 2
 
+// Keys 5 and 6: a potion drunk by hand shows only in the play of the fight it was drunk in, not when
+// the hunt loop comes back to that fight. Each play is matched by when it began, give or take this
+// much (the HUD and the scene keep their own clocks).
+export const DRINK_SLACK_MS = 1000
+// Hand drinks older than this are dropped: the play they belong to is long over.
+export const DRINK_KEEP_MS = 120_000
+
+// Whether a hand drink { fight, wall } belongs to this play of fight, which began at wall time playStart.
+export const drunkIn = (drink, fight, playStart) => drink.fight === fight && drink.wall >= playStart - DRINK_SLACK_MS
+
 // Total playback time of a fight in ms (already divided by speed).
 export function duration(fight, { speed = BOSS_SPEED } = {}) {
   const k = speed > 0 ? speed : 1

@@ -26,6 +26,8 @@ const en = {
   'game.hud.slotCd': '{name}, ready in {seconds}s',
   'game.hud.potionHp': 'Health potion, {count} left',
   'game.hud.potionMp': 'Mana potion, {count} left',
+  'game.hud.drinkHp': 'Drink health potion (5), {count} left',
+  'game.hud.drinkMp': 'Drink mana potion (6), {count} left',
   'game.hud.seconds': '{seconds}s',
 
   'game.diff.normal': 'Normal',
@@ -543,6 +545,8 @@ const pt = {
   'game.hud.slotCd': '{name}, pronta em {seconds}s',
   'game.hud.potionHp': 'Poção de vida, {count} restantes',
   'game.hud.potionMp': 'Poção de mana, {count} restantes',
+  'game.hud.drinkHp': 'Tomar poção de vida (5), {count} restantes',
+  'game.hud.drinkMp': 'Tomar poção de mana (6), {count} restantes',
   'game.hud.seconds': '{seconds}s',
 
   'game.diff.normal': 'Normal',

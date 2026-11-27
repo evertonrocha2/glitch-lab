@@ -30,6 +30,7 @@ vi.mock('../../lib/api.js', () => ({
   syncGame: vi.fn(),
   stopHunt: vi.fn(),
   startHunt: vi.fn(),
+  drinkPotion: vi.fn(),
   fightBoss: vi.fn(),
   equipItem: vi.fn(),
   unequipSlot: vi.fn(),
