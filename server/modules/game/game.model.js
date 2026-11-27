@@ -29,6 +29,8 @@ export const MESSAGES = {
   questNotDone: "This quest isn't done yet.",
   questTaken: 'You already collected this quest.',
   combine: 'Pick 3 gems of the same kind and tier.',
+  notHunting: 'Your hero is not hunting.',
+  noPotion: 'You have no potion of that kind left.',
 }
 
 // A new player's hero. Only the server writes it: the client sends intents, never results.
@@ -47,7 +49,7 @@ export const newHero = () => ({
   treeSockets: {}, // { [socket node id]: support gem item } (fase 2c)
   skills: { owned: { golpe: 1 }, loadout: ['golpe', null, null, null] },
   items: [], // gear and gems; equipped gear carries equipped: slot
-  hunt: null, // { world, zone, difficulty, startedAt, seed, claims, xpMultiplier }
+  hunt: null, // { world, zone, difficulty, startedAt, seed, claims, xpMultiplier, drunk?: { hp, mp } }
   progress: {}, // { [worldId]: { normal: [zoneId], pesadelo: [], inferno: [] } }
   look: { ...DEFAULT_LOOK },
   lookSet: false, // true once the player has picked a look (PUT /game/look)

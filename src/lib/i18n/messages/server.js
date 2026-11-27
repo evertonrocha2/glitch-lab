@@ -264,6 +264,8 @@ const en = {
   'server.gameQuestNotDone': "This quest isn't done yet.",
   'server.gameQuestTaken': 'You already collected this quest.',
   'server.gameCombine': 'Pick 3 gems of the same kind and tier.',
+  'server.gameNotHunting': 'Your hero is not hunting.',
+  'server.gameNoPotion': 'You have no potion of that kind left.',
   'server.studyDemoLimit': 'Demo accounts can log {max} study sessions a day. Sign up to keep going.',
 
   // Community events.
@@ -558,6 +560,8 @@ const ptBR = {
   'server.gameQuestNotDone': 'Essa missão ainda não foi cumprida.',
   'server.gameQuestTaken': 'Você já resgatou a recompensa dessa missão.',
   'server.gameCombine': 'Escolha 3 gemas do mesmo tipo e nível.',
+  'server.gameNotHunting': 'Seu herói não está caçando.',
+  'server.gameNoPotion': 'Você não tem mais poção desse tipo.',
   'server.studyDemoLimit': 'Contas demo podem registrar {max} sessões de estudo por dia. Crie uma conta para continuar.',
 
   'server.eventNotFound': 'Evento não encontrado.',

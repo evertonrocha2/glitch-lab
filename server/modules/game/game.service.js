@@ -4,7 +4,7 @@ import { buffFighter, elixirEffects } from '../../../shared/game/elixirs.js'
 import { DIFFICULTIES } from '../../../shared/game/enemies.js'
 import { BOSS_FIRST_FRAGMENTS, BOSS_FRAGMENTS } from '../../../shared/game/fragments.js'
 import { pendingStudy, studyRewards } from '../../../shared/game/fuel.js'
-import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, settleHunt } from '../../../shared/game/hunt.js'
+import { GEM_SALVAGE_SCRAP, MAX_HUNT_MS, potionsLeft, settleHunt } from '../../../shared/game/hunt.js'
 import { BAG_SIZE, rollGem, rollItem, rollSupport, salvageValue } from '../../../shared/game/items.js'
 import { countBoss, countKills, questState } from '../../../shared/game/quests.js'
 import { createRng } from '../../../shared/game/rng.js'
@@ -116,9 +116,11 @@ export function settle(hero, now, { keep, multiplier = 1, today }) {
   hero.fragments += result.fragments
   hero.items.push(...result.items, ...result.gems, ...result.supports)
   hero.scrap += result.scrapFromOverflow
-  hero.potions.hp = Math.max(0, hero.potions.hp - result.potionsUsed.hp)
-  hero.potions.mp = Math.max(0, hero.potions.mp - result.potionsUsed.mp)
-  hero.hunt = keep ? { ...hero.hunt, startedAt: now, claims: hero.hunt.claims + 1, xpMultiplier: multiplier } : null
+  // A potion drunk by hand (drinkPotion) took the place of one the sim drinks anyway, so the stretch
+  // spends whichever count is higher, never both.
+  const { drunk, ...running } = hero.hunt
+  for (const kind of POTION_KINDS) hero.potions[kind] = Math.max(0, hero.potions[kind] - Math.max(result.potionsUsed[kind], drunk?.[kind] ?? 0))
+  hero.hunt = keep ? { ...running, startedAt: now, claims: running.claims + 1, xpMultiplier: multiplier } : null
   if (result.elapsedMs < AWAY_MIN_MS) return undefined
   const away = {
     elapsedMs: result.elapsedMs,
@@ -256,6 +258,26 @@ export async function stopHunt(store, user, today) {
   const ctx = await context(store, user, today)
   const { hero, extra } = await change(store, user, ctx, (draft) => ({ away: settle(draft, ctx.now, { keep: false, today: ctx.today }) }))
   return withExtra(viewOf(hero, ctx), extra)
+}
+
+const POTION_KINDS = ['hp', 'mp']
+
+// Keys 5 and 6: one potion drunk by hand while a hunt runs. It is only counted on the hunt
+// (hunt.drunk, never above the stock) and spent when settle pays the stretch; the hunt is not paid
+// here, so a drink never cuts a stretch short. A boss fight is settled the moment it starts, so there
+// is no running fight to drink in: only hunts take these. Answers the View plus potionsLeft.
+export async function drinkPotion(store, user, today, body) {
+  const { kind } = body
+  if (!POTION_KINDS.includes(kind)) throw badRequest()
+  const ctx = await context(store, user, today)
+  const { hero } = await change(store, user, ctx, (draft) => {
+    if (!draft.hunt) throw badRequest(MESSAGES.notHunting)
+    if (potionsLeft(draft)[kind] <= 0) throw badRequest(MESSAGES.noPotion)
+    const drunk = { hp: 0, mp: 0, ...draft.hunt.drunk }
+    drunk[kind] += 1
+    draft.hunt.drunk = drunk
+  })
+  return withExtra(viewOf(hero, ctx), { potionsLeft: potionsLeft(hero) })
 }
 
 // Puts a drop in the bag, or salvages it to scrap when the bag is full.

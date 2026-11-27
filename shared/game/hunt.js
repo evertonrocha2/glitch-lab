@@ -30,6 +30,13 @@ const mean = (list, pick) => list.reduce((sum, item) => sum + pick(item), 0) / l
 // What the leader of a pack looks like, for a client that draws one foe.
 const foeOf = (enemy) => ({ id: enemy.id, sprite: enemy.sprite, elite: Boolean(enemy.elite) })
 
+// Keys 5 and 6 drink a potion by hand mid hunt; the server counts them on the running hunt
+// (hunt.drunk) and settle spends them then. What the hero can still drink: the stock less those.
+export const potionsLeft = (hero) => ({
+  hp: Math.max(0, (hero.potions?.hp ?? 0) - (hero.hunt?.drunk?.hp ?? 0)),
+  mp: Math.max(0, (hero.potions?.mp ?? 0) - (hero.hunt?.drunk?.mp ?? 0)),
+})
+
 // One pack in every `every` has an elite leading it (zones.js elitePacks; 3: the 3rd, 6th, 9th...). A
 // fraction spreads them evenly (1.75: 4 in every 7), so bigger packs keep the elites' share of the kills.
 export const isElitePack = (i, every) => Math.floor((i + 1) / every + 1e-9) > Math.floor(i / every + 1e-9)

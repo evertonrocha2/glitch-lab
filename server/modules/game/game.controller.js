@@ -23,6 +23,10 @@ export async function stopHunt(req, res) {
   res.json(await game.stopHunt(req.deps.store, req.user, todayOf(req)))
 }
 
+export async function potion(req, res) {
+  res.json(await game.drinkPotion(req.deps.store, req.user, todayOf(req), requireBody(req)))
+}
+
 export async function boss(req, res) {
   res.json(await game.fightBoss(req.deps.store, req.user, todayOf(req), requireBody(req)))
 }
